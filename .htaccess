@@ -1,0 +1,83 @@
+# MÃ NGUỒN ĐƯỢC LÀM BỞI DAILYCODE.VN , VUI LÒNG KHÔNG XOÁ HOẶC SỬA DÒNG NÀY NẾU BẠN CÓ ĐẠO ĐỨC VÀ TÔN TRỌNG TÁC GIẢ
+RewriteEngine on
+RewriteBase /web/
+# RewriteCond %{HTTPS} off
+# RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [L,R]
+# AUTH | BẢN QUYỀN DAILYCODE.VN
+RewriteRule ^xulyreset-pass$ ajax/auth/reset-pass.php [L]
+RewriteRule ^xu-ly-mat-khau$ ajax/auth/dat-lai-pass.php [L]
+RewriteRule ^auth/password-reset$ pages/auth/quenpass.php [L]
+RewriteRule ^resetpass$ pages/auth/datlaipass.php [L]
+RewriteRule ^login$ pages/auth/login.php [L]
+RewriteRule ^register$ pages/auth/register.php [L]
+RewriteRule ^logout$ pages/auth/logout.php [L]
+RewriteRule ^password$ pages/changepass.php [L]
+
+#SUBDOMAIN
+RewriteRule ^subdomain$ pages/subdomain/index.php [L]
+RewriteRule ^history-subdomain/([A-Za-z0-9-]+) pages/subdomain/quanlysubdomain.php?id=$1 [L]
+RewriteRule ^add-record/([A-Za-z0-9-]+) pages/subdomain/add-record.php?id=$1 [L]
+RewriteRule ^quanly-subdomain/([A-Za-z0-9-]+) pages/subdomain/quanlysubdomain.php?id=$1 [L]
+RewriteRule ^history-subdomain$ pages/subdomain/ls-subdomain.php [L]
+RewriteRule ^edit-record/([A-Za-z0-9-]+) pages/subdomain/edit-record.php?id=$1 [L]
+
+#WEB
+RewriteRule ^ajax/taoweb/xulytaoweb$ ajax/taoweb/xulytaoweb.php [L]
+RewriteRule ^tao-web$ pages/taoweb/index.php [L]
+RewriteRule ^history-tao-web$ pages/taoweb/lstaoweb.php [L]
+RewriteRule ^history-reg-web/([A-Za-z0-9-]+) pages/taoweb/viewtaoweb.php?id=$1 [L]
+RewriteRule ^view-web/([A-Za-z0-9-]+) pages/taoweb/taoweb.php?id=$1 [L]
+
+# LIEN HE
+RewriteRule ^lien-he$ pages/lienhe.php [L]
+#MÃ NGUỒN 
+RewriteRule ^tao-web$ pages/taoweb/index.php [L]
+RewriteRule ^tao-logo$ pages/taologo/logo.php [L]
+RewriteRule ^view-logo/([A-Za-z0-9-]+) pages/taologo/viewlogo.php?id=$1 [L]
+RewriteRule ^tao-web/([A-Za-z0-9-]+) pages/taoweb/viewweb.php?id=$1 [L]
+RewriteRule ^ma-nguon$ pages/manguon/index.php [L]
+RewriteRule ^ma-nguon/([A-Za-z0-9-]+) pages/manguon/viewcode.php?id=$1 [L]
+#ACCOUNT 
+RewriteRule ^profile$ pages/profile.php [L]
+#NẠP TIỀN
+RewriteRule ^recharge$ pages/naptien/index.php [L]
+RewriteRule ^nap-the$ pages/naptien/napthe.php [L]
+RewriteRule ^nap-bank$ pages/naptien/napbank.php [L]
+#HOSTING
+RewriteRule ^history-logo$ pages/taologo/lslogo.php [L]
+RewriteRule ^history-code$ pages/manguon/lichsumuacode.php [L]
+RewriteRule ^history-hosting$ pages/hosting/lshost.php [L]
+RewriteRule ^history-mien$ pages/domain/lsmuamien.php [L]
+RewriteRule ^mua-mien$ pages/domain/index.php [L]
+RewriteRule ^quan-ly-mien/([A-Za-z0-9-]+) pages/domain/quanlymien.php?id=$1 [L]
+RewriteRule ^server-hosting$ pages/hosting/index.php [L]
+RewriteRule ^server-hosting/([A-Za-z0-9-]+) pages/hosting/cuahang.php?server=$1 [L]
+RewriteRule ^thanh-toan-host/([A-Za-z0-9-]+) pages/hosting/thanhtoan.php?id=$1 [L]
+RewriteRule ^history-hosting$ pages/hosting/lshost.php [L]
+RewriteRule ^quan-ly-host/([A-Za-z0-9-]+) pages/hosting/quanlyhost.php?id=$1 [L]
+#AJAX | BẢN QUYỀN DAILYCODE.VN
+RewriteRule ^ajax/auth/xulylogin$ ajax/auth/xulylogin.php [L]
+RewriteRule ^ajax/auth/xulyregister$ ajax/auth/xulyregister.php [L]
+RewriteRule ^ajax/hosting/xulyhost$ ajax/hosting/xulyhost.php [L]
+RewriteRule ^ajax/hosting/changepass$ ajax/hosting/changepass.php [L]
+RewriteRule ^ajax/hosting/resethost$ ajax/hosting/resethost.php [L]
+RewriteRule ^ajax/hosting/xoahost$ ajax/hosting/xoahost.php [L]
+RewriteRule ^ajax/hosting/changedomain$ ajax/hosting/changedomain.php [L]
+RewriteRule ^ajax/hosting/changeqt$ ajax/hosting/changeqt.php [L]
+RewriteRule ^active-license$ pages/active-license.php [L]
+RewriteRule ^ajax/hosting/giahan$ ajax/hosting/giahan.php [L]
+RewriteRule ^active-admin$ pages/active-admin.php [L]
+RewriteRule ^ajax/manguon/xulymuacode$ ajax/manguon/xulymuacode.php [L]
+ #NẠP TIỀN
+RewriteRule ^ajax/naptien/laymenhgia$ ajax/naptien/laymenhgia.php [L]
+RewriteRule ^ajax/naptien/laynganhang$ ajax/naptien/laynganhang.php [L]
+RewriteRule ^ajax/naptien/napthe$ ajax/naptien/napthe.php [L]
+#404 | BẢN QUYỀN DAILYCODE.VN
+ErrorDocument 404 /web/404.php
+ErrorDocument 503 /web/503.php
+ErrorDocument 403 /web/403.php
+ErrorDocument 502 /web/502.php
+<Files 403.shtml>
+order allow,deny
+allow from all
+</Files>

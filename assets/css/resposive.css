@@ -1,0 +1,178 @@
+/* // X-Small devices (portrait phones, less than 576px) */
+
+@media (max-width: 575.98px) {
+    .person-list-h-535 {
+        height: auto;
+    }
+    .no-message {
+        font-size: 24px;
+        line-height: 36px;
+    }
+    .no-message-des {
+        font-size: 14px;
+        line-height: 22px;
+    }
+    /* content */
+    .hero-rating {
+        border-left: 0;
+    }
+    .hero-one-title {
+        font-size: 48px;
+        line-height: 1.4;
+    }
+    .hero-form-wrapper .form-control {
+        border-left: 0;
+    }
+    .hero-form-wrapper .form-select {
+        display: none;
+    }
+    .py-110 {
+        padding: 50px 0;
+    }
+    .pt-110 {
+        padding-top: 50px;
+    }
+    .blog-details-title {
+        font-size: 26px;
+        line-height: 1.4;
+    }
+    .service-details-title {
+        font-size: 24px;
+        line-height: 1.3;
+    }
+    .border-end {
+        border-right: 0 !important;
+    }
+    .cta-counter-title,
+    .section-title {
+        font-size: 26px;
+        line-height: 1.5;
+    }
+    .company-profile-card-title,
+    .job-wage,
+    .text-24,
+    .service-card-price {
+        font-size: 18px;
+    }
+    .blog-title a,
+    .footer-widget-title,
+    .feature-card-title,
+    .job-post-title,
+    .service-details-subtitle,
+    .freelancer-name a {
+        font-size: 20px;
+    }
+    .service-review-count {
+        width: 100%;
+    }
+    .faq-accordions .accordion .accordion-item .accordion-button,
+    .footer-nav-list .footer-nav-list-item .footer-nav-link,
+    .text-18 {
+        font-size: 16px;
+    }
+    .job-posts-container,
+    .review-card {
+        padding: 30px;
+    }
+}
+
+
+/* // Small devices (landscape phones, less than 768px) */
+
+@media (max-width: 767.98px) {
+    .hero-one {
+        padding-top: 20px;
+    }
+    .hero-one-title {
+        font-size: 42px;
+    }
+    .hero-one-img {
+        max-width: 100%;
+    }
+    /* content */
+    .hero-two-title {
+        font-size: 40px;
+        line-height: 1.4;
+    }
+    /* Cta */
+    .cta-wrapper {
+        padding: 20px;
+    }
+    .custom-dropdown.dropdown {
+        width: 100%;
+    }
+    .cta-area-bg {
+        padding: 35px;
+    }
+    .cta-counter-item {
+        width: 100%;
+    }
+    .section-title-light {
+        font-size: 30px;
+        line-height: 1.3;
+    }
+    .top-seller-name {
+        font-size: 18px;
+    }
+    .job-post-horizontal-title a {
+        line-height: 28px;
+        font-size: 16px;
+    }
+    .feature-category-link a,
+    .service-card-author-name,
+    .service-card-title {
+        font-size: 16px;
+    }
+}
+
+
+/* // Medium devices (tablets, less than 992px) */
+
+@media (max-width: 991.98px) {
+    /* content */
+    .border-end {
+        border-right: 0 !important;
+    }
+    .custom-dropdown-toggle.dropdown-toggle {
+        width: 100%;
+    }
+    .pb-150 {
+        padding-bottom: 60px;
+    }
+    .py-110 {
+        padding: 60px 0;
+    }
+    .pt-110 {
+        padding-top: 60px;
+    }
+    .about-company {
+        padding-top: 20px;
+    }
+}
+
+
+/* // Large devices (desktops, less than 1200px) */
+
+@media (max-width: 1199.98px) {
+    .hero-two {
+        padding: 150px 0 0 0;
+    }
+    /* content */
+    .hero-two-img {
+        position: relative;
+        transform: none;
+    }
+    .dashboard-main {
+        margin-left: 0;
+    }
+    .dashboard-header {
+        margin-left: 0;
+    }
+}
+
+
+/* // X-Large devices (large desktops, less than 1400px) */
+
+@media (max-width: 1399.98px) {}
+
+@media (max-width: 1440px) {}
