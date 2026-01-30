@@ -1,9 +1,9 @@
-<?php require $_SERVER['DOCUMENT_ROOT'].'/hethong/config.php';?>
+<?php require dirname(__DIR__) . '/hethong/config.php';?>
 <?php
     if(empty($_SESSION['admin'])){
     sendTele($ip_address." Có Ý Định Truy Cập Trái Phép Vào Admin");
-        header("Location: /");
-        exit();
+        header("Location: " . url('/'));
+        exit(); 
     }
 ?>
 <meta charset="utf-8">
