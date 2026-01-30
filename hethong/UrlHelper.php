@@ -6,9 +6,20 @@
 class UrlHelper
 {
     // ===== THAY ĐỔI DUY NHẤT Ở ĐÂY =====
-    // Local: '/web'
+    // Local: '/kaishop_v2'
     // Production: '' (để trống)
-    private static $BASE_PATH = '/web';
+    private static $BASE_PATH = '/kaishop_v2';
+
+    /**
+     * Tự động cấu hình BASE_PATH dựa trên môi trường
+     */
+    public static function init()
+    {
+        $localhosts = ['localhost', '127.0.0.1', '::1'];
+        if (!in_array($_SERVER['HTTP_HOST'], $localhosts)) {
+            self::$BASE_PATH = '';
+        }
+    }
     // ====================================
 
     /**
@@ -85,4 +96,5 @@ function ajax_url($path)
 {
     return UrlHelper::ajax($path);
 }
+UrlHelper::init();
 ?>

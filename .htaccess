@@ -1,6 +1,6 @@
 # MÃ NGUỒN ĐƯỢC LÀM BỞI DAILYCODE.VN , VUI LÒNG KHÔNG XOÁ HOẶC SỬA DÒNG NÀY NẾU BẠN CÓ ĐẠO ĐỨC VÀ TÔN TRỌNG TÁC GIẢ
 RewriteEngine on
-RewriteBase /web/
+RewriteBase /kaishop_v2/
 # RewriteCond %{HTTPS} off
 # RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [L,R]
 # AUTH | BẢN QUYỀN DAILYCODE.VN
@@ -73,10 +73,10 @@ RewriteRule ^ajax/naptien/laymenhgia$ ajax/naptien/laymenhgia.php [L]
 RewriteRule ^ajax/naptien/laynganhang$ ajax/naptien/laynganhang.php [L]
 RewriteRule ^ajax/naptien/napthe$ ajax/naptien/napthe.php [L]
 #404 | BẢN QUYỀN DAILYCODE.VN
-ErrorDocument 404 /web/404.php
-ErrorDocument 503 /web/503.php
-ErrorDocument 403 /web/403.php
-ErrorDocument 502 /web/502.php
+ErrorDocument 404 /kaishop_v2/404.php
+ErrorDocument 503 /kaishop_v2/503.php
+ErrorDocument 403 /kaishop_v2/403.php
+ErrorDocument 502 /kaishop_v2/502.php
 <Files 403.shtml>
 order allow,deny
 allow from all

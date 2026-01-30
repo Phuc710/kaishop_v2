@@ -92,7 +92,7 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 const xhr = new XMLHttpRequest();
-                xhr.open("POST", "/ajax/subdomain/xulydomain.php");
+                xhr.open("POST", "/kaishop_v2/ajax/subdomain/process_subdomain.php");
                 xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                 xhr.onload = function () {
                     button1.style.display = "inline-block";

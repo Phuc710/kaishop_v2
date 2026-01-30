@@ -102,7 +102,7 @@ if (isset($_SESSION['session'])) {
         const recaptchaResponse = grecaptcha.getResponse();
 
         const xhr = new XMLHttpRequest();
-        xhr.open("POST", BASE_URL + "/ajax/auth/xulyregister.php");
+        xhr.open("POST", BASE_URL + "/ajax/auth/register.php");
         xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
         xhr.onload = function () {

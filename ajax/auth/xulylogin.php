@@ -1,21 +1,54 @@
 <?php
 require __DIR__ . '/../../hethong/config.php';
-$username = antixss($_POST['username']);
-$password = antixss($_POST['password']);
-if ($_POST['username'] == "" || $_POST['password'] == "") {
-  $response = array('success' => false, 'message' => 'Vui lòng nhập đầy đủ thông tin');
-} else {
-  $check = $ketnoi->query("SELECT * FROM `users` WHERE `username` = '$username' ")->fetch_array();
+
+// Get and sanitize input
+$username = antixss($_POST['username'] ?? '');
+$password = antixss($_POST['password'] ?? '');
+
+// Validate required fields
+if (empty($username) || empty($password)) {
+    $response = [
+        'success' => false, 
+        'message' => 'Vui lòng nhập đầy đủ thông tin'
+    ];
+    echo json_encode($response);
+    exit;
 }
-if (empty($check)) {
-  $response = array('success' => false, 'message' => 'Thông tin đăng nhập không chính xác');
-} elseif ($check['password'] != sha1(md5($password))) {
-  $response = array('success' => false, 'message' => 'Mật khẩu không chính xác');
-} else {
-  $now_ss = random('0123456789qwertyuiopasdfghjlkzxcvbnmQEWRWROIWCJHSCNJKFBJWQ', 32);
-  $ketnoi->query("UPDATE `users` SET `session` = '$now_ss' WHERE `username` = '".$check['username']."' ");
-  $_SESSION['session'] = $now_ss;
-  $response = array('success' => true);
+
+// Check user exists
+$userQuery = $ketnoi->query("SELECT * FROM `users` WHERE `username` = '$username'");
+$userData = $userQuery->fetch_array();
+
+// User not found
+if (empty($userData)) {
+    $response = [
+        'success' => false, 
+        'message' => 'Thông tin đăng nhập không chính xác'
+    ];
+    echo json_encode($response);
+    exit;
 }
+
+// Verify password (sha1(md5()))
+$hashedPassword = sha1(md5($password));
+if ($userData['password'] !== $hashedPassword) {
+    $response = [
+        'success' => false, 
+        'message' => 'Mật khẩu không chính xác'
+    ];
+    echo json_encode($response);
+    exit;
+}
+
+// Login successful - generate session
+$sessionToken = random('0123456789qwertyuiopasdfghjlkzxcvbnmQEWRWROIWCJHSCNJKFBJWQ', 32);
+$ketnoi->query("UPDATE `users` SET `session` = '$sessionToken' WHERE `username` = '{$userData['username']}'");
+$_SESSION['session'] = $sessionToken;
+
+$response = [
+    'success' => true,
+    'message' => 'Đăng nhập thành công'
+];
+
 echo json_encode($response);
-?>
+
