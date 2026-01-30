@@ -6,10 +6,10 @@
  */
 
 // Load application config and autoloader
-require_once __DIR__ . '/config/app.php';
+require_once __DIR__ . '/../config/app.php';
 
 // Load routes
-$routes = require_once __DIR__ . '/config/routes.php';
+$routes = require_once __DIR__ . '/../config/routes.php';
 
 // Initialize router
 $router = new Router();

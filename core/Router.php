@@ -36,8 +36,22 @@ class Router {
      * Dispatch request to appropriate controller
      */
     public function dispatch($uri) {
+        // Get the script directory (e.g., /kaishop_v2/public)
+        $scriptName = $_SERVER['SCRIPT_NAME']; // e.g., /kaishop_v2/public/index_new.php
+        $scriptDir = dirname($scriptName); // e.g., /kaishop_v2/public
+        
+        // Remove script directory from URI to get the path
+        if (strpos($uri, $scriptDir) === 0) {
+            $uri = substr($uri, strlen($scriptDir));
+        }
+        
         // Remove query string
         $uri = strtok($uri, '?');
+        
+        // If URI is the entry point file itself, treat as root
+        if ($uri === '/index_new.php' || $uri === 'index_new.php') {
+            $uri = '/';
+        }
         
         // Remove trailing slash
         $uri = rtrim($uri, '/');
@@ -56,7 +70,9 @@ class Router {
         
         // 404 - No route found
         http_response_code(404);
-        echo "404 - Page not found";
+        echo "404 - Page not found<br>";
+        echo "Requested URI: " . htmlspecialchars($uri) . "<br>";
+        echo "Method: " . htmlspecialchars($method);
     }
     
     /**

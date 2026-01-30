@@ -6,6 +6,9 @@
  */
 
 return [
+    // ========== HOME ==========
+    ['GET', '/', 'HomeController@index'],
+    
     // ========== AUTH ROUTES ==========
     ['GET', '/login', 'AuthController@showLogin'],
     ['POST', '/login', 'AuthController@login'],
@@ -36,6 +39,28 @@ return [
     ['GET', '/hosting/history', 'HostingController@history'],
     ['POST', '/hosting/buy', 'HostingController@buy'],
     ['GET', '/hosting/manage', 'HostingController@manage'],
+    
+    // ========== SUBDOMAIN ROUTES ==========
+    ['GET', '/subdomain', 'SubdomainController@shop'],
+    ['GET', '/subdomain/history', 'SubdomainController@history'],
+    ['POST', '/subdomain/rent', 'SubdomainController@rent'],
+    ['GET', '/subdomain/manage', 'SubdomainController@manage'],
+    
+    // ========== LOGO ROUTES ==========
+    ['GET', '/logo/create', 'LogoController@create'],
+    ['POST', '/logo/process', 'LogoController@process'],
+    ['GET', '/logo/history', 'LogoController@history'],
+    
+    // ========== WEBSITE ROUTES ==========
+    ['GET', '/website/templates', 'WebsiteController@templates'],
+    ['POST', '/website/create', 'WebsiteController@create'],
+    ['GET', '/website/history', 'WebsiteController@history'],
+    
+    // ========== SOURCE CODE ROUTES ==========
+    ['GET', '/sourcecode', 'SourceCodeController@shop'],
+    ['POST', '/sourcecode/buy', 'SourceCodeController@buy'],
+    ['GET', '/sourcecode/history', 'SourceCodeController@history'],
+    ['GET', '/sourcecode/download', 'SourceCodeController@download'],
     
     // ========== OTHER ROUTES ==========
     // Subdomain, Logo, Website, SourceCode routes can be added here
