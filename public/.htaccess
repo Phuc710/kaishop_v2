@@ -1,0 +1,9 @@
+# Routing Configuration for Apache
+# Place this in public/.htaccess
+
+RewriteEngine On
+
+# Redirect all requests to index_new.php (new router)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index_new.php [QSA,L]
