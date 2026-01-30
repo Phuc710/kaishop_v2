@@ -336,7 +336,7 @@
             button2.disabled = true;
 
             const xhr = new XMLHttpRequest();
-            xhr.open("POST", "/ajax/taologo/xulytaologo.php");
+            xhr.open("POST", "/kaishop_v2/ajax/taologo/process_logo.php");
             xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
             xhr.onload = function () {

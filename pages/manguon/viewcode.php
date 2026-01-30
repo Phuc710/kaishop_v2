@@ -335,7 +335,7 @@
             button2.disabled = true;
 
             const xhr = new XMLHttpRequest();
-            xhr.open("POST", "/ajax/manguon/xulymuacode.php");
+            xhr.open("POST", "/kaishop_v2/ajax/manguon/buy_sourcecode.php");
             xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
             xhr.onload = function () {

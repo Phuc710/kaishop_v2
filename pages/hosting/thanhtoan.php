@@ -199,7 +199,7 @@ function thanhtoan() {
     button2.disabled = true;  
 
     const xhr = new XMLHttpRequest();  
-    xhr.open("POST", "/ajax/hosting/xulyhost.php");  
+    xhr.open("POST", "/kaishop_v2/ajax/hosting/process_hosting.php");  
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");  
     xhr.onload = function () {  
         button1.style.display = "inline-block";  
