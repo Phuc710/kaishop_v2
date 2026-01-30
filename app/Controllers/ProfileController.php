@@ -26,14 +26,14 @@ class ProfileController extends Controller {
         $user = $this->authService->getCurrentUser();
         $username = $user['username'];
         
-        // Load existing config for helpers
-        global $chungapi;
+        // Get site config
+        $siteConfig = Config::getSiteConfig();
         
         // Render view
         $this->view('profile/index', [
             'user' => $user,
             'username' => $username,
-            'chungapi' => $chungapi
+            'siteConfig' => $siteConfig
         ]);
     }
     
@@ -45,7 +45,7 @@ class ProfileController extends Controller {
         if (!$this->authService->isLoggedIn()) {
             return $this->json([
                 'success' => false,
-                'message' => 'Chưa đăng nhập'
+                'message' => 'Not logged in'
             ], 401);
         }
         
@@ -66,7 +66,7 @@ class ProfileController extends Controller {
         if ($this->userModel->emailExists($newEmail, $user['id'])) {
             return $this->json([
                 'success' => false,
-                'message' => 'Email này đã được sử dụng bởi tài khoản khác!'
+                'message' => 'Email is already in use by another account'
             ], 400);
         }
         
@@ -76,12 +76,12 @@ class ProfileController extends Controller {
         if ($success) {
             return $this->json([
                 'success' => true,
-                'message' => 'Cập nhật email thành công!'
+                'message' => 'Email updated successfully'
             ]);
         } else {
             return $this->json([
                 'success' => false,
-                'message' => 'Có lỗi xảy ra, vui lòng thử lại!'
+                'message' => 'An error occurred, please try again'
             ], 500);
         }
     }

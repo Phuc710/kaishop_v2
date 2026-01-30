@@ -45,12 +45,12 @@ class AuthController extends Controller {
         $user = $this->userModel->findByUsername($username);
         
         if (!$user) {
-            return $this->json(['success' => false, 'message' => 'Thông tin đăng nhập không chính xác'], 401);
+            return $this->json(['success' => false, 'message' => 'Invalid login credentials'], 401);
         }
         
         // Verify password (using sha1(md5()) as in old code)
         if ($user['password'] !== sha1(md5($password))) {
-            return $this->json(['success' => false, 'message' => 'Mật khẩu không chính xác'], 401);
+            return $this->json(['success' => false, 'message' => 'Incorrect password'], 401);
         }
         
         // Generate new session
@@ -91,12 +91,12 @@ class AuthController extends Controller {
         
         // Check if username exists
         if ($this->userModel->findByUsername($username)) {
-            return $this->json(['success' => false, 'message' => 'Tên đăng nhập đã được sử dụng'], 400);
+            return $this->json(['success' => false, 'message' => 'Username already taken'], 400);
         }
         
         // Check if email exists
         if ($this->userModel->emailExists($email)) {
-            return $this->json(['success' => false, 'message' => 'Email đã được sử dụng'], 400);
+            return $this->json(['success' => false, 'message' => 'Email already in use'], 400);
         }
         
         // Create user
@@ -130,7 +130,7 @@ class AuthController extends Controller {
             return $this->json(['success' => true]);
         }
         
-        return $this->json(['success' => false, 'message' => 'Có lỗi xảy ra'], 500);
+        return $this->json(['success' => false, 'message' => 'An error occurred'], 500);
     }
     
     /**

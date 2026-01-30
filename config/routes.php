@@ -66,5 +66,8 @@ return [
     // Subdomain, Logo, Website, SourceCode routes can be added here
     
     // ========== ADMIN ROUTES ==========
-    // Admin routes will be added later
+    ['GET', '/admin', 'Admin\\DashboardController@index'],
+    ['GET', '/admin/users', 'Admin\\UserController@index'],
+    ['POST', '/admin/users/edit', 'Admin\\UserController@edit'],
+    ['POST', '/admin/users/delete', 'Admin\\UserController@delete'],
 ];

@@ -15,9 +15,9 @@ class UserValidator {
         $errors = [];
         
         if (empty($email)) {
-            $errors[] = 'Email không được để trống';
+            $errors[] = 'Please enter email';
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors[] = 'Email không hợp lệ';
+            $errors[] = 'Invalid email format';
         }
         
         return $errors;

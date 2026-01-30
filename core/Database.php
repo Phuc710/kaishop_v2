@@ -17,11 +17,11 @@ class Database {
         
         // Create PDO connection with same credentials
         try {
-            // Extract connection details from mysqli (stored in ketnoi.php)
-            $host = '127.0.0.1';
-            $dbname = 'cdailycodevn_nosqltrang'; // From csdl.sql
-            $username = 'root'; // Common XAMPP default
-            $password = ''; // Common XAMPP default
+            // Database credentials (matching ketnoi.php)
+            $host = 'localhost';
+            $dbname = 'kaishop_db';
+            $username = 'root';
+            $password = '';
             
             $dsn = "mysql:host={$host};dbname={$dbname};charset=utf8mb4";
             $this->connection = new PDO($dsn, $username, $password, [
