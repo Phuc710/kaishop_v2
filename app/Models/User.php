@@ -36,17 +36,19 @@ class User extends Model {
      * @return bool
      */
     public function emailExists($email, $excludeUserId = null) {
-        $sql = "SELECT COUNT(*) FROM `users` WHERE `email` = ?";
-        $params = [$email];
-        
         if ($excludeUserId) {
-            $sql .= " AND `id` != ?";
-            $params[] = $excludeUserId;
+            $result = $this->query(
+                "SELECT COUNT(*) FROM `{$this->table}` WHERE `email` = ? AND `id` != ?",
+                [$email, $excludeUserId]
+            )->fetchColumn();
+        } else {
+            $result = $this->query(
+                "SELECT COUNT(*) FROM `{$this->table}` WHERE `email` = ?",
+                [$email]
+            )->fetchColumn();
         }
         
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchColumn() > 0;
+        return $result > 0;
     }
     
     /**

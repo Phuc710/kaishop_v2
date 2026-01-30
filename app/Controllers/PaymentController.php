@@ -19,11 +19,11 @@ class PaymentController extends Controller {
     public function showCard() {
         $this->authService->requireAuth();
         $user = $this->authService->getCurrentUser();
-        global $chungapi;
+        $siteConfig = Config::getSiteConfig();
         
         $this->view('payment/card', [
             'user' => $user,
-            'chungapi' => $chungapi
+            'siteConfig' => $siteConfig
         ]);
     }
     
@@ -33,14 +33,14 @@ class PaymentController extends Controller {
     public function showBank() {
         $this->authService->requireAuth();
         $user = $this->authService->getCurrentUser();
-        global $chungapi;
+        $siteConfig = Config::getSiteConfig();
         
         // Get bank list
         $banks = $this->transactionModel->getBankList();
         
         $this->view('payment/bank', [
             'user' => $user,
-            'chungapi' => $chungapi,
+            'siteConfig' => $siteConfig,
             'banks' => $banks
         ]);
     }
@@ -50,13 +50,13 @@ class PaymentController extends Controller {
      */
     public function processCard() {
         if (!$this->authService->isLoggedIn()) {
-            return $this->json(['success' => false, 'message' => 'Chưa đăng nhập'], 401);
+            return $this->json(['success' => false, 'message' => 'Not logged in'], 401);
         }
         
         // Card payment logic here (integrate with card service)
         // This would depend on your card payment provider
         
-        return $this->json(['success' => true, 'message' => 'Đang xử lý...']);
+        return $this->json(['success' => true, 'message' => 'Processing...']);
     }
     
     /**

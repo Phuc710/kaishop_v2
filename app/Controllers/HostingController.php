@@ -35,18 +35,18 @@ class HostingController extends Controller {
      */
     public function buy() {
         if (!$this->authService->isLoggedIn()) {
-            return $this->json(['success' => false, 'message' => 'Chưa đăng nhập'], 401);
+            return $this->json(['success' => false, 'message' => 'Not logged in'], 401);
         }
         
         $packageId = $this->post('package_id');
         $domain = trim($this->post('domain', ''));
         
         if (empty($packageId) || empty($domain)) {
-            return $this->json(['success' => false, 'message' => 'Vui lòng nhập đầy đủ thông tin'], 400);
+            return $this->json(['success' => false, 'message' => 'Please fill all required fields'], 400);
         }
         
         // Process hosting purchase
-        return $this->json(['success' => true, 'message' => 'Mua hosting thành công']);
+        return $this->json(['success' => true, 'message' => 'Hosting purchased successfully']);
     }
     
     /**
@@ -76,7 +76,7 @@ class HostingController extends Controller {
         $hosting = $this->hostingModel->find($id);
         
         if (!$hosting || $hosting['username'] !== $user['username']) {
-            return $this->json(['success' => false, 'message' => 'Không tìm thấy hosting'], 404);
+            return $this->json(['success' => false, 'message' => 'Hosting not found'], 404);
         }
         
         $this->view('hosting/manage', [

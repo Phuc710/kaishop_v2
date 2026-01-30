@@ -117,7 +117,7 @@ if (isset($_SESSION['session'])) {
                 const password = document.getElementById("password").value;
 
                 const xhr = new XMLHttpRequest();
-                xhr.open("POST", "/ajax/auth/xulylogin.php");
+                xhr.open("POST", "/kaishop_v2/ajax/auth/login.php");
                 xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
                 xhr.onload = function () {

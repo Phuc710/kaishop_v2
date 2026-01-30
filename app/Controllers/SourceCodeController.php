@@ -35,19 +35,19 @@ class SourceCodeController extends Controller {
      */
     public function buy() {
         if (!$this->authService->isLoggedIn()) {
-            return $this->json(['success' => false, 'message' => 'Chưa đăng nhập'], 401);
+            return $this->json(['success' => false, 'message' => 'Not logged in'], 401);
         }
         
         $codeId = $this->post('code_id');
         
         if (empty($codeId)) {
-            return $this->json(['success' => false, 'message' => 'Vui lòng chọn mã nguồn'], 400);
+            return $this->json(['success' => false, 'message' => 'Please select source code'], 400);
         }
         
         $user = $this->authService->getCurrentUser();
         
         // Process purchase
-        return $this->json(['success' => true, 'message' => 'Mua mã nguồn thành công']);
+        return $this->json(['success' => true, 'message' => 'Source code purchased successfully']);
     }
     
     /**
@@ -77,7 +77,7 @@ class SourceCodeController extends Controller {
         $purchase = $this->sourceCodeModel->find($id);
         
         if (!$purchase || $purchase['username'] !== $user['username']) {
-            return $this->json(['success' => false, 'message' => 'Không tìm thấy'], 404);
+            return $this->json(['success' => false, 'message' => 'Not found'], 404);
         }
         
         // Return download link

@@ -56,7 +56,7 @@ class AdminUserController extends Controller {
         
         $this->userModel->update($userId, $data);
         
-        return $this->json(['success' => true, 'message' => 'Cập nhật thành công']);
+        return $this->json(['success' => true, 'message' => 'Updated successfully']);
     }
     
     /**
@@ -68,6 +68,6 @@ class AdminUserController extends Controller {
         $userId = $this->post('user_id');
         $this->userModel->delete($userId);
         
-        return $this->json(['success' => true, 'message' => 'Xóa thành công']);
+        return $this->json(['success' => true, 'message' => 'Deleted successfully']);
     }
 }

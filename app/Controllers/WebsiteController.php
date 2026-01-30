@@ -35,14 +35,14 @@ class WebsiteController extends Controller {
      */
     public function create() {
         if (!$this->authService->isLoggedIn()) {
-            return $this->json(['success' => false, 'message' => 'Chưa đăng nhập'], 401);
+            return $this->json(['success' => false, 'message' => 'Not logged in'], 401);
         }
         
         $templateId = $this->post('template_id');
         $websiteName = trim($this->post('website_name', ''));
         
         if (empty($templateId) || empty($websiteName)) {
-            return $this->json(['success' => false, 'message' => 'Vui lòng nhập đầy đủ thông tin'], 400);
+            return $this->json(['success' => false, 'message' => 'Please fill all required fields'], 400);
         }
         
         $user = $this->authService->getCurrentUser();
@@ -55,7 +55,7 @@ class WebsiteController extends Controller {
             'status' => 'pending'
         ]);
         
-        return $this->json(['success' => true, 'message' => 'Tạo website thành công']);
+        return $this->json(['success' => true, 'message' => 'Website created successfully']);
     }
     
     /**

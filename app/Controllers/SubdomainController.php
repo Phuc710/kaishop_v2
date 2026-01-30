@@ -35,14 +35,14 @@ class SubdomainController extends Controller {
      */
     public function rent() {
         if (!$this->authService->isLoggedIn()) {
-            return $this->json(['success' => false, 'message' => 'Chưa đăng nhập'], 401);
+            return $this->json(['success' => false, 'message' => 'Not logged in'], 401);
         }
         
         $subdomainId = $this->post('subdomain_id');
         $user = $this->authService->getCurrentUser();
         
         // Process rental
-        return $this->json(['success' => true, 'message' => 'Thuê subdomain thành công']);
+        return $this->json(['success' => true, 'message' => 'Subdomain rented successfully']);
     }
     
     /**
@@ -72,7 +72,7 @@ class SubdomainController extends Controller {
         $subdomain = $this->subdomainModel->find($id);
         
         if (!$subdomain || $subdomain['username'] !== $user['username']) {
-            return $this->json(['success' => false, 'message' => 'Không tìm thấy subdomain'], 404);
+            return $this->json(['success' => false, 'message' => 'Subdomain not found'], 404);
         }
         
         $this->view('subdomain/manage', [

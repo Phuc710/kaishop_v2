@@ -32,14 +32,14 @@ class LogoController extends Controller {
      */
     public function process() {
         if (!$this->authService->isLoggedIn()) {
-            return $this->json(['success' => false, 'message' => 'Chưa đăng nhập'], 401);
+            return $this->json(['success' => false, 'message' => 'Not logged in'], 401);
         }
         
         $logoName = trim($this->post('logo_name', ''));
         $logoRequest = trim($this->post('logo_request', ''));
         
         if (empty($logoName)) {
-            return $this->json(['success' => false, 'message' => 'Vui lòng nhập tên logo'], 400);
+            return $this->json(['success' => false, 'message' => 'Please enter logo name'], 400);
         }
         
         $user = $this->authService->getCurrentUser();
@@ -52,7 +52,7 @@ class LogoController extends Controller {
             'status' => 'pending'
         ]);
         
-        return $this->json(['success' => true, 'message' => 'Tạo logo thành công', 'logo_id' => $logoId]);
+        return $this->json(['success' => true, 'message' => 'Logo created successfully', 'logo_id' => $logoId]);
     }
     
     /**

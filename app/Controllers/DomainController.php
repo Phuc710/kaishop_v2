@@ -21,14 +21,14 @@ class DomainController extends Controller {
     public function shop() {
         $this->authService->requireAuth();
         $user = $this->authService->getCurrentUser();
-        global $chungapi;
+        $siteConfig = Config::getSiteConfig();
         
         // Get available domain extensions
         $domainExtensions = $this->domainModel->getAvailableExtensions();
         
         $this->view('domain/shop', [
             'user' => $user,
-            'chungapi' => $chungapi,
+            'siteConfig' => $siteConfig,
             'extensions' => $domainExtensions
         ]);
     }
@@ -38,14 +38,14 @@ class DomainController extends Controller {
      */
     public function buy() {
         if (!$this->authService->isLoggedIn()) {
-            return $this->json(['success' => false, 'message' => 'Chưa đăng nhập'], 401);
+            return $this->json(['success' => false, 'message' => 'Not logged in'], 401);
         }
         
         $domainName = trim($this->post('domain', ''));
         $extension = trim($this->post('extension', ''));
         
         if (empty($domainName) || empty($extension)) {
-            return $this->json(['success' => false, 'message' => 'Vui lòng nhập tên miền'], 400);
+            return $this->json(['success' => false, 'message' => 'Please enter domain name'], 400);
         }
         
         $user = $this->authService->getCurrentUser();
@@ -56,7 +56,7 @@ class DomainController extends Controller {
         // Process purchase
         // Create domain record
         
-        return $this->json(['success' => true, 'message' => 'Mua domain thành công']);
+        return $this->json(['success' => true, 'message' => 'Domain purchased successfully']);
     }
     
     /**
@@ -86,7 +86,7 @@ class DomainController extends Controller {
         $domain = $this->domainModel->find($id);
         
         if (!$domain || $domain['username'] !== $user['username']) {
-            return $this->json(['success' => false, 'message' => 'Không tìm thấy domain'], 404);
+            return $this->json(['success' => false, 'message' => 'Domain not found'], 404);
         }
         
         $this->view('domain/manage', [
