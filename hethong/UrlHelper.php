@@ -1,24 +1,28 @@
 <?php
 /**
  * URL Helper Class - Centralized URL Management
- * Chỉ cần đổi BASE_PATH khi deploy lên production
+ * Chỉ cần đổi APP_DIR trong config.php
  */
 class UrlHelper
 {
-    // ===== THAY ĐỔI DUY NHẤT Ở ĐÂY =====
-    // Local: '/kaishop_v2'
-    // Production: '' (để trống)
-    private static $BASE_PATH = '/kaishop_v2';
+    private static $BASE_PATH = null;
 
     /**
-     * Tự động cấu hình BASE_PATH dựa trên môi trường
+     * Tự động lấy BASE_PATH từ APP_DIR constant
      */
-    public static function init()
+    private static function getBasePath()
     {
-        $localhosts = ['localhost', '127.0.0.1', '::1'];
-        if (!in_array($_SERVER['HTTP_HOST'], $localhosts)) {
-            self::$BASE_PATH = '';
+        if (self::$BASE_PATH === null) {
+            // Nếu APP_DIR đã được define trong config.php, dùng nó
+            if (defined('APP_DIR')) {
+                self::$BASE_PATH = APP_DIR;
+            } else {
+                // Fallback: tự động detect
+                $localhosts = ['localhost', '127.0.0.1', '::1'];
+                self::$BASE_PATH = in_array($_SERVER['HTTP_HOST'], $localhosts) ? '/kaishop_v2' : '';
+            }
         }
+        return self::$BASE_PATH;
     }
     // ====================================
 
@@ -28,7 +32,7 @@ class UrlHelper
     public static function base($path = '')
     {
         $cleanPath = ltrim($path, '/');
-        return self::$BASE_PATH . ($cleanPath ? '/' . $cleanPath : '');
+        return self::getBasePath() . ($cleanPath ? '/' . $cleanPath : '');
     }
 
     /**
@@ -96,5 +100,4 @@ function ajax_url($path)
 {
     return UrlHelper::ajax($path);
 }
-UrlHelper::init();
 ?>

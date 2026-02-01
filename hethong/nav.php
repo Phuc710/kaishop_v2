@@ -308,8 +308,7 @@
                                                 class="fa fa-user me-1 fs-10"></i>Tài khoản</a>
                                     </li>
                                     <li>
-                                        <a class="dashboard-profile-item dropdown-item" href="#" data-bs-toggle="modal"
-                                            data-bs-target="#logoutModal">
+                                        <a class="dashboard-profile-item dropdown-item" href="<?= url('logout') ?>">
                                             <i class="fa-solid fa-right-from-bracket me-1 fs-10"></i>Đăng xuất
                                         </a>
                                     </li>
@@ -322,7 +321,7 @@
                 <div class="navbar-right d-flex align-items-center gap-2">
                     <div class="gtranslate_wrapper"></div>
                     <div class="align-items-center">
-                        <a href="' . url('login') . '" class="btn-secondary me-1">
+                        <a href="' . url('login') . '" class="btn-primary me-1">
                                 Đăng Nhập
                             </a>
                     </div>';

@@ -30,6 +30,6 @@ if ($_GET['status'] == '1') {
 }
 else
 {   
-    // echo json_encode(array('zalo' => "https://zalo.me/0947237243", 'msg' => "WEBSITE ĐƯỢC TẠO BỞI DAILYCODE.VN", 'website' => "DAILYCODE.VN"));
+    echo json_encode(array('zalo' => "https://zalo.me/0812420710", 'msg' => "WEBSITE ĐƯỢC TẠO BỞI KAI SHOP", 'website' => "kaishop.id.vn"));
 }
 ?>

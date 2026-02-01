@@ -1,9 +1,4 @@
-<footer class="main-footer">
-    <strong>Copyright &copy; 2025<a href="https://dailycode.vn"> DAILYCODE.VN</a>.</strong>
-    All rights reserved.
-    <div class="float-right d-none d-sm-inline-block">
-        <b>Version</b> 3.2.0
-    </div>
+<footer class="main-footer" style="display: none;">
 </footer>
 <!-- jQuery -->
 <script src="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/plugins/jquery/jquery.min.js"></script>
@@ -11,7 +6,7 @@
 <script src="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/plugins/jquery-ui/jquery-ui.min.js"></script>
 <!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
 <script>
-$.widget.bridge('uibutton', $.ui.button)
+    $.widget.bridge('uibutton', $.ui.button)
 </script>
 <!-- Bootstrap 4 -->
 <script src="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/plugins/bootstrap/js/bootstrap.bundle.min.js">
@@ -32,14 +27,14 @@ $.widget.bridge('uibutton', $.ui.button)
 <!-- Tempusdominus Bootstrap 4 -->
 <script
     src="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js">
-</script>
+    </script>
 <!-- Summernote -->
 <script src="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/plugins/summernote/summernote-bs4.min.js">
 </script>
 <!-- overlayScrollbars -->
 <script
     src="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js">
-</script>
+    </script>
 <!-- AdminLTE App -->
 <script src="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/dist/js/adminlte.js"></script>
 <!-- AdminLTE dashboard demo (This is only for demo purposes) -->

@@ -241,7 +241,7 @@
             button2.disabled = true;
 
             const xhr = new XMLHttpRequest();
-            xhr.open("POST", "/kaishop_v2/ajax/naptien/deposit_card.php");
+            xhr.open("POST", BASE_URL + "/ajax/naptien/deposit_card.php");
             xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
             xhr.onload = function () {

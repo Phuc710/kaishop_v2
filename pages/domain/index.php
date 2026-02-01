@@ -134,7 +134,7 @@
             button2.disabled = true;
 
             const xhr = new XMLHttpRequest();
-            xhr.open("POST", "/kaishop_v2/ajax/domain/process_domain.php");
+            xhr.open("POST", BASE_URL + "/ajax/domain/process_domain.php");
             xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
             xhr.onload = function () {

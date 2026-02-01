@@ -81,9 +81,11 @@ $sql = "INSERT INTO `users` SET
     `email` = '$email',
     `session` = '$sessionToken',
     `money` = '0',
+    `tong_nap` = '0',
     `level` = '0',
-    `bannd` = 'OFF',
-    `time_create` = '" . time() . "'";
+    `bannd` = '0',
+    `time` = '" . time() . "',
+    `ip` = '$ip_address'";
 
 if ($ketnoi->query($sql)) {
     $_SESSION['session'] = $sessionToken;

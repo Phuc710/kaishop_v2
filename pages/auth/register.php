@@ -17,6 +17,7 @@ if (isset($_SESSION['session'])) {
 
 <head>
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <title>Đăng Ký Tài Khoản | <?= $chungapi['ten_web']; ?></title>
     <?php require __DIR__ . '/../../hethong/nav.php'; ?>
 </head>
@@ -69,7 +70,8 @@ if (isset($_SESSION['session'])) {
                                 <ul class="login-social-link d-flex justify-content-center">
                                     <li>
                                         <a href="/">
-                                            <img src="<?= asset('assets/images/google-icon.svg') ?>" alt="google"> Google
+                                            <img src="<?= asset('assets/images/google-icon.svg') ?>" alt="google">
+                                            Google
                                         </a>
                                     </li>
 
@@ -113,15 +115,29 @@ if (isset($_SESSION['session'])) {
             if (xhr.status === 200) {
                 const response = JSON.parse(xhr.responseText);
                 if (response.success) {
-                    showMessage("Đăng ký thành công!", "success");
+                    Swal.fire({
+                        title: "Thành công!",
+                        text: "Đăng ký thành công!",
+                        icon: "success",
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
                     setTimeout(() => {
                         window.location.href = BASE_URL + "/";
-                    }, 1000);
+                    }, 1500);
                 } else {
-                    showMessage(response.message, "error");
+                    Swal.fire({
+                        title: "Lỗi!",
+                        text: response.message,
+                        icon: "error"
+                    });
                 }
             } else {
-                showMessage("Lỗi: " + xhr.statusText, "error");
+                Swal.fire({
+                    title: "Lỗi!",
+                    text: "Lỗi: " + xhr.statusText,
+                    icon: "error"
+                });
             }
         };
 
@@ -130,7 +146,11 @@ if (isset($_SESSION['session'])) {
             button2.style.display = "none";
             button2.disabled = false;
 
-            showMessage("Lỗi kết nối đến máy chủ!", "error");
+            Swal.fire({
+                title: "Lỗi kết nối!",
+                text: "Không thể kết nối đến máy chủ!",
+                icon: "error"
+            });
         };
 
         xhr.send(

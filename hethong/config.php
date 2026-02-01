@@ -2,6 +2,22 @@
 require_once('ketnoi.php');
 require_once('UrlHelper.php');
 
+
+// ║  Localhost:   define('APP_DIR', '/kaishop_v2');                 ║
+// ║  Production:  define('APP_DIR', '');                            ║
+
+define('APP_DIR', '/kaishop_v2');
+
+// File System Paths (auto-configured based on APP_DIR)
+define('ROOT_PATH', $_SERVER['DOCUMENT_ROOT'] . APP_DIR);
+define('HETHONG_PATH', ROOT_PATH . '/hethong');
+define('AJAX_PATH', ROOT_PATH . '/ajax');
+define('ASSETS_PATH', ROOT_PATH . '/assets');
+define('PAGES_PATH', ROOT_PATH . '/pages');
+define('ADMIN_PATH', ROOT_PATH . '/admin');
+define('CRON_PATH', ROOT_PATH . '/cron_dlc');
+
+
 $version = "V1.0";
 date_default_timezone_set('Asia/Ho_Chi_Minh');
 $_SESSION['session_request'] = time();
@@ -354,7 +370,7 @@ function sendTele($message)
     global $tele_token, $tele_chatid;
     $data = http_build_query([
         'chat_id' => $tele_chatid,
-        'text' => "🌟 DaiLyCode.Vn
+        'text' => "🌟 kaishop.id.vn
 📝 Nội dung: " . $message .
             "
 🕒 Thời gian: " .

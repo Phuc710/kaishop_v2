@@ -72,30 +72,7 @@
 </script>
 <script src="https://cdn.gtranslate.net/widgets/latest/globe.js" defer></script>
 </body>
-<div class="modal new-modal fade" id="logoutModal" data-keyboard="false" data-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Xác nhận đăng xuất</h5>
-                <button type="button" class="close-btn" data-bs-dismiss="modal"><span>×</span></button>
-            </div>
-            <div class="modal-body service-modal">
-                <div class="row">
-                    <div class="col-md-12">
-                        Bạn có chắc chắn muốn Đăng xuất không?
-                    </div>
-
-                </div>
-            </div>
-            <div class="modal-footer">
-                <div class="btn-item">
-                    <a href="#" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</a>
-                    <a href="<?= url('logout') ?>" class="btn btn-primary" type="submit">Đăng xuất</a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Logout modal removed -->
 <!-- Footer  -->
 <footer class="footer">
     <div class="container">

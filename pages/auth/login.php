@@ -18,6 +18,7 @@ if (isset($_SESSION['session'])) {
 <head>
     <base href="../../../" />
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <title>Đăng Nhập Tài Khoản | <?= $chungapi['ten_web']; ?> </title>
     <?php require __DIR__ . '/../../hethong/nav.php'; ?>
 
@@ -81,7 +82,9 @@ if (isset($_SESSION['session'])) {
                                         <ul class="login-social-link d-flex justify-content-center">
                                             <li>
                                                 <a href="/">
-                                                    <img src="<?=asset('assets/images/google-icon.svg')?>" alt="Google"> Google
+                                                    <img src="<?= asset('assets/images/google-icon.svg') ?>"
+                                                        alt="Google">
+                                                    Google
                                                 </a>
                                             </li>
 
@@ -117,7 +120,7 @@ if (isset($_SESSION['session'])) {
                 const password = document.getElementById("password").value;
 
                 const xhr = new XMLHttpRequest();
-                xhr.open("POST", "/kaishop_v2/ajax/auth/login.php");
+                xhr.open("POST", BASE_URL + "/ajax/auth/login.php");
                 xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
                 xhr.onload = function () {
@@ -128,15 +131,29 @@ if (isset($_SESSION['session'])) {
                     if (xhr.status === 200) {
                         const response = JSON.parse(xhr.responseText);
                         if (response.success) {
-                            showMessage("Đăng nhập thành công!", "success");
+                            Swal.fire({
+                                title: "Thành công!",
+                                text: "Đăng nhập thành công!",
+                                icon: "success",
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
                             setTimeout(() => {
                                 window.location.href = BASE_URL + "/";
-                            }, 1000);
+                            }, 1500);
                         } else {
-                            showMessage(response.message, "error");
+                            Swal.fire({
+                                title: "Lỗi!",
+                                text: response.message,
+                                icon: "error"
+                            });
                         }
                     } else {
-                        showMessage("Lỗi: " + xhr.statusText, "error");
+                        Swal.fire({
+                            title: "Lỗi!",
+                            text: "Lỗi: " + xhr.statusText,
+                            icon: "error"
+                        });
                     }
                 };
 
@@ -145,7 +162,11 @@ if (isset($_SESSION['session'])) {
                     button2.style.display = "none";
                     button2.disabled = false;
 
-                    showMessage("Lỗi kết nối đến máy chủ!", "error");
+                    Swal.fire({
+                        title: "Lỗi kết nối!",
+                        text: "Không thể kết nối đến máy chủ!",
+                        icon: "error"
+                    });
                 };
 
                 xhr.send(
