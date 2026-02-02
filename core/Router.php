@@ -119,7 +119,14 @@ class Router {
         if (is_string($handler)) {
             list($controller, $method) = explode('@', $handler);
             
-            $controllerFile = __DIR__ . "/../app/Controllers/{$controller}.php";
+            // Search for controller file in app/Controllers and its subdirectories
+            $controllerPath = str_replace('\\', '/', $controller);
+            $controllerFile = __DIR__ . "/../app/Controllers/{$controllerPath}.php";
+            
+            if (!file_exists($controllerFile)) {
+                // Try direct class name if path search fails
+                $controllerFile = __DIR__ . "/../app/Controllers/{$controller}.php";
+            }
             
             if (!file_exists($controllerFile)) {
                 die("Controller not found: {$controller}");
@@ -127,7 +134,16 @@ class Router {
             
             require_once $controllerFile;
             
-            $controllerInstance = new $controller();
+            // Extract class name from potentially namespaced string
+            $className = (strpos($controller, '\\') !== false) ? substr($controller, strrpos($controller, '\\') + 1) : $controller;
+            
+            if (class_exists($className)) {
+                $controllerInstance = new $className();
+            } else if (class_exists($controller)) {
+                $controllerInstance = new $controller();
+            } else {
+                die("Class not found: {$controller} or {$className}");
+            }
             
             if (!method_exists($controllerInstance, $method)) {
                 die("Method not found: {$method}");

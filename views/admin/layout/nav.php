@@ -75,7 +75,7 @@
                                 <span class="float-right text-sm text-muted"><i class="fas fa-star"></i></span>
                             </h3>
                             <p class="text-sm">I got your message bro</p>
-                            <p class="text-sm text-muted"><i class="far fa-clock mr-1"></i> 4 Hours Ago</p>
+                            <p class="text-sm text-muted"><i class="far clock mr-1"></i> 4 Hours Ago</p>
                         </div>
                     </div>
                     <!-- Message End -->
@@ -217,7 +217,7 @@
                 <!-- Add icons to the links using the .nav-icon class
                with font-awesome or any other icon font library -->
                 <li class="nav-item">
-                    <a href="/admin" class="nav-link">
+                    <a href="<?= url('admin') ?>" class="nav-link">
                         <i class="nav-icon fas fa-tachometer-alt"></i>
                         <p>
                             Dashboard
@@ -225,7 +225,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="users.php" class="nav-link">
+                    <a href="<?= url('admin/users') ?>" class="nav-link">
                         <i class="nav-icon fas fa-user-alt"></i>
                         <p>
                             Thành Viên
@@ -233,7 +233,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="giftcode.php" class="nav-link">
+                    <a href="<?= url('admin/giftcode') ?>" class="nav-link">
                         <i class="nav-icon fas fa fa-tag"></i>
                         <p>
                             Giftcode
@@ -250,19 +250,19 @@
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="setbank.php" class="nav-link">
+                            <a href="<?= url('admin/finance/bank') ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Danh sách ngân hàng</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="lsnapthe.php" class="nav-link">
+                            <a href="<?= url('admin/finance/history-card') ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Lịch sử nạp thẻ</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="lsnapbank.php" class="nav-link">
+                            <a href="<?= url('admin/finance/history-bank') ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Lịch sử nạp bank</p>
                             </a>
@@ -270,7 +270,7 @@
                     </ul>
                 </li>
                 <li class="nav-header">DANH MỤC</li>
-                <!-- <li class="nav-item">
+                <li class="nav-item">
                     <a href="#" class="nav-link">
                         <i class="nav-icon fas fa fa-tag"></i>
                         <p>
@@ -280,19 +280,19 @@
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="listserverhost.php" class="nav-link">
+                            <a href="<?= url('admin/services/hosting/servers') ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Server hosting</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="listgoihost.php" class="nav-link">
+                            <a href="<?= url('admin/services/hosting/packs') ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Gói hosting</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="lsmuahost.php" class="nav-link">
+                            <a href="<?= url('admin/services/hosting/history') ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Lịch sử mua host</p>
                             </a>
@@ -309,13 +309,13 @@
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="listlogo.php" class="nav-link">
+                            <a href="<?= url('admin/services/logos') ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>List logo</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="lstaologo.php" class="nav-link">
+                            <a href="<?= url('admin/services/logo/orders') ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Đơn hàng tạo logo</p>
                             </a>
@@ -332,13 +332,13 @@
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="domain.php" class="nav-link">
+                            <a href="<?= url('admin/services/domains') ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Domain</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="lsmuamien.php" class="nav-link">
+                            <a href="<?= url('admin/services/domain/history') ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Lịch sử mua miền</p>
                             </a>
@@ -355,13 +355,13 @@
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="listcode.php" class="nav-link">
+                            <a href="<?= url('admin/services/codes') ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Danh sách mã nguồn</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="lsmuacode.php" class="nav-link">
+                            <a href="<?= url('admin/services/sourcecode/history') ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Lịch sử mua code</p>
                             </a>
@@ -379,19 +379,19 @@
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="lstaoweb.php" class="nav-link">
+                            <a href="<?= url('admin/services/web/orders') ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Đơn hàng tạo web</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="dsmauweb.php" class="nav-link">
+                            <a href="<?= url('admin/services/web/templates') ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Danh sách mẫu web</p>
                             </a>
                         </li>
                     </ul>
-                </li> -->
+                </li>
 
                 <li class="nav-item">
                     <a href="#" class="nav-link">
@@ -403,13 +403,13 @@
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="list-category.php" class="nav-link">
+                            <a href="<?= url('admin/categories') ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Danh sách danh mục</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="add-category.php" class="nav-link">
+                            <a href="<?= url('admin/categories/add') ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Thêm danh mục</p>
                             </a>
@@ -427,13 +427,13 @@
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="list-product.php" class="nav-link">
+                            <a href="<?= url('admin/products') ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Danh sách sản phẩm</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="add-product.php" class="nav-link">
+                            <a href="<?= url('admin/products/add') ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Thêm sản phẩm</p>
                             </a>
@@ -441,7 +441,7 @@
                     </ul>
                 </li>
 
-                <!-- <li class="nav-item">
+                <li class="nav-item">
                     <a href="#" class="nav-link">
                         <i class="nav-icon fas fa fa-tag"></i>
                         <p>
@@ -451,22 +451,22 @@
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="domain.php" class="nav-link">
+                            <a href="<?= url('admin/services/subdomain/list') ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Danh Sách Subdomain</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="lsmuamien.php" class="nav-link">
+                            <a href="<?= url('admin/services/subdomain/history') ?>" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Lịch sử mua subdomain</p>
                             </a>
                         </li>
                     </ul>
-                </li> -->
+                </li>
                 <li class="nav-header">CÀI ĐẶT</li>
                 <li class="nav-item">
-                    <a href="setting.php" class="nav-link">
+                    <a href="<?= url('admin/settings') ?>" class="nav-link">
                         <i class="far fa-circle nav-icon fa fa-cogs"></i>
                         <p>Settings</p>
                     </a>
