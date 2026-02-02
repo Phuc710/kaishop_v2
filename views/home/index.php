@@ -39,18 +39,12 @@
                                         if ($product['old_price'] > $product['price']) {
                                             $discount = round((($product['old_price'] - $product['price']) / $product['old_price']) * 100);
                                         }
-                                        $badge_class = '';
-                                        if (stripos($product['name'], 'Premium') !== false) $badge_class = 'premium';
-                                        if (stripos($product['name'], 'Pro') !== false) $badge_class = 'pro';
                                     ?>
                                     <div class="ds-card <?= $is_offline ? 'offline' : '' ?>">
                                         <div class="ds-card-img-wrap">
                                             <a href="<?= url('product/' . $product['id']) ?>">
                                                 <img src="<?= $product['image'] ?>" class="ds-card-img" alt="<?= $product['name'] ?>">
                                             </a>
-                                            <?php if ($badge_class): ?>
-                                                <div class="ds-badge <?= $badge_class ?>"><?= strtoupper($badge_class) ?></div>
-                                            <?php endif; ?>
                                             <?php if ($is_offline): ?>
                                                 <div class="ds-status-badge">Hết hàng</div>
                                             <?php endif; ?>
