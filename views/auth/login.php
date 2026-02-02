@@ -110,19 +110,32 @@ if (isset($_SESSION['session']) && !empty($_SESSION['session'])) {
                 button2.disabled = false;
                 
                 if (data.success) {
-                    showMessage(data.message || "Login successful!", "success");
-                    setTimeout(() => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Thành công!',
+                        text: data.message || 'Đăng nhập thành công!',
+                        showConfirmButton: false,
+                        timer: 1500
+                    }).then(() => {
                         window.location.href = '<?= BASE_URL ?>/';
-                    }, 1000);
+                    });
                 } else {
-                    showMessage(data.message || "Login failed", "error");
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Thất bại!',
+                        text: data.message || 'Đăng nhập thất bại'
+                    });
                 }
             })
             .catch(error => {
                 button1.style.display = "inline-block";
                 button2.style.display = "none";
                 button2.disabled = false;
-                showMessage("Connection error!", "error");
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: 'Lỗi kết nối!'
+                });
             });
         }
         
