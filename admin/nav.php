@@ -395,6 +395,30 @@
 
                 <li class="nav-item">
                     <a href="#" class="nav-link">
+                        <i class="nav-icon fas fa fa-box-open"></i>
+                        <p>
+                            Quản lý Sản phẩm
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="list-product.php" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Danh sách sản phẩm</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="add-product.php" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Thêm sản phẩm</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
                         <i class="nav-icon fas fa fa-tag"></i>
                         <p>
                             Subdomain

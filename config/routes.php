@@ -16,6 +16,9 @@ return [
     ['POST', '/register', 'AuthController@register'],
     ['GET', '/logout', 'AuthController@logout'],
     
+    // ========== PRODUCT ROUTES ==========
+    ['GET', '/product/{id}', 'ProductController@show'],
+
     // ========== PROFILE ROUTES ==========
     ['GET', '/profile', 'ProfileController@index'],
     ['POST', '/profile', 'ProfileController@index'], // Allow POST for backward compatibility if needed, though ProfileController::update is mapped to /profile/update
