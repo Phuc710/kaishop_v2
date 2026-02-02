@@ -86,7 +86,7 @@ if (isset($_POST['update'])) {
                             </div>
                             <div class="settings-card-body">
                                 <form method="POST" action="" enctype="multipart/form-data" class="row g-4">
-                                    <div class="col-md-12">
+                                    <!-- <div class="col-md-12">
                                         <div>
                                             <label for="profile_picture" class="form-label">Chọn ảnh đại
                                                 diện mới</label>
@@ -95,7 +95,7 @@ if (isset($_POST['update'])) {
                                             <i>Chỉ cho phép các định dạng như: jpeg,png,gif. Kích thước ảnh
                                                 tối đa 2MB</i>
                                         </div>
-                                    </div>
+                                    </div> -->
                                     <div class="col-md-6">
                                         <div>
                                             <label for="fname" class="form-label">Tài khoản</label>

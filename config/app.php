@@ -11,7 +11,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Base URL configuration
 define('BASE_PATH', dirname(__DIR__));
-define('BASE_URL', (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER["HTTP_HOST"]);
+define('BASE_URL', (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER["HTTP_HOST"] . '/kaishop_v2');
 
 // Set timezone
 date_default_timezone_set('Asia/Ho_Chi_Minh');
