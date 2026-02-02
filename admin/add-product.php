@@ -5,6 +5,7 @@
 if (isset($_POST['submit'])) {
     $name = $_POST['name'];
     $price = $_POST['price'];
+    $old_price = isset($_POST['old_price']) ? $_POST['old_price'] : 0;
     $description = $_POST['description'];
     $image = $_POST['image'];
     $category = $_POST['category'];
@@ -13,7 +14,7 @@ if (isset($_POST['submit'])) {
     if (empty($name) || empty($price)) {
         echo '<script type="text/javascript">swal("Lỗi","Vui lòng nhập đầy đủ thông tin","error"); </script>';
     } else {
-        $create = $connection->query("INSERT INTO `products` (`name`, `price`, `description`, `image`, `category`, `status`, `created_at`) VALUES ('$name', '$price', '$description', '$image', '$category', '$status', NOW())");
+        $create = $connection->query("INSERT INTO `products` (`name`, `price`, `old_price`, `description`, `image`, `category`, `status`, `created_at`) VALUES ('$name', '$price', '$old_price', '$description', '$image', '$category', '$status', NOW())");
         if ($create) {
             echo '<script type="text/javascript">swal("Thành Công","Thêm sản phẩm thành công","success");setTimeout(function(){ location.href = "list-product.php" },1000);</script>';
         } else {

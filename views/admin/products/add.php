@@ -33,8 +33,13 @@
                                     <input type="text" class="form-control" id="name" name="name" placeholder="Nhập tên sản phẩm" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="price">Giá</label>
-                                    <input type="number" class="form-control" id="price" name="price" placeholder="Nhập giá" required>
+                                    <label for="price">Giá bán</label>
+                                    <input type="number" class="form-control" id="price" name="price" placeholder="Nhập giá bán" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="old_price">Giá cũ (Giá gốc)</label>
+                                    <input type="number" class="form-control" id="old_price" name="old_price" placeholder="Nhập giá cũ (để trống nếu không có)">
+                                    <small class="form-text text-muted">Giá này sẽ hiển thị gạch ngang để so sánh với giá bán</small>
                                 </div>
                                 <div class="form-group">
                                     <label for="category">Loại (Category)</label>

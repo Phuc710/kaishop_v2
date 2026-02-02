@@ -33,8 +33,13 @@
                                     <input type="text" class="form-control" id="name" name="name" value="<?= htmlspecialchars($product['name']); ?>" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="price">Giá</label>
+                                    <label for="price">Giá bán</label>
                                     <input type="number" class="form-control" id="price" name="price" value="<?= $product['price']; ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="old_price">Giá cũ (Giá gốc)</label>
+                                    <input type="number" class="form-control" id="old_price" name="old_price" value="<?= $product['old_price'] ?? 0; ?>" placeholder="Nhập giá cũ (để trống nếu không có)">
+                                    <small class="form-text text-muted">Giá này sẽ hiển thị gạch ngang để so sánh với giá bán</small>
                                 </div>
                                 <div class="form-group">
                                     <label for="category">Loại (Category)</label>

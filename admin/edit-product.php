@@ -17,6 +17,7 @@ if (isset($_GET['id'])) {
 if (isset($_POST['submit'])) {
     $name = $_POST['name'];
     $price = $_POST['price'];
+    $old_price = isset($_POST['old_price']) ? $_POST['old_price'] : 0;
     $description = $_POST['description'];
     $image = $_POST['image'];
     $category = $_POST['category'];
@@ -25,7 +26,7 @@ if (isset($_POST['submit'])) {
     if (empty($name) || empty($price)) {
         echo '<script type="text/javascript">swal("Lỗi","Vui lòng nhập đầy đủ thông tin","error"); </script>';
     } else {
-        $update = $connection->query("UPDATE `products` SET `name` = '$name', `price` = '$price', `description` = '$description', `image` = '$image', `category` = '$category', `status` = '$status' WHERE `id` = '$id'");
+        $update = $connection->query("UPDATE `products` SET `name` = '$name', `price` = '$price', `old_price` = '$old_price', `description` = '$description', `image` = '$image', `category` = '$category', `status` = '$status' WHERE `id` = '$id'");
         if ($update) {
             echo '<script type="text/javascript">swal("Thành Công","Cập nhật thành công","success");setTimeout(function(){ location.href = "list-product.php" },1000);</script>';
         } else {
@@ -67,8 +68,13 @@ if (isset($_POST['submit'])) {
                                     <input type="text" class="form-control" id="name" name="name" value="<?= $row['name']; ?>" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="price">Giá</label>
+                                    <label for="price">Giá bán</label>
                                     <input type="number" class="form-control" id="price" name="price" value="<?= $row['price']; ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="old_price">Giá cũ (Giá gốc)</label>
+                                    <input type="number" class="form-control" id="old_price" name="old_price" value="<?= isset($row['old_price']) ? $row['old_price'] : 0; ?>" placeholder="Nhập giá cũ (để trống nếu không có)">
+                                    <small class="form-text text-muted">Giá này sẽ hiển thị gạch ngang để so sánh với giá bán</small>
                                 </div>
                                 <div class="form-group">
                                     <label for="category">Loại (Category)</label>

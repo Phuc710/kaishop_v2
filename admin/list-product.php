@@ -13,7 +13,8 @@ if (isset($_GET['delete'])) {
 }
 ?>
 
-<div class="content-wrapper">
+
+<div class="content-wrapper" style="overflow-y:auto;height: calc(100dvh - 56.8px)">
     <div class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">

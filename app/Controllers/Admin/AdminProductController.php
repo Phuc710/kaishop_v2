@@ -77,6 +77,7 @@ class AdminProductController extends Controller {
         
         $name = $this->post('name');
         $price = $this->post('price');
+        $old_price = $this->post('old_price') ?? 0;
         $description = $this->post('description');
         $image = $this->post('image');
         $category = $this->post('category');
@@ -92,8 +93,8 @@ class AdminProductController extends Controller {
             $image = $connection->real_escape_string($image);
             $category = $connection->real_escape_string($category);
             
-            $sql = "INSERT INTO `products` (`name`, `price`, `description`, `image`, `category`, `status`, `created_at`) 
-                    VALUES ('$name', '$price', '$description', '$image', '$category', '$status', NOW())";
+            $sql = "INSERT INTO `products` (`name`, `price`, `old_price`, `description`, `image`, `category`, `status`, `created_at`) 
+                    VALUES ('$name', '$price', '$old_price', '$description', '$image', '$category', '$status', NOW())";
             
             if ($connection->query($sql)) {
                 $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thành Công', 'message' => 'Thêm sản phẩm thành công'];
@@ -137,6 +138,7 @@ class AdminProductController extends Controller {
         
         $name = $this->post('name');
         $price = $this->post('price');
+        $old_price = $this->post('old_price') ?? 0;
         $description = $this->post('description');
         $image = $this->post('image');
         $category = $this->post('category');
@@ -153,7 +155,8 @@ class AdminProductController extends Controller {
             
             $sql = "UPDATE `products` SET 
                     `name` = '$name', 
-                    `price` = '$price', 
+                    `price` = '$price',
+                    `old_price` = '$old_price', 
                     `description` = '$description', 
                     `image` = '$image', 
                     `category` = '$category', 
