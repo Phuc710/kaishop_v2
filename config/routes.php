@@ -82,6 +82,14 @@ return [
     ['GET', '/nap-the', 'PaymentController@showCard'],
     ['GET', '/nap-bank', 'PaymentController@showBank'],
     
+    // History Routes (Vietnamese/Legacy)
+    ['GET', '/history-code', 'SourceCodeController@history'],
+    ['GET', '/history-tao-web', 'WebsiteController@history'],
+    ['GET', '/history-hosting', 'HostingController@history'],
+    ['GET', '/history-logo', 'LogoController@history'],
+    ['GET', '/history-mien', 'DomainController@history'],
+    ['GET', '/history-subdomain', 'SubdomainController@history'],
+    
     // ========== LEGACY DYNAMIC ROUTES (Bridge to old pages) ==========
     ['GET', '/history-subdomain/{id}', function($id) { global $connection, $username, $user, $chungapi; $_GET['id'] = $id; require_once __DIR__ . '/../pages/subdomain/quanlysubdomain.php'; }],
     ['GET', '/add-record/{id}', function($id) { global $connection, $username, $user, $chungapi; $_GET['id'] = $id; require_once __DIR__ . '/../pages/subdomain/add-record.php'; }],

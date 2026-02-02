@@ -56,7 +56,7 @@ function save() {
     const password3 = document.getElementById("password3").value;
 
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/ajax/changepass.php");
+    xhr.open("POST", BASE_URL + "/ajax/changepass.php");
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     xhr.onload = function() {
         if (xhr.status === 200) {

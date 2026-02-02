@@ -2,7 +2,7 @@
 <!--begin::Head-->
 
 <head>
-    <?php require __DIR__ . '/hethong/config.php'; ?>
+    <?php require_once __DIR__ . '/hethong/config.php'; ?>
     <?php require HETHONG_PATH . '/head2.php'; ?>
     <title>404 Không tìm thấy</title>
 </head>

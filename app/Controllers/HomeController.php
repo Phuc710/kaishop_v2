@@ -12,7 +12,8 @@ class HomeController extends Controller {
     public function index() {
         // Redirect to old index.php for now
         // Or create a new homepage view
-        header('Location: ' . BASE_URL . '/index.php');
-        exit;
+        // Render the old homepage content
+        global $connection, $chungapi, $username, $user; // Ensure globals are available
+        require_once __DIR__ . '/../../index_old.php';
     }
 }

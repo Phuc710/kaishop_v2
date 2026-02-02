@@ -1,5 +1,5 @@
 <?php
-require __DIR__ . '/../../hethong/config.php';
+require_once __DIR__ . '/../hethong/config.php';
 
 $session = $_SESSION['session'] ?? '';
 $password1 = strip_tags($_POST['password1'] ?? '');

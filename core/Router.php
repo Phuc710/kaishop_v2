@@ -49,7 +49,7 @@ class Router {
         $uri = strtok($uri, '?');
         
         // If URI is the entry point file itself, treat as root
-        if ($uri === '/index_new.php' || $uri === 'index_new.php') {
+        if ($uri === '/index.php' || $uri === 'index.php') {
             $uri = '/';
         }
         
