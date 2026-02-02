@@ -12,10 +12,10 @@
     <?php
     if(isset($_GET['id'])) {
         $id = antixss($_GET['id']);
-        $check_host = $ketnoi->query("SELECT * FROM `history_subdomain` WHERE `id` = '$id' ");
+        $check_host = $connection->query("SELECT * FROM `history_subdomain` WHERE `id` = '$id' ");
         if($check_host->num_rows == 1){
             $toz_mien = $check_host->fetch_array();
-            $loai_mien = $ketnoi->query("SELECT * FROM `khosubdomain` WHERE `duoimien` = '".$toz_mien['duoimien']."' ")->fetch_array();
+            $loai_mien = $connection->query("SELECT * FROM `khosubdomain` WHERE `duoimien` = '".$toz_mien['duoimien']."' ")->fetch_array();
             if($toz_mien['username']!=$username){
                 echo '<script>alert("Miền không tồn tại hay không phải của bạn!"); window.location.href = BASE_URL + "/";</script>';
                 exit;
@@ -78,12 +78,12 @@ $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $offset = ($page - 1) * $limit;
 
 // Lấy tổng số bản ghi để tính toán tổng số trang
-$totalRecordsQuery = mysqli_query($ketnoi, "SELECT COUNT(*) as total FROM `list_record_domain` WHERE `id_domain` = '".$toz_mien['id']."'");
+$totalRecordsQuery = mysqli_query($connection, "SELECT COUNT(*) as total FROM `list_record_domain` WHERE `id_domain` = '".$toz_mien['id']."'");
 $totalRecords = mysqli_fetch_assoc($totalRecordsQuery);
 $totalPages = ceil($totalRecords['total'] / $limit);
 
 // Truy vấn bản ghi với phân trang
-$result = mysqli_query($ketnoi, "SELECT * FROM `list_record_domain` WHERE `id_domain` = '".$toz_mien['id']."' ORDER BY id LIMIT $limit OFFSET $offset");
+$result = mysqli_query($connection, "SELECT * FROM `list_record_domain` WHERE `id_domain` = '".$toz_mien['id']."' ORDER BY id LIMIT $limit OFFSET $offset");
 ?>
 
 <div class="row">

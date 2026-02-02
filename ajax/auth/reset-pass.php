@@ -11,9 +11,9 @@ if (empty($username)) {
 
 // Xác định xem là email hay username thường
 if (filter_var($username, FILTER_VALIDATE_EMAIL)) {
-    $stmt = $ketnoi->prepare("SELECT * FROM `users` WHERE `email` = ?");
+    $stmt = $connection->prepare("SELECT * FROM `users` WHERE `email` = ?");
 } else {
-    $stmt = $ketnoi->prepare("SELECT * FROM `users` WHERE `username` = ?");
+    $stmt = $connection->prepare("SELECT * FROM `users` WHERE `username` = ?");
 }
 
 $stmt->bind_param("s", $username);
@@ -42,7 +42,7 @@ if ($check) {
 
     if ($send_status) {
         // Update OTP an toàn
-        $stmt = $ketnoi->prepare("UPDATE `users` SET `otpcode` = ? WHERE `username` = ?");
+        $stmt = $connection->prepare("UPDATE `users` SET `otpcode` = ? WHERE `username` = ?");
         $stmt->bind_param("ss", $otpcode, $check['username']);
         $stmt->execute();
         $stmt->close();

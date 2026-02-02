@@ -34,7 +34,7 @@
                                                 required>
                                                 <option value="">Chọn Đuôi Domain</option>
                                                 <?php
-                                                $result = mysqli_query($ketnoi, "SELECT * FROM `khosubdomain` WHERE `status` = 'ON' ");
+                                                $result = mysqli_query($connection, "SELECT * FROM `khosubdomain` WHERE `status` = 'ON' ");
                                                 while ($row = mysqli_fetch_assoc($result)) { ?>
                                                     <option value="<?= $row['duoimien']; ?>">
                                                         <?= $row['duoimien']; ?> - <?= $row['thoihan']; ?> ngày -

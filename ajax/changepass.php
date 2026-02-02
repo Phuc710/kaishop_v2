@@ -7,7 +7,7 @@ $password2 = strip_tags($_POST['password2'] ?? '');
 $password3 = strip_tags($_POST['password3'] ?? '');
 
 // Lấy thông tin user
-$user = $ketnoi->query("SELECT * FROM `users` WHERE `session` = '$session'")->fetch_array();
+$user = $connection->query("SELECT * FROM `users` WHERE `session` = '$session'")->fetch_array();
 $username = $user['username'] ?? '';
 
 // Kiểm tra đăng nhập
@@ -33,7 +33,7 @@ elseif ($user['password'] != sha1(md5($password1))) {
 else {
     // Cập nhật mật khẩu
     $newpass = sha1(md5($password2));
-    $stmt = $ketnoi->prepare("UPDATE `users` SET `password` = ? WHERE `username` = ?");
+    $stmt = $connection->prepare("UPDATE `users` SET `password` = ? WHERE `username` = ?");
     $stmt->bind_param("ss", $newpass, $username);
     $stmt->execute();
 

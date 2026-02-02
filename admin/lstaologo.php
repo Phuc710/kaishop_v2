@@ -25,7 +25,7 @@ if (isset($_GET['delete']))
 {
     $delete = $_GET['delete'];
 
-    $create = mysqli_query($ketnoi,"DELETE FROM `khologo` WHERE `id` = '".$delete."' ");
+    $create = mysqli_query($connection,"DELETE FROM `khologo` WHERE `id` = '".$delete."' ");
 
     if ($create)
     {
@@ -85,7 +85,7 @@ if (isset($_GET['delete']))
                                     <tbody>
                                         <?php
                                         $i=1;
-                                            $result = mysqli_query($ketnoi,"SELECT * FROM `lich_su_tao_logo`ORDER BY `id` DESC ");
+                                            $result = mysqli_query($connection,"SELECT * FROM `lich_su_tao_logo`ORDER BY `id` DESC ");
                                             while($row = mysqli_fetch_assoc($result)) { ?>
                                         <tr>
                                             <td>
@@ -93,7 +93,7 @@ if (isset($_GET['delete']))
                                             </td>
                                             <?php 
                                             $id_code = $row['loaicode'];
-                                            $code = $ketnoi->query("SELECT * FROM `khologo` WHERE `id` = '$id_code' ")->fetch_array();
+                                            $code = $connection->query("SELECT * FROM `khologo` WHERE `id` = '$id_code' ")->fetch_array();
                                             ?>
                                             <td>
                                                 <img class="card-img-top" style="width: 250px;" src="<?=$code['img'];?>"

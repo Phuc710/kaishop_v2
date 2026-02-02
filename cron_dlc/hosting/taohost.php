@@ -4,12 +4,12 @@ $now = time();
 ?>
 <!-- Khoá Host hết hạn -->
 <?php
-$check_host = $ketnoi->query("SELECT * FROM `lich_su_mua_host` WHERE `status` ='dangtao' ");
+$check_host = $connection->query("SELECT * FROM `lich_su_mua_host` WHERE `status` ='dangtao' ");
 $hosts = $check_host->fetch_all(MYSQLI_ASSOC);
 
 foreach ($hosts as $host) {
     $id_sv = $host['server_host'];
-    $sv_host = $ketnoi->query("SELECT * FROM `list_server_host` WHERE `id` = '$id_sv' ")->fetch_array();
+    $sv_host = $connection->query("SELECT * FROM `list_server_host` WHERE `id` = '$id_sv' ")->fetch_array();
     $tkWHM = $sv_host['tk_whm'];
     $mkWHM = $sv_host['mk_whm'];
     $linklogin = $sv_host['link_login'];
@@ -35,7 +35,7 @@ foreach ($hosts as $host) {
     $reghost = json_decode($result, true);
     $data = $reghost['metadata'];
     if ($data['result'] == '1') {
-        $check_pass = $ketnoi->query("UPDATE `lich_su_mua_host` SET `status` = 'hoatdong' WHERE `id` = '".$host['id']."' ");
+        $check_pass = $connection->query("UPDATE `lich_su_mua_host` SET `status` = 'hoatdong' WHERE `id` = '".$host['id']."' ");
     } else {
         print_r($data['reason']);
     }

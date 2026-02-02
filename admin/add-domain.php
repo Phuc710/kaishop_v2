@@ -9,13 +9,13 @@
 <?php
 if(isset($_GET['id'])){
     $id = $_GET['id'];
-    $api_domain =  $ketnoi->query("SELECT * FROM `ds_domain` WHERE `id` = '$id' ")->fetch_array();
+    $api_domain =  $connection->query("SELECT * FROM `ds_domain` WHERE `id` = '$id' ")->fetch_array();
 }
 ?>
 <?php
 if (isset($_POST["submit"]))
 {
-  $create = mysqli_query($ketnoi,"INSERT INTO `ds_domain` SET 
+  $create = mysqli_query($connection,"INSERT INTO `ds_domain` SET 
     `duoi_mien` = '".$_POST['duoi_mien']."',
     `gia` = '".$_POST['gia']."',
     `giahan` = '".$_POST['giahan']."',

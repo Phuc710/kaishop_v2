@@ -17,8 +17,8 @@ if (empty($username)) {
 } elseif (empty($type) || empty($name) || empty($content)) {
     $response = array('success' => false, 'message' => 'Vui lòng nhập đầy đủ thông tin');
 } else {
-    $record = $ketnoi->query("SELECT * FROM `list_record_domain` WHERE `id` = '$id'")->fetch_array();
-    $mien = $ketnoi->query("SELECT * FROM `history_domain` WHERE `id` = '".$record['id_domain']."'")->fetch_array();
+    $record = $connection->query("SELECT * FROM `list_record_domain` WHERE `id` = '$id'")->fetch_array();
+    $mien = $connection->query("SELECT * FROM `history_domain` WHERE `id` = '".$record['id_domain']."'")->fetch_array();
 
     if (!empty($mien['zone_id'])) {
         // Thông tin xác thực API
@@ -57,7 +57,7 @@ if (empty($username)) {
 
         if (isset($result['success']) && $result['success']) {
             // Cập nhật bản ghi trong cơ sở dữ liệu
-            $stmt = $ketnoi->prepare("UPDATE `list_record_domain` SET `content` = ? WHERE `id` = ?");
+            $stmt = $connection->prepare("UPDATE `list_record_domain` SET `content` = ? WHERE `id` = ?");
             $stmt->bind_param("si", $content, $id);
             if ($stmt->execute()) {
                 $response = array('success' => true, 'message' => 'Cập nhật thành công.');

@@ -31,7 +31,7 @@ if (isset($_POST['update'])) {
         </script>';
     } else {
         // Kiểm tra email đã tồn tại chưa (trừ email của user hiện tại)
-        $check_email = $ketnoi->query("SELECT * FROM `users` WHERE `email` = '$new_email' AND `username` != '$username' ");
+        $check_email = $connection->query("SELECT * FROM `users` WHERE `email` = '$new_email' AND `username` != '$username' ");
         
         if ($check_email->num_rows > 0) {
             echo '<script>
@@ -43,11 +43,11 @@ if (isset($_POST['update'])) {
             </script>';
         } else {
             // Update email vào database
-            $update = $ketnoi->query("UPDATE `users` SET `email` = '$new_email' WHERE `username` = '$username' ");
+            $update = $connection->query("UPDATE `users` SET `email` = '$new_email' WHERE `username` = '$username' ");
             
             if ($update) {
                 // Cập nhật lại thông tin user trong session
-                $user = $ketnoi->query("SELECT * FROM `users` WHERE `session` = '$session' ")->fetch_array();
+                $user = $connection->query("SELECT * FROM `users` WHERE `session` = '$session' ")->fetch_array();
                 
                 echo '<script>
                     Swal.fire({

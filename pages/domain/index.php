@@ -69,7 +69,7 @@
                                                 required>
                                                 <option value="">Chọn Đuôi Domain</option>
                                                 <?php
-                                                $result = mysqli_query($ketnoi, "SELECT * FROM `ds_domain` WHERE `status` = 'ON' ORDER BY `id` DESC");
+                                                $result = mysqli_query($connection, "SELECT * FROM `ds_domain` WHERE `status` = 'ON' ORDER BY `id` DESC");
                                                 while ($row = mysqli_fetch_assoc($result)) { ?>
                                                     <option value="<?= $row['duoimien']; ?>"><?= $row['duoimien']; ?> -
                                                         <?= tien($row['gia']); ?>đ

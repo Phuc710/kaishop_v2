@@ -23,7 +23,7 @@ if (empty($id_web) || empty($domain) || empty($user_admin) || empty($pass_admin)
 }
 
 // Truy vấn mẫu web bằng prepared statement
-$stmt = $ketnoi->prepare("SELECT * FROM `list_mau_web` WHERE `id` = ?");
+$stmt = $connection->prepare("SELECT * FROM `list_mau_web` WHERE `id` = ?");
 $stmt->bind_param("s", $id_web);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -50,7 +50,7 @@ $magd = random('ABCDEFGHIJKLMNOPQRSTUVWXYZ', 3) . $now;
 $ngay_het_han = $now + (30 * 86400);
 
 // Thêm lịch sử tạo web (prepared statement)
-$stmt = $ketnoi->prepare("INSERT INTO `lich_su_tao_web` 
+$stmt = $connection->prepare("INSERT INTO `lich_su_tao_web` 
     (`trans_id`, `username`, `loaiweb`, `domain`, `user_admin`, `pass_admin`, `ngay_mua`, `ngay_het`, `status`, `time`) 
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'xuly', ?)");
 $stmt->bind_param("ssissssii", $magd, $username, $api_site['id'], $domain, $user_admin, $pass_admin, $now, $ngay_het_han, $now);
@@ -82,7 +82,7 @@ if ($success_insert) {
 
     // Trừ tiền
     $newmoney = $user['money'] - $api_site['gia'];
-    $stmt = $ketnoi->prepare("UPDATE `users` SET `money` = ? WHERE `username` = ?");
+    $stmt = $connection->prepare("UPDATE `users` SET `money` = ? WHERE `username` = ?");
     $stmt->bind_param("is", $newmoney, $username);
     $stmt->execute();
     $stmt->close();

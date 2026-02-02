@@ -9,7 +9,7 @@
 <?php
 if (isset($_POST["submit"]))
 {
-  $create = mysqli_query($ketnoi,"INSERT INTO `ds_domain` SET 
+  $create = mysqli_query($connection,"INSERT INTO `ds_domain` SET 
     `duoimien` = '".$_POST['duoimien']."',
     `gia` = '".$_POST['gia']."',
     `zone_id` = '".$_POST['zone_id']."',

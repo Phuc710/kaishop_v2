@@ -2,11 +2,11 @@
 require $_SERVER['DOCUMENT_ROOT'].'/hethong/config.php';
 
 $now = time();
-$result_sql = mysqli_query($ketnoi, "SELECT * FROM `history_domain` WHERE `status` = 'hoatdong'");
+$result_sql = mysqli_query($connection, "SELECT * FROM `history_domain` WHERE `status` = 'hoatdong'");
 while ($row = mysqli_fetch_assoc($result_sql)) {
     $domain = $row['tenmien'] . $row['duoimien'];
     if ($now > $row['ngayhet']) {
-        $ketnoi->query("UPDATE `history_domain` SET `status` = 'hethan' WHERE `id` = '" . $row['id'] . "' ");
+        $connection->query("UPDATE `history_domain` SET `status` = 'hethan' WHERE `id` = '" . $row['id'] . "' ");
         
         // Thay thế các giá trị sau bằng thông tin API và cài đặt của bạn từ Cloudflare
         $api_key = $tozpie['api_cf'];

@@ -1,10 +1,10 @@
 <?php require $_SERVER['DOCUMENT_ROOT'].'/hethong/config.php';?>
 
 <?php
-$result_sql = mysqli_query($ketnoi, "SELECT * FROM `history_domain` WHERE `status` = 'xuly'");
+$result_sql = mysqli_query($connection, "SELECT * FROM `history_domain` WHERE `status` = 'xuly'");
 while ($row = mysqli_fetch_assoc($result_sql)) {
     if($row['nameserver']==""){
-        $ketnoi->query("UPDATE `history_domain` SET `status` = 'hoatdong' WHERE `id` = '" . $row['id'] . "' ");
+        $connection->query("UPDATE `history_domain` SET `status` = 'hoatdong' WHERE `id` = '" . $row['id'] . "' ");
         echo "Tên miền {$domain} đã được trỏ đến Cloudflare.\n";
     }else{
         $zoneId = $row['zone_id'];
@@ -27,7 +27,7 @@ while ($row = mysqli_fetch_assoc($result_sql)) {
     
         // So sánh tên miền của nameserver với nameserver trong $row['nameserver']
         if (strtolower($nameserver_domain) === strtolower($first_nameserver)) {
-            $ketnoi->query("UPDATE `history_domain` SET `status` = 'dangtao' WHERE `id` = '" . $row['id'] . "' ");
+            $connection->query("UPDATE `history_domain` SET `status` = 'dangtao' WHERE `id` = '" . $row['id'] . "' ");
             echo "Tên miền {$domain} đã được trỏ đến Cloudflare.\n";
         } else {
             echo "Tên miền {$domain} chưa được trỏ đến Cloudflare.\n";

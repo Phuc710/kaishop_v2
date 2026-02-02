@@ -6,13 +6,13 @@
     <title>AdminLTE 3 | Dashboard</title>
     <?php require_once('nav.php');?>
     <?php 
-$total_money = mysqli_fetch_assoc($ketnoi->query("SELECT SUM(`money`) FROM `users` WHERE `money` >= 0 AND `level`!=1")) ['SUM(`money`)']; 
+$total_money = mysqli_fetch_assoc($connection->query("SELECT SUM(`money`) FROM `users` WHERE `money` >= 0 AND `level`!=1")) ['SUM(`money`)']; 
 
-$total_thanhvien = mysqli_fetch_assoc(mysqli_query($ketnoi, "SELECT COUNT(*) FROM `users` ")) ['COUNT(*)']; 
+$total_thanhvien = mysqli_fetch_assoc(mysqli_query($connection, "SELECT COUNT(*) FROM `users` ")) ['COUNT(*)']; 
 
-$total_code = mysqli_fetch_assoc(mysqli_query($ketnoi, "SELECT COUNT(*) FROM `lich_su_mua_code` ")) ['COUNT(*)']; 
+$total_code = mysqli_fetch_assoc(mysqli_query($connection, "SELECT COUNT(*) FROM `lich_su_mua_code` ")) ['COUNT(*)']; 
 
-$total_thanhvienbanned = mysqli_fetch_assoc(mysqli_query($ketnoi, "SELECT COUNT(*) FROM `users` WHERE `bannd` = '1' ")) ['COUNT(*)']; 
+$total_thanhvienbanned = mysqli_fetch_assoc(mysqli_query($connection, "SELECT COUNT(*) FROM `users` WHERE `bannd` = '1' ")) ['COUNT(*)']; 
 ?>
 </head>
 <?php
@@ -33,7 +33,7 @@ if (isset($_GET['delete']))
 {
     $delete = $_GET['delete'];
 
-    $create = mysqli_query($ketnoi,"DELETE FROM `gift_code` WHERE `id` = '".$delete."' ");
+    $create = mysqli_query($connection,"DELETE FROM `gift_code` WHERE `id` = '".$delete."' ");
 
     if ($create)
     {
@@ -96,7 +96,7 @@ if (isset($_GET['delete']))
                                     </thead>
                                     <tbody>
                                         <?php
-                                $result = mysqli_query($ketnoi,"SELECT * FROM `gift_code` ORDER BY id desc ");
+                                $result = mysqli_query($connection,"SELECT * FROM `gift_code` ORDER BY id desc ");
                                 while($row = mysqli_fetch_assoc($result))
                                 {
                                 ?>

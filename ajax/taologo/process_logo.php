@@ -18,7 +18,7 @@ if (!isset($_SESSION['session'])) {
 $sessionToken = $_SESSION['session'];
 
 // Get user data
-$userQuery = $ketnoi->query("SELECT * FROM `users` WHERE `session` = '$sessionToken'");
+$userQuery = $connection->query("SELECT * FROM `users` WHERE `session` = '$sessionToken'");
 $userData = $userQuery->fetch_array();
 
 if (!$userData) {
@@ -41,7 +41,7 @@ if (empty($logoName) || empty($logoStyle)) {
 }
 
 // Get logo package price
-$packageQuery = $ketnoi->query("SELECT * FROM `goi_taologo` WHERE `kieu` = '$logoStyle'");
+$packageQuery = $connection->query("SELECT * FROM `goi_taologo` WHERE `kieu` = '$logoStyle'");
 $packageData = $packageQuery->fetch_array();
 
 if (!$packageData) {
@@ -75,10 +75,10 @@ $insertLogo = "INSERT INTO `history_taologo` SET
     `trang_thai` = 'pending',
     `time` = '$currentTime'";
 
-if ($ketnoi->query($insertLogo)) {
+if ($connection->query($insertLogo)) {
     // Deduct money
     $newBalance = $userData['money'] - $logoPrice;
-    $ketnoi->query("UPDATE `users` SET `money` = '$newBalance' WHERE `username` = '{$userData['username']}'");
+    $connection->query("UPDATE `users` SET `money` = '$newBalance' WHERE `username` = '{$userData['username']}'");
     
     $response = [
         'success' => true,

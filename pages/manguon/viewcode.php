@@ -5,14 +5,14 @@
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>
     <?php
     $check_id = antixss($_GET['id']);
-    $toz_checkid = $ketnoi->query("SELECT * FROM `khocode` WHERE `id` = '$check_id' AND `status`='ON' ")->fetch_array();
+    $toz_checkid = $connection->query("SELECT * FROM `khocode` WHERE `id` = '$check_id' AND `status`='ON' ")->fetch_array();
     if (!($toz_checkid)) {
         header("Location: /ma-nguon");
         exit();
     } else {
         $id = antixss($_GET['id']);
-        $toz_code = $ketnoi->query("SELECT * FROM `khocode` WHERE `id` = '$id' AND `status`='ON'  ")->fetch_array();
-        mysqli_query($ketnoi, "UPDATE `khocode` SET `view` = `view` + 1 WHERE `id` = '$id' ");
+        $toz_code = $connection->query("SELECT * FROM `khocode` WHERE `id` = '$id' AND `status`='ON'  ")->fetch_array();
+        mysqli_query($connection, "UPDATE `khocode` SET `view` = `view` + 1 WHERE `id` = '$id' ");
     }
     ?>
     <title>Thanh Toán |

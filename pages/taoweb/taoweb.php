@@ -9,14 +9,14 @@
 </head>
 <?php
 $check_id = antixss($_GET['id']);
-$api_checkid = $ketnoi->query("SELECT * FROM `list_mau_web` WHERE `id` = '$check_id' AND `status`='ON' ")->fetch_array();
+$api_checkid = $connection->query("SELECT * FROM `list_mau_web` WHERE `id` = '$check_id' AND `status`='ON' ")->fetch_array();
 if (!($api_checkid)) {
     header("Location: /tao-web");
     exit();
 } else {
     $id = antixss($_GET['id']);
-    $api_code = $ketnoi->query("SELECT * FROM `list_mau_web` WHERE `id` = '$id' AND `status`='ON'  ")->fetch_array();
-    mysqli_query($ketnoi, "UPDATE `list_mau_web` SET `view` = `view` + '1' WHERE `id` = '$id' ");
+    $api_code = $connection->query("SELECT * FROM `list_mau_web` WHERE `id` = '$id' AND `status`='ON'  ")->fetch_array();
+    mysqli_query($connection, "UPDATE `list_mau_web` SET `view` = `view` + '1' WHERE `id` = '$id' ");
 }
 ?>
 <title>

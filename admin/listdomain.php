@@ -25,7 +25,7 @@ if (isset($_GET['delete']))
 {
     $delete = $_GET['delete'];
 
-    $create = mysqli_query($ketnoi,"DELETE FROM `ds_domain` WHERE `id` = '".$delete."' ");
+    $create = mysqli_query($connection,"DELETE FROM `ds_domain` WHERE `id` = '".$delete."' ");
 
     if ($create)
     {
@@ -86,7 +86,7 @@ if (isset($_GET['delete']))
                                     </thead>
                                     <tbody>
                                         <?php
-                                $result = mysqli_query($ketnoi,"SELECT * FROM `ds_domain`");
+                                $result = mysqli_query($connection,"SELECT * FROM `ds_domain`");
                                 while($row = mysqli_fetch_assoc($result))
                                 {
                                 ?>

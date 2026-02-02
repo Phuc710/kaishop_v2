@@ -6,10 +6,10 @@
 <?php
 if(isset($_GET['id'])) {
 $id = antixss($_GET['id']);
-$check_mien = $ketnoi->query("SELECT * FROM `list_record_domain` WHERE `id` = '$id' ");
+$check_mien = $connection->query("SELECT * FROM `list_record_domain` WHERE `id` = '$id' ");
 if($check_mien->num_rows == 1){
     $toz_rec = $check_mien->fetch_array();
-    $toz_mien = $ketnoi->query("SELECT * FROM `history_subdomain` WHERE `id` = '".$toz_rec['id_domain']."' ")->fetch_array();
+    $toz_mien = $connection->query("SELECT * FROM `history_subdomain` WHERE `id` = '".$toz_rec['id_domain']."' ")->fetch_array();
     if($toz_mien['username']!=$username){
     echo '<script type="text/javascript">if(!alert("Miền không tồn tại hay không phải của bạn!")){window.location.href = BASE_URL + "/";}</script>';
     }

@@ -4,8 +4,8 @@ require __DIR__ . '/../../hethong/config.php';
 $tenmien = antixss($_POST['tenmien']);
 $duoimien = antixss($_POST['duoimien']);
 $ip = antixss($_POST['ip']);
-$check_mien = $ketnoi->query("SELECT * FROM `khosubdomain` WHERE `duoimien` = '$duoimien' AND `status`='ON' ");
-$total_mien = mysqli_fetch_assoc(mysqli_query($ketnoi, "SELECT COUNT(*) FROM `history_subdomain` WHERE `status` = 'hoatdong' AND  `duoimien` = '$duoimien' AND  `tenmien` = '$tenmien'")) ['COUNT(*)']; 
+$check_mien = $connection->query("SELECT * FROM `khosubdomain` WHERE `duoimien` = '$duoimien' AND `status`='ON' ");
+$total_mien = mysqli_fetch_assoc(mysqli_query($connection, "SELECT COUNT(*) FROM `history_subdomain` WHERE `status` = 'hoatdong' AND  `duoimien` = '$duoimien' AND  `tenmien` = '$tenmien'")) ['COUNT(*)']; 
 
 // Kiểm tra kết quả truy vấn
 if ($username=="") {
@@ -68,7 +68,7 @@ if ($username=="") {
                         $nameservers_formatted = implode("\n", $nameservers);
                         $zone_id = $decoded_response['result']['id'];
 
-                        $toz = $ketnoi->query("INSERT INTO `history_subdomain` SET 
+                        $toz = $connection->query("INSERT INTO `history_subdomain` SET 
                             `username` = '$username',
                             `tenmien` = '$tenmien',
                             `duoimien` = '$duoimien',
@@ -78,13 +78,13 @@ if ($username=="") {
                             `ngayhet` = '$het',
                             `status` = 'xuly'");
                             sendTele($username." Đã Đăng Kí Miền ".$domain." Thành Công Trạng Thái Đang Xử Lý.");
-                            $toz = $ketnoi->query("INSERT INTO `lich_su_hoat_dong` SET 
+                            $toz = $connection->query("INSERT INTO `lich_su_hoat_dong` SET 
                             `username` = '$username',
                             `hoatdong` = 'Mua tên miền '.$tenmien.$duoimien,
                             `gia` = '".$mien['gia']."',
                             `time` = '".$time."' ");
                         $newmoney = $user['money'] - $mien['gia'];
-                        $check_money = $ketnoi->query("UPDATE `users` SET `money` = '$newmoney' WHERE `username` = '" . $username . "'");
+                        $check_money = $connection->query("UPDATE `users` SET `money` = '$newmoney' WHERE `username` = '" . $username . "'");
 
                         $response = array('success' => true);
                     } else {
@@ -125,7 +125,7 @@ if ($username=="") {
                 $result = json_decode($response_curl, true);
 
                 if (isset($result['success']) && $result['success']) {
-                    $miens = $ketnoi->query("INSERT INTO `history_subdomain` SET 
+                    $miens = $connection->query("INSERT INTO `history_subdomain` SET 
                         `username` = '$username',
                         `tenmien` = '$tenmien',
                         `duoimien` = '$duoimien',
@@ -136,11 +136,11 @@ if ($username=="") {
                         `status` = 'xuly'");
                         // sendTele($username." Đăng Kí Subdomain Thành Công.");
 
-                    $mien_hs = $ketnoi->query("SELECT * FROM `history_subdomain` WHERE `tenmien` = '$tenmien' AND `duoimien` = '$duoimien' AND `username` = '$username' ")->fetch_array();
+                    $mien_hs = $connection->query("SELECT * FROM `history_subdomain` WHERE `tenmien` = '$tenmien' AND `duoimien` = '$duoimien' AND `username` = '$username' ")->fetch_array();
 
                     $record_id = $result['result']['id'];
 
-                    $toz = $ketnoi->query("INSERT INTO `list_record_domain` SET 
+                    $toz = $connection->query("INSERT INTO `list_record_domain` SET 
                         `id_domain` = '".$mien_hs['id']."',
                         `type` = '$type',
                         `name` = '$name',

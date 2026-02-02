@@ -6,13 +6,13 @@
     <title>AdminLTE 3 | Dashboard</title>
     <?php require_once('nav.php');?>
     <?php 
-$total_money = mysqli_fetch_assoc($ketnoi->query("SELECT SUM(`money`) FROM `users` WHERE `money` >= 0 AND `level`!=1")) ['SUM(`money`)']; 
+$total_money = mysqli_fetch_assoc($connection->query("SELECT SUM(`money`) FROM `users` WHERE `money` >= 0 AND `level`!=1")) ['SUM(`money`)']; 
 
-$total_thanhvien = mysqli_fetch_assoc(mysqli_query($ketnoi, "SELECT COUNT(*) FROM `users` ")) ['COUNT(*)']; 
+$total_thanhvien = mysqli_fetch_assoc(mysqli_query($connection, "SELECT COUNT(*) FROM `users` ")) ['COUNT(*)']; 
 
-$total_code = mysqli_fetch_assoc(mysqli_query($ketnoi, "SELECT COUNT(*) FROM `lich_su_mua_code` ")) ['COUNT(*)']; 
+$total_code = mysqli_fetch_assoc(mysqli_query($connection, "SELECT COUNT(*) FROM `lich_su_mua_code` ")) ['COUNT(*)']; 
 
-$total_thanhvienbanned = mysqli_fetch_assoc(mysqli_query($ketnoi, "SELECT COUNT(*) FROM `users` WHERE `bannd` = '1' ")) ['COUNT(*)']; 
+$total_thanhvienbanned = mysqli_fetch_assoc(mysqli_query($connection, "SELECT COUNT(*) FROM `users` WHERE `bannd` = '1' ")) ['COUNT(*)']; 
 ?>
 </head>
 <?php
@@ -33,7 +33,7 @@ if (isset($_GET['delete']))
 {
     $delete = $_GET['delete'];
 
-    $create = mysqli_query($ketnoi,"DELETE FROM `khocode` WHERE `id` = '".$delete."' ");
+    $create = mysqli_query($connection,"DELETE FROM `khocode` WHERE `id` = '".$delete."' ");
 
     if ($create)
     {
@@ -91,7 +91,7 @@ if (isset($_GET['delete']))
                                     <tbody>
                                         <?php
                                         $i=1;
-                                            $result = mysqli_query($ketnoi,"SELECT * FROM `lich_su_mua_code`ORDER BY `id` DESC ");
+                                            $result = mysqli_query($connection,"SELECT * FROM `lich_su_mua_code`ORDER BY `id` DESC ");
                                             while($row = mysqli_fetch_assoc($result)) { ?>
                                         <tr>
                                             <td>
@@ -99,7 +99,7 @@ if (isset($_GET['delete']))
                                             </td>
                                             <?php 
                                             $id_code = $row['loaicode'];
-                                            $code = $ketnoi->query("SELECT * FROM `khocode` WHERE `id` = '$id_code' ")->fetch_array();
+                                            $code = $connection->query("SELECT * FROM `khocode` WHERE `id` = '$id_code' ")->fetch_array();
                                             ?>
                                             <td>
                                                 <a href="/ma-nguon/<?=$code['id'];?>"><?=$code['title'];?></a>

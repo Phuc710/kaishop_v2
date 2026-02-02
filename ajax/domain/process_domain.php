@@ -19,7 +19,7 @@ if (!isset($_SESSION['session'])) {
 $sessionToken = $_SESSION['session'];
 
 // Get user data
-$userQuery = $ketnoi->query("SELECT * FROM `users` WHERE `session` = '$sessionToken'");
+$userQuery = $connection->query("SELECT * FROM `users` WHERE `session` = '$sessionToken'");
 $userData = $userQuery->fetch_array();
 
 if (!$userData) {
@@ -42,7 +42,7 @@ if (empty($domainName) || empty($duration) || empty($extensionId)) {
 }
 
 // Get extension details
-$extensionQuery = $ketnoi->query("SELECT * FROM `duoimien` WHERE `id` = '$extensionId'");
+$extensionQuery = $connection->query("SELECT * FROM `duoimien` WHERE `id` = '$extensionId'");
 $extensionData = $extensionQuery->fetch_array();
 
 if (!$extensionData) {
@@ -69,7 +69,7 @@ if ($userData['money'] < $totalPrice) {
 }
 
 // Check if domain already exists for this user
-$checkDomain = $ketnoi->query("SELECT * FROM `history_domain` WHERE `username` = '{$userData['username']}' AND `domain` = '$domainName' AND `duoi` = '{$extensionData['duoi']}'");
+$checkDomain = $connection->query("SELECT * FROM `history_domain` WHERE `username` = '{$userData['username']}' AND `domain` = '$domainName' AND `duoi` = '{$extensionData['duoi']}'");
 
 if ($checkDomain->num_rows > 0) {
     $response = [
@@ -93,10 +93,10 @@ $insertDomain = "INSERT INTO `history_domain` SET
     `ngay_het_han` = '$expirationTime',
     `trang_thai` = 'Active'";
 
-if ($ketnoi->query($insertDomain)) {
+if ($connection->query($insertDomain)) {
     // Deduct money
     $newBalance = $userData['money'] - $totalPrice;
-    $ketnoi->query("UPDATE `users` SET `money` = '$newBalance' WHERE `username` = '{$userData['username']}'");
+    $connection->query("UPDATE `users` SET `money` = '$newBalance' WHERE `username` = '{$userData['username']}'");
     
     $response = [
         'success' => true,

@@ -7,15 +7,15 @@
 
     <?php
     $check_id = antixss($_GET['id']);
-    $api_checkid = $ketnoi->query("SELECT * FROM `khologo` WHERE `id` = '$check_id' ")->fetch_array();
+    $api_checkid = $connection->query("SELECT * FROM `khologo` WHERE `id` = '$check_id' ")->fetch_array();
 
     if (!$api_checkid) {
         header("Location: /tao-logo");
         exit();
     } else {
         $id = antixss($_GET['id']);
-        $api_logo = $ketnoi->query("SELECT * FROM `khologo` WHERE `id` = '$id'")->fetch_array();
-        mysqli_query($ketnoi, "UPDATE `khologo` SET `view` = `view` + 1 WHERE `id` = '$id'");
+        $api_logo = $connection->query("SELECT * FROM `khologo` WHERE `id` = '$id'")->fetch_array();
+        mysqli_query($connection, "UPDATE `khologo` SET `view` = `view` + 1 WHERE `id` = '$id'");
     }
     ?>
 

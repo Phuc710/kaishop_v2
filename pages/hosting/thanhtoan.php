@@ -47,7 +47,7 @@
     }
 
     // Chuẩn bị câu truy vấn an toàn
-    $stmt = $ketnoi->prepare("SELECT * FROM `list_host` WHERE `id` = ? AND `status` = 'ON'");
+    $stmt = $connection->prepare("SELECT * FROM `list_host` WHERE `id` = ? AND `status` = 'ON'");
     $stmt->bind_param("i", $id_host); // "i" là kiểu integer
     $stmt->execute();
     $result = $stmt->get_result();

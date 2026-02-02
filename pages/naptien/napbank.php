@@ -16,7 +16,7 @@
                     <div class="overflow-x-auto">
                         <div class="w-100">
                         <?php
-$result = mysqli_query($ketnoi, "SELECT * FROM `list_bank` WHERE `status`='ON'");
+$result = mysqli_query($connection, "SELECT * FROM `list_bank` WHERE `status`='ON'");
 while ($row = mysqli_fetch_assoc($result)) { ?>
                     <div class="col-md-4">
                         <div class="bg-white shadow-sm rounded border">
@@ -86,7 +86,7 @@ while ($row = mysqli_fetch_assoc($result)) { ?>
                                 <tbody>
                                 <?php
 // Truy vấn toàn bộ lịch sử nạp tiền của người dùng mà không phân trang
-$result = mysqli_query($ketnoi, "SELECT * FROM `history_nap_bank` WHERE `username` = '$username' ORDER BY `id` DESC");
+$result = mysqli_query($connection, "SELECT * FROM `history_nap_bank` WHERE `username` = '$username' ORDER BY `id` DESC");
 
 // Hiển thị dữ liệu
 $stt = 1; // Số thứ tự bắt đầu từ 1

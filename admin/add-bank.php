@@ -10,7 +10,7 @@
 $now = time();
 if (isset($_POST["submit"]))
 {
-    $create = $ketnoi->query("INSERT INTO `list_bank` SET 
+    $create = $connection->query("INSERT INTO `list_bank` SET 
     `ctk` = '".$_POST['ctk']."',
     `stk` = '".$_POST['stk']."',
     `loai` = '".$_POST['loai']."',

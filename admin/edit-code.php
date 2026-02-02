@@ -9,13 +9,13 @@
 <?php
 if(isset($_GET['id'])){
     $id = $_GET['id'];
-    $toz_code =  $ketnoi->query("SELECT * FROM `khocode` WHERE `id` = '$id' ")->fetch_array();
+    $toz_code =  $connection->query("SELECT * FROM `khocode` WHERE `id` = '$id' ")->fetch_array();
 }
 ?>
 <?php
 if (isset($_POST["submit"]))
 {
-  $create = mysqli_query($ketnoi,"UPDATE `khocode` SET 
+  $create = mysqli_query($connection,"UPDATE `khocode` SET 
     `title` = '".$_POST['title']."',
     `noidung` = '".$_POST['noidung']."',
     `gia` = '".$_POST['gia']."',

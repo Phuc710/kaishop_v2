@@ -4,18 +4,18 @@ $now = time();
 ?>
 <!-- Khoá Host hết hạn -->
 <?php
-$check_host = $ketnoi->query("SELECT * FROM `lich_su_mua_host` WHERE `status` ='tamkhoa' ");
+$check_host = $connection->query("SELECT * FROM `lich_su_mua_host` WHERE `status` ='tamkhoa' ");
 while ($host = $check_host->fetch_array()) {
     echo $host['domain'];
     $id_host =$host['id'];
     if ($now < $host['ngay_het']) {
         $id_sv = $host['server_host'];
-        $sv_host = $ketnoi->query("SELECT * FROM `list_server_host` WHERE `id` = '$id_sv' ")->fetch_array();
+        $sv_host = $connection->query("SELECT * FROM `list_server_host` WHERE `id` = '$id_sv' ")->fetch_array();
         $tkWHM = $sv_host['tk_whm'];
         $mkWHM = $sv_host['mk_whm'];
         $linklogin = $sv_host['link_login'];
         $username1 = $host['username'];
-        $user1 = $ketnoi->query("SELECT * FROM `users` WHERE `username` = '$username1' ")->fetch_array();
+        $user1 = $connection->query("SELECT * FROM `users` WHERE `username` = '$username1' ")->fetch_array();
         $query = $linklogin.':2087/json-api/unsuspendacct?api.version=1&user='.$host['tk_host'].'&reason='.urlencode('Hết hạn dịch vụ'); // khóa hosting
         $curl = curl_init(); // Create Curl Object 
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0); // Allow self-signed certs 
@@ -40,7 +40,7 @@ while ($host = $check_host->fetch_array()) {
             <p>Cảm ơn quý khách đã sử dụng dịch vụ của chúng tôi. Cảm ơn!</p>
             <p>Liên hệ website: <b><a href="https://'.$_SERVER['SERVER_NAME'].'/" target="_blank">'.$_SERVER['SERVER_NAME'].'</a></b></p>';
            $toz = sendCSM($guitoi, $hoten, $subject, $noi_dung, $bcc);
-            $ketnoi->query("UPDATE `lich_su_mua_host` SET `status` = 'hoatdong' WHERE `id` = '$id_host'");
+            $connection->query("UPDATE `lich_su_mua_host` SET `status` = 'hoatdong' WHERE `id` = '$id_host'");
         }
     }
 }

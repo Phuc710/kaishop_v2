@@ -16,7 +16,7 @@ if (empty($username) || empty($password)) {
 }
 
 // Check user exists
-$userQuery = $ketnoi->query("SELECT * FROM `users` WHERE `username` = '$username'");
+$userQuery = $connection->query("SELECT * FROM `users` WHERE `username` = '$username'");
 $userData = $userQuery->fetch_array();
 
 // User not found
@@ -42,7 +42,7 @@ if ($userData['password'] !== $hashedPassword) {
 
 // Login successful - generate session
 $sessionToken = random('0123456789qwertyuiopasdfghjlkzxcvbnmQEWRWROIWCJHSCNJKFBJWQ', 32);
-$ketnoi->query("UPDATE `users` SET `session` = '$sessionToken' WHERE `username` = '{$userData['username']}'");
+$connection->query("UPDATE `users` SET `session` = '$sessionToken' WHERE `username` = '{$userData['username']}'");
 $_SESSION['session'] = $sessionToken;
 
 $response = [

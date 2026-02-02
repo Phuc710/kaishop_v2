@@ -9,7 +9,7 @@
 <?php
 if (isset($_POST["submit"]))
 {
-  $create = mysqli_query($ketnoi,"INSERT INTO  `list_server_host` SET 
+  $create = mysqli_query($connection,"INSERT INTO  `list_server_host` SET 
     `name_server` = '".$_POST['name_server']."',
     `link_login` = '".$_POST['link_login']."',
     `tk_whm` = '".$_POST['tk_whm']."',

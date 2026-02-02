@@ -5,8 +5,8 @@ $email = antixss($_POST['email']);
 $username = antixss($_POST['username']);
 $password = antixss($_POST['password']);
 
-$check_user = $ketnoi->query("SELECT * FROM `users` WHERE `username` = '$username'");
-$check_mail = $ketnoi->query("SELECT * FROM `users` WHERE `email` = '$email'");
+$check_user = $connection->query("SELECT * FROM `users` WHERE `username` = '$username'");
+$check_mail = $connection->query("SELECT * FROM `users` WHERE `email` = '$email'");
 
 $recaptchaResponse = antixss($_POST['recaptchaResponse']);
 
@@ -49,7 +49,7 @@ if ($recaptchaResultJson->success || $_SERVER['SERVER_NAME'] == 'localhost') {
         $randomString = generateRandomString();
         $apiKey = md5($randomString);
         $new_pass = sha1(md5($password));
-        $toz = $ketnoi->query("INSERT INTO `users` SET 
+        $toz = $connection->query("INSERT INTO `users` SET 
             `username` = '$username',
             `password` = '$new_pass',
             `email` = '$email',
@@ -97,7 +97,7 @@ if ($recaptchaResultJson->success || $_SERVER['SERVER_NAME'] == 'localhost') {
 
         if ($toz) {
             $now_ss = random('0123456789qwertyuiopasdfghjlkzxcvbnmQEWRWROIWCJHSCNJKFBJWQ', 32);
-            $ketnoi->query("UPDATE `users` SET `session` = '$now_ss' WHERE `username` = '" . $username . "' ");
+            $connection->query("UPDATE `users` SET `session` = '$now_ss' WHERE `username` = '" . $username . "' ");
             $_SESSION['session'] = $now_ss;
             $response = array('success' => true);
         } else {

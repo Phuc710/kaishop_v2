@@ -11,28 +11,28 @@
 <?php
 if (isset($_GET['cho'])) {
   $id = $_GET['cho'];
-  mysqli_query($ketnoi, "UPDATE `lich_su_tao_web` SET `status` = 'cho' WHERE `id` = '$id' ");
+  mysqli_query($connection, "UPDATE `lich_su_tao_web` SET `status` = 'cho' WHERE `id` = '$id' ");
   echo '<meta http-equiv="refresh" content="0;url=/admin/lstaoweb.php">';
 }
 if (isset($_GET['xoa'])) {
   $id = $_GET['xoa'];
-  mysqli_query($ketnoi, "UPDATE `lich_su_tao_web` SET `status` = 'xoa' WHERE `id` = '$id' ");
+  mysqli_query($connection, "UPDATE `lich_su_tao_web` SET `status` = 'xoa' WHERE `id` = '$id' ");
   echo '<meta http-equiv="refresh" content="0;url=/admin/lstaoweb.php">';
 }
 
 if (isset($_GET['duyet'])) {
   $id = $_GET['duyet'];
-  mysqli_query($ketnoi, "UPDATE `lich_su_tao_web` SET `status` = 'hoatdong' WHERE `id` = '$id' ");
+  mysqli_query($connection, "UPDATE `lich_su_tao_web` SET `status` = 'hoatdong' WHERE `id` = '$id' ");
   echo '<meta http-equiv="refresh" content="0;url=/admin/lstaoweb.php">';
 }
 if (isset($_GET['tamkhoa'])) {
   $id = $_GET['tamkhoa'];
-  mysqli_query($ketnoi, "UPDATE `lich_su_tao_web` SET `status` = 'tamkhoa' WHERE `id` = '$id' ");
+  mysqli_query($connection, "UPDATE `lich_su_tao_web` SET `status` = 'tamkhoa' WHERE `id` = '$id' ");
   echo '<meta http-equiv="refresh" content="0;url=/admin/lstaoweb.php">';
 }
 if (isset($_GET['huy'])) {
   $id = $_GET['huy'];
-  mysqli_query($ketnoi, "UPDATE `lich_su_tao_web` SET `status` = 'thatbai' WHERE `id` = '$id' ");
+  mysqli_query($connection, "UPDATE `lich_su_tao_web` SET `status` = 'thatbai' WHERE `id` = '$id' ");
   echo '<meta http-equiv="refresh" content="0;url=/admin/lstaoweb.php">';
 }
 ?>
@@ -100,7 +100,7 @@ if (isset($_GET['huy'])) {
                                             <tbody>
                                                 <?php
                                                 $i = 1;
-                                                $result = mysqli_query($ketnoi, "SELECT * FROM `lich_su_tao_web` ORDER BY id desc ");
+                                                $result = mysqli_query($connection, "SELECT * FROM `lich_su_tao_web` ORDER BY id desc ");
                                                 while ($row = mysqli_fetch_assoc($result)) { ?>
                                                 <tr>
                                                     <td class="text-center"><?= $i++; ?></td>
@@ -111,7 +111,7 @@ if (isset($_GET['huy'])) {
                                                         <?= $row['domain']; ?>
                                                     </td>
                                                     <?php
-                                                    $site = $ketnoi->query("SELECT * FROM `list_mau_web` WHERE `id` = '".$row['loaiweb']."' ")->fetch_array();
+                                                    $site = $connection->query("SELECT * FROM `list_mau_web` WHERE `id` = '".$row['loaiweb']."' ")->fetch_array();
                                                     ?>
                                                     <td class="text-center">
                                                         <?=$site['title'];?>

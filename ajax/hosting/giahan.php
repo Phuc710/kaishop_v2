@@ -3,7 +3,7 @@
 $now = time(); 
 $idhost = strip_tags($_POST['idhost']);
 $giahan = strip_tags($_POST['giahan']);
-$host = $ketnoi->query("SELECT * FROM `lich_su_mua_host` WHERE `id` = '$idhost' ")->fetch_array();
+$host = $connection->query("SELECT * FROM `lich_su_mua_host` WHERE `id` = '$idhost' ")->fetch_array();
 $tongtien = $host['gia_host']*$giahan;
 $date = date('h:i d-m-Y', $now);
 $days_to_add =30*$giahan;
@@ -18,12 +18,12 @@ $response = array('success' => false, 'message' => 'Vui lòng nhập đầy đ�
 }elseif($user['money']<$tongtien) {
     $response = array('success' => false, 'message' => 'Số dư trong tài khoản không đủ, vui lòng nạp thêm');
 }else{
-    $checkhost = $ketnoi->query("UPDATE `lich_su_mua_host` SET `ngay_het` = '$het' WHERE `id` = '".$idhost."' ");
+    $checkhost = $connection->query("UPDATE `lich_su_mua_host` SET `ngay_het` = '$het' WHERE `id` = '".$idhost."' ");
         if(isset($checkhost)){
             $newmoney = $user['money']-$tongtien;
-            $check_money = $ketnoi->query("UPDATE `users` SET `money` = '$newmoney' WHERE `username` = '".$username."' ");
+            $check_money = $connection->query("UPDATE `users` SET `money` = '$newmoney' WHERE `username` = '".$username."' ");
             if(isset($check_money)&&$check_money>=0){
-                $toz = $ketnoi->query("INSERT INTO `lich_su_hoat_dong` SET 
+                $toz = $connection->query("INSERT INTO `lich_su_hoat_dong` SET 
                 `username` = '$username',
                 `hoatdong` = 'Gia hạn hosting',
                 `gia` = '".$tongtien."',

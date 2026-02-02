@@ -14,7 +14,7 @@ if (!isset($_SESSION['session'])) {
 $sessionToken = $_SESSION['session'];
 
 // Get user data
-$userQuery = $ketnoi->query("SELECT * FROM `users` WHERE `session` = '$sessionToken'");
+$userQuery = $connection->query("SELECT * FROM `users` WHERE `session` = '$sessionToken'");
 $userData = $userQuery->fetch_array();
 
 if (!$userData) {
@@ -27,7 +27,7 @@ if (!$userData) {
 }
 
 // Get all domains for this user
-$domainsQuery = $ketnoi->query("SELECT * FROM `history_domain` WHERE `username` = '{$userData['username']}' ORDER BY `id` DESC");
+$domainsQuery = $connection->query("SELECT * FROM `history_domain` WHERE `username` = '{$userData['username']}' ORDER BY `id` DESC");
 
 $domainsList = [];
 while ($domain = $domainsQuery->fetch_array()) {
