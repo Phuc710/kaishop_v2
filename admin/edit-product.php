@@ -73,10 +73,13 @@ if (isset($_POST['submit'])) {
                                 <div class="form-group">
                                     <label for="category">Loại (Category)</label>
                                     <select class="form-control" name="category">
-                                        <option value="gpt" <?= $row['category'] == 'gpt' ? 'selected' : ''; ?>>GPT</option>
-                                        <option value="gemini" <?= $row['category'] == 'gemini' ? 'selected' : ''; ?>>Gemini</option>
-                                        <option value="netflix" <?= $row['category'] == 'netflix' ? 'selected' : ''; ?>>Netflix</option>
-                                        <option value="other" <?= $row['category'] == 'other' ? 'selected' : ''; ?>>Khác</option>
+                                        <?php
+                                        $categories = $connection->query("SELECT * FROM `categories` WHERE `status` = 'ON' ORDER BY name ASC");
+                                        while ($cat = $categories->fetch_assoc()) {
+                                            $selected = ($row['category'] == $cat['name']) ? 'selected' : '';
+                                            echo '<option value="' . $cat['name'] . '" ' . $selected . '>' . $cat['name'] . '</option>';
+                                        }
+                                        ?>
                                     </select>
                                 </div>
                                 <div class="form-group">

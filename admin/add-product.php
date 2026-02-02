@@ -61,10 +61,12 @@ if (isset($_POST['submit'])) {
                                 <div class="form-group">
                                     <label for="category">Loại (Category)</label>
                                     <select class="form-control" name="category">
-                                        <option value="gpt">GPT</option>
-                                        <option value="gemini">Gemini</option>
-                                        <option value="netflix">Netflix</option>
-                                        <option value="other">Khác</option>
+                                        <?php
+                                        $categories = $connection->query("SELECT * FROM `categories` WHERE `status` = 'ON' ORDER BY name ASC");
+                                        while ($cat = $categories->fetch_assoc()) {
+                                            echo '<option value="' . $cat['name'] . '">' . $cat['name'] . '</option>';
+                                        }
+                                        ?>
                                     </select>
                                 </div>
                                 <div class="form-group">
