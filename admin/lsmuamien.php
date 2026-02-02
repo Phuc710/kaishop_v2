@@ -55,7 +55,7 @@
                                     <tbody>
                                         <?php
                                         $i=1;
-                                            $result = mysqli_query($ketnoi,"SELECT * FROM `history_domain`ORDER BY `id` DESC ");
+                                            $result = mysqli_query($connection,"SELECT * FROM `history_domain`ORDER BY `id` DESC ");
                                             while($row = mysqli_fetch_assoc($result)) { ?>
                                         <tr>
                                             <td>

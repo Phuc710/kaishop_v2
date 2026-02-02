@@ -9,19 +9,19 @@ class Database {
     private $connection;
     
     private function __construct() {
-        // Load database config from existing ketnoi.php
-        require_once __DIR__ . '/../hethong/ketnoi.php';
+        // Load database config from new connection.php
+        require_once __DIR__ . '/../database/connection.php';
         
         // Get existing mysqli connection details
-        global $ketnoi;
+        global $connection;
         
         // Create PDO connection with same credentials
         try {
-            // Database credentials (matching ketnoi.php)
-            $host = 'localhost';
-            $dbname = 'kaishop_db';
-            $username = 'root';
-            $password = '';
+            // Database credentials from config.php constants
+            $host = DB_HOST;
+            $dbname = DB_NAME;
+            $username = DB_USERNAME;
+            $password = DB_PASSWORD;
             
             $dsn = "mysql:host={$host};dbname={$dbname};charset=utf8mb4";
             $this->connection = new PDO($dsn, $username, $password, [

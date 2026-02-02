@@ -6,11 +6,11 @@
     <?php require __DIR__ . '/../../hethong/nav.php'; ?>
     <?php
     if (isset($_GET['id'])) {
-        $id = mysqli_real_escape_string($ketnoi, $_GET['id']);
-        $check_host = $ketnoi->query("SELECT * FROM `lich_su_mua_host` WHERE `id` = '$id'");
+        $id = mysqli_real_escape_string($connection, $_GET['id']);
+        $check_host = $connection->query("SELECT * FROM `lich_su_mua_host` WHERE `id` = '$id'");
         if ($check_host->num_rows == 1) {
             $toz_host = $check_host->fetch_array();
-            $loai_host = $ketnoi->query("SELECT * FROM `list_host` WHERE `name_host` = '" . $toz_host['goi_host'] . "'")->fetch_array();
+            $loai_host = $connection->query("SELECT * FROM `list_host` WHERE `name_host` = '" . $toz_host['goi_host'] . "'")->fetch_array();
             if ($toz_host['username'] != $username) {
                 echo '<script>alert("Hosting không tồn tại hay không phải của bạn!"); window.location.href = BASE_URL + "/history-hosting";</script>';
                 exit();
@@ -26,7 +26,7 @@
     ?>
 
 
-    <?php $server_host = $ketnoi->query("SELECT * FROM `list_server_host` WHERE `id` = '" . $toz_host['server_host'] . "'")->fetch_array(); ?>
+    <?php $server_host = $connection->query("SELECT * FROM `list_server_host` WHERE `id` = '" . $toz_host['server_host'] . "'")->fetch_array(); ?>
 
     <main>
         <section class="py-110">

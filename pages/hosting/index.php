@@ -34,7 +34,7 @@
                     </div>
 
                     <?php
-                    $result = mysqli_query($ketnoi, "SELECT * FROM `list_server_host` WHERE `status` = 'ON'");
+                    $result = mysqli_query($connection, "SELECT * FROM `list_server_host` WHERE `status` = 'ON'");
                     while ($row = mysqli_fetch_assoc($result)) { ?>
                         <article class="col-xl-3 col-lg-4 col-md-6 mb-4 grid-item category1 category5">
                             <div class="gigs-grid">

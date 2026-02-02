@@ -1,9 +1,9 @@
 <?php require __DIR__ . '/../../hethong/config.php';?>
 <?php
 $idhost = strip_tags($_POST['idhost']);
-$host = $ketnoi->query("SELECT * FROM `lich_su_mua_host` WHERE `id` = '$idhost' ")->fetch_array();
+$host = $connection->query("SELECT * FROM `lich_su_mua_host` WHERE `id` = '$idhost' ")->fetch_array();
 $id_sv = $host['server_host'];
-$sv_host = $ketnoi->query("SELECT * FROM `list_server_host` WHERE `id` = '$id_sv' ")->fetch_array();
+$sv_host = $connection->query("SELECT * FROM `list_server_host` WHERE `id` = '$id_sv' ")->fetch_array();
 if($username==""){
 $response = array('success' => false, 'message' => 'Đăng nhập để thực hiện tính năng này');
 }elseif ($username != $host['username']) {
@@ -12,7 +12,7 @@ $response = array('success' => false, 'message' => 'Bạn không thể thao tác
 $response = array('success' => false, 'message' => 'Hãy đợi tiến trình trước đó chạy xong!');
 }else{
         $id_sv = $host['server_host'];
-        $sv_host = $ketnoi->query("SELECT * FROM `list_server_host` WHERE `id` = '$id_sv' ")->fetch_array();
+        $sv_host = $connection->query("SELECT * FROM `list_server_host` WHERE `id` = '$id_sv' ")->fetch_array();
         // Thông tin rsl
         $tkWHM = $sv_host['tk_whm'];
         $mkWHM = $sv_host['mk_whm'];
@@ -31,7 +31,7 @@ $response = array('success' => false, 'message' => 'Hãy đợi tiến trình tr
         $reghost = json_decode($result, true);
         $data = $reghost['metadata'];
         if($data['result']==1){
-        $check = $ketnoi->query("UPDATE `lich_su_mua_host` SET `status` = 'dangtao' WHERE `id` = '".$idhost."' ");
+        $check = $connection->query("UPDATE `lich_su_mua_host` SET `status` = 'dangtao' WHERE `id` = '".$idhost."' ");
         if (isset($check)) {
             $response = array('success' => true);
         } else {

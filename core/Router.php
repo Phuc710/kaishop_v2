@@ -49,7 +49,7 @@ class Router {
         $uri = strtok($uri, '?');
         
         // If URI is the entry point file itself, treat as root
-        if ($uri === '/index_new.php' || $uri === 'index_new.php') {
+        if ($uri === '/index.php' || $uri === 'index.php') {
             $uri = '/';
         }
         
@@ -63,39 +63,70 @@ class Router {
         
         // Find matching route
         foreach ($this->routes as $route) {
-            if ($route['method'] === $method && $this->matchPath($route['path'], $uri)) {
-                return $this->callHandler($route['handler']);
+            $params = [];
+            if ($route['method'] === $method && $this->matchPath($route['path'], $uri, $params)) {
+                return $this->callHandler($route['handler'], $params);
             }
         }
         
         // 404 - No route found
+        // 404 - No route found
         http_response_code(404);
-        echo "404 - Page not found<br>";
-        echo "Requested URI: " . htmlspecialchars($uri) . "<br>";
-        echo "Method: " . htmlspecialchars($method);
+        if (file_exists(__DIR__ . '/../404.php')) {
+            require __DIR__ . '/../404.php';
+        } else {
+            echo "404 - Page not found";
+        }
     }
     
     /**
      * Check if path matches URI
      */
-    private function matchPath($path, $uri) {
-        // Simple exact match for now
-        // TODO: Add support for parameters like /user/:id
-        return $path === $uri;
+    private function matchPath($path, $uri, &$params = []) {
+        // Convert route like /user/{id} to regex /user/([a-zA-Z0-9-_]+)
+        // Or simply accept using regex in routes like /user/([0-9]+)
+        
+        // Escape forward slashes
+        $pattern = preg_replace('/\//', '\\/', $path);
+        
+        // Convert {param} to capture group (simple alphanumeric)
+        $pattern = preg_replace('/\{([a-zA-Z0-9_]+)\}/', '(?P<$1>[a-zA-Z0-9-_]+)', $pattern);
+        
+        // Add start and end delimiters
+        $pattern = '/^' . $pattern . '$/';
+        
+        if (preg_match($pattern, $uri, $matches)) {
+            // Filter out numeric keys, keep named keys
+            foreach ($matches as $key => $value) {
+                if (is_string($key)) {
+                    $params[$key] = $value;
+                }
+            }
+            return true;
+        }
+        
+        return false;
     }
     
     /**
      * Call controller method
      */
-    private function callHandler($handler) {
+    private function callHandler($handler, $params = []) {
         if (is_callable($handler)) {
-            return call_user_func($handler);
+            return call_user_func_array($handler, array_values($params));
         }
         
         if (is_string($handler)) {
             list($controller, $method) = explode('@', $handler);
             
-            $controllerFile = __DIR__ . "/../app/Controllers/{$controller}.php";
+            // Search for controller file in app/Controllers and its subdirectories
+            $controllerPath = str_replace('\\', '/', $controller);
+            $controllerFile = __DIR__ . "/../app/Controllers/{$controllerPath}.php";
+            
+            if (!file_exists($controllerFile)) {
+                // Try direct class name if path search fails
+                $controllerFile = __DIR__ . "/../app/Controllers/{$controller}.php";
+            }
             
             if (!file_exists($controllerFile)) {
                 die("Controller not found: {$controller}");
@@ -103,13 +134,22 @@ class Router {
             
             require_once $controllerFile;
             
-            $controllerInstance = new $controller();
+            // Extract class name from potentially namespaced string
+            $className = (strpos($controller, '\\') !== false) ? substr($controller, strrpos($controller, '\\') + 1) : $controller;
+            
+            if (class_exists($className)) {
+                $controllerInstance = new $className();
+            } else if (class_exists($controller)) {
+                $controllerInstance = new $controller();
+            } else {
+                die("Class not found: {$controller} or {$className}");
+            }
             
             if (!method_exists($controllerInstance, $method)) {
                 die("Method not found: {$method}");
             }
             
-            return $controllerInstance->$method();
+            return call_user_func_array([$controllerInstance, $method], array_values($params));
         }
     }
 }

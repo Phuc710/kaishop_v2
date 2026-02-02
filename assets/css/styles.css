@@ -18371,7 +18371,7 @@ html.menu-opened body {
 .rating label:hover,
 .rating label:hover~label,
 .rating input:checked~label {
-    color: #ffcc00;
+    /* color: #ffcc00; */
 }
 
 .stars {
@@ -18394,7 +18394,7 @@ html.menu-opened body {
 label:hover,
 label:hover~label,
 .star:checked~label {
-    color: #ffcc00;
+    /* color: #ffcc00; */
 }
 
 .api-sidebar-menu {

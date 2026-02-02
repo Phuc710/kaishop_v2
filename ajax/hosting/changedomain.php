@@ -2,9 +2,9 @@
 <?php
 $idhost = strip_tags($_POST['idhost']);
 $domain = strip_tags($_POST['domain']);
-$host = $ketnoi->query("SELECT * FROM `lich_su_mua_host` WHERE `id` = '$idhost' ")->fetch_array();
+$host = $connection->query("SELECT * FROM `lich_su_mua_host` WHERE `id` = '$idhost' ")->fetch_array();
 $id_sv = $host['server_host'];
-$sv_host = $ketnoi->query("SELECT * FROM `list_server_host` WHERE `id` = '$id_sv' ")->fetch_array();
+$sv_host = $connection->query("SELECT * FROM `list_server_host` WHERE `id` = '$id_sv' ")->fetch_array();
 if($username==""){
     $response = array('success' => false, 'message' => 'Đăng nhập để thực hiện tính năng này');
 }elseif ($username != $host['username']) {
@@ -36,7 +36,7 @@ curl_close($curl);
 $reghost = json_decode($result, true);
 $data = $reghost['metadata'];
 if ($data['result'] == '1') {
-    $check_pass = $ketnoi->query("UPDATE `lich_su_mua_host` SET `domain` = '$domain' WHERE `id` = '".$idhost."' ");
+    $check_pass = $connection->query("UPDATE `lich_su_mua_host` SET `domain` = '$domain' WHERE `id` = '".$idhost."' ");
     if(isset($check_pass)){
         $response = array('success' => true);
     }    

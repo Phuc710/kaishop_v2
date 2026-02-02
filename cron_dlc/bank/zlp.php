@@ -1,7 +1,7 @@
 <?php
 require $_SERVER['DOCUMENT_ROOT'].'/hethong/config.php';
 
-$toz_nap = $ketnoi->query("SELECT * FROM `list_bank` WHERE `type` = 'ZLP' ")->fetch_array();
+$toz_nap = $connection->query("SELECT * FROM `list_bank` WHERE `type` = 'ZLP' ")->fetch_array();
 $token = $toz_nap['api_key'];
 $dataPost = array(
  "Loai_api" => "lsgd",
@@ -35,13 +35,13 @@ foreach ($data['data'] as $transaction) {
     $idnap = parse_order_id($comment);
     $now = time();
     
-    $toz_checkidnap = $ketnoi->query("SELECT * FROM `users` WHERE `id` = '$idnap' ")->fetch_array();
+    $toz_checkidnap = $connection->query("SELECT * FROM `users` WHERE `id` = '$idnap' ")->fetch_array();
     if ($toz_checkidnap) {
-        $total_trans = mysqli_fetch_assoc(mysqli_query($ketnoi, "SELECT COUNT(*) FROM `history_nap_bank` WHERE `trans_id` = '$tranId' ")) ['COUNT(*)'];
+        $total_trans = mysqli_fetch_assoc(mysqli_query($connection, "SELECT COUNT(*) FROM `history_nap_bank` WHERE `trans_id` = '$tranId' ")) ['COUNT(*)'];
         if ($total_trans == 0) {
             if ($amount > 0) {
                 $username = $toz_checkidnap['username'];
-                $ketnoi->query("INSERT INTO `history_nap_bank` SET 
+                $connection->query("INSERT INTO `history_nap_bank` SET 
                     `trans_id` = '$tranId',
                     `username` = '$username',
                     `type` = 'ZaloPay',
@@ -50,7 +50,7 @@ foreach ($data['data'] as $transaction) {
                     `thucnhan` = '$amount',
                     `status` = 'hoantat',
                     `time` = '$now' ");
-                $create = mysqli_query($ketnoi, "UPDATE `users` SET `money`=`money`+ '$amount', `tong_nap` = `tong_nap` + '$amount' WHERE `username`='$username'");
+                $create = mysqli_query($connection, "UPDATE `users` SET `money`=`money`+ '$amount', `tong_nap` = `tong_nap` + '$amount' WHERE `username`='$username'");
             }
         }
     }

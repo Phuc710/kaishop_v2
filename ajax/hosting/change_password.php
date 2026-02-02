@@ -18,7 +18,7 @@ if (!isset($_SESSION['session'])) {
 $sessionToken = $_SESSION['session'];
 
 // Get user data
-$userQuery = $ketnoi->query("SELECT * FROM `users` WHERE `session` = '$sessionToken'");
+$userQuery = $connection->query("SELECT * FROM `users` WHERE `session` = '$sessionToken'");
 $userData = $userQuery->fetch_array();
 
 if (!$userData) {
@@ -41,7 +41,7 @@ if (empty($hostingId) || empty($newPassword)) {
 }
 
 // Get hosting details
-$hostingQuery = $ketnoi->query("SELECT * FROM `lich_su_mua_host` WHERE `id` = '$hostingId' AND `username` = '{$userData['username']}'");
+$hostingQuery = $connection->query("SELECT * FROM `lich_su_mua_host` WHERE `id` = '$hostingId' AND `username` = '{$userData['username']}'");
 $hostingData = $hostingQuery->fetch_array();
 
 if (!$hostingData) {
@@ -54,7 +54,7 @@ if (!$hostingData) {
 }
 
 // Update password
-$updatePassword = $ketnoi->query("UPDATE `lich_su_mua_host` SET `mk_host` = '$newPassword' WHERE `id` = '$hostingId'");
+$updatePassword = $connection->query("UPDATE `lich_su_mua_host` SET `mk_host` = '$newPassword' WHERE `id` = '$hostingId'");
 
 if ($updatePassword) {
     $response = [

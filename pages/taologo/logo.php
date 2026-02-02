@@ -35,7 +35,7 @@
                     </div>
 
                     <?php
-                    $result = mysqli_query($ketnoi, "SELECT * FROM `khologo` WHERE `status`='ON' ORDER BY `id` DESC ");
+                    $result = mysqli_query($connection, "SELECT * FROM `khologo` WHERE `status`='ON' ORDER BY `id` DESC ");
                     while ($row = mysqli_fetch_assoc($result)) { ?>
 
                         <article class="col-xl-3 col-lg-4 col-md-6 mb-4 grid-item category1 category3">

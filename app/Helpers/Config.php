@@ -20,8 +20,8 @@ class Config {
      * @return mysqli
      */
     public static function getDbConnection() {
-        global $ketnoi;
-        return $ketnoi;
+        global $connection;
+        return $connection;
     }
     
     /**

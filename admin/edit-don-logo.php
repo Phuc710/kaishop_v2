@@ -9,15 +9,15 @@
 <?php
 if(isset($_GET['id'])){
     $id = $_GET['id'];
-    $toz_code =  $ketnoi->query("SELECT * FROM `lich_su_tao_logo` WHERE `id` = '$id' ")->fetch_array();
-    $code =  $ketnoi->query("SELECT * FROM `khologo` WHERE `id` = '".$toz_code['loaicode']."' ")->fetch_array();
+    $toz_code =  $connection->query("SELECT * FROM `lich_su_tao_logo` WHERE `id` = '$id' ")->fetch_array();
+    $code =  $connection->query("SELECT * FROM `khologo` WHERE `id` = '".$toz_code['loaicode']."' ")->fetch_array();
 
 }
 ?>
 <?php
 if (isset($_POST["submit"]))
 {
-  $create = mysqli_query($ketnoi,"UPDATE `lich_su_tao_logo` SET 
+  $create = mysqli_query($connection,"UPDATE `lich_su_tao_logo` SET 
     `url` = '".$_POST['url']."',
     `status` = '".$_POST['status']."' WHERE `id` = '".$id."' ");
 

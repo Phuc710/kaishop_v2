@@ -12,7 +12,7 @@ if (empty($username)) {
 }
 
 // Lấy thông tin user
-$stmt_user = $ketnoi->prepare("SELECT * FROM `users` WHERE `username` = ?");
+$stmt_user = $connection->prepare("SELECT * FROM `users` WHERE `username` = ?");
 $stmt_user->bind_param("s", $username);
 $stmt_user->execute();
 $user_result = $stmt_user->get_result();
@@ -30,7 +30,7 @@ if (empty($ten_mien) || empty($duoimien) || empty($nameserver)) {
 }
 
 // Lấy giá domain theo đuôi
-$stmt_mien = $ketnoi->prepare("SELECT * FROM `ds_domain` WHERE `duoimien` = ?");
+$stmt_mien = $connection->prepare("SELECT * FROM `ds_domain` WHERE `duoimien` = ?");
 $stmt_mien->bind_param("s", $duoimien);
 $stmt_mien->execute();
 $mien_result = $stmt_mien->get_result();
@@ -63,7 +63,7 @@ if ($st_mien != 1) {
     $het = $now + (365 * 86400);
 
     // Thêm vào history_domain
-    $stmt_insert = $ketnoi->prepare("INSERT INTO `history_domain` (`username`, `domain`, `duoimien`, `nameserver`, `ngay_mua`, `ngay_het`, `status`) 
+    $stmt_insert = $connection->prepare("INSERT INTO `history_domain` (`username`, `domain`, `duoimien`, `nameserver`, `ngay_mua`, `ngay_het`, `status`) 
                                      VALUES (?, ?, ?, ?, ?, ?, 'xuly')");
     $stmt_insert->bind_param("ssssii", $username, $domain, $duoimien, $nameserver, $now, $het);
     $insert_success = $stmt_insert->execute();
@@ -71,7 +71,7 @@ if ($st_mien != 1) {
     if ($insert_success) {
         // Trừ tiền
         $newmoney = $user['money'] - $mien['gia'];
-        $stmt_update = $ketnoi->prepare("UPDATE `users` SET `money` = ? WHERE `username` = ?");
+        $stmt_update = $connection->prepare("UPDATE `users` SET `money` = ? WHERE `username` = ?");
         $stmt_update->bind_param("is", $newmoney, $username);
         $stmt_update->execute();
 

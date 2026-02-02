@@ -2,7 +2,7 @@
 require __DIR__ . '/../../hethong/config.php';
 
 // Retrieve API key and bank account information
-$toz_nap = $ketnoi->query("SELECT * FROM `list_bank` WHERE `type` = 'MBBank' ")->fetch_array();
+$toz_nap = $connection->query("SELECT * FROM `list_bank` WHERE `type` = 'MBBank' ")->fetch_array();
 $token = $toz_nap['api_key'];
 $tk = $toz_nap['stk'];
 
@@ -43,17 +43,17 @@ foreach ($data['transactionHistoryList'] as $transaction) {
 
     if ($idnap !== null) {
         // Check if the transaction ID is already processed
-        $total_trans = mysqli_fetch_assoc(mysqli_query($ketnoi, "SELECT COUNT(*) FROM `history_nap_bank` WHERE `trans_id` = '$tranId' "))['COUNT(*)'];
+        $total_trans = mysqli_fetch_assoc(mysqli_query($connection, "SELECT COUNT(*) FROM `history_nap_bank` WHERE `trans_id` = '$tranId' "))['COUNT(*)'];
 
         if ($total_trans == 0) {
             if ($amount > 0) {
-                $toz_checkidnap = $ketnoi->query("SELECT * FROM `users` WHERE `id` = '$idnap' ")->fetch_array();
+                $toz_checkidnap = $connection->query("SELECT * FROM `users` WHERE `id` = '$idnap' ")->fetch_array();
 
                 if ($toz_checkidnap) {
                     $username = $toz_checkidnap['username'];
 
                     // Insert the transaction into the database
-                    $ketnoi->query("INSERT INTO `history_nap_bank` SET 
+                    $connection->query("INSERT INTO `history_nap_bank` SET 
                         `trans_id` = '$tranId',
                         `username` = '$username',
                         `type` = 'MB Bank',
@@ -64,7 +64,7 @@ foreach ($data['transactionHistoryList'] as $transaction) {
                         `time` = '$now' ");
 
                     // Update user's money and total deposit
-                    $create = mysqli_query($ketnoi, "UPDATE `users` SET `money`=`money`+ '$amount', `tong_nap` = `tong_nap` + '$amount' WHERE `username`='$username'");
+                    $create = mysqli_query($connection, "UPDATE `users` SET `money`=`money`+ '$amount', `tong_nap` = `tong_nap` + '$amount' WHERE `username`='$username'");
                     sendTele($username . " Nạp Tiền Qua Mb Bank Thành Công " . $amount . "VND");
                 }
             }

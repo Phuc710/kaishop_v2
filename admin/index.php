@@ -6,14 +6,14 @@
     <title>AdminLTE 3 | Dashboard</title>
     <?php require_once('nav.php');?>
     <?php 
-$total_money = mysqli_fetch_assoc($ketnoi->query("SELECT SUM(`money`) FROM `users` WHERE `money` >= 0 AND `level`=0")) ['SUM(`money`)']; 
+$total_money = mysqli_fetch_assoc($connection->query("SELECT SUM(`money`) FROM `users` WHERE `money` >= 0 AND `level`=0")) ['SUM(`money`)']; 
 
-$total_thanhvien = mysqli_fetch_assoc(mysqli_query($ketnoi, "SELECT COUNT(*) FROM `users` WHERE `level` = 0 ")) ['COUNT(*)']; 
-$total_domain = mysqli_fetch_assoc(mysqli_query($ketnoi, "SELECT COUNT(*) FROM `history_domain` ")) ['COUNT(*)'];
-$total_host = mysqli_fetch_assoc(mysqli_query($ketnoi, "SELECT COUNT(*) FROM `lich_su_mua_host` ")) ['COUNT(*)']; 
-$total_code = mysqli_fetch_assoc(mysqli_query($ketnoi, "SELECT COUNT(*) FROM `lich_su_mua_code` ")) ['COUNT(*)'];
-$total_thanhvienbanned = mysqli_fetch_assoc(mysqli_query($ketnoi, "SELECT COUNT(*) FROM `users` WHERE `bannd` = '1'")) ['COUNT(*)']; 
-$total_logo = mysqli_fetch_assoc(mysqli_query($ketnoi, "SELECT COUNT(*) FROM `lich_su_tao_logo` ")) ['COUNT(*)'];
+$total_thanhvien = mysqli_fetch_assoc(mysqli_query($connection, "SELECT COUNT(*) FROM `users` WHERE `level` = 0 ")) ['COUNT(*)']; 
+$total_domain = mysqli_fetch_assoc(mysqli_query($connection, "SELECT COUNT(*) FROM `history_domain` ")) ['COUNT(*)'];
+$total_host = mysqli_fetch_assoc(mysqli_query($connection, "SELECT COUNT(*) FROM `lich_su_mua_host` ")) ['COUNT(*)']; 
+$total_code = mysqli_fetch_assoc(mysqli_query($connection, "SELECT COUNT(*) FROM `lich_su_mua_code` ")) ['COUNT(*)'];
+$total_thanhvienbanned = mysqli_fetch_assoc(mysqli_query($connection, "SELECT COUNT(*) FROM `users` WHERE `bannd` = '1'")) ['COUNT(*)']; 
+$total_logo = mysqli_fetch_assoc(mysqli_query($connection, "SELECT COUNT(*) FROM `lich_su_tao_logo` ")) ['COUNT(*)'];
 ?>
 </head>
 

@@ -9,13 +9,13 @@
 <?php
 if(isset($_GET['id'])){
     $id = $_GET['id'];
-    $toz_host =  $ketnoi->query("SELECT * FROM `list_server_host` WHERE `id` = '$id' ")->fetch_array();
+    $toz_host =  $connection->query("SELECT * FROM `list_server_host` WHERE `id` = '$id' ")->fetch_array();
 }
 ?>
 <?php
 if (isset($_POST["submit"]))
 {
-  $create = mysqli_query($ketnoi,"UPDATE `list_server_host` SET 
+  $create = mysqli_query($connection,"UPDATE `list_server_host` SET 
     `name_server` = '".$_POST['name_server']."',
     `link_login` = '".$_POST['link_login']."',
     `tk_whm` = '".$_POST['tk_whm']."',

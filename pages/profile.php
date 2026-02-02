@@ -31,7 +31,7 @@ if (isset($_POST['update'])) {
         </script>';
     } else {
         // Kiểm tra email đã tồn tại chưa (trừ email của user hiện tại)
-        $check_email = $ketnoi->query("SELECT * FROM `users` WHERE `email` = '$new_email' AND `username` != '$username' ");
+        $check_email = $connection->query("SELECT * FROM `users` WHERE `email` = '$new_email' AND `username` != '$username' ");
         
         if ($check_email->num_rows > 0) {
             echo '<script>
@@ -43,11 +43,11 @@ if (isset($_POST['update'])) {
             </script>';
         } else {
             // Update email vào database
-            $update = $ketnoi->query("UPDATE `users` SET `email` = '$new_email' WHERE `username` = '$username' ");
+            $update = $connection->query("UPDATE `users` SET `email` = '$new_email' WHERE `username` = '$username' ");
             
             if ($update) {
                 // Cập nhật lại thông tin user trong session
-                $user = $ketnoi->query("SELECT * FROM `users` WHERE `session` = '$session' ")->fetch_array();
+                $user = $connection->query("SELECT * FROM `users` WHERE `session` = '$session' ")->fetch_array();
                 
                 echo '<script>
                     Swal.fire({
@@ -86,7 +86,7 @@ if (isset($_POST['update'])) {
                             </div>
                             <div class="settings-card-body">
                                 <form method="POST" action="" enctype="multipart/form-data" class="row g-4">
-                                    <div class="col-md-12">
+                                    <!-- <div class="col-md-12">
                                         <div>
                                             <label for="profile_picture" class="form-label">Chọn ảnh đại
                                                 diện mới</label>
@@ -95,7 +95,7 @@ if (isset($_POST['update'])) {
                                             <i>Chỉ cho phép các định dạng như: jpeg,png,gif. Kích thước ảnh
                                                 tối đa 2MB</i>
                                         </div>
-                                    </div>
+                                    </div> -->
                                     <div class="col-md-6">
                                         <div>
                                             <label for="fname" class="form-label">Tài khoản</label>

@@ -24,7 +24,7 @@ if (isset($_GET['delete']))
 {
     $delete = $_GET['delete'];
 
-    $create = mysqli_query($ketnoi,"DELETE FROM `list_host` WHERE `id` = '".$delete."' ");
+    $create = mysqli_query($connection,"DELETE FROM `list_host` WHERE `id` = '".$delete."' ");
 
     if ($create)
     {
@@ -100,7 +100,7 @@ if (isset($_GET['delete']))
                                             </thead>
                                             <tbody>
                                                 <?php
-                                                $result = mysqli_query($ketnoi,"SELECT * FROM `list_host` ");
+                                                $result = mysqli_query($connection,"SELECT * FROM `list_host` ");
                                                 while($row = mysqli_fetch_assoc($result))
                                                 {
                                                 ?>
@@ -109,7 +109,7 @@ if (isset($_GET['delete']))
                                                     <td><?=$row['name_host'];?></td>
                                                     <td><?=$row['title_host'];?></td>
                                                     <?php 
-                                                    $sv_host = $ketnoi->query("SELECT * FROM `list_server_host` WHERE `id` = '".$row['server_host']."' ")->fetch_array();
+                                                    $sv_host = $connection->query("SELECT * FROM `list_server_host` WHERE `id` = '".$row['server_host']."' ")->fetch_array();
                                                     ?>
                                                     <td><?=$sv_host['name_server'];?></td>
                                                     <td><?=$row['dung_luong'];?></td>

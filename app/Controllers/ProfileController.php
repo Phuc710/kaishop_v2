@@ -33,7 +33,7 @@ class ProfileController extends Controller {
         $this->view('profile/index', [
             'user' => $user,
             'username' => $username,
-            'siteConfig' => $siteConfig
+            'chungapi' => $siteConfig
         ]);
     }
     

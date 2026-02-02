@@ -9,14 +9,14 @@
 <?php
 if(isset($_GET['id'])){
     $id = $_GET['id'];
-    $toz_user =  $ketnoi->query("SELECT * FROM `users` WHERE `username` = '$id' ")->fetch_array();
+    $toz_user =  $connection->query("SELECT * FROM `users` WHERE `username` = '$id' ")->fetch_array();
 }
 ?>
 <?php
 $now = time();
 if (isset($_POST["submit"]))
 {
-  $create = mysqli_query($ketnoi,"UPDATE `users` SET 
+  $create = mysqli_query($connection,"UPDATE `users` SET 
     `username` = '".$_POST['username']."',
     `email` = '".$_POST['email']."',
     `bannd` = '".$_POST['bannd']."',
@@ -38,9 +38,9 @@ $now = time();
 if (isset($_POST["cong_tien"]))
 {
     $tien_cong = $_POST['tien_cong'];
-$create = mysqli_query($ketnoi,"UPDATE `users` SET `money` = `money` + '".$tien_cong."', `tong_nap` = `tong_nap` + '".$tien_cong."' WHERE `username` = '".$id."'");
+$create = mysqli_query($connection,"UPDATE `users` SET `money` = `money` + '".$tien_cong."', `tong_nap` = `tong_nap` + '".$tien_cong."' WHERE `username` = '".$id."'");
 $reason = $_POST["rs_cong"];
-$ketnoi->query("INSERT INTO `history_nap_bank` SET 
+$connection->query("INSERT INTO `history_nap_bank` SET 
                 `trans_id` = NULL,
                 `username` = '".$id."',
                 `type` = 'Hệ thống',
@@ -64,9 +64,9 @@ $ketnoi->query("INSERT INTO `history_nap_bank` SET
 <?php
 if (isset($_POST["tru_tien"]))
 {
-    $create = mysqli_query($ketnoi,"UPDATE `users` SET `money` = `money` - '".$_POST['tien_tru']."', `tong_nap` = `tong_nap` - '".$_POST['tien_tru']."' WHERE `username` = '".$id."'");
+    $create = mysqli_query($connection,"UPDATE `users` SET `money` = `money` - '".$_POST['tien_tru']."', `tong_nap` = `tong_nap` - '".$_POST['tien_tru']."' WHERE `username` = '".$id."'");
     $reason = $_POST["rs_tru"];
-    $ketnoi->query("INSERT INTO `history_nap_bank` SET 
+    $connection->query("INSERT INTO `history_nap_bank` SET 
                     `trans_id` = NULL,
                     `username` = '".$id."',
                     `type` = 'Hệ thống',

@@ -6,7 +6,7 @@
     <?php require __DIR__.'/../../hethong/head2.php';?>
     <?php
     $id_server = antixss($_GET['server']);
-    $server = $ketnoi->query("SELECT * FROM `list_server_host` WHERE `id` = '$id_server' AND `status` = 'ON' ")->fetch_array();
+    $server = $connection->query("SELECT * FROM `list_server_host` WHERE `id` = '$id_server' AND `status` = 'ON' ")->fetch_array();
     if(empty($server)){
         echo '<script type="text/javascript">setTimeout(function(){ location.href = "/" }, 0);</script>';
     }
@@ -46,7 +46,7 @@
             <div class="container">
                 <div class="row justify-content-center">
                  <?php
-                                    $result = mysqli_query($ketnoi,"SELECT * FROM `list_host` WHERE `server_host`='$id_server' ");
+                                    $result = mysqli_query($connection,"SELECT * FROM `list_host` WHERE `server_host`='$id_server' ");
                                     while($row = mysqli_fetch_assoc($result)) { ?>
                     <div class="col-lg-3 col-md-6">
                         <div class="price-card aos aos-init aos-animate">

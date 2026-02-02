@@ -222,6 +222,7 @@
         <div class="container">
             <nav class="navbar navbar-expand-xl justify-content-between">
                 <a href="<?= url('') ?>">
+                    <?php global $chungapi; ?>
                     <img src="<?= $chungapi['logo']; ?>" width="150" alt="dailycode.vn" />
                 </a>
                 <div class="collapse navbar-collapse" id="navbarNav">
@@ -280,6 +281,7 @@
                     </ul>
                 </div>
                 <?php
+                global $chungapi, $username, $user;
                 if (isset($_SESSION['session'])) {
                     ?>
                     <div class="navbar-right d-flex align-items-center gap-2">

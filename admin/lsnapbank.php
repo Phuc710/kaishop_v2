@@ -65,7 +65,7 @@
                                             </thead>
                                             <tbody>
                                                 <?php
-                                $result = mysqli_query($ketnoi,"SELECT * FROM `history_nap_bank` ORDER BY id desc ");
+                                $result = mysqli_query($connection,"SELECT * FROM `history_nap_bank` ORDER BY id desc ");
                                 while($row = mysqli_fetch_assoc($result))
                                 {
                                 ?>

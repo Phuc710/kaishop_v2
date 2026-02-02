@@ -51,13 +51,13 @@ $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $start = ($page - 1) * $limit;
 
 // Đếm tổng số bản ghi
-$total_query = mysqli_query($ketnoi, "SELECT COUNT(*) AS total FROM `lich_su_mua_host` WHERE `username` = '$username'");
+$total_query = mysqli_query($connection, "SELECT COUNT(*) AS total FROM `lich_su_mua_host` WHERE `username` = '$username'");
 $total_row = mysqli_fetch_assoc($total_query);
 $total_records = $total_row['total'];
 $total_pages = ceil($total_records / $limit);
 
 // Truy vấn dữ liệu theo phân trang
-$result = mysqli_query($ketnoi, "SELECT * FROM `lich_su_mua_host` WHERE `username` = '$username' ORDER BY id DESC LIMIT $start, $limit");
+$result = mysqli_query($connection, "SELECT * FROM `lich_su_mua_host` WHERE `username` = '$username' ORDER BY id DESC LIMIT $start, $limit");
 $i = $start + 1;
 ?>
 

@@ -68,7 +68,7 @@
                                             </thead>
                                             <tbody>
                                                 <?php
-                                                $result = mysqli_query($ketnoi,"SELECT * FROM `list_bank`");
+                                                $result = mysqli_query($connection,"SELECT * FROM `list_bank`");
                                                 while($row = mysqli_fetch_assoc($result))
                                                 {
                                                 ?>

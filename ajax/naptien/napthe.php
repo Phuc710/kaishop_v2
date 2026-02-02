@@ -63,7 +63,7 @@ if($username==""){
         $obj = json_decode($result);
         $msg = $obj->message;
         if ($obj->status == 99) {
-        $create = $ketnoi->query("INSERT INTO `history_nap_the` SET 
+        $create = $connection->query("INSERT INTO `history_nap_the` SET 
               `code` = '$code1',
               `seri` = '$seri_the',
               `pin` = '$ma_the',
@@ -75,7 +75,7 @@ if($username==""){
               `note` = '$msg',
               `time` = '$time' ");
               if($create){
-                $toz = $ketnoi->query("INSERT INTO `lich_su_hoat_dong` SET 
+                $toz = $connection->query("INSERT INTO `lich_su_hoat_dong` SET 
                 `username` = '$username',
                 `hoatdong` = 'Nạp thẻ $type_the mệnh giá $menh_gia',
                 `ip` = '".$ip_address."',

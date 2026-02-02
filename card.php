@@ -16,16 +16,16 @@ $getdata['serial'] = $_GET['serial'];
 $getdata['telco'] = $_GET['telco'];
 $code =  $_GET['code'];  
 $seri =  $_GET['serial']; 
-$card = $ketnoi->query("SELECT * FROM history_nap_the WHERE `pin` = '$code' AND `seri` = '$seri'  ")->fetch_array();
+$card = $connection->query("SELECT * FROM history_nap_the WHERE `pin` = '$code' AND `seri` = '$seri'  ")->fetch_array();
 
 if ($_GET['status'] == '1') {
         $thucnhan = $card['thucnhan'];
         
-        $ketnoi->query("UPDATE history_nap_the SET `status` = 'hoantat' WHERE `pin` = '$code' AND `seri` = '$seri' ");
+        $connection->query("UPDATE history_nap_the SET `status` = 'hoantat' WHERE `pin` = '$code' AND `seri` = '$seri' ");
         sendTele($username." Nạp Thẻ Thành Công| Thực Nhận ".$thucnhan."đ");
-        $ketnoi->query("UPDATE users SET `money` = `money` + '$thucnhan', `tong_nap` = `tong_nap` + '$thucnhan' WHERE `username` = '".$card['username']."' ");
+        $connection->query("UPDATE users SET `money` = `money` + '$thucnhan', `tong_nap` = `tong_nap` + '$thucnhan' WHERE `username` = '".$card['username']."' ");
     } else {
-        $ketnoi->query("UPDATE `history_nap_the` SET `status` = 'thatbai' WHERE `pin` = '$code' AND `seri` = '$seri' ");
+        $connection->query("UPDATE `history_nap_the` SET `status` = 'thatbai' WHERE `pin` = '$code' AND `seri` = '$seri' ");
     }
 }
 else

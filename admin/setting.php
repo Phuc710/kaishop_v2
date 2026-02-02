@@ -9,7 +9,7 @@
 <?php
     if (isset($_POST["submit"]) && isset($_SESSION['admin'])) {
        
-      $create = $ketnoi->query("UPDATE `setting` SET
+      $create = $connection->query("UPDATE `setting` SET
         `ten_web` = '".$_POST['ten_web']."',
         `email_cf` = '".$_POST['email_cf']."',
         `api_cf` = '".$_POST['api_cf']."',
@@ -32,7 +32,7 @@
 <?php
     if (isset($_POST["submit2"]) && isset($_SESSION['admin'])) {
        
-      $create = $ketnoi->query("UPDATE `setting` SET
+      $create = $connection->query("UPDATE `setting` SET
         `partner_id` = '".$_POST['partner_id']."',
         `chiet_khau_card` = '".$_POST['chiet_khau_card']."',
         `partner_key` = '".$_POST['partner_key']."',
@@ -51,7 +51,7 @@
 <?php
     if (isset($_POST["submit_token"]) && isset($_SESSION['admin'])) {
        
-      $create = $ketnoi->query("UPDATE `setting` SET
+      $create = $connection->query("UPDATE `setting` SET
         `token_mm` = '".$_POST['token_mm']."',
         `token_mb` = '".$_POST['token_mb']."' ");
 
@@ -67,7 +67,7 @@
 <?php
     if (isset($_POST["submit_smtp"]) && isset($_SESSION['admin'])) {
        
-      $create = $ketnoi->query("UPDATE `setting` SET
+      $create = $connection->query("UPDATE `setting` SET
         `smtp` = '".$_POST['smtp']."',
         `port_smtp` = '".$_POST['port_smtp']."',
         `email_auto` = '".$_POST['email_auto']."',
@@ -86,7 +86,7 @@
 <?php
     if (isset($_POST["submit3"]) && isset($_SESSION['admin'])) {
        
-      $create = $ketnoi->query("UPDATE `setting` SET
+      $create = $connection->query("UPDATE `setting` SET
         `thongbao` = '".$_POST['thongbao']."' ");
 
       if ($create) {

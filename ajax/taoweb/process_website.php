@@ -19,7 +19,7 @@ if (!isset($_SESSION['session'])) {
 $sessionToken = $_SESSION['session'];
 
 // Get user data
-$userQuery = $ketnoi->query("SELECT * FROM `users` WHERE `session` = '$sessionToken'");
+$userQuery = $connection->query("SELECT * FROM `users` WHERE `session` = '$sessionToken'");
 $userData = $userQuery->fetch_array();
 
 if (!$userData) {
@@ -42,7 +42,7 @@ if (empty($websiteName) || empty($templateId) || empty($domainName)) {
 }
 
 // Get template details
-$templateQuery = $ketnoi->query("SELECT * FROM `ds_template` WHERE `id` = '$templateId'");
+$templateQuery = $connection->query("SELECT * FROM `ds_template` WHERE `id` = '$templateId'");
 $templateData = $templateQuery->fetch_array();
 
 if (!$templateData) {
@@ -77,10 +77,10 @@ $insertWebsite = "INSERT INTO `history_taoweb` SET
     `trang_thai` = 'pending',
     `time` = '$currentTime'";
 
-if ($ketnoi->query($insertWebsite)) {
+if ($connection->query($insertWebsite)) {
     // Deduct money
     $newBalance = $userData['money'] - $websitePrice;
-    $ketnoi->query("UPDATE `users` SET `money` = '$newBalance' WHERE `username` = '{$userData['username']}'");
+    $connection->query("UPDATE `users` SET `money` = '$newBalance' WHERE `username` = '{$userData['username']}'");
     
     $response = [
         'success' => true,

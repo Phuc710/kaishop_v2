@@ -80,6 +80,7 @@
             <div class="row">
                 <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
                     <div class="footer-widget">
+                        <?php global $chungapi; ?>
                         <a href="<?= url('') ?>">
                             <img src="<?= $chungapi['logo']; ?>" width="150" alt="dailycode.vn">
                         </a>

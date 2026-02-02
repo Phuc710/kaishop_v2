@@ -67,7 +67,7 @@
                                             </thead>
                                             <tbody>
                                                 <?php
-                                                $result = mysqli_query($ketnoi,"SELECT * FROM `lich_su_mua_host` ORDER BY id desc ");
+                                                $result = mysqli_query($connection,"SELECT * FROM `lich_su_mua_host` ORDER BY id desc ");
                                                 while($row = mysqli_fetch_assoc($result))
                                                 {
                                                 ?>

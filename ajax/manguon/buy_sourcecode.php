@@ -17,7 +17,7 @@ if (!isset($_SESSION['session'])) {
 $sessionToken = $_SESSION['session'];
 
 // Get user data
-$userQuery = $ketnoi->query("SELECT * FROM `users` WHERE `session` = '$sessionToken'");
+$userQuery = $connection->query("SELECT * FROM `users` WHERE `session` = '$sessionToken'");
 $userData = $userQuery->fetch_array();
 
 if (!$userData) {
@@ -40,7 +40,7 @@ if (empty($sourceCodeId)) {
 }
 
 // Get source code details
-$codeQuery = $ketnoi->query("SELECT * FROM `ds_manguon` WHERE `id` = '$sourceCodeId'");
+$codeQuery = $connection->query("SELECT * FROM `ds_manguon` WHERE `id` = '$sourceCodeId'");
 $codeData = $codeQuery->fetch_array();
 
 if (!$codeData) {
@@ -55,7 +55,7 @@ if (!$codeData) {
 $codePrice = $codeData['gia'];
 
 // Check if user already purchased this code
-$checkPurchase = $ketnoi->query("SELECT * FROM `history_muacode` WHERE `username` = '{$userData['username']}' AND `code_id` = '$sourceCodeId'");
+$checkPurchase = $connection->query("SELECT * FROM `history_muacode` WHERE `username` = '{$userData['username']}' AND `code_id` = '$sourceCodeId'");
 
 if ($checkPurchase->num_rows > 0) {
     $response = [
@@ -86,10 +86,10 @@ $insertPurchase = "INSERT INTO `history_muacode` SET
     `link_download` = '{$codeData['link']}',
     `time` = '$currentTime'";
 
-if ($ketnoi->query($insertPurchase)) {
+if ($connection->query($insertPurchase)) {
     // Deduct money
     $newBalance = $userData['money'] - $codePrice;
-    $ketnoi->query("UPDATE `users` SET `money` = '$newBalance' WHERE `username` = '{$userData['username']}'");
+    $connection->query("UPDATE `users` SET `money` = '$newBalance' WHERE `username` = '{$userData['username']}'");
     
     $response = [
         'success' => true,

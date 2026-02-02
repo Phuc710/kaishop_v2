@@ -19,7 +19,7 @@ if (!isset($_SESSION['session'])) {
 $sessionToken = $_SESSION['session'];
 
 // Get user data
-$userQuery = $ketnoi->query("SELECT * FROM `users` WHERE `session` = '$sessionToken'");
+$userQuery = $connection->query("SELECT * FROM `users` WHERE `session` = '$sessionToken'");
 $userData = $userQuery->fetch_array();
 
 if (!$userData) {
@@ -42,7 +42,7 @@ if (empty($packageId) || empty($duration) || empty($domainName)) {
 }
 
 // Get package details
-$packageQuery = $ketnoi->query("SELECT * FROM `goihost` WHERE `id` = '$packageId'");
+$packageQuery = $connection->query("SELECT * FROM `goihost` WHERE `id` = '$packageId'");
 $packageData = $packageQuery->fetch_array();
 
 if (!$packageData) {
@@ -87,10 +87,10 @@ $insertHosting = "INSERT INTO `lich_su_mua_host` SET
     `ngay_het_han` = '$expirationTime',
     `trang_thai` = 'Active'";
 
-if ($ketnoi->query($insertHosting)) {
+if ($connection->query($insertHosting)) {
     // Deduct money
     $newBalance = $userData['money'] - $totalPrice;
-    $ketnoi->query("UPDATE `users` SET `money` = '$newBalance' WHERE `username` = '{$userData['username']}'");
+    $connection->query("UPDATE `users` SET `money` = '$newBalance' WHERE `username` = '{$userData['username']}'");
     
     $response = [
         'success' => true,

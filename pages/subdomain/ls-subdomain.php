@@ -18,13 +18,13 @@ $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $start = ($page - 1) * $limit;
 
 // Đếm tổng bản ghi
-$total_query = mysqli_query($ketnoi, "SELECT COUNT(*) AS total FROM `history_subdomain` WHERE `username` = '$username'");
+$total_query = mysqli_query($connection, "SELECT COUNT(*) AS total FROM `history_subdomain` WHERE `username` = '$username'");
 $total_row = mysqli_fetch_assoc($total_query);
 $total_records = $total_row['total'];
 $total_pages = ceil($total_records / $limit);
 
 // Lấy dữ liệu phân trang
-$result = mysqli_query($ketnoi, "SELECT * FROM `history_subdomain` WHERE `username` = '$username' ORDER BY `id` DESC LIMIT $start, $limit");
+$result = mysqli_query($connection, "SELECT * FROM `history_subdomain` WHERE `username` = '$username' ORDER BY `id` DESC LIMIT $start, $limit");
 $i = $start + 1;
 ?>
 <div class="row">
@@ -46,7 +46,7 @@ $i = $start + 1;
                     <tbody>
                         <?php
                         $i = 1;
-                        $result = mysqli_query($ketnoi, "SELECT * FROM `history_subdomain` WHERE `username` = '$username' ORDER BY id DESC");
+                        $result = mysqli_query($connection, "SELECT * FROM `history_subdomain` WHERE `username` = '$username' ORDER BY id DESC");
                         while ($row1 = mysqli_fetch_assoc($result)) {
                         ?>
                         <tr>

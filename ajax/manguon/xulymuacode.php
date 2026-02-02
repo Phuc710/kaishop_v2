@@ -3,10 +3,10 @@ require __DIR__ . '/../../hethong/config.php';
 
 $id_code = antixss($_POST['id_code']);
 $giftcode = antixss($_POST['giftcode']);
-$check_code = $ketnoi->query("SELECT * FROM `khocode` WHERE `id` = '$id_code' ");
-$user = $ketnoi->query("SELECT * FROM `users` WHERE `username` = '$username' ")->fetch_array();
-$code = $ketnoi->query("SELECT * FROM `khocode` WHERE `id` = '$id_code' ")->fetch_array();
-$discount_data = $ketnoi->query("SELECT * FROM `gift_code` WHERE `type` = 'code' ")->fetch_array();
+$check_code = $connection->query("SELECT * FROM `khocode` WHERE `id` = '$id_code' ");
+$user = $connection->query("SELECT * FROM `users` WHERE `username` = '$username' ")->fetch_array();
+$code = $connection->query("SELECT * FROM `khocode` WHERE `id` = '$id_code' ")->fetch_array();
+$discount_data = $connection->query("SELECT * FROM `gift_code` WHERE `type` = 'code' ")->fetch_array();
 // Kiểm tra 
 if ($username == "") {
   $response = array('success' => false, 'message' => 'Đăng nhập để thực hiện!');
@@ -27,7 +27,7 @@ if ($username == "") {
   } else {
     $now = time();
     $magd = random('ABCDEFGHIJKLMNOPQRSTUVWXYZ', 3) . rand(1000000000, 9999999999);
-    $sql = $ketnoi->query("INSERT INTO `lich_su_mua_code` SET 
+    $sql = $connection->query("INSERT INTO `lich_su_mua_code` SET 
         `trans_id` = '$magd',
         `username` = '$username',
         `loaicode` = '".$code['id']."',
@@ -52,10 +52,10 @@ if ($username == "") {
       }
       $namecode = $code['title'];
       $newmoney = $user['money'] - $discounted_price;
-      $check_mo = $ketnoi->query("UPDATE `khocode` SET `buy` =  `buy`+ 1 WHERE `id` = '".$code['id']."' ");
-      $check_money = $ketnoi->query("UPDATE `users` SET `money` = '$newmoney' WHERE `username` = '".$username."' ");
+      $check_mo = $connection->query("UPDATE `khocode` SET `buy` =  `buy`+ 1 WHERE `id` = '".$code['id']."' ");
+      $check_money = $connection->query("UPDATE `users` SET `money` = '$newmoney' WHERE `username` = '".$username."' ");
       if ($check_money) {
-        $toz = $ketnoi->query("INSERT INTO `lich_su_hoat_dong` SET 
+        $toz = $connection->query("INSERT INTO `lich_su_hoat_dong` SET 
                 `username` = '$username',
                 `hoatdong` = 'Mua mã nguồn',
                 `gia` = '".$discounted_price."',

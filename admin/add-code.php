@@ -9,7 +9,7 @@
 <?php
 if (isset($_POST["submit"]))
 {
-  $create = $ketnoi->query("INSERT INTO `khocode` SET 
+  $create = $connection->query("INSERT INTO `khocode` SET 
     `title` = '".$_POST['title']."',
     `noidung` = '".$_POST['noidung']."',
     `gia` = '".$_POST['gia']."',

@@ -30,7 +30,7 @@ class DashboardController extends Controller {
      */
     public function index() {
         $this->requireAdmin();
-        global $chungapi, $ketnoi;
+        global $chungapi, $connection;
         
         // Get statistics
         $totalUsers = $this->userModel->query("SELECT COUNT(*) as total FROM users")->fetch()['total'];

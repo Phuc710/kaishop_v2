@@ -24,7 +24,7 @@ if (isset($_GET['delete']))
 {
     $delete = $_GET['delete'];
 
-    $create = mysqli_query($ketnoi,"DELETE FROM `list_mau_web` WHERE `id` = '".$delete."' ");
+    $create = mysqli_query($connection,"DELETE FROM `list_mau_web` WHERE `id` = '".$delete."' ");
     if ($create)
     {
       echo '<script type="text/javascript">swal("Thành Công","Xóa thành công","success");setTimeout(function(){ location.href = "chuyen-muc.php" },500);</script>'; 
@@ -99,7 +99,7 @@ if (isset($_GET['delete']))
                                             </thead>
                                             <tbody>
                                                 <?php
-                                                $result = mysqli_query($ketnoi,"SELECT * FROM `list_mau_web` ");
+                                                $result = mysqli_query($connection,"SELECT * FROM `list_mau_web` ");
                                                 while($row = mysqli_fetch_assoc($result))
                                                 {
                                                 ?>

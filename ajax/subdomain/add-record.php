@@ -7,8 +7,8 @@ $name = strip_tags($_POST['name']);
 $content = strip_tags($_POST['content']);
 $now = time();
 
-$mien = $ketnoi->query("SELECT * FROM `history_domain` WHERE `id` = '$id' ")->fetch_array();
-$loaimien = $ketnoi->query("SELECT * FROM `khodomain` WHERE `duoimien` = '".$mien['duoimien']."' ")->fetch_array();
+$mien = $connection->query("SELECT * FROM `history_domain` WHERE `id` = '$id' ")->fetch_array();
+$loaimien = $connection->query("SELECT * FROM `khodomain` WHERE `duoimien` = '".$mien['duoimien']."' ")->fetch_array();
 
 if ($username== "") {
     $response = array('success' => false, 'message' => 'Đăng nhập để thực hiện tính năng này');
@@ -50,7 +50,7 @@ if ($username== "") {
         $result = json_decode($response, true);
         if ($result['success']) {
             $record_id = $result['result']['id'];
-            $toz = $ketnoi->query("INSERT INTO `list_record_domain` SET 
+            $toz = $connection->query("INSERT INTO `list_record_domain` SET 
             `id_domain` = '$id',
             `type` = '$type',
             `name` = '$name',

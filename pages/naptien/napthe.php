@@ -154,7 +154,7 @@
 
                                 // Đếm tổng số bản ghi
                                 $count_query = str_replace("SELECT *", "SELECT COUNT(*)", $query);
-                                $stmt = $ketnoi->prepare($count_query);
+                                $stmt = $connection->prepare($count_query);
                                 $stmt->bind_param($types, ...$params);
                                 $stmt->execute();
                                 $total_items = $stmt->get_result()->fetch_row()[0];
@@ -166,7 +166,7 @@
                                 $params[] = $offset;
                                 $types .= "ii";
 
-                                $stmt = $ketnoi->prepare($query);
+                                $stmt = $connection->prepare($query);
                                 $stmt->bind_param($types, ...$params);
                                 $stmt->execute();
                                 $result = $stmt->get_result();

@@ -10,9 +10,15 @@ class HomeController extends Controller {
      * Show homepage
      */
     public function index() {
-        // Redirect to old index.php for now
-        // Or create a new homepage view
-        header('Location: ' . BASE_URL . '/index.php');
-        exit;
+        global $connection, $chungapi, $username, $user; // Ensure globals are available
+        
+        $productModel = new Product();
+        $products = $productModel->getAvailable();
+        
+        $this->view('home/index', [
+            'products' => $products,
+            'user' => $user, // Pass user data to view
+            'chungapi' => $chungapi
+        ]);
     }
 }

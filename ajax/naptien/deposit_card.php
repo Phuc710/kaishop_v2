@@ -20,7 +20,7 @@ if (!isset($_SESSION['session'])) {
 $sessionToken = $_SESSION['session'];
 
 // Get user data
-$userQuery = $ketnoi->query("SELECT * FROM `users` WHERE `session` = '$sessionToken'");
+$userQuery = $connection->query("SELECT * FROM `users` WHERE `session` = '$sessionToken'");
 $userData = $userQuery->fetch_array();
 
 if (!$userData) {
@@ -54,7 +54,7 @@ $insertCard = "INSERT INTO `history_nap_the` SET
     `thucnhan` = '0',
     `time` = '$currentTime'";
 
-if ($ketnoi->query($insertCard)) {
+if ($connection->query($insertCard)) {
     $response = [
         'success' => true,
         'message' => 'Gửi thẻ thành công! Vui lòng chờ xử lý (5-15 phút)'

@@ -9,13 +9,13 @@
 <?php
 if(isset($_GET['id'])){
     $id = $_GET['id'];
-    $toz_host =  $ketnoi->query("SELECT * FROM `history_domain` WHERE `id` = '$id' ")->fetch_array();
+    $toz_host =  $connection->query("SELECT * FROM `history_domain` WHERE `id` = '$id' ")->fetch_array();
 }
 ?>
 <?php
 if (isset($_POST["submit"]))
 {
-  $create = mysqli_query($ketnoi,"UPDATE `history_domain` SET 
+  $create = mysqli_query($connection,"UPDATE `history_domain` SET 
     
     
     `status` = '".$_POST['status']."' WHERE `id` = '".$id."' ");

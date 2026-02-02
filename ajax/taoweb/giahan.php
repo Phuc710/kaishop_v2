@@ -17,7 +17,7 @@ if ($id_web == '' || $giahan == 0) {
 }
 
 // Lấy thông tin lịch sử tạo web
-$stmt = $ketnoi->prepare("SELECT * FROM `lich_su_tao_web` WHERE `id` = ?");
+$stmt = $connection->prepare("SELECT * FROM `lich_su_tao_web` WHERE `id` = ?");
 $stmt->bind_param("i", $id_web);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -30,7 +30,7 @@ if (!$api_site) {
 }
 
 // Lấy thông tin mẫu web
-$stmt2 = $ketnoi->prepare("SELECT * FROM `list_mau_web` WHERE `id` = ?");
+$stmt2 = $connection->prepare("SELECT * FROM `list_mau_web` WHERE `id` = ?");
 $stmt2->bind_param("i", $api_site['loaiweb']);
 $stmt2->execute();
 $result2 = $stmt2->get_result();
@@ -52,7 +52,7 @@ if ($username != $api_site['username']) {
     $response = array('success' => false, 'message' => 'Số dư trong tài khoản không đủ ' . tien($tongtien) . 'đ, vui lòng nạp thêm');
 } else {
     // Cập nhật hạn sử dụng
-    $stmt3 = $ketnoi->prepare("UPDATE `lich_su_tao_web` SET `ngay_het` = ?, `status` = 'hoatdong' WHERE `id` = ?");
+    $stmt3 = $connection->prepare("UPDATE `lich_su_tao_web` SET `ngay_het` = ?, `status` = 'hoatdong' WHERE `id` = ?");
     $stmt3->bind_param("ii", $het, $id_web);
     $stmt3->execute();
 
@@ -61,7 +61,7 @@ if ($username != $api_site['username']) {
 
     // Trừ tiền
     $newmoney = $user['money'] - $tongtien;
-    $stmt4 = $ketnoi->prepare("UPDATE `users` SET `money` = ? WHERE `username` = ?");
+    $stmt4 = $connection->prepare("UPDATE `users` SET `money` = ? WHERE `username` = ?");
     $stmt4->bind_param("is", $newmoney, $username);
     $stmt4->execute();
 

@@ -10,7 +10,7 @@
 <?php
 if (isset($_POST["submit"]))
 {
-  $create = mysqli_query($ketnoi,"INSERT INTO `list_mau_web` SET 
+  $create = mysqli_query($connection,"INSERT INTO `list_mau_web` SET 
     `title` = '".$_POST['title']."',
     `mo_ta` = '".$_POST['mo_ta']."',
     `img` = '".$_POST['img']."',

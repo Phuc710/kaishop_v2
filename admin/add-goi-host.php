@@ -9,7 +9,7 @@
 <?php
 if (isset($_POST["submit"]))
 {
-  $create = mysqli_query($ketnoi,"INSERT INTO `list_host` SET 
+  $create = mysqli_query($connection,"INSERT INTO `list_host` SET 
     `name_host` = '".$_POST['name_host']."',
     `title_host` = '".$_POST['title_host']."',
     `server_host` = '".$_POST['server_host']."',
@@ -87,7 +87,7 @@ if (isset($_POST["submit"]))
                                             <label for="exampleInputEmail1">SERVER HOST</label>
                                             <select class="form-control" name="server_host">
                                                 <?php
-                                                $result = mysqli_query($ketnoi,"SELECT * FROM `list_server_host` ");
+                                                $result = mysqli_query($connection,"SELECT * FROM `list_server_host` ");
                                                 while($row = mysqli_fetch_assoc($result)) {
                                                 ?>
                                                 <option value="<?=$row['id'];?>"><?=$row['name_server'];?></option>

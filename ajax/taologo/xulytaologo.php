@@ -4,10 +4,10 @@ require __DIR__ . '/../../hethong/config.php';
 $id_code = antixss($_POST['id_code']);
 $giftcode = antixss($_POST['giftcode']);
 $yeucau = antixss($_POST['yeucau']);
-$check_code = $ketnoi->query("SELECT * FROM `khologo` WHERE `id` = '$id_code' ");
-$user = $ketnoi->query("SELECT * FROM `users` WHERE `username` = '$username' ")->fetch_array();
-$code = $ketnoi->query("SELECT * FROM `khologo` WHERE `id` = '$id_code' ")->fetch_array();
-$discount_data = $ketnoi->query("SELECT * FROM `gift_code` WHERE `type` = 'logo' ")->fetch_array();
+$check_code = $connection->query("SELECT * FROM `khologo` WHERE `id` = '$id_code' ");
+$user = $connection->query("SELECT * FROM `users` WHERE `username` = '$username' ")->fetch_array();
+$code = $connection->query("SELECT * FROM `khologo` WHERE `id` = '$id_code' ")->fetch_array();
+$discount_data = $connection->query("SELECT * FROM `gift_code` WHERE `type` = 'logo' ")->fetch_array();
 
 // Kiểm tra 
 if ($username == "") {
@@ -32,7 +32,7 @@ if ($username == "") {
     $now = time();
     $magd = random('ABCDEFGHIJKLMNOPQRSTUVWXYZ', 3) . rand(1000000000, 9999999999);
 
-    $sql = $ketnoi->query("INSERT INTO `lich_su_tao_logo` SET 
+    $sql = $connection->query("INSERT INTO `lich_su_tao_logo` SET 
         `trans_id` = '$magd',
         `username` = '$username',
         `loaicode` = '".$code['id']."',
@@ -47,9 +47,9 @@ if ($username == "") {
         update_code($giftcode);
       }
       $newmoney = $user['money'] - $discounted_price;
-      $check_money = $ketnoi->query("UPDATE `users` SET `money` = '$newmoney' WHERE `username` = '".$username."' ");
+      $check_money = $connection->query("UPDATE `users` SET `money` = '$newmoney' WHERE `username` = '".$username."' ");
       if ($check_money) {
-        $toz = $ketnoi->query("INSERT INTO `lich_su_hoat_dong` SET 
+        $toz = $connection->query("INSERT INTO `lich_su_hoat_dong` SET 
             `username` = '$username',
             `hoatdong` = 'Tạo logo website',
             `gia` = '".$discounted_price."',

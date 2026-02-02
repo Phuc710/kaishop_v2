@@ -9,13 +9,13 @@
 <?php
 if(isset($_GET['id'])){
     $id = $_GET['id'];
-    $toz_domain =  $ketnoi->query("SELECT * FROM `khosubdomain` WHERE `id` = '$id' ")->fetch_array();
+    $toz_domain =  $connection->query("SELECT * FROM `khosubdomain` WHERE `id` = '$id' ")->fetch_array();
 }
 ?>
 <?php
 if (isset($_POST["submit"]))
 {
-  $create = mysqli_query($ketnoi,"UPDATE `khosubdomain` SET 
+  $create = mysqli_query($connection,"UPDATE `khosubdomain` SET 
     `duoimien` = '".$_POST['duoimien']."',
     `gia` = '".$_POST['gia']."',
     `zone_id` = '".$_POST['zone_id']."',

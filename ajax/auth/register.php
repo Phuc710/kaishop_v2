@@ -7,8 +7,8 @@ $username = antixss($_POST['username'] ?? '');
 $password = antixss($_POST['password'] ?? '');
 
 // Check if user exists
-$checkUser = $ketnoi->query("SELECT * FROM `users` WHERE `username` = '$username'");
-$checkEmail = $ketnoi->query("SELECT * FROM `users` WHERE `email` = '$email'");
+$checkUser = $connection->query("SELECT * FROM `users` WHERE `username` = '$username'");
+$checkEmail = $connection->query("SELECT * FROM `users` WHERE `email` = '$email'");
 
 // Validate required fields
 if (empty($username) || empty($password) || empty($email)) {
@@ -87,7 +87,7 @@ $sql = "INSERT INTO `users` SET
     `time` = '" . time() . "',
     `ip` = '$ip_address'";
 
-if ($ketnoi->query($sql)) {
+if ($connection->query($sql)) {
     $_SESSION['session'] = $sessionToken;
     $response = [
         'success' => true,

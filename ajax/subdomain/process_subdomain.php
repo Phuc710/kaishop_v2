@@ -19,7 +19,7 @@ if (!isset($_SESSION['session'])) {
 $sessionToken = $_SESSION['session'];
 
 // Get user data
-$userQuery = $ketnoi->query("SELECT * FROM `users` WHERE `session` = '$sessionToken'");
+$userQuery = $connection->query("SELECT * FROM `users` WHERE `session` = '$sessionToken'");
 $userData = $userQuery->fetch_array();
 
 if (!$userData) {
@@ -42,7 +42,7 @@ if (empty($subdomainName) || empty($parentDomain) || empty($duration)) {
 }
 
 // Get subdomain package details
-$packageQuery = $ketnoi->query("SELECT * FROM `ds_subdomain` WHERE `duoi` = '$parentDomain'");
+$packageQuery = $connection->query("SELECT * FROM `ds_subdomain` WHERE `duoi` = '$parentDomain'");
 $packageData = $packageQuery->fetch_array();
 
 if (!$packageData) {
@@ -72,7 +72,7 @@ if ($userData['money'] < $totalPrice) {
 $fullSubdomain = $subdomainName . $parentDomain;
 
 // Check if subdomain already exists
-$checkSubdomain = $ketnoi->query("SELECT * FROM `history_subdomain` WHERE `username` = '{$userData['username']}' AND `subdomain` = '$fullSubdomain'");
+$checkSubdomain = $connection->query("SELECT * FROM `history_subdomain` WHERE `username` = '{$userData['username']}' AND `subdomain` = '$fullSubdomain'");
 
 if ($checkSubdomain->num_rows > 0) {
     $response = [
@@ -96,10 +96,10 @@ $insertSubdomain = "INSERT INTO `history_subdomain` SET
     `ngay_het_han` = '$expirationTime',
     `trang_thai` = 'Active'";
 
-if ($ketnoi->query($insertSubdomain)) {
+if ($connection->query($insertSubdomain)) {
     // Deduct money
     $newBalance = $userData['money'] - $totalPrice;
-    $ketnoi->query("UPDATE `users` SET `money` = '$newBalance' WHERE `username` = '{$userData['username']}'");
+    $connection->query("UPDATE `users` SET `money` = '$newBalance' WHERE `username` = '{$userData['username']}'");
     
     $response = [
         'success' => true,

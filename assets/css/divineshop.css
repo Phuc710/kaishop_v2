@@ -1,0 +1,161 @@
+/* DivineShop Inspired Product Card Styles */
+.ds-product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 20px 0;
+}
+
+.ds-card {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid #f0f0f0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    cursor: pointer;
+}
+
+.ds-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+}
+
+.ds-card-img-wrap {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%;
+    /* 16:9 Aspect Ratio */
+    background: #f9f9f9;
+}
+
+.ds-card-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.ds-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.ds-badge.premium {
+    background: #ffc107;
+    color: #000;
+}
+
+.ds-badge.pro {
+    background: #fd7e14;
+}
+
+.ds-status-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(33, 37, 41, 0.8);
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.ds-card-body {
+    padding: 15px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.ds-card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 42px;
+}
+
+.ds-card-title a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.ds-card-title a:hover {
+    color: #007bff;
+}
+
+.ds-price-row {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.ds-price {
+    font-size: 16px;
+    font-weight: 700;
+    color: #000;
+}
+
+.ds-old-price {
+    font-size: 13px;
+    color: #999;
+    text-decoration: line-through;
+}
+
+.ds-discount {
+    background: #dc3545;
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* Gray out unavailable products */
+.ds-card.offline {
+    filter: grayscale(0.8);
+    opacity: 0.8;
+}
+
+@media (max-width: 576px) {
+    .ds-product-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .ds-card-title {
+        font-size: 13px;
+        min-height: 36px;
+    }
+
+    .ds-price {
+        font-size: 14px;
+    }
+
+    .ds-old-price {
+        font-size: 11px;
+    }
+}

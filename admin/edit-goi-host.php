@@ -9,13 +9,13 @@
 <?php
 if(isset($_GET['id'])){
     $id = $_GET['id'];
-    $toz_host =  $ketnoi->query("SELECT * FROM `list_host` WHERE `id` = '$id' ")->fetch_array();
+    $toz_host =  $connection->query("SELECT * FROM `list_host` WHERE `id` = '$id' ")->fetch_array();
 }
 ?>
 <?php
 if (isset($_POST["submit"]))
 {
-  $create = mysqli_query($ketnoi,"UPDATE `list_host` SET 
+  $create = mysqli_query($connection,"UPDATE `list_host` SET 
     `name_host` = '".$_POST['name_host']."',
     `title_host` = '".$_POST['title_host']."',
     `server_host` = '".$_POST['server_host']."',
@@ -98,11 +98,11 @@ if (isset($_POST["submit"]))
                                             <label for="exampleInputEmail1">SERVER HOST</label>
                                             <select class="form-control" name="server_host">
                                                 <?php
-                                                $sv_host = $ketnoi->query("SELECT * FROM `list_server_host` WHERE `id` = '".$toz_host['server_host']."' ")->fetch_array();
+                                                $sv_host = $connection->query("SELECT * FROM `list_server_host` WHERE `id` = '".$toz_host['server_host']."' ")->fetch_array();
                                                 ?>
                                                 <option value="<?=$toz_host['server_host'];?>"><?=$sv_host['name_server'];?></option>
                                                 <?php
-                                                $result = mysqli_query($ketnoi,"SELECT * FROM `list_server_host` WHERE `id` != '".$toz_host['server_host']."' ");
+                                                $result = mysqli_query($connection,"SELECT * FROM `list_server_host` WHERE `id` != '".$toz_host['server_host']."' ");
                                                 while($row = mysqli_fetch_assoc($result)) {
                                                 ?>
                                                 <option value="<?=$row['id'];?>"><?=$row['name_server'];?></option>

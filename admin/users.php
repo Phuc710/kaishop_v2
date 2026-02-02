@@ -24,7 +24,7 @@ if (isset($_GET['delete']))
 {
     $delete = $_GET['delete'];
 
-    $create = mysqli_query($ketnoi,"DELETE FROM `users` WHERE `id` = '".$delete."' ");
+    $create = mysqli_query($connection,"DELETE FROM `users` WHERE `id` = '".$delete."' ");
 
     if ($create)
     {
@@ -95,7 +95,7 @@ if (isset($_GET['delete']))
                                             </thead>
                                             <tbody>
                                                 <?php
-                                                $result = mysqli_query($ketnoi, "SELECT * FROM `users` ORDER BY id DESC");
+                                                $result = mysqli_query($connection, "SELECT * FROM `users` ORDER BY id DESC");
                                                 while ($row = mysqli_fetch_assoc($result)) {
                                                 ?>
                                                 <tr>

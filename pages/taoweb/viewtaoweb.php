@@ -11,10 +11,10 @@
 <?php
 if(isset($_GET['id'])) {
 $id = $_GET['id'];
-$check_host = $ketnoi->query("SELECT * FROM `lich_su_tao_web` WHERE `id` = '$id' ");
+$check_host = $connection->query("SELECT * FROM `lich_su_tao_web` WHERE `id` = '$id' ");
 if($check_host->num_rows == 1){
-    $api_site = $ketnoi->query("SELECT * FROM `lich_su_tao_web` WHERE `id` = '$id' ")->fetch_array();
-    $loai_site = $ketnoi->query("SELECT * FROM `list_mau_web` WHERE `id` = '".$api_site['loaiweb']."' ")->fetch_array();
+    $api_site = $connection->query("SELECT * FROM `lich_su_tao_web` WHERE `id` = '$id' ")->fetch_array();
+    $loai_site = $connection->query("SELECT * FROM `list_mau_web` WHERE `id` = '".$api_site['loaiweb']."' ")->fetch_array();
     if($api_site['username']!=$username){
     echo '<script type="text/javascript">if(!alert("Website không tồn tại hay không phải của bạn!")){window.location.href = BASE_URL + "/";}</script>';
     }

@@ -9,7 +9,7 @@
 <?php
 if (isset($_POST["submit"]))
 {
-  $create = mysqli_query($ketnoi,"INSERT `gift_code` SET 
+  $create = mysqli_query($connection,"INSERT `gift_code` SET 
     `giftcode` = '".$_POST['giftcode']."',
     `giamgia` = '".$_POST['giamgia']."',
     `type` = '".$_POST['type']."',

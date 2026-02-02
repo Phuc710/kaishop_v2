@@ -1,5 +1,5 @@
 <?php
-require_once('ketnoi.php');
+require_once(__DIR__ . '/../database/connection.php');
 require_once('UrlHelper.php');
 
 
@@ -22,7 +22,7 @@ $version = "V1.0";
 date_default_timezone_set('Asia/Ho_Chi_Minh');
 $_SESSION['session_request'] = time();
 $time = date('h:i d-m-Y');
-$chungapi = $ketnoi->query("SELECT * FROM `setting` ")->fetch_array();
+$chungapi = $connection->query("SELECT * FROM `setting` ")->fetch_array();
 include_once('SMTP/class.smtp.php');
 include_once('SMTP/PHPMailerAutoload.php');
 include_once('SMTP/class.phpmailer.php');
@@ -33,7 +33,7 @@ if (file_exists($file)) {
 }
 if (isset($_SESSION['session'])) {
     $session = $_SESSION['session'];
-    $user = $ketnoi->query("SELECT * FROM `users` WHERE `session` = '$session' ")->fetch_array();
+    $user = $connection->query("SELECT * FROM `users` WHERE `session` = '$session' ")->fetch_array();
     $username = $user['username'];
     if (empty($user['id'])) {
         session_start();
@@ -139,8 +139,8 @@ function checkmien($domain)
 }
 function giftcode($code, $type)
 {
-    global $ketnoi;
-    $check = $ketnoi->query("SELECT * FROM `gift_code` WHERE `giftcode` = '$code' AND `type` = '$type'AND `soluong` - `dadung` >0 AND `status` = 'ON' ")->fetch_array();
+    global $connection;
+    $check = $connection->query("SELECT * FROM `gift_code` WHERE `giftcode` = '$code' AND `type` = '$type'AND `soluong` - `dadung` >0 AND `status` = 'ON' ")->fetch_array();
     if (empty($check)) {
         $giamgia = 0;
     } else {
@@ -150,8 +150,8 @@ function giftcode($code, $type)
 }
 function update_code($code)
 {
-    global $ketnoi;
-    $ketnoi->query("UPDATE `gift_code` SET `dadung` = `dadung` + 1 WHERE `giftcode` = '" . $code . "' ");
+    global $connection;
+    $connection->query("UPDATE `gift_code` SET `dadung` = `dadung` + 1 WHERE `giftcode` = '" . $code . "' ");
 }
 function ngay($date)
 {

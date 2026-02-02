@@ -29,6 +29,7 @@
 <link href="<?= asset('assets/css/job_post.css') ?>" rel="stylesheet" />
 <link href="<?= asset('assets/css/resposive.css') ?>" rel="stylesheet" />
 <link rel="stylesheet" href="<?= asset('assets/css/styles.css') ?>">
+<link rel="stylesheet" href="<?= asset('assets/css/divineshop.css') ?>">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-notify@1.0.4/dist/simple-notify.css" />
 <script src="https://cdn.jsdelivr.net/npm/simple-notify@1.0.4/dist/simple-notify.min.js"></script>
 <script src="<?= asset('assets/js/jquery.min.js') ?>"></script>

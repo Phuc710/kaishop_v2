@@ -270,7 +270,7 @@
                     </ul>
                 </li>
                 <li class="nav-header">DANH MỤC</li>
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     <a href="#" class="nav-link">
                         <i class="nav-icon fas fa fa-tag"></i>
                         <p>
@@ -391,9 +391,57 @@
                             </a>
                         </li>
                     </ul>
+                </li> -->
+
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon fas fa fa-list"></i>
+                        <p>
+                            Quản lý Danh mục
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="list-category.php" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Danh sách danh mục</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="add-category.php" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Thêm danh mục</p>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
 
                 <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon fas fa fa-box-open"></i>
+                        <p>
+                            Quản lý Sản phẩm
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="list-product.php" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Danh sách sản phẩm</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="add-product.php" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Thêm sản phẩm</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- <li class="nav-item">
                     <a href="#" class="nav-link">
                         <i class="nav-icon fas fa fa-tag"></i>
                         <p>
@@ -415,7 +463,7 @@
                             </a>
                         </li>
                     </ul>
-                </li>
+                </li> -->
                 <li class="nav-header">CÀI ĐẶT</li>
                 <li class="nav-item">
                     <a href="setting.php" class="nav-link">

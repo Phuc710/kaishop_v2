@@ -5,7 +5,7 @@ $ten_mien = strip_tags($_POST['ten_mien']);
 $duoi_mien = strip_tags($_POST['duoimien']);
 $menhGiaList = [];
 
-$stmt = $ketnoi->prepare("SELECT * FROM `ds_domain` WHERE `duoimien` = ?");
+$stmt = $connection->prepare("SELECT * FROM `ds_domain` WHERE `duoimien` = ?");
 $stmt->bind_param("s", $duoimien);
 $stmt->execute();
 $result = $stmt->get_result();
