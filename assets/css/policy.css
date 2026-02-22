@@ -1,0 +1,70 @@
+/* assets/css/policy.css */
+
+.policy-wrapper {
+    max-width: 900px;
+    margin: 80px auto 60px;
+    padding: 20px 15px;
+    font-family: 'Inter', sans-serif;
+}
+
+.policy-wrapper h1 {
+    text-align: center;
+    color: #ff6900;
+    font-size: 40px;
+    font-weight: 990;
+    border-bottom: 3px solid #ff6900;
+    padding-bottom: 10px;
+    width: fit-content;
+    margin: 0 auto 24px auto;
+}
+
+.policy-wrapper h2 {
+    color: #1d1d1d;
+    margin-top: 36px;
+    margin-bottom: 16px;
+    font-size: 22px;
+    font-weight: 700;
+    padding-bottom: 8px;
+    display: inline-block;
+}
+
+.policy-wrapper p,
+.policy-wrapper ul {
+    color: #4f4f4f;
+    margin-bottom: 16px;
+    font-size: 16px;
+    line-height: 1.75;
+}
+
+.policy-wrapper ul {
+    padding-left: 20px;
+}
+
+.policy-wrapper li {
+    margin-bottom: 8px;
+}
+
+.policy-wrapper strong {
+    font-weight: 900;
+    color: #333;
+}
+
+.policy-notice {
+    background-color: rgba(255, 105, 0, 0.05);
+    border-left: 5px solid #ff6900;
+    padding: 16px 20px;
+    margin-top: 36px;
+    border-radius: 6px;
+    font-weight: 600;
+    color: #ff0000;
+    border-top: 1px solid rgba(255, 105, 0, 0.2);
+    border-right: 1px solid rgba(255, 105, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 105, 0, 0.2);
+    display: flex;
+    align-items: center;
+}
+
+.policy-notice i {
+    margin-right: 12px;
+    font-size: 20px;
+}

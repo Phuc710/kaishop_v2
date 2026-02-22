@@ -1,14 +1,17 @@
 <!-- Image Manager Modal -->
-<div class="modal fade" id="imageManagerModal" tabindex="-1" role="dialog" aria-labelledby="imageManagerModalLabel" aria-hidden="true">
+<div class="modal fade" id="imageManagerModal" tabindex="-1" role="dialog" aria-labelledby="imageManagerModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="imageManagerModalLabel">Thư viện ảnh</h5>
                 <div class="ml-auto d-flex align-items-center">
-                     <button class="btn btn-danger btn-sm mr-2" id="btnDeleteSelected" style="display: none;" onclick="deleteSelectedImages()">
+                    <button class="btn btn-danger btn-sm mr-2" id="btnDeleteSelected" style="display: none;"
+                        onclick="deleteSelectedImages()">
                         <i class="fas fa-trash"></i> Xóa (<span id="deleteCount">0</span>)
                     </button>
-                    <input type="text" id="imageSearch" class="form-control form-control-sm mr-2" placeholder="Tìm kiếm ảnh..." style="width: 200px;">
+                    <input type="text" id="imageSearch" class="form-control form-control-sm mr-2"
+                        placeholder="Tìm kiếm ảnh..." style="width: 200px;">
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -18,8 +21,9 @@
                 <div class="row mb-3">
                     <div class="col-md-9">
                         <div class="custom-file">
-                             <!-- multiple attribute for multi-select -->
-                            <input type="file" class="custom-file-input" id="uploadImageInput" accept="image/*" multiple>
+                            <!-- multiple attribute for multi-select -->
+                            <input type="file" class="custom-file-input" id="uploadImageInput" accept="image/*"
+                                multiple>
                             <label class="custom-file-label" for="uploadImageInput">Chọn ảnh...</label>
                         </div>
                     </div>
@@ -33,8 +37,9 @@
                     <!-- Images will be loaded here -->
                 </div>
             </div>
-             <div class="modal-footer">
-                <small class="text-muted mr-auto">Tip: Click để chọn nhiều ảnh. Double-click để chọn ảnh cho sản phẩm.</small>
+            <div class="modal-footer">
+                <small class="text-muted mr-auto">Tip: Click để chọn nhiều ảnh. Double-click để chọn ảnh cho sản
+                    phẩm.</small>
                 <button type="button" class="btn btn-primary" id="btnChooseImage">Chọn ảnh</button>
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
             </div>
@@ -49,11 +54,13 @@
         border: 2px solid transparent;
         transition: all 0.2s;
     }
+
     .image-item.selected {
         border-color: #007bff;
         background-color: #e8f0fe;
         transform: scale(0.95);
     }
+
     .image-item .check-icon {
         display: none;
         position: absolute;
@@ -68,6 +75,7 @@
         line-height: 20px;
         font-size: 12px;
     }
+
     .image-item.selected .check-icon {
         display: block;
     }
@@ -91,13 +99,13 @@
             data: { action: 'list' },
             dataType: 'json',
             cache: false, // Prevent caching
-            success: function(response) {
-                if(response.data) {
+            success: function (response) {
+                if (response.data) {
                     allImages = response.data;
                     // Re-apply search if exists
                     var searchText = $('#imageSearch').val().toLowerCase();
-                     if (searchText.length >= 3) {
-                        var filteredImages = allImages.filter(function(img) {
+                    if (searchText.length >= 3) {
+                        var filteredImages = allImages.filter(function (img) {
                             return img.name.toLowerCase().indexOf(searchText) > -1;
                         });
                         renderImages(filteredImages);
@@ -114,10 +122,10 @@
     function renderImages(images) {
         var html = '';
         if (images.length > 0) {
-            images.forEach(function(img) {
+            images.forEach(function (img) {
                 var isSelected = selectedImages.includes(img.url);
                 var selectedClass = isSelected ? 'selected' : '';
-                
+
                 html += '<div class="col-md-2 col-4 mb-3">';
                 html += '<div class="card h-100 image-item ' + selectedClass + '" onclick="toggleSelection(\'' + img.url + '\')" ondblclick="selectImage(\'' + img.url + '\')">';
                 html += '<div class="check-icon"><i class="fas fa-check"></i></div>';
@@ -139,7 +147,7 @@
         } else {
             selectedImages.push(url);
         }
-        
+
         // Find element by src
         var img = $('#imageList img[src="' + url + '"]');
         var card = img.closest('.image-item');
@@ -148,7 +156,7 @@
         } else {
             card.removeClass('selected');
         }
-        
+
         updateDeleteButton();
     }
 
@@ -168,7 +176,7 @@
     }
 
     // Handle "Choose Image" button click
-    $(document).on('click', '#btnChooseImage', function() {
+    $(document).on('click', '#btnChooseImage', function () {
         if (selectedImages.length === 0) {
             Swal.fire('Thông báo', 'Vui lòng chọn một ảnh', 'warning');
             return;
@@ -181,7 +189,7 @@
     });
 
     // Update label when files are selected
-    $(document).on('change', '#uploadImageInput', function() {
+    $(document).on('change', '#uploadImageInput', function () {
         var files = $(this).prop('files');
         var label = 'Chọn nhiều ảnh để upload (Tự động chuyển sang WebP)';
         if (files.length > 0) {
@@ -195,10 +203,10 @@
     });
 
     // Handle Upload Button Click
-    $(document).on('click', '#btnUploadAction', function() {
+    $(document).on('click', '#btnUploadAction', function () {
         var file_input = $('#uploadImageInput');
         var files = file_input.prop('files');
-        
+
         if (files.length === 0) {
             Swal.fire('Lỗi', 'Vui lòng chọn ít nhất một ảnh để upload', 'warning');
             return;
@@ -227,7 +235,7 @@
             contentType: false,
             processData: false,
             data: form_data,
-            success: function(response) {
+            success: function (response) {
                 try {
                     var json = JSON.parse(response);
                     if (json.success) {
@@ -241,11 +249,11 @@
                             timer: 3000
                         });
                         // Clear search to show new images
-                        $('#imageSearch').val(''); 
+                        $('#imageSearch').val('');
                         loadImages();
                         file_input.val(''); // Reset input
                         $('.custom-file-label').html('Chọn nhiều ảnh để upload (Tự động chuyển sang WebP)');
-                         $('#imageList').scrollTop(0);
+                        $('#imageList').scrollTop(0);
                     } else {
                         Swal.fire({
                             icon: 'error',
@@ -256,23 +264,36 @@
                 } catch (e) {
                     Swal.fire('Lỗi', 'Lỗi phản hồi từ server: ' + e.message, 'error');
                 }
+            },
+            error: function (xhr, status, error) {
+                var errorMsg = 'Lỗi kết nối server: ' + error;
+                if (xhr.status === 413) {
+                    errorMsg = 'File upload quá lớn so với giới hạn của hosting (413 Request Entity Too Large)';
+                } else if (xhr.status === 500) {
+                    errorMsg = 'Lỗi hệ thống từ server (500 Internal Server Error). Vui lòng kiểm tra lại cấu hình PHP.';
+                }
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Upload thất bại',
+                    text: errorMsg,
+                });
             }
         });
     });
-    
+
     // Search Functionality
-    $('#imageSearch').on('keyup', function() {
+    $('#imageSearch').on('keyup', function () {
         var value = $(this).val().toLowerCase();
-        
+
         // If search is less than 3 chars, reset to full list
         if (value.length < 3) {
             if (allImages.length > 0) {
-                 renderImages(allImages);
+                renderImages(allImages);
             }
-            return; 
+            return;
         }
 
-        var filteredImages = allImages.filter(function(img) {
+        var filteredImages = allImages.filter(function (img) {
             return img.name.toLowerCase().indexOf(value) > -1;
         });
         renderImages(filteredImages);
@@ -296,14 +317,14 @@
                 $.ajax({
                     url: 'ajax-image.php',
                     type: 'POST',
-                    data: { 
+                    data: {
                         action: 'delete',
                         files: selectedImages
                     },
                     dataType: 'json',
-                    success: function(response) {
+                    success: function (response) {
                         if (response.success) {
-                             Swal.fire({
+                            Swal.fire({
                                 icon: 'success',
                                 title: 'Đã xóa!',
                                 text: response.message,
@@ -325,7 +346,7 @@
     }
 
     // Custom file input label update
-    $(".custom-file-input").on("change", function() {
+    $(".custom-file-input").on("change", function () {
         var files = $(this).prop('files');
         var label = files.length > 1 ? files.length + ' files selected' : (files[0] ? files[0].name : 'Chọn nhiều ảnh...');
         $(this).siblings(".custom-file-label").addClass("selected").html(label);

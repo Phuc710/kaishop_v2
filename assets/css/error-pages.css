@@ -1,0 +1,78 @@
+/* assets/css/error-pages.css */
+body.error-page-wrapper {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fdfdfd;
+    font-family: 'Inter', sans-serif;
+    color: #4f4f4f;
+}
+
+/* Full Page Clean Container */
+.error-card {
+    padding: 2rem;
+    max-width: 600px;
+    width: 100%;
+    text-align: center;
+}
+
+/* Status Code */
+.error-code {
+    font-size: 8rem;
+    font-weight: 800;
+    line-height: 1;
+    margin: 0 0 1.5rem;
+    color: #ff6900;
+}
+
+/* Icon (if any) */
+.error-icon {
+    font-size: 5rem;
+    margin-bottom: 2rem;
+    color: #ff6900;
+}
+
+.error-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0 0 1rem;
+    color: #1d1d1d;
+}
+
+.error-message {
+    font-size: 1.125rem;
+    color: #4f4f4f;
+    margin-bottom: 2.5rem;
+    line-height: 1.6;
+}
+
+/* Primary Button Style matching login */
+.error-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 28px;
+    background: #ff6900;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 8px;
+    border: 1px solid #ff6900;
+    transition: all 0.3s ease;
+}
+
+.error-action:hover,
+.error-action:focus {
+    background-color: #f7660e;
+    border-color: #f7660e;
+    color: #fff;
+    text-decoration: none;
+}
+
+.error-action i {
+    margin-right: 8px;
+}

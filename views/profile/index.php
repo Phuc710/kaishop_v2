@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>
     <title>Thông Tin Tài Khoản | <?= $chungapi['ten_web']; ?></title>

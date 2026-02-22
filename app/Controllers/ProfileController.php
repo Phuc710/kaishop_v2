@@ -45,7 +45,7 @@ class ProfileController extends Controller {
         if (!$this->authService->isLoggedIn()) {
             return $this->json([
                 'success' => false,
-                'message' => 'Not logged in'
+                'message' => 'Bạn chưa đăng nhập'
             ], 401);
         }
         
@@ -66,7 +66,7 @@ class ProfileController extends Controller {
         if ($this->userModel->emailExists($newEmail, $user['id'])) {
             return $this->json([
                 'success' => false,
-                'message' => 'Email is already in use by another account'
+                'message' => 'Email đã được sử dụng bởi tài khoản khác'
             ], 400);
         }
         
@@ -76,12 +76,12 @@ class ProfileController extends Controller {
         if ($success) {
             return $this->json([
                 'success' => true,
-                'message' => 'Email updated successfully'
+                'message' => 'Cập nhật email thành công'
             ]);
         } else {
             return $this->json([
                 'success' => false,
-                'message' => 'An error occurred, please try again'
+                'message' => 'Có lỗi xảy ra, vui lòng thử lại'
             ], 500);
         }
     }

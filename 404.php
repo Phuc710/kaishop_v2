@@ -1,45 +1,26 @@
 <!DOCTYPE html>
-<!--begin::Head-->
+<html lang="vi">
 
 <head>
     <?php require_once __DIR__ . '/hethong/config.php'; ?>
     <?php require HETHONG_PATH . '/head2.php'; ?>
-    <title>404 Không tìm thấy</title>
+    <title>404 - Không Tìm Thấy Trang | <?= $chungapi['ten_web'] ?></title>
+    <meta name="description"
+        content="Trang bạn đang tìm kiếm không tồn tại, đã bị xóa hoặc đổi tên. Vui lòng quay lại trang chủ <?= $chungapi['ten_web'] ?>.">
+    <meta name="robots" content="noindex, follow">
+    <link rel="canonical" href="<?= url('') ?>">
+    <link rel="stylesheet" href="<?= asset('assets/css/error-pages.css') ?>">
 </head>
-<!--end::Head-->
 
-<!--begin::Body-->
-
-<body id="kt_body" class="auth-bg">
-
-    <!--Begin::Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5FS8GGP" height="0" width="0"
-            style="display:none;visibility:hidden"></iframe></noscript>
-    <!--End::Google Tag Manager (noscript) -->
-
-    <!--begin::Main-->
-    <div class="d-flex flex-column flex-root">
-        <!--begin::Authentication - 404 Page-->
-        <div class="d-flex flex-column flex-center flex-column-fluid p-10">
-            <!--begin::Illustration-->
-            <img src="<?= asset('assets/media/illustrations/404-hd.png') ?>" alt="" class="mw-100 mb-10 h-lg-450px" />
-            <!--end::Illustration-->
-
-            <!--begin::Message-->
-            <h1 class="fw-bold mb-10" style="color: #A3A3C7">Không tìm thấy</h1>
-            <!--end::Message-->
-
-            <!--begin::Link-->
-            <a href="/" class="btn btn-primary">Về trang chủ</a>
-            <!--end::Link-->
-        </div>
-        <!--end::Authentication - 404 Page-->
-
+<body class="error-page-wrapper">
+    <div class="error-card">
+        <div class="error-code">404</div>
+        <h1 class="error-title">NOT FOUND</h1>
+        <p class="error-message">Trang bạn tìm không tồn tại.</p>
+        <a href="<?= url('') ?>" class="error-action">
+            <i class="fa-solid fa-house"></i> Về trang chủ
+        </a>
     </div>
-    <!--end::Main-->
-
-
-
-
-    <!--end::Javascript-->
 </body>
+
+</html>

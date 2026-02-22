@@ -24,7 +24,7 @@ class AdminMiddleware {
         
         if (!isset($user['level']) || $user['level'] != 9) {
             http_response_code(403);
-            die('Access denied - Admin only');
+            die('Truy cập bị từ chối - Chỉ dành cho quản trị viên');
         }
         
         return true;

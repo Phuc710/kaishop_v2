@@ -1,5 +1,8 @@
 <?php
+header('Content-Type: application/json; charset=utf-8');
+ob_start();
 require_once('../hethong/config.php');
+ob_end_clean(); // Xóa mọi HTML output từ config.php
 
 // Check if user is admin (security check)
 if (!isset($_SESSION['admin'])) {
@@ -18,7 +21,8 @@ if (!file_exists($imageDir)) {
 $action = isset($_POST['action']) ? $_POST['action'] : '';
 
 // Helper function to convert image to WebP
-function convertToWebP($source, $destination, $quality = 80) {
+function convertToWebP($source, $destination, $quality = 80)
+{
     $info = getimagesize($source);
     $mime = $info['mime'];
 
@@ -57,17 +61,17 @@ if ($action == 'list') {
             if (in_array($ext, ['webp', 'jpg', 'jpeg', 'png', 'gif', 'svg'])) {
                 $images[] = [
                     'name' => $file,
-                    'url' => '/kaishop_v2/assets/images/products/' . $file,
+                    'url' => APP_DIR . '/assets/images/products/' . $file,
                     'path' => 'assets/images/products/' . $file
                 ];
             }
         }
     }
     // Sort by newest first
-    usort($images, function($a, $b) use ($imageDir) {
+    usort($images, function ($a, $b) use ($imageDir) {
         return filemtime($imageDir . $b['name']) - filemtime($imageDir . $a['name']);
     });
-    
+
     echo json_encode(['data' => $images]);
     exit;
 }
@@ -77,29 +81,49 @@ if ($action == 'upload') {
         $uploadedFiles = [];
         $errors = [];
         $files = $_FILES['files'];
-        
-        // Loop through multiple files
+
         $count = count($files['name']);
-        
+
         for ($i = 0; $i < $count; $i++) {
             if ($files['error'][$i] == 0) {
-                $fileName = pathinfo($files['name'][$i], PATHINFO_FILENAME);
+                $ext = strtolower(pathinfo($files['name'][$i], PATHINFO_EXTENSION));
                 $tmpName = $files['tmp_name'][$i];
-                
-                // Generate unique name
-                $newFileName = time() . '_' . uniqid() . '.webp';
-                $targetPath = $imageDir . $newFileName;
-                
-                if (convertToWebP($tmpName, $targetPath)) {
-                    $uploadedFiles[] = '/kaishop_v2/assets/images/products/' . $newFileName;
-                } else {
-                    $errors[] = "Không thể chuyển đổi file: " . $files['name'][$i];
+                $success = false;
+
+                try {
+                    // Cố gắng convert sang WebP nếu server hỗ trợ GD và imagewebp
+                    if (function_exists('imagewebp') && function_exists('imagecreatefromjpeg')) {
+                        $newFileName = time() . '_' . uniqid() . '.webp';
+                        $targetPath = $imageDir . $newFileName;
+                        $success = convertToWebP($tmpName, $targetPath);
+                    }
+
+                    // Nếu convert thất bại hoặc server không hỗ trợ WebP -> Lưu file gốc
+                    if (!$success) {
+                        $newFileName = time() . '_' . uniqid() . '.' . $ext;
+                        $targetPath = $imageDir . $newFileName;
+                        $success = move_uploaded_file($tmpName, $targetPath);
+                    }
+
+                    if ($success) {
+                        $uploadedFiles[] = APP_DIR . '/assets/images/products/' . $newFileName;
+                    } else {
+                        $errors[] = "Không thể xử lý ảnh: " . $files['name'][$i];
+                    }
+                } catch (Throwable $th) {
+                    $errors[] = "Lỗi hệ thống với ảnh " . $files['name'][$i] . ": " . $th->getMessage();
                 }
             } else {
-                 $errors[] = "Lỗi upload file: " . $files['name'][$i];
+                $errCode = $files['error'][$i];
+                $errorMsgs = [
+                    UPLOAD_ERR_INI_SIZE => 'File vượt quá dung lượng cho phép của PHP.',
+                    UPLOAD_ERR_FORM_SIZE => 'File vượt quá dung lượng form.',
+                    UPLOAD_ERR_PARTIAL => 'File upload bị ngắt quãng.',
+                ];
+                $errors[] = "Lỗi " . $errCode . " với file: " . $files['name'][$i] . ' - ' . ($errorMsgs[$errCode] ?? '');
             }
         }
-        
+
         if (!empty($uploadedFiles)) {
             echo json_encode(['success' => true, 'message' => 'Upload thành công ' . count($uploadedFiles) . ' ảnh.', 'errors' => $errors]);
         } else {
@@ -117,7 +141,7 @@ if ($action == 'delete') {
         foreach ($_POST['files'] as $fileUrl) {
             $fileName = basename($fileUrl);
             $filePath = $imageDir . $fileName;
-            
+
             // Security check to prevent directory traversal
             if (file_exists($filePath) && is_file($filePath)) {
                 if (unlink($filePath)) {

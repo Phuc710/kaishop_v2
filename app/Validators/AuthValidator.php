@@ -13,7 +13,7 @@ class AuthValidator {
         $errors = [];
         
         if (empty($username) || empty($password)) {
-            $errors[] = 'Please enter all required fields';
+            $errors[] = 'Vui lòng nhập đầy đủ thông tin.';
         }
         
         return $errors;
@@ -27,23 +27,23 @@ class AuthValidator {
         
         // Required fields
         if (empty($username) || empty($password) || empty($email)) {
-            $errors[] = 'Please enter all required fields';
+            $errors[] = 'Vui lòng nhập đầy đủ thông tin.';
             return $errors;
         }
         
         // Username format (alphanumeric only)
         if (!preg_match("/^[a-zA-Z0-9]*$/", $username)) {
-            $errors[] = 'Username must contain only letters and numbers';
+            $errors[] = 'Tên đăng nhập chỉ được gồm chữ cái và số.';
         }
         
         // Username = password check
         if ($username === $password) {
-            $errors[] = 'Username and password cannot be the same';
+            $errors[] = 'Tên đăng nhập và mật khẩu không được trùng nhau.';
         }
         
         // Email format
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors[] = 'Invalid email format';
+            $errors[] = 'Email không đúng định dạng.';
         }
         
         return $errors;
@@ -56,15 +56,15 @@ class AuthValidator {
         $errors = [];
         
         if (empty($oldPassword) || empty($newPassword) || empty($confirmPassword)) {
-            $errors[] = 'Please enter all required fields';
+            $errors[] = 'Vui lòng nhập đầy đủ thông tin.';
         }
         
         if ($newPassword !== $confirmPassword) {
-            $errors[] = 'New passwords do not match';
+            $errors[] = 'Mật khẩu mới không khớp.';
         }
         
         if (strlen($newPassword) < 6) {
-            $errors[] = 'Password must be at least 6 characters';
+            $errors[] = 'Mật khẩu phải có ít nhất 6 ký tự.';
         }
         
         return $errors;

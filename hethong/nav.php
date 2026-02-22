@@ -62,27 +62,27 @@
 
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
-<link rel="stylesheet" href="<?= asset('assets/css/glightbox.min.css') ?>" />
+<link rel="stylesheet" href="<?= asset('assets/css/glightbox.css') ?>" />
 <link rel="stylesheet" href="<?= asset('assets/css/aos.css') ?>" />
-<link rel="stylesheet" href="<?= asset('assets/css/nice-select.css') ?>" />
-<link href="<?= asset('assets/css/quill.core.css') ?>" rel="stylesheet" />
-<link href="<?= asset('assets/css/quill.snow.css') ?>" rel="stylesheet" />
-<link href="<?= asset('assets/css/bootstrap.min.css') ?>" rel="stylesheet" />
-<link href="<?= asset('assets/css/font-awesome-all.min.css') ?>" rel="stylesheet" />
-<link href="<?= asset('assets/css/fontawesome.css') ?>" rel="stylesheet" />
-<link href="<?= asset('assets/css/swiper-bundle.min.css') ?>" rel="stylesheet" />
+<link rel="stylesheet" href="<?= asset('assets/css/nice_select.css') ?>" />
+<link href="<?= asset('assets/css/quill_core.css') ?>" rel="stylesheet" />
+<link href="<?= asset('assets/css/quill_snow.css') ?>" rel="stylesheet" />
+<link href="<?= asset('assets/css/bootstrap.css') ?>" rel="stylesheet" />
+
+<link href="<?= asset('assets/css/swiper.css') ?>" rel="stylesheet" />
 <link href="<?= asset('assets/css/style.css') ?>" rel="stylesheet" />
 <link href="<?= asset('assets/css/job_post.css') ?>" rel="stylesheet" />
-<link href="<?= asset('assets/css/resposive.css') ?>" rel="stylesheet" />
+<link href="<?= asset('assets/css/responsive.css') ?>" rel="stylesheet" />
 <link rel="stylesheet" href="<?= asset('assets/css/styles.css') ?>">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-notify@1.0.4/dist/simple-notify.css" />
-<script src="https://cdn.jsdelivr.net/npm/simple-notify@1.0.4/dist/simple-notify.min.js"></script>
-<script src="<?= asset('assets/js/jquery.min.js') ?>"></script>
-<script src="https://cdn.jsdelivr.net/npm/lazyload@2.0.0-rc.2/lazyload.js"></script>
+<link rel="stylesheet" href="<?= asset('assets/css/notify.css') ?>" />
+<script src="<?= asset('assets/js/notify.js') ?>"></script>
+<script src="<?= asset('assets/js/jquery.js') ?>"></script>
+<script src="<?= asset('assets/js/lazyload.js') ?>"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boxicons@2.1.0/css/boxicons.min.css">
-<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="<?= asset('assets/js/sweetalert.js') ?>"></script>
+<script src="<?= asset('assets/js/swal_helper.js') ?>"></script>
+<link rel="stylesheet" href="<?= asset('assets/css/flatpickr.css') ?>">
+<script src="<?= asset('assets/js/flatpickr.js') ?>"></script>
 <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -90,10 +90,10 @@
 <link
     href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
     rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick-theme.min.css">
-<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.css">
-<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.js"></script>
+<link rel="stylesheet" href="<?= asset('assets/css/slick.css') ?>">
+<link rel="stylesheet" href="<?= asset('assets/css/slick_theme.css') ?>">
+<link rel="stylesheet" type="text/css" href="<?= asset('assets/css/datatables.css') ?>">
+<script type="text/javascript" charset="utf8" src="<?= asset('assets/js/datatables.js') ?>"></script>
 
 <style>
     .slider-card {
@@ -171,40 +171,10 @@
     }
 </style>
 
-<script>
-    function showMessage(message, type) {
-        const commonOptions = {
-            effect: 'fade',
-            speed: 300,
-            customClass: null,
-            customIcon: null,
-            showIcon: true,
-            showCloseButton: true,
-            autoclose: true,
-            autotimeout: 3000,
-            gap: 20,
-            distance: 20,
-            type: 'outline',
-            position: 'right top'
-        };
-        const options = {
-            success: {
-                status: 'success',
-                title: 'Thành công!',
-                text: message,
-            },
-            error: {
-                status: 'error',
-                title: 'Thất bại!',
-                text: message,
-            }
-        };
-        new Notify(Object.assign({}, commonOptions, options[type]));
-    }
-</script>
+<!-- showMessage() đã được define trong swal_helper.js -->
 
-<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.css">
-<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.js"></script>
+<link rel="stylesheet" type="text/css" href="<?= asset('assets/css/datatables.css') ?>">
+<script type="text/javascript" charset="utf8" src="<?= asset('assets/js/datatables.js') ?>"></script>
 </head>
 
 <body>
@@ -241,10 +211,6 @@
                                 data-bs-auto-close="outside" aria-expanded="false">Nạp tiền</a>
                             <ul class="dropdown-menu">
                                 <li>
-                                    <a href="<?= url('nap-the') ?>" class="dropdown-item"><span>Thẻ cào tự
-                                            động</span></a>
-                                </li>
-                                <li>
                                     <a href="<?= url('nap-bank') ?>" class="dropdown-item"><span>Ngân hàng tự
                                             động</span></a>
                                 </li>
@@ -258,26 +224,11 @@
                                     <a href="<?= url('history-code') ?>" class="dropdown-item"><span>Lịch sử mua mã
                                             nguồn</span></a>
                                 </li>
-                                <li>
-                                    <a href="<?= url('history-tao-web') ?>" class="dropdown-item"><span>Lịch sử tạo
-                                            web</span></a>
-                                </li>
-                                <a href="<?= url('history-hosting') ?>" class="dropdown-item"><span>Lịch sử mua
-                                        hosting</span></a>
+                            </ul>
                         </li>
-                        <a href="<?= url('history-logo') ?>" class="dropdown-item"><span>Lịch sử tạo logo</span></a>
+                        <li class="nav-item">
+                            <a class="nav-link" href="<?= url('lien-he') ?>">Liên hệ</a>
                         </li>
-                        <a href="<?= url('history-mien') ?>" class="dropdown-item"><span>Lịch sử mua miền</span></a>
-                        </li>
-                        <li>
-                            <a href="<?= url('history-subdomain') ?>" class="dropdown-item"><span>Lịch sử thuê
-                                    subdomain</span></a>
-                        </li>
-                    </ul>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="<?= url('lien-he') ?>">Liên hệ</a>
-                    </li>
                     </ul>
                 </div>
                 <?php
@@ -302,7 +253,7 @@
                                     <li>
                                         <?php if ($user['level'] == '9') { ?>
                                             <a class="dashboard-profile-item dropdown-item" href="<?= url('admin') ?>"><i
-                                                    class="fa-solid fa-gear"></i>Admin</a>
+                                                    class="fa-solid fa-gear"></i> Admin</a>
                                         </li>
                                         <li>
                                         <?php } ?>
@@ -310,7 +261,8 @@
                                                 class="fa fa-user me-1 fs-10"></i>Tài khoản</a>
                                     </li>
                                     <li>
-                                        <a class="dashboard-profile-item dropdown-item" href="<?= url('logout') ?>">
+                                        <a class="dashboard-profile-item dropdown-item" href="javascript:void(0)"
+                                            onclick="SwalHelper.confirmLogout('<?= url('logout') ?>')">
                                             <i class="fa-solid fa-right-from-bracket me-1 fs-10"></i>Đăng xuất
                                         </a>
                                     </li>
@@ -324,7 +276,7 @@
                     <div class="gtranslate_wrapper"></div>
                     <div class="align-items-center">
                         <a href="' . url('login') . '" class="btn-primary me-1">
-                                Đăng Nhập
+                                Đăng nhập
                             </a>
                     </div>';
                 }
