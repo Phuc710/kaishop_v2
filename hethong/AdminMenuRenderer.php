@@ -65,7 +65,7 @@ class AdminMenuRenderer
     /**
      * Cau hinh menu Nhat ky dung chung.
      */
-    public static function journalGroup(string $activityHref, string $balanceHref): array
+    public static function journalGroup(string $activityHref, string $balanceHref, string $depositHref): array
     {
         return [
             'icon' => 'bx bx-history side-menu__icon',
@@ -73,14 +73,18 @@ class AdminMenuRenderer
             'children' => [
                 [
                     'href' => $activityHref,
-                    'label' => 'Nhật ký hoạt động',
+                    'label' => 'Lịch sử giao dịch',
+                ],
+                [
+                    'href' => $depositHref,
+                    'label' => 'Lịch sử nạp tiền',
                 ],
                 [
                     'href' => $balanceHref,
                     'label' => 'Biến động số dư',
                 ],
                 [
-                    'href' => '/admin/logs/system',
+                    'href' => url('admin/logs/system'),
                     'label' => 'Nhật ký hệ thống',
                 ],
             ],
@@ -154,7 +158,6 @@ class AdminMenuRenderer
             echo '<a href="' . $href . '"' . $childClass . '>' . $childLabel . '</a>';
             echo '</li>';
         }
-
         echo '</ul>';
         echo '</li>';
     }

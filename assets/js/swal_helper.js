@@ -9,7 +9,7 @@ const SwalHelper = {
             toast: true,
             position: 'top-end',
             showConfirmButton: false,
-            timer: 3000,
+            timer: 2500,
             timerProgressBar: true,
             didOpen: (toast) => {
                 toast.onmouseenter = Swal.stopTimer;
@@ -43,7 +43,7 @@ const SwalHelper = {
             title: 'Thất Bại',
             text: message || 'Có lỗi xảy ra.',
             confirmButtonText: 'OK',
-            confirmButtonColor: '#d33'
+            confirmButtonColor: '#3085d6'
         }).then(() => {
             if (callback) callback();
         });
@@ -55,7 +55,7 @@ const SwalHelper = {
             icon: 'warning',
             title: 'Cảnh Báo',
             text: message,
-            confirmButtonColor: '#f0ad4e'
+            confirmButtonColor: '#3085d6'
         }).then(() => {
             if (callback) callback();
         });
@@ -96,7 +96,7 @@ const SwalHelper = {
             text: 'Hành động này không thể hoàn tác!',
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#d33',
+            confirmButtonColor: '#3085d6',
             cancelButtonColor: '#6c757d'
         }).then((result) => {
             if (result.isConfirmed) {
@@ -158,7 +158,7 @@ const SwalHelper = {
             icon: 'success',
             showConfirmButton: true,
             confirmButtonText: 'OK',
-            confirmButtonColor: '#1776cfe7',
+            confirmButtonColor: '#3085d6',
             timer: delay
         }).then(() => {
             window.location.href = url;
@@ -190,13 +190,22 @@ const SwalHelper = {
         });
     },
 
+    successToastReload(message) {
+        this._getToast().fire({
+            icon: 'success',
+            title: message
+        }).then(() => {
+            window.location.reload();
+        });
+    },
+
     // ============ ERROR + REDIRECT ============
     errorRedirect(message, url) {
         Swal.fire({
             icon: 'error',
             title: 'Thất Bại',
             text: message,
-            confirmButtonColor: '#d33'
+            confirmButtonColor: '#3085d6'
         }).then(() => {
             window.location.href = url;
         });
@@ -208,7 +217,7 @@ const SwalHelper = {
             icon: 'error',
             title: 'Thất Bại',
             text: message,
-            confirmButtonColor: '#d33'
+            confirmButtonColor: '#3085d6'
         }).then(() => {
             window.location.reload();
         });

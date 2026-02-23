@@ -159,6 +159,16 @@ CREATE TABLE `setting` (
   `thongbao` longtext DEFAULT NULL,
   `popup_template` varchar(10) NOT NULL DEFAULT '1' COMMENT '0=tắt, 1=mặc định, 2=thông báo',
   `license` text DEFAULT NULL,
+  `bank_name` varchar(100) DEFAULT 'MB Bank',
+  `bank_account` varchar(100) DEFAULT NULL,
+  `bank_owner` varchar(100) DEFAULT NULL,
+  `sepay_api_key` varchar(255) DEFAULT NULL,
+  `bonus_1_amount` bigint(20) DEFAULT 100000,
+  `bonus_1_percent` int(11) DEFAULT 10,
+  `bonus_2_amount` bigint(20) DEFAULT 200000,
+  `bonus_2_percent` int(11) DEFAULT 15,
+  `bonus_3_amount` bigint(20) DEFAULT 500000,
+  `bonus_3_percent` int(11) DEFAULT 20,
   `created_at` datetime DEFAULT current_timestamp(),
   `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`)
@@ -168,7 +178,9 @@ CREATE TABLE `setting` (
 INSERT INTO `setting` (
   `id`, `ten_web`, `logo`, `logo_footer`, `banner`, `favicon`, `key_words`, `mo_ta`, `fb_admin`, `sdt_admin`, `tele_admin`, `tiktok_admin`, `youtube_admin`,
   `email_auto`, `pass_mail_auto`, `ten_nguoi_gui`,
-  `email_cf`, `apikey`, `thongbao`, `license`
+  `email_cf`, `apikey`, `thongbao`, `license`,
+  `bank_name`, `bank_account`, `bank_owner`, `sepay_api_key`,
+  `bonus_1_amount`, `bonus_1_percent`, `bonus_2_amount`, `bonus_2_percent`, `bonus_3_amount`, `bonus_3_percent`
 ) VALUES (
   1, 'KaiShop', '', '', 'KaiShop', '', 'KaiShop, Shop account', 'Dịch vụ KaiShop uy tín chất lượng', 'https://facebook.com/phamlinh7114', '0812420710', 'https://t.me/yourtelegram', 'https://tiktok.com/@yourtiktok', 'https://youtube.com/@youryoutube',
   NULL, NULL, NULL,
@@ -176,7 +188,9 @@ INSERT INTO `setting` (
   <b>KaiShop — Hệ thống bán tài khoản tự động</b><br>
   <b>Phiên bản: v1.1</b><br>
   <span>Khi dùng dịch vụ chính hãng, bạn được hỗ trợ tốt hơn và nâng cấp tính năng với chi phí tối ưu.</span>
-</div>', ''
+</div>', '',
+  'MB Bank', '', '', '',
+  100000, 10, 200000, 15, 500000, 20
 );
 
 SET FOREIGN_KEY_CHECKS = 1;
@@ -213,3 +227,36 @@ CREATE TABLE IF NOT EXISTS `user_fingerprints` (
   KEY `idx_uf_user` (`user_id`),
   KEY `idx_uf_hash` (`fingerprint_hash`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `pending_deposits` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `username` varchar(100) NOT NULL,
+  `deposit_code` varchar(50) NOT NULL,
+  `amount` bigint(20) NOT NULL,
+  `bonus_percent` int(11) NOT NULL DEFAULT 0,
+  `status` enum('pending','completed','cancelled','expired') DEFAULT 'pending',
+  `sepay_transaction_id` int(11) DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `completed_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_deposit_code` (`deposit_code`),
+  KEY `idx_pd_user` (`user_id`),
+  KEY `idx_pd_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `history_nap_bank` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `trans_id` varchar(150) DEFAULT NULL,
+  `username` varchar(100) DEFAULT NULL,
+  `type` varchar(50) DEFAULT 'Bank',
+  `ctk` text DEFAULT NULL COMMENT 'Nội dung chuyển khoản / lý do',
+  `stk` varchar(100) DEFAULT NULL COMMENT 'Số tài khoản nguồn',
+  `thucnhan` bigint(20) DEFAULT 0 COMMENT 'Số tiền thực nhận (có dấu +/-)',
+  `status` varchar(50) DEFAULT 'pending',
+  `time` varchar(100) DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_hnb_username` (`username`),
+  KEY `idx_hnb_trans` (`trans_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

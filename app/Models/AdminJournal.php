@@ -115,6 +115,72 @@ class AdminJournal extends Model
     }
 
     /**
+     * Get formal deposit logs (Bank/Momo/Cards) for accounting.
+     *
+     * @param array<string, mixed> $filters
+     * @return array<int, array<string, mixed>>
+     */
+    public function getDepositLogs(array $filters): array
+    {
+        if (!$this->tableExists('history_nap_bank')) {
+            return [];
+        }
+
+        $params = [];
+        $conditions = ['1=1'];
+        $hasUsers = $this->tableExists('users');
+
+        $timeColumn = $this->detectTimeColumn('history_nap_bank');
+        $timeExpr = $this->buildEventTimeExpression('h', $timeColumn);
+
+        if (!empty($filters['search'])) {
+            $search = '%' . trim((string) $filters['search']) . '%';
+            $searchConditions = [
+                'h.username LIKE :search_username',
+                'h.ctk LIKE :search_reason',
+                'h.trans_id LIKE :search_trans'
+            ];
+            $params['search_username'] = $search;
+            $params['search_reason'] = $search;
+            $params['search_trans'] = $search;
+
+            if (ctype_digit(trim((string) $filters['search'])) && $hasUsers) {
+                $searchConditions[] = 'u.id = :search_id';
+                $params['search_id'] = (int) $filters['search'];
+            }
+
+            $conditions[] = '(' . implode(' OR ', $searchConditions) . ')';
+        }
+
+        $this->appendDateConditions($conditions, $params, $timeExpr, $filters);
+
+        $joinUsers = $hasUsers ? 'LEFT JOIN `users` u ON u.username = h.username' : '';
+        $userIdSelect = $hasUsers && $this->hasColumn('users', 'id') ? 'u.id AS user_id' : 'NULL AS user_id';
+
+        $sql = "
+            SELECT
+                h.id,
+                {$userIdSelect},
+                h.username,
+                h.type,
+                h.trans_id,
+                h.ctk AS reason,
+                h.thucnhan AS amount,
+                h.status,
+                h.time AS raw_time,
+                {$timeExpr} AS event_time
+            FROM `history_nap_bank` h
+            {$joinUsers}
+            WHERE " . implode(' AND ', $conditions) . "
+            ORDER BY event_time DESC, h.id DESC
+        ";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Write user activity log.
      */
     public function writeActivity(string $username, string $activity, $amount = 0): void

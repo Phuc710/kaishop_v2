@@ -32,14 +32,10 @@ return [
     // ========== PROFILE ROUTES ==========
     ['GET', '/profile', 'ProfileController@index'],
     ['POST', '/profile/update', 'ProfileController@update'],
-    [
-        'GET',
-        '/password',
-        function () {
-            global $connection, $username, $user, $chungapi;
-            require_once __DIR__ . '/../pages/changepass.php';
-        }
-    ],
+    ['GET', '/password', 'PasswordController@index'],
+    ['POST', '/password/update', 'PasswordController@update'],
+    ['GET', '/history-code', 'HistoryController@index'],
+    ['POST', '/api/history-code', 'HistoryController@data'],
 
     // ========== ADMIN ROUTES ==========
     ['GET', '/admin', 'Admin\\DashboardController@index'],
@@ -67,6 +63,7 @@ return [
     ['GET', '/admin/logs/activities', 'Admin\\JournalController@activities'],
     ['GET', '/admin/logs/balance-changes', 'Admin\\JournalController@balanceChanges'],
     ['GET', '/admin/logs/system', 'Admin\\JournalController@systemLogs'],
+    ['GET', '/admin/deposits', 'Admin\\JournalController@deposits'],
 
     // Admin Finance - Giftcodes
     ['GET', '/admin/finance/giftcodes', 'Admin\\FinanceController@giftcodes'],
@@ -87,4 +84,13 @@ return [
     ['POST', '/admin/products/toggle-hide', 'Admin\\AdminProductController@toggleHide'],
     ['POST', '/admin/products/toggle-pin', 'Admin\\AdminProductController@togglePin'],
     ['POST', '/admin/products/toggle-active', 'Admin\\AdminProductController@toggleActive'],
+
+    // ========== DEPOSIT (User) ==========
+    ['GET', '/deposit', 'DepositController@index'],
+    ['POST', '/deposit/create', 'DepositController@create'],
+    ['GET', '/deposit/status/{code}', 'DepositController@status'],
+    ['POST', '/deposit/cancel', 'DepositController@cancel'],
+
+    // ========== SEPAY WEBHOOK (API) ==========
+    ['POST', '/api/sepay/webhook', 'Api\\SepayWebhookController@handle'],
 ];

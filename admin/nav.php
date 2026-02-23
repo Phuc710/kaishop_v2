@@ -34,7 +34,7 @@ $sidebarLogoAlt = trim((string) ($chungapi['ten_web'] ?? 'Logo'));
 
         <?php
         AdminMenuRenderer::renderTreeGroup(
-            AdminMenuRenderer::journalGroup(url('admin/logs/activities'), url('admin/logs/balance-changes'))
+            AdminMenuRenderer::journalGroup(url('admin/logs/activities'), url('admin/logs/balance-changes'), url('admin/deposits'))
         );
         ?>
 

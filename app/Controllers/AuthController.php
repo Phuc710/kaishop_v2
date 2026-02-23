@@ -298,6 +298,10 @@ class AuthController extends Controller
             return $this->json(['success' => false, 'message' => 'Vui lòng nhập đầy đủ thông tin']);
         }
 
+        if (strlen($password) < 6) {
+            return $this->json(['success' => false, 'message' => 'Mật khẩu phải từ 6']);
+        }
+
         $user = $this->userModel->findByOtpcode($otpcode);
 
         if (!$user) {

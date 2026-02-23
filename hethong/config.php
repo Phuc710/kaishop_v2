@@ -8,11 +8,12 @@ require_once('SwalHelper.php');
 
 
 require_once __DIR__ . '/../app/Helpers/EnvHelper.php';
+EnvHelper::load(dirname(__DIR__) . '/.env');
 
 // ║  Localhost:   .env -> APP_DIR=/kaishop_v2                       ║
 // ║  Production:  .env -> APP_DIR=                                  ║
 
-define('APP_DIR', EnvHelper::get('APP_DIR', '/kaishop_v2'));
+define('APP_DIR', EnvHelper::get('APP_DIR', ''));
 
 // File System Paths (auto-configured based on APP_DIR)
 define('ROOT_PATH', $_SERVER['DOCUMENT_ROOT'] . APP_DIR);

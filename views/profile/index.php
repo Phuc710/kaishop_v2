@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>
     <title>Thông Tin Tài Khoản | <?= $chungapi['ten_web']; ?></title>
@@ -7,154 +8,164 @@
 
 <body>
     <?php require __DIR__ . '/../../hethong/nav.php'; ?>
-    
-    <main>
-        <section class="py-110">
-            <div class="container">
-                <?php require __DIR__ . '/../../hethong/settings_head.php'; ?>
-                
-                <div class="row justify-content-center">
-                    <div class="col-lg-8 col-xl-7">
-                        <div class="settings-card">
-                            <div class="settings-card-head">
-                                <h4>THÔNG TIN TÀI KHOẢN</h4>
+
+    <main class="bg-light">
+        <section class="py-5">
+            <div class="container user-page-container">
+                <div class="row">
+                    <!-- Sidebar (DRY component) -->
+                    <div class="col-lg-3 col-md-4 mb-4">
+                        <?php $activePage = 'profile';
+                        require __DIR__ . '/../../hethong/user_sidebar.php'; ?>
+                    </div>
+
+                    <!-- Main Content -->
+                    <div class="col-lg-9 col-md-8">
+
+                        <!-- Block 1: Ví của tôi -->
+                        <div class="profile-card">
+                            <div class="profile-card-header">
+                                <h5 class="text-dark">Ví của tôi</h5>
                             </div>
-                            <div class="settings-card-body">
-                                <form id="profile-form" method="POST" class="row g-4">
-                                    
-                                    <div class="col-md-6">
-                                        <div>
-                                            <label class="form-label">Tài khoản</label>
-                                            <input type="text" class="form-control shadow-none" 
-                                                   value="<?= $username; ?>" readonly>
+                            <div class="profile-card-body pt-0">
+                                <div class="row g-3">
+                                    <div class="col-md-4 col-sm-12">
+                                        <div class="stat-box neutral">
+                                            <div class="user-label">Số dư hiện tại</div>
+                                            <div class="balance-amount" style="font-size: 32px; color:green">
+                                                <?= tien($user['money']); ?>đ
+                                            </div>
                                         </div>
                                     </div>
-                                    
-                                    <div class="col-md-6">
-                                        <div>
-                                            <label class="form-label">Số dư</label>
-                                            <input type="text" class="form-control shadow-none"
-                                                   value="<?= tien($user['money']); ?>đ" readonly>
+                                    <div class="col-md-4 col-sm-6">
+                                        <div class="stat-box neutral">
+                                            <div class="user-label">Tổng tiền nạp</div>
+                                            <div class="fw-bold fs-5 text-dark mt-2"><?= tien($user['tong_nap']); ?>đ
+                                            </div>
                                         </div>
                                     </div>
-                                    
+                                    <div class="col-md-4 col-sm-6">
+                                        <div class="stat-box neutral">
+                                            <div class="user-label">Số dư đã sử dụng</div>
+                                            <?php $used = $user['tong_nap'] - $user['money']; ?>
+                                            <div class="fw-bold fs-5 text-dark mt-2">
+                                                <?= tien($used > 0 ? $used : 0); ?>đ
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Block 2: Hồ sơ của bạn -->
+                        <div class="profile-card">
+                            <div class="profile-card-header mb-3">
+                                <h5 class="text-dark mb-0">Hồ sơ của bạn</h5>
+                                <button type="button" id="btn-edit" class="btn btn-edit-profile">Chỉnh sửa thông
+                                    tin</button>
+                            </div>
+                            <div class="profile-card-body pt-0">
+                                <form id="profile-form" class="row g-4">
                                     <div class="col-md-6">
-                                        <div>
-                                            <label class="form-label">Tổng nạp</label>
-                                            <input type="text" class="form-control shadow-none"
-                                                   value="<?= tien($user['tong_nap']); ?>đ" readonly>
+                                        <label class="form-label user-label">Tên đăng nhập</label>
+                                        <div class="custom-input-wrap">
+                                            <input type="text" class="form-control custom-readonly"
+                                                value="<?= $username; ?>" readonly>
                                         </div>
                                     </div>
 
                                     <div class="col-md-6">
-                                        <div>
-                                            <label class="form-label">Email</label>
-                                            <input type="email" name="email" id="email_input" 
-                                                   class="form-control shadow-none"
-                                                   value="<?= $user['email']; ?>" readonly>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-md-6">
-                                        <div>
-                                            <label class="form-label">Loại cấp bậc</label>
-                                            <input type="text" class="form-control shadow-none"
-                                                   value="<?= capbac($user['level']); ?>" readonly>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-md-6">
-                                        <div>
-                                            <label class="form-label">Ngày đăng ký</label>
-                                            <input type="text" class="form-control shadow-none"
-                                                   value="<?= $user['time']; ?>" readonly>
+                                        <label class="form-label user-label">Địa chỉ Email</label>
+                                        <div class="custom-input-wrap">
+                                            <input type="email" name="email" id="email_input"
+                                                class="form-control custom-readonly" value="<?= $user['email']; ?>"
+                                                readonly>
                                         </div>
                                     </div>
 
-                                    <div class="col-12">
-                                        <button type="button" id="update-btn" class="btn btn-primary">
-                                            Cập Nhật
-                                        </button>
+                                    <div class="col-md-6">
+                                        <label class="form-label user-label">Ngày đăng ký</label>
+                                        <div class="custom-input-wrap">
+                                            <input type="text" class="form-control custom-readonly"
+                                                value="<?= $user['time']; ?>" readonly>
+                                        </div>
                                     </div>
-                                    
+
+                                    <div class="col-md-6">
+                                        <label class="form-label user-label">Đăng nhập gần nhất</label>
+                                        <div class="custom-input-wrap">
+                                            <input type="text" class="form-control custom-readonly"
+                                                value="<?= $user['ip'] ?? 'Chưa cập nhật'; ?>" readonly>
+                                        </div>
+                                    </div>
                                 </form>
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
         </section>
     </main>
-    
-    <style>
-        /* Readonly fields styling */
-        input[readonly].form-control {
-            background-color: #f8f9fa;
-            cursor: not-allowed;
-        }
-        
-        input:not([readonly]).form-control {
-            background-color: #ffffff;
-        }
-    </style>
-    
+
+    <?php require __DIR__ . '/../../hethong/foot.php'; ?>
+
     <script>
         let editMode = false;
         const emailInput = document.getElementById('email_input');
-        const updateBtn = document.getElementById('update-btn');
+        const editBtn = document.getElementById('btn-edit');
         const form = document.getElementById('profile-form');
-        
-        updateBtn.addEventListener('click', function() {
+
+        editBtn.addEventListener('click', function () {
             if (!editMode) {
                 // Switch to edit mode
                 editMode = true;
                 emailInput.removeAttribute('readonly');
+                emailInput.classList.remove('custom-readonly');
                 emailInput.focus();
-                updateBtn.innerHTML = 'Lưu thay đổi';
-                updateBtn.classList.remove('btn-primary');
-                updateBtn.classList.add('btn-success');
+                editBtn.innerHTML = 'Lưu thay đổi';
+                editBtn.classList.remove('btn-edit-profile');
+                editBtn.classList.add('btn-save-green');
             } else {
-                // Submit form via AJAX
+                // Submit via AJAX
+                editBtn.disabled = true;
+                editBtn.innerHTML = 'Đang lưu...';
+
                 const formData = new FormData(form);
-                
-                updateBtn.disabled = true;
-                updateBtn.innerHTML = 'Đang xử lý...';
-                
+
                 fetch('<?= BASE_URL ?>/profile/update', {
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Thành công!',
-                            text: data.message
-                        }).then(() => {
-                            window.location.reload();
-                        });
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Lỗi!',
-                            text: data.message
-                        });
-                        updateBtn.disabled = false;
-                        updateBtn.innerHTML = 'Lưu thay đổi';
-                    }
-                })
-                .catch(error => {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Lỗi!',
-                        text: 'Có lỗi xảy ra, vui lòng thử lại!'
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            SwalHelper.toast(data.message, 'success');
+                            
+                            // Reset button directly to "Chỉnh sửa thông tin" state (True AJAX)
+                            editMode = false;
+                            emailInput.setAttribute('readonly', 'readonly');
+                            emailInput.classList.add('custom-readonly');
+                            
+                            editBtn.disabled = false;
+                            editBtn.innerHTML = 'Chỉnh sửa thông tin';
+                            editBtn.classList.remove('btn-save-green');
+                            editBtn.classList.add('btn-edit-profile');
+                            
+                        } else {
+                            SwalHelper.error(data.message);
+                            editBtn.disabled = false;
+                            editBtn.innerHTML = 'Lưu thay đổi';
+                        }
+                    })
+                    .catch(() => {
+                        SwalHelper.error('Có lỗi xảy ra, vui lòng thử lại!');
+                        editBtn.disabled = false;
+                        editBtn.innerHTML = 'Lưu thay đổi';
                     });
-                    updateBtn.disabled = false;
-                    updateBtn.innerHTML = 'Lưu thay đổi';
-                });
             }
         });
     </script>
 </body>
+
 </html>

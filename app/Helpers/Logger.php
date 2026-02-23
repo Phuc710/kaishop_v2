@@ -32,6 +32,11 @@ class Logger
     private static function log(string $severity, string $module, string $action, string $description, array $payload): void
     {
         try {
+            // Ensure UserAgentParser is loaded
+            if (!class_exists('UserAgentParser')) {
+                require_once __DIR__ . '/UserAgentParser.php';
+            }
+
             $db = Database::getInstance()->getConnection();
 
             // Extract user info if available
@@ -56,6 +61,12 @@ class Logger
                 ?? $_SERVER['REMOTE_ADDR']
                 ?? '0.0.0.0';
             $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+
+            // Enrich Payload with Device Information
+            $deviceInfo = \App\Helpers\UserAgentParser::parse($userAgent);
+            $payload['device_os'] = $deviceInfo['os'];
+            $payload['device_browser'] = $deviceInfo['browser'];
+            $payload['device_type'] = $deviceInfo['type'];
 
             // Insert
             $sql = "INSERT INTO `system_logs` 

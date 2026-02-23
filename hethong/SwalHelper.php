@@ -22,7 +22,7 @@ class SwalPHP
     public static function errorBack($message)
     {
         echo '<script>
-            Swal.fire({icon:"error",title:"Lỗi!",text:"' . addslashes($message) . '",confirmButtonColor:"#d33"})
+            Swal.fire({icon:"error",title:"Lỗi!",text:"' . addslashes($message) . '",confirmButtonColor: "#3085d6"})
             .then(()=>{window.history.back();window.location.reload();});
         </script>';
     }
@@ -55,7 +55,7 @@ class SwalPHP
     public static function errorRedirect($message, $url)
     {
         echo '<script>
-            Swal.fire({icon:"error",title:"Lỗi!",text:"' . addslashes($message) . '",confirmButtonColor:"#d33"})
+            Swal.fire({icon:"error",title:"Lỗi!",text:"' . addslashes($message) . '",confirmButtonColor: "#3085d6"})
             .then(()=>{window.location.href="' . $url . '";});
         </script>';
     }
@@ -67,7 +67,7 @@ class SwalPHP
     {
         echo '<script>
             Swal.fire({title:"Xác nhận",text:"' . addslashes($message) . '",icon:"warning",
-                showCancelButton:true,confirmButtonColor:"#d33",cancelButtonColor:"#6c757d"})
+                showCancelButton:true,confirmButtonColor: "#3085d6",cancelButtonColor:"#6c757d"})
             .then((r)=>{if(r.isConfirmed){window.location.href="' . $deleteUrl . '";}});
         </script>';
     }

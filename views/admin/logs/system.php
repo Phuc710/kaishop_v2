@@ -49,10 +49,10 @@
                             <option value="">Tất cả mức độ</option>
                             <option value="INFO" <?= ($filters['severity'] ?? '') === 'INFO' ? 'selected' : '' ?>>INFO
                                 (Thông tin)</option>
-                            <option value="WARNING" <?= ($filters['severity'] ?? '') === 'WARNING' ? 'selected' : '' ?>
-                                >WARNING (Cảnh báo)</option>
-                            <option value="DANGER" <?= ($filters['severity'] ?? '') === 'DANGER' ? 'selected' : '' ?>
-                                >DANGER (RED ALERT)</option>
+                            <option value="WARNING" <?= ($filters['severity'] ?? '') === 'WARNING' ? 'selected' : '' ?>>
+                                WARNING (Cảnh báo)</option>
+                            <option value="DANGER" <?= ($filters['severity'] ?? '') === 'DANGER' ? 'selected' : '' ?>>
+                                DANGER (RED ALERT)</option>
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -60,12 +60,12 @@
                             <option value="">Tất cả module</option>
                             <option value="Auth" <?= ($filters['module'] ?? '') === 'Auth' ? 'selected' : '' ?>>Auth
                             </option>
-                            <option value="Billing" <?= ($filters['module'] ?? '') === 'Billing' ? 'selected' : '' ?>
-                                >Billing</option>
+                            <option value="Billing" <?= ($filters['module'] ?? '') === 'Billing' ? 'selected' : '' ?>>
+                                Billing</option>
                             <option value="Store" <?= ($filters['module'] ?? '') === 'Store' ? 'selected' : '' ?>>Store
                             </option>
-                            <option value="Security" <?= ($filters['module'] ?? '') === 'Security' ? 'selected' : '' ?>
-                                >Security</option>
+                            <option value="Security" <?= ($filters['module'] ?? '') === 'Security' ? 'selected' : '' ?>>
+                                Security</option>
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -124,7 +124,7 @@
                                             </span></td>
                                         <td>
                                             <?php if ($log['username']): ?>
-                                                <a href="/admin/users/edit/<?= htmlspecialchars($log['username']) ?>"
+                                                <a href="<?= url('admin/users/edit/' . urlencode($log['username'])) ?>"
                                                     class="font-weight-bold text-dark">
                                                     <?= htmlspecialchars($log['username']) ?>
                                                 </a>

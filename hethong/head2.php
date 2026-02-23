@@ -29,6 +29,7 @@
 <link href="<?= asset('assets/css/responsive.css') ?>" rel="stylesheet" />
 <link rel="stylesheet" href="<?= asset('assets/css/styles.css') ?>">
 <link rel="stylesheet" href="<?= asset('assets/css/divineshop.css') ?>">
+<link rel="stylesheet" href="<?= asset('assets/css/user-pages.css') ?>">
 <link rel="stylesheet" href="<?= asset('assets/css/notify.css') ?>" />
 <script src="<?= asset('assets/js/notify.js') ?>"></script>
 <script src="<?= asset('assets/js/jquery.js') ?>"></script>

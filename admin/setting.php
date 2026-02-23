@@ -51,6 +51,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && isset($_
             echo json_encode(['status' => 'error', 'message' => 'Có lỗi xảy ra!']);
         exit;
     }
+
+    if ($_POST['action'] === 'update_bank') {
+        $bank_name = $connection->real_escape_string($_POST['bank_name'] ?? '');
+        $bank_account = $connection->real_escape_string($_POST['bank_account'] ?? '');
+        $bank_owner = $connection->real_escape_string($_POST['bank_owner'] ?? '');
+        $sepay_api_key = $connection->real_escape_string($_POST['sepay_api_key'] ?? '');
+
+        $b1_amt = (int) ($_POST['bonus_1_amount'] ?? 100000);
+        $b1_pct = (int) ($_POST['bonus_1_percent'] ?? 10);
+        $b2_amt = (int) ($_POST['bonus_2_amount'] ?? 200000);
+        $b2_pct = (int) ($_POST['bonus_2_percent'] ?? 15);
+        $b3_amt = (int) ($_POST['bonus_3_amount'] ?? 500000);
+        $b3_pct = (int) ($_POST['bonus_3_percent'] ?? 20);
+
+        $create = $connection->query("UPDATE `setting` SET
+            `bank_name` = '{$bank_name}',
+            `bank_account` = '{$bank_account}',
+            `bank_owner` = '{$bank_owner}',
+            `sepay_api_key` = '{$sepay_api_key}',
+            `bonus_1_amount` = {$b1_amt},
+            `bonus_1_percent` = {$b1_pct},
+            `bonus_2_amount` = {$b2_amt},
+            `bonus_2_percent` = {$b2_pct},
+            `bonus_3_amount` = {$b3_amt},
+            `bonus_3_percent` = {$b3_pct}");
+
+        if ($create)
+            echo json_encode(['status' => 'success', 'message' => 'Cập nhật cấu hình ngân hàng & khuyến mãi thành công!']);
+        else
+            echo json_encode(['status' => 'error', 'message' => 'Có lỗi xảy ra!']);
+        exit;
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -259,6 +291,145 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && isset($_
                                 </div>
                             </form>
                         </section>
+
+                        <!-- Bank Config Section -->
+                        <section class="col-lg-6 connectedSortable">
+                            <form id="form-bank" action="" method="POST">
+                                <div class="card card-primary card-outline">
+                                    <div class="card-header">
+                                        <h3 class="card-title">
+                                            <i class="fas fa-university mr-1"></i>
+                                            CẤU HÌNH NGÂN HÀNG (SePay)
+                                        </h3>
+                                        <div class="card-tools">
+                                            <button type="button" class="btn bg-success btn-sm"
+                                                data-card-widget="collapse">
+                                                <i class="fas fa-minus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle mr-1"></i>
+                                            Cấu hình tài khoản ngân hàng nhận tiền và API Key từ <a
+                                                href="https://my.sepay.vn" target="_blank"
+                                                style="font-weight:bold;">SePay</a>.
+                                        </div>
+                                        <div class="form-group border-bottom pb-3 mb-3">
+                                            <label class="d-block">Webhook URL (Copy dán vào SePay)</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control font-weight-bold text-success"
+                                                    value="<?= url('api/sepay/webhook') ?>" readonly>
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text"><i class="fas fa-copy"></i></span>
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">URL này sẽ tự động thay đổi theo tên miền thực tế
+                                                (<?= url('') ?>).</small>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label>Tên Ngân Hàng</label>
+                                            <select name="bank_name" class="form-control">
+                                                <?php
+                                                $banks = ['MB Bank', 'Vietcombank', 'Techcombank', 'VietinBank', 'BIDV', 'Agribank', 'VPBank', 'ACB', 'Sacombank', 'TPBank', 'MSB', 'OCB', 'VIB', 'Momo'];
+                                                $currentBank = $chungapi['bank_name'] ?? 'MB Bank';
+                                                foreach ($banks as $b) {
+                                                    $sel = ($currentBank === $b) ? 'selected' : '';
+                                                    echo "<option value=\"{$b}\" {$sel}>{$b}</option>";
+                                                }
+                                                // If current bank is custom and not in list
+                                                if (!in_array($currentBank, $banks)) {
+                                                    echo "<option value=\"{$currentBank}\" selected>{$currentBank}</option>";
+                                                }
+                                                ?>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Số Tài Khoản</label>
+                                            <input type="text" name="bank_account" class="form-control"
+                                                placeholder="0123456789"
+                                                value="<?= htmlspecialchars($chungapi['bank_account'] ?? '') ?>">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Chủ Tài Khoản</label>
+                                            <input type="text" name="bank_owner" class="form-control"
+                                                placeholder="NGUYEN VAN A"
+                                                value="<?= htmlspecialchars($chungapi['bank_owner'] ?? '') ?>">
+                                        </div>
+                                        <div class="form-group pb-3 border-bottom">
+                                            <label>SePay API Key</label>
+                                            <input type="text" name="sepay_api_key" class="form-control"
+                                                placeholder="API Key từ SePay"
+                                                value="<?= htmlspecialchars($chungapi['sepay_api_key'] ?? '') ?>">
+                                            <small class="text-muted">Lấy API Key tại: SePay → WebHooks → Cấu hình chứng
+                                                thực → API Key</small>
+                                        </div>
+
+                                        <h5 class="mt-4 mb-3 text-primary"><i class="fas fa-gift mr-1"></i> MỐC KHUYẾN
+                                            MÃI NẠP TIỀN</h5>
+
+                                        <div class="row">
+                                            <div class="col-md-6 form-group">
+                                                <label>Mốc 1 - Số tiền (mặc định 100k):</label>
+                                                <input type="number" name="bonus_1_amount" class="form-control"
+                                                    value="<?= $chungapi['bonus_1_amount'] ?? 100000 ?>">
+                                            </div>
+                                            <div class="col-md-6 form-group">
+                                                <label>Khuyến mãi %:</label>
+                                                <div class="input-group">
+                                                    <input type="number" name="bonus_1_percent" class="form-control"
+                                                        value="<?= $chungapi['bonus_1_percent'] ?? 10 ?>">
+                                                    <div class="input-group-append"><span
+                                                            class="input-group-text">%</span></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6 form-group">
+                                                <label>Mốc 2 - Số tiền (mặc định 200k):</label>
+                                                <input type="number" name="bonus_2_amount" class="form-control"
+                                                    value="<?= $chungapi['bonus_2_amount'] ?? 200000 ?>">
+                                            </div>
+                                            <div class="col-md-6 form-group">
+                                                <label>Khuyến mãi %:</label>
+                                                <div class="input-group">
+                                                    <input type="number" name="bonus_2_percent" class="form-control"
+                                                        value="<?= $chungapi['bonus_2_percent'] ?? 15 ?>">
+                                                    <div class="input-group-append"><span
+                                                            class="input-group-text">%</span></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6 form-group">
+                                                <label>Mốc 3 - Số tiền (mặc định 500k):</label>
+                                                <input type="number" name="bonus_3_amount" class="form-control"
+                                                    value="<?= $chungapi['bonus_3_amount'] ?? 500000 ?>">
+                                            </div>
+                                            <div class="col-md-6 form-group">
+                                                <label>Khuyến mãi %:</label>
+                                                <div class="input-group">
+                                                    <input type="number" name="bonus_3_percent" class="form-control"
+                                                        value="<?= $chungapi['bonus_3_percent'] ?? 20 ?>">
+                                                    <div class="input-group-append"><span
+                                                            class="input-group-text">%</span></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="card-footer clearfix">
+                                            <button name="submit_bank" class="btn btn-info btn-icon-left m-b-10"
+                                                type="submit">
+                                                <i class="fas fa-save mr-1"></i>SAVE
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </section>
                     </div>
 
                     <div class="row">
@@ -395,6 +566,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && isset($_
             handleFormSubmit('form-general', 'update_general');
             handleFormSubmit('form-smtp', 'update_smtp');
             handleFormSubmit('form-notification', 'update_notification');
+            handleFormSubmit('form-bank', 'update_bank');
         });
     </script>
 </body>

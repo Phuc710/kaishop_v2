@@ -18,8 +18,7 @@ class UrlHelper
                 self::$BASE_PATH = APP_DIR;
             } else {
                 // Fallback: tự động detect
-                $localhosts = ['localhost', '127.0.0.1', '::1'];
-                self::$BASE_PATH = in_array($_SERVER['HTTP_HOST'], $localhosts) ? '/kaishop_v2' : '';
+                self::$BASE_PATH = '';
             }
         }
         return self::$BASE_PATH;

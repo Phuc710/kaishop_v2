@@ -111,7 +111,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                         <a href="<?= url('admin/logs/activities') ?>?user=<?= urlencode($toz_user['username']) ?>"
                                             target="_blank" class="btn btn-sm px-3 py-2 text-white font-weight-bold"
                                             style="background: linear-gradient(135deg, #845adf, #6f42c1); border: none; border-radius: 8px;">
-                                            <i class="fas fa-history mr-1"></i> Nhật ký hoạt động
+                                            <i class="fas fa-history mr-1"></i> Lịch sử giao dịch
                                         </a>
                                         <a href="<?= url('admin/logs/balance-changes') ?>?user=<?= urlencode($toz_user['username']) ?>"
                                             target="_blank" class="btn btn-sm px-3 py-2 text-white font-weight-bold"
@@ -315,7 +315,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                 html: '<pre style="text-align:left; max-height:400px; overflow:auto; font-size:12px; background:#f8f9fa; padding:12px; border-radius:8px;">' + JSON.stringify(parsed, null, 2) + '</pre>',
                 width: '700px',
                 confirmButtonText: 'Đóng',
-                confirmButtonColor: '#0031d1ff'
+                confirmButtonColor: '#3085d6'
             });
         } catch (e) {
             Swal.fire('Lỗi', 'Không thể parse fingerprint data', 'error');
@@ -334,7 +334,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             `,
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#ef4444',
+            confirmButtonColor: '#3085d6',
             cancelButtonColor: '#6c757d',
             confirmButtonText: 'Khóa ngay',
             cancelButtonText: 'Hủy',

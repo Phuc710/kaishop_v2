@@ -90,8 +90,6 @@
 <link
     href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
     rel="stylesheet">
-<link rel="stylesheet" href="<?= asset('assets/css/slick.css') ?>">
-<link rel="stylesheet" href="<?= asset('assets/css/slick_theme.css') ?>">
 <link rel="stylesheet" type="text/css" href="<?= asset('assets/css/datatables.css') ?>">
 <script type="text/javascript" charset="utf8" src="<?= asset('assets/js/datatables.js') ?>"></script>
 
@@ -211,7 +209,7 @@
                                 data-bs-auto-close="outside" aria-expanded="false">Nạp tiền</a>
                             <ul class="dropdown-menu">
                                 <li>
-                                    <a href="<?= url('nap-bank') ?>" class="dropdown-item"><span>Ngân hàng tự
+                                    <a href="<?= url('deposit') ?>" class="dropdown-item"><span>Ngân hàng tự
                                             động</span></a>
                                 </li>
                             </ul>

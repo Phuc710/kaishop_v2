@@ -189,6 +189,16 @@ const KaiFingerprint = (() => {
 
     // ─── Environment Info ─────────────────────────────────
     function getEnvironmentInfo() {
+        // Collect modern Client Hints if available (Chromium feature)
+        let clientHints = null;
+        if (navigator.userAgentData) {
+            clientHints = {
+                brands: navigator.userAgentData.brands?.map(b => b.brand).join(','),
+                mobile: navigator.userAgentData.mobile,
+                platform: navigator.userAgentData.platform
+            };
+        }
+
         return {
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             timezoneOffset: new Date().getTimezoneOffset(),
@@ -196,7 +206,8 @@ const KaiFingerprint = (() => {
             languages: (navigator.languages || []).join(','),
             cookieEnabled: navigator.cookieEnabled,
             doNotTrack: navigator.doNotTrack || 'unknown',
-            online: navigator.onLine
+            online: navigator.onLine,
+            clientHints: clientHints
         };
     }
 

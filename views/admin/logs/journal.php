@@ -39,7 +39,19 @@ $prefilterUser = trim((string) ($_GET['user'] ?? ''));
                         <input id="f-search" class="form-control form-control-sm" placeholder="Tìm kiếm tất cả..."
                             value="<?= htmlspecialchars($prefilterUser) ?>">
                     </div>
-                    <div class="col-md-3 mb-2">
+                    
+                    <?php if (!empty($showSeverityFilter)): ?>
+                        <div class="filter-show ms-3" style="min-width: 150px;">
+                            <span class="filter-label">MỨC ĐỘ:</span>
+                            <select id="f-severity" class="filter-select flex-grow-1">
+                                <option value="all">Tất cả</option>
+                                <option value="INFO">INFO</option>
+                                <option value="WARNING">WARNING</option>
+                                <option value="DANGER">DANGER</option>
+                            </select>
+                        </div>
+                    <?php endif; ?>
+                    <div class="col-md-2 mb-2">
                         <input id="f-date" class="form-control form-control-sm" placeholder="Thời gian...">
                     </div>
                     <div class="col-md-2 mb-2 text-center">
@@ -96,13 +108,30 @@ $prefilterUser = trim((string) ($_GET['user'] ?? ''));
                                             $cell = $row[$key] ?? '--';
                                             $alignClass = ($column['align'] ?? '') === 'center' ? 'text-center' : 'text-left';
                                             ?>
-                                            <td class="<?= $alignClass; ?> align-middle"><?= (string) $cell; ?></td>
+                                            <td class="<?= $alignClass; ?> align-middle" <?= ($key === 'severity') ? 'data-severity="' . strip_tags($cell) . '"' : '' ?>><?= (string) $cell; ?></td>
                                         <?php endforeach; ?>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for JSON Payload -->
+    <div class="modal fade" id="payloadModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title"><i class="fas fa-bug text-danger mr-2"></i>Chi Tiết Payload</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body bg-light">
+                    <pre><code id="payloadContent" class="text-dark"></code></pre>
                 </div>
             </div>
         </div>
@@ -127,6 +156,18 @@ $prefilterUser = trim((string) ($_GET['user'] ?? ''));
         }
     }
     echo $timeIdx;
+    ?>;
+
+    // Detect which column index has severity data
+    const SEVERITY_COL_INDEX = <?php
+    $sevIdx = -1;
+    foreach (($columns ?? []) as $i => $col) {
+        if (($col['key'] ?? '') === 'severity') {
+            $sevIdx = $i;
+            break;
+        }
+    }
+    echo $sevIdx;
     ?>;
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -190,6 +231,18 @@ $prefilterUser = trim((string) ($_GET['user'] ?? ''));
             dt.page.len($(this).val()).draw();
         });
 
+        // Dropdown Severity Filter
+        $('#f-severity').change(function () {
+            var val = $(this).val();
+            if (SEVERITY_COL_INDEX >= 0) {
+                if (val === 'all') {
+                    dt.column(SEVERITY_COL_INDEX).search('').draw();
+                } else {
+                    dt.column(SEVERITY_COL_INDEX).search('^' + val + '$', true, false).draw();
+                }
+            }
+        });
+
         // Sort by date dropdown
         $('#f-sort').change(function () {
             dt.draw();
@@ -200,6 +253,7 @@ $prefilterUser = trim((string) ($_GET['user'] ?? ''));
             $('#f-search, #f-date').val('');
             $('#f-length').val('20');
             $('#f-sort').val('all');
+            $('#f-severity').val('all');
             dt.search('').columns().search('');
             dt.page.len(20).order([TIME_COL_INDEX, 'desc']).draw();
         });
@@ -239,6 +293,17 @@ $prefilterUser = trim((string) ($_GET['user'] ?? ''));
         // Tooltips
         if (typeof $.fn.tooltip === 'function') {
             $('[data-toggle="tooltip"]').tooltip();
+        }
+    }
+
+    function showPayloadModal(payloadData) {
+        try {
+            let parsed = typeof payloadData === 'string' ? JSON.parse(payloadData) : payloadData;
+            document.getElementById('payloadContent').textContent = JSON.stringify(parsed, null, 4);
+            $('#payloadModal').modal('show');
+        } catch (e) {
+            document.getElementById('payloadContent').textContent = payloadData;
+            $('#payloadModal').modal('show');
         }
     }
 </script>

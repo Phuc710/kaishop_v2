@@ -462,7 +462,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             text: 'Dữ liệu không thể khôi phục!',
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#ef4444',
+            confirmButtonColor: '#3085d6',
             cancelButtonColor: '#6b7280',
             confirmButtonText: '<i class="fas fa-trash"></i> Xóa ngay',
             cancelButtonText: 'Hủy'

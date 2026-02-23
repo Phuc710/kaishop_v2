@@ -225,7 +225,6 @@
 </div>
 
 <script src="<?= asset('assets/js/owl_carousel.js') ?>"></script>
-<script src="<?= asset('assets/plugins/slick/slick.js') ?>"></script>
 <script src="<?= asset('assets/js/script.js?khangapi=') ?><?= time() ?>"></script>
 <!-- Migrate  -->
 <script src="<?= asset('assets/js/jquery_migrate.js') ?>"></script>

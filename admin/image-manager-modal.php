@@ -309,7 +309,7 @@
             text: "Bạn muốn xóa " + selectedImages.length + " ảnh đã chọn?",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#d33',
+            confirmButtonColor: '#3085d6',
             cancelButtonColor: '#3085d6',
             confirmButtonText: 'Xóa ngay',
             cancelButtonText: 'Hủy'
