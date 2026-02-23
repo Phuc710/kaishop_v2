@@ -14,51 +14,175 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
 ?>
 
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
+<style>
+    .product-overview-card {
+        border: 0;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 55%, #eef2ff 100%);
+        box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+        overflow: hidden;
+    }
+
+    .product-overview-card .card-body {
+        padding: 1rem 1rem .75rem;
+    }
+
+    .overview-kicker {
+        font-size: 11px;
+        letter-spacing: .14em;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        margin-bottom: .25rem;
+    }
+
+    .overview-title {
+        margin: 0;
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .overview-subtitle {
+        margin: .2rem 0 0;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .overview-total-pill {
+        min-width: 120px;
+        border-radius: 12px;
+        padding: .65rem .85rem;
+        background: rgba(255, 255, 255, .9);
+        border: 1px solid rgba(148, 163, 184, .25);
+        text-align: right;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8);
+    }
+
+    .overview-total-pill .label {
+        display: block;
+        color: #64748b;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        font-weight: 700;
+    }
+
+    .overview-total-pill .value {
+        display: block;
+        color: #0f172a;
+        font-size: 1.35rem;
+        line-height: 1.1;
+        font-weight: 800;
+    }
+
+    .product-stat-tile {
+        border-radius: 12px;
+        padding: .9rem;
+        height: 100%;
+        border: 1px solid rgba(148, 163, 184, .18);
+        background: rgba(255, 255, 255, .82);
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+    }
+
+    .product-stat-tile .tile-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 15px;
+        flex-shrink: 0;
+    }
+
+    .product-stat-tile .tile-label {
+        display: block;
+        color: #64748b;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .product-stat-tile .tile-value {
+        display: block;
+        color: #0f172a;
+        font-size: 1.1rem;
+        font-weight: 800;
+        line-height: 1.2;
+        margin-top: 2px;
+    }
+
+    .tile-blue .tile-icon { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+    .tile-green .tile-icon { background: linear-gradient(135deg, #10b981, #059669); }
+    .tile-amber .tile-icon { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .tile-slate .tile-icon { background: linear-gradient(135deg, #64748b, #475569); }
+
+    @media (max-width: 767.98px) {
+        .overview-total-pill {
+            width: 100%;
+            text-align: left;
+            margin-top: .75rem;
+        }
+    }
+</style>
 
 <section class="content pb-4 mt-3">
     <div class="container-fluid">
+        <?php
+        $totalProducts = (int) ($stats['total'] ?? 0);
+        $activeProducts = (int) ($stats['active'] ?? 0);
+        $pinnedProducts = (int) ($stats['pinned'] ?? 0);
+        $hiddenProducts = (int) ($stats['hidden'] ?? 0);
+        ?>
 
         <!-- Stats -->
-        <div class="row mb-3">
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-info elevation-2">
-                    <div class="inner">
-                        <h3><?= $stats['total'] ?? 0 ?></h3>
-                        <p>TỔNG SẢN PHẨM</p>
+                
+                <div class="row mt-2">
+                    <div class="col-lg-3 col-sm-6 mb-3">
+                        <div class="product-stat-tile tile-blue">
+                            <span class="tile-icon"><i class="fas fa-boxes"></i></span>
+                            <div>
+                                <span class="tile-label">Tong san pham</span>
+                                <span class="tile-value"><?= number_format($totalProducts) ?></span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="icon"><i class="fas fa-boxes"></i></div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-success elevation-2">
-                    <div class="inner">
-                        <h3><?= $stats['active'] ?? 0 ?></h3>
-                        <p>ĐANG HOẠT ĐỘNG</p>
+                    <div class="col-lg-3 col-sm-6 mb-3">
+                        <div class="product-stat-tile tile-green">
+                            <span class="tile-icon"><i class="fas fa-check-circle"></i></span>
+                            <div>
+                                <span class="tile-label">Dang hoat dong</span>
+                                <span class="tile-value"><?= number_format($activeProducts) ?></span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="icon"><i class="fas fa-check-circle"></i></div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-warning elevation-2">
-                    <div class="inner">
-                        <h3><?= $stats['pinned'] ?? 0 ?></h3>
-                        <p>ĐANG GHIM</p>
+                    <div class="col-lg-3 col-sm-6 mb-3">
+                        <div class="product-stat-tile tile-amber">
+                            <span class="tile-icon"><i class="fas fa-thumbtack"></i></span>
+                            <div>
+                                <span class="tile-label">Dang ghim</span>
+                                <span class="tile-value"><?= number_format($pinnedProducts) ?></span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="icon"><i class="fas fa-thumbtack"></i></div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-6">
-                <div class="small-box bg-secondary elevation-2">
-                    <div class="inner">
-                        <h3><?= $stats['hidden'] ?? 0 ?></h3>
-                        <p>ĐANG ẨN</p>
+                    <div class="col-lg-3 col-sm-6 mb-3">
+                        <div class="product-stat-tile tile-slate">
+                            <span class="tile-icon"><i class="fas fa-eye-slash"></i></span>
+                            <div>
+                                <span class="tile-label">Dang an</span>
+                                <span class="tile-value"><?= number_format($hiddenProducts) ?></span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="icon"><i class="fas fa-eye-slash"></i></div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Table Card -->
+<!-- Table Card -->
         <div class="card custom-card">
             <div class="card-header border-0 pb-0">
                 <h3 class="card-title text-uppercase font-weight-bold">QUẢN LÝ KHO SẢN PHẨM</h3>

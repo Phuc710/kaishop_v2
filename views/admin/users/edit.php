@@ -249,6 +249,13 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                                     title="Xem chi tiết Fingerprint">
                                                     <i class="fas fa-eye"></i> Chi tiết
                                                 </button>
+                                                <?php if ($toz_user['bannd'] == 0): ?>
+                                                    <button type="button" class="btn btn-outline-danger"
+                                                        onclick="banDeviceFromEdit('<?= htmlspecialchars($toz_user['username']) ?>')"
+                                                        title="Khóa vĩnh viễn thiết bị này">
+                                                        <i class="fas fa-user-slash"></i> Khóa Thiết Bị
+                                                    </button>
+                                                <?php endif; ?>
                                             </div>
                                         <?php endif; ?>
                                     </div>
@@ -313,5 +320,47 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
         } catch (e) {
             Swal.fire('Lỗi', 'Không thể parse fingerprint data', 'error');
         }
+    }
+
+    function banDeviceFromEdit(username) {
+        Swal.fire({
+            title: 'Khóa Thiết Bị (Fingerprint)',
+            html: `
+                <p class="mb-2 text-danger"><i class="fas fa-exclamation-triangle"></i> Bạn đang khóa toàn bộ thiết bị của <b>${username}</b></p>
+                <p class="text-muted" style="font-size: 13px;">Hành động này sẽ cấm thiết bị hiện tại truy cập vào hệ thống, bất kể họ dùng tài khoản nào.</p>
+                <textarea id="swal-bandevice-reason" class="form-control" rows="3" 
+                    placeholder="Nhập lý do ban thiết bị (bắt buộc)..."
+                    style="border: 1px solid #ddd; border-radius: 8px; font-size: 14px;"></textarea>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Khóa ngay',
+            cancelButtonText: 'Hủy',
+            focusConfirm: false,
+            preConfirm: () => {
+                const reason = document.getElementById('swal-bandevice-reason').value.trim();
+                if (!reason) {
+                    Swal.showValidationMessage('Vui lòng nhập lý do ban thiết bị!');
+                    return false;
+                }
+                return reason;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.post('<?= url("admin/users/ban-device") ?>/' + encodeURIComponent(username),
+                    { reason: result.value },
+                    function (res) {
+                        if (res.success) {
+                            SwalHelper.toast(res.message, 'success');
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            SwalHelper.toast(res.message || 'Lỗi', 'error');
+                        }
+                    }, 'json'
+                ).fail(() => SwalHelper.toast('Lỗi kết nối server', 'error'));
+            }
+        });
     }
 </script>

@@ -106,7 +106,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
 
 <?php
 require_once __DIR__ . '/../layout/foot.php';
-require_once __DIR__ . '/../../image-manager-modal.php';
+require_once ROOT_PATH . '/admin/image-manager-modal.php';
 ?>
 
 <script>

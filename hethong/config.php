@@ -70,6 +70,19 @@ if (isset($_SESSION['session'])) {
         exit;
     }
 
+    // Check Fingerprint Device Ban
+    if (!empty($user['fingerprint'])) {
+        $fpHash = mysqli_real_escape_string($connection, $user['fingerprint']);
+        $bf = $connection->query("SELECT * FROM `banned_fingerprints` WHERE `fingerprint_hash` = '$fpHash'")->fetch_assoc();
+        if ($bf) {
+            session_destroy();
+            session_start();
+            $_SESSION['banned_reason'] = $bf['reason'] ?: 'Bạn đã bị từ chối truy cập do vi phạm chính sách.';
+            header('location: ' . APP_DIR . '/NotFound.php');
+            exit;
+        }
+    }
+
     $username = $user['username'];
     if ($user['level'] == 9) {
         $_SESSION['admin'] = $username;

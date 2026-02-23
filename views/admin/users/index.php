@@ -118,6 +118,8 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                     <tr>
                                         <td class="text-center align-middle font-weight-bold">
                                             <?= htmlspecialchars($row['username']) ?>
+                                            <span
+                                                style="display:none;"><?= htmlspecialchars($row['fingerprint'] ?? '') ?></span>
                                         </td>
                                         <td class="text-center align-middle"><?= htmlspecialchars($row['email']) ?></td>
                                         <td class="text-center align-middle font-weight-bold text-danger">
@@ -295,7 +297,14 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
         Swal.fire({
             title: 'Khóa tài khoản',
             html: `
-                <p class="mb-2">Bạn đang khóa tài khoản <b>${username}</b></p>
+                <p class="mb-2">Bạn đang thao tác với tài khoản <b>${username}</b></p>
+                <div class="form-group mb-2 text-left" style="margin-top: 10px;">
+                    <label class="font-weight-bold text-danger" style="font-size:13px;"><i class="fas fa-exclamation-triangle mr-1"></i>Hình thức khóa</label>
+                    <select id="swal-ban-type" class="form-control" style="border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                        <option value="account">Khóa tài khoản này</option>
+                        <option value="device">Khóa toàn bộ thiết bị</option>
+                    </select>
+                </div>
                 <textarea id="swal-ban-reason" class="form-control" rows="3" 
                     placeholder="Nhập lý do ban (bắt buộc)..."
                     style="border: 1px solid #ddd; border-radius: 8px; font-size: 14px;"></textarea>
@@ -309,16 +318,22 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             focusConfirm: false,
             preConfirm: () => {
                 const reason = document.getElementById('swal-ban-reason').value.trim();
+                const type = document.getElementById('swal-ban-type').value;
                 if (!reason) {
                     Swal.showValidationMessage('Vui lòng nhập lý do ban!');
                     return false;
                 }
-                return reason;
+                return { reason: reason, type: type };
             }
         }).then((result) => {
             if (result.isConfirmed) {
-                $.post('<?= url('admin/users/ban') ?>/' + encodeURIComponent(username),
-                    { reason: result.value },
+                const data = result.value;
+                const endpoint = data.type === 'device'
+                    ? '<?= url('admin/users/ban-device') ?>/'
+                    : '<?= url('admin/users/ban') ?>/';
+
+                $.post(endpoint + encodeURIComponent(username),
+                    { reason: data.reason },
                     function (res) {
                         if (res.success) {
                             SwalHelper.toast(res.message, 'success');

@@ -52,6 +52,7 @@ return [
     ['POST', '/admin/users/sub-money/{username}', 'Admin\\UserController@subMoney'],
     ['POST', '/admin/users/delete', 'Admin\\UserController@delete'],
     ['POST', '/admin/users/ban/{username}', 'Admin\\UserController@banUser'],
+    ['POST', '/admin/users/ban-device/{username}', 'Admin\\UserController@banDevice'],
     ['POST', '/admin/users/unban/{username}', 'Admin\\UserController@unbanUser'],
 
     // Admin Categories

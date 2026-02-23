@@ -84,6 +84,7 @@
 <script>
     var selectedImages = [];
     var allImages = []; // Store api data for filtering
+    var imageManagerAjaxUrl = '<?= APP_DIR ?>/admin/ajax-image.php';
 
     function openImageManager() {
         $('#imageManagerModal').modal('show');
@@ -94,7 +95,7 @@
 
     function loadImages() {
         $.ajax({
-            url: 'ajax-image.php',
+            url: imageManagerAjaxUrl,
             type: 'POST',
             data: { action: 'list' },
             dataType: 'json',
@@ -228,7 +229,7 @@
         });
 
         $.ajax({
-            url: 'ajax-image.php',
+            url: imageManagerAjaxUrl,
             type: 'POST',
             dataType: 'text',
             cache: false,
@@ -315,7 +316,7 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: 'ajax-image.php',
+                    url: imageManagerAjaxUrl,
                     type: 'POST',
                     data: {
                         action: 'delete',

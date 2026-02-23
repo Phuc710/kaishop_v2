@@ -227,6 +227,47 @@ class UserController extends Controller
     }
 
     /**
+     * Ban Device with reason (AJAX)
+     */
+    public function banDevice($username)
+    {
+        $this->requireAdmin();
+        global $connection;
+
+        $reason = trim($this->post('reason', ''));
+        if ($reason === '') {
+            return $this->json(['success' => false, 'message' => 'Vui lòng nhập lý do khóa.']);
+        }
+
+        $user = $this->userModel->findByUsername($username);
+        if (!$user) {
+            return $this->json(['success' => false, 'message' => 'Người dùng không tồn tại.']);
+        }
+
+        if (empty($user['fingerprint'])) {
+            return $this->json(['success' => false, 'message' => 'Chưa có dữ liệu Fingerprint của người dùng này để khóa thiết bị.']);
+        }
+
+        $fpHash = mysqli_real_escape_string($connection, $user['fingerprint']);
+        $safeReason = mysqli_real_escape_string($connection, $reason);
+        $adminName = mysqli_real_escape_string($connection, $_SESSION['admin'] ?? 'Admin');
+
+        // Insert into banned_fingerprints
+        $sql = "INSERT INTO `banned_fingerprints` (`fingerprint_hash`, `reason`, `banned_by`) 
+                VALUES ('$fpHash', '$safeReason', '$adminName') 
+                ON DUPLICATE KEY UPDATE `reason` = '$safeReason', `banned_by` = '$adminName'";
+        $connection->query($sql);
+
+        // Also ban the account simultaneously for double protection
+        $safeUser = $connection->real_escape_string($username);
+        $connection->query("UPDATE `users` SET `bannd` = 1, `ban_reason` = '{$safeReason}' WHERE `username` = '{$safeUser}'");
+
+        Logger::warning('Admin', 'ban_device', 'Khóa thiết bị Fingerprint: ' . $username, ['fingerprint' => $fpHash]);
+
+        return $this->json(['success' => true, 'message' => 'Đã khóa tài khoản và thiết bị của ' . $username]);
+    }
+
+    /**
      * Unban user (AJAX)
      */
     public function unbanUser($username)
@@ -238,8 +279,15 @@ class UserController extends Controller
 
         $result = $connection->query("UPDATE `users` SET `bannd` = 0, `ban_reason` = NULL WHERE `username` = '{$safeUser}'");
 
+        // Also Unban Device if they have one currently banned
+        $user = $this->userModel->findByUsername($username);
+        if ($user && !empty($user['fingerprint'])) {
+            $fpHash = $connection->real_escape_string($user['fingerprint']);
+            $connection->query("DELETE FROM `banned_fingerprints` WHERE `fingerprint_hash` = '{$fpHash}'");
+        }
+
         if ($result) {
-            Logger::info('Admin', 'unban_user', "Admin mở khóa user: {$username}", [
+            Logger::info('Admin', 'unban_user', "Admin mở khóa user & thiết bị: {$username}", [
                 'username' => $username
             ]);
             return $this->json(['success' => true, 'message' => 'Đã mở khóa tài khoản ' . $username]);
