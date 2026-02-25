@@ -125,8 +125,20 @@
                             <div class="col-md-12">
                                 <ul class="menu-items">
                                     <?php
-                                    global $connection;
-                                    $footer_categories = $connection->query("SELECT * FROM categories WHERE status = 'ON' LIMIT 5")->fetch_all(MYSQLI_ASSOC);
+                                    $footer_categories = [];
+                                    try {
+                                        $db = class_exists('Database') ? Database::getInstance()->getConnection() : null;
+                                        if ($db instanceof PDO) {
+                                            $stmt = $db->prepare("SELECT * FROM categories WHERE status = ? ORDER BY display_order ASC, id ASC LIMIT 5");
+                                            $stmt->execute(['ON']);
+                                            $footer_categories = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                                        } else {
+                                            global $connection;
+                                            $footer_categories = $connection->query("SELECT * FROM categories WHERE status = 'ON' LIMIT 5")->fetch_all(MYSQLI_ASSOC);
+                                        }
+                                    } catch (Throwable $e) {
+                                        $footer_categories = [];
+                                    }
                                     if (count($footer_categories) > 0) {
                                         foreach ($footer_categories as $cat):
                                             ?>

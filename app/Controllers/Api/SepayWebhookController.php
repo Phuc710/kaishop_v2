@@ -44,6 +44,12 @@ class SepayWebhookController extends Controller
             }
         }
 
+        $contentType = strtolower((string) ($_SERVER['CONTENT_TYPE'] ?? ''));
+        if ($contentType !== '' && strpos($contentType, 'application/json') === false) {
+            http_response_code(415);
+            return $this->json(['success' => false, 'message' => 'Unsupported content type']);
+        }
+
         // 2. Parse JSON body
         $rawBody = file_get_contents('php://input');
         if (!is_string($rawBody) || $rawBody === '') {

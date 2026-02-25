@@ -35,6 +35,9 @@ if (session_status() === PHP_SESSION_NONE) {
 // Base URL configuration
 define('BASE_PATH', dirname(__DIR__));
 define('BASE_URL', (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER["HTTP_HOST"] . EnvHelper::get('APP_DIR', ''));
+if (!defined('APP_KEY')) {
+    define('APP_KEY', (string) EnvHelper::get('APP_KEY', ''));
+}
 
 // Set timezone
 date_default_timezone_set('Asia/Ho_Chi_Minh');
@@ -50,6 +53,56 @@ if (!headers_sent()) {
     header('X-Frame-Options: SAMEORIGIN');
     header('Referrer-Policy: strict-origin-when-cross-origin');
     header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
+}
+
+// CSRF token helpers (shared across legacy + MVC views)
+if (empty($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token']) || strlen($_SESSION['csrf_token']) < 32) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+if (empty($_SESSION['csrf_token_created_at'])) {
+    $_SESSION['csrf_token_created_at'] = time();
+}
+
+if (!function_exists('csrf_token')) {
+    function csrf_token(): string
+    {
+        return (string) ($_SESSION['csrf_token'] ?? '');
+    }
+}
+
+if (!function_exists('csrf_field')) {
+    function csrf_field(): string
+    {
+        return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') . '">';
+    }
+}
+
+if (!function_exists('csrf_regenerate')) {
+    function csrf_regenerate(): string
+    {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        $_SESSION['csrf_token_created_at'] = time();
+        return (string) $_SESSION['csrf_token'];
+    }
+}
+
+if (!function_exists('csrf_validate_request')) {
+    function csrf_validate_request(): bool
+    {
+        $sessionToken = (string) ($_SESSION['csrf_token'] ?? '');
+        if ($sessionToken === '') {
+            return false;
+        }
+
+        $provided = '';
+        if (isset($_SERVER['HTTP_X_CSRF_TOKEN'])) {
+            $provided = (string) $_SERVER['HTTP_X_CSRF_TOKEN'];
+        } elseif (isset($_POST['csrf_token'])) {
+            $provided = (string) $_POST['csrf_token'];
+        }
+
+        return $provided !== '' && hash_equals($sessionToken, $provided);
+    }
 }
 
 // Autoload core classes

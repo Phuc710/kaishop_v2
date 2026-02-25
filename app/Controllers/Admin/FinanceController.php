@@ -30,9 +30,14 @@ class FinanceController extends Controller
      */
     private function getProductList()
     {
-        global $connection;
-        $result = $connection->query("SELECT id, name FROM products WHERE status = 'ON' ORDER BY name ASC");
-        return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+        try {
+            $db = Database::getInstance()->getConnection();
+            $stmt = $db->prepare("SELECT id, name FROM products WHERE status = ? ORDER BY name ASC");
+            $stmt->execute(['ON']);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (Throwable $e) {
+            return [];
+        }
     }
 
     // ========== GIFTCODES ==========

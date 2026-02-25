@@ -12,6 +12,7 @@ if (empty($_SESSION['admin'])) {
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
 <link rel="shortcut icon" href="<?= $chungapi['favicon'] ?? '' ?>" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap">
 <link rel="stylesheet"
@@ -42,3 +43,7 @@ if (empty($_SESSION['admin'])) {
     crossorigin="anonymous">
 <link rel="stylesheet" href="<?= asset('assets/css/admin.css') ?>">
 <link rel="stylesheet" href="<?= asset('assets/css/admin-pages.css') ?>">
+<script>
+    window.KS_CSRF_TOKEN = '<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>';
+</script>
+<script src="<?= asset('assets/js/csrf-guard.js') ?>"></script>

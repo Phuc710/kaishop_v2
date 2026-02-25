@@ -61,6 +61,13 @@ class ProductStock extends Model
             // ignore if index exists or duplicate legacy data
         }
 
+        // Backfill hashes for legacy plaintext rows so duplicate detection works after enabling encryption.
+        try {
+            $this->db->exec("UPDATE `{$this->table}` SET `content_hash` = SHA2(`content`, 256) WHERE `content_hash` IS NULL AND `content` <> '' AND `content` NOT LIKE 'enc:v%'");
+        } catch (Throwable $e) {
+            // ignore
+        }
+
         $ready = true;
     }
 

@@ -60,6 +60,10 @@ class Router {
         }
         
         $method = $_SERVER['REQUEST_METHOD'];
+
+        if (!$this->runGlobalMiddlewares($method, $uri)) {
+            return;
+        }
         
         // Find matching route
         foreach ($this->routes as $route) {
@@ -77,6 +81,24 @@ class Router {
         } else {
             echo "404 - Page not found";
         }
+    }
+
+    private function runGlobalMiddlewares($method, $uri) {
+        if (class_exists('ApiSecurityMiddleware')) {
+            $apiSecurity = new ApiSecurityMiddleware();
+            if (!$apiSecurity->handle((string) $method, (string) $uri)) {
+                return false;
+            }
+        }
+
+        if (class_exists('CsrfMiddleware')) {
+            $csrf = new CsrfMiddleware();
+            if (!$csrf->handle((string) $method, (string) $uri)) {
+                return false;
+            }
+        }
+
+        return true;
     }
     
     /**

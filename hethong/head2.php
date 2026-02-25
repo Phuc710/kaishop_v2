@@ -101,6 +101,7 @@ $ogType = isset($seoOgType) && trim((string) $seoOgType) !== '' ? trim((string) 
 <?php endif; ?>
 <meta name="robots" content="<?= htmlspecialchars($seoRobotsValue, ENT_QUOTES, 'UTF-8') ?>">
 <meta name="theme-color" content="#ff6900">
+<meta name="csrf-token" content="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
 <link rel="canonical" href="<?= htmlspecialchars($seoCanonicalValue, ENT_QUOTES, 'UTF-8') ?>">
 
 <meta property="og:locale" content="vi_VN">
@@ -180,7 +181,9 @@ $ogType = isset($seoOgType) && trim((string) $seoOgType) !== '' ? trim((string) 
     const BASE_URL = '<?= url('') ?>';
     const ASSET_URL = '<?= asset('') ?>';
     const AJAX_URL = '<?= ajax_url('') ?>';
+    const KS_CSRF_TOKEN = '<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>';
 </script>
+<script src="<?= asset('assets/js/csrf-guard.js') ?>"></script>
 
 <?php if (isset($user['id'])): ?>
     <script src="<?= asset('assets/js/fingerprint.js') ?>"></script>
