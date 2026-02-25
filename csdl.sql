@@ -26,7 +26,7 @@ CREATE TABLE `categories` (
 CREATE TABLE `banned_fingerprints` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `fingerprint_hash` varchar(64) NOT NULL,
-  `reason` text DEFAULT NULL,
+  `reason` text NULL,
   `banned_by` varchar(100) DEFAULT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
@@ -75,6 +75,29 @@ CREATE TABLE IF NOT EXISTS `product_stock` (
   KEY `idx_stock_status` (`status`),
   KEY `idx_stock_order` (`order_id`),
   UNIQUE KEY `uniq_stock_product_hash` (`product_id`,`content_hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `orders` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `order_code` varchar(40) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `username` varchar(100) NOT NULL,
+  `product_id` int(11) NOT NULL,
+  `product_name` varchar(255) NOT NULL,
+  `price` bigint(20) NOT NULL DEFAULT 0,
+  `status` varchar(30) NOT NULL DEFAULT 'completed',
+  `stock_id` int(11) DEFAULT NULL,
+  `stock_content` longtext NULL,
+  `payment_method` varchar(50) NOT NULL DEFAULT 'wallet',
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_orders_code` (`order_code`),
+  KEY `idx_orders_user` (`user_id`),
+  KEY `idx_orders_product` (`product_id`),
+  KEY `idx_orders_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
@@ -131,11 +154,13 @@ CREATE TABLE `users` (
   `password` varchar(255) NOT NULL,
   `password_updated_at` datetime DEFAULT NULL,
   `email` varchar(190) NOT NULL,
+  `avatar_url` varchar(500) DEFAULT NULL,
   `twofa_enabled` tinyint(1) NOT NULL DEFAULT 0,
   `level` tinyint(4) NOT NULL DEFAULT 0,
   `tong_nap` bigint(20) NOT NULL DEFAULT 0,
   `money` bigint(20) NOT NULL DEFAULT 0,
   `otpcode` varchar(100) DEFAULT NULL,
+  `otpcode_expires_at` datetime DEFAULT NULL,
   `session` varchar(100) DEFAULT NULL,
   `bannd` tinyint(1) NOT NULL DEFAULT 0,
   `ban_reason` text DEFAULT NULL,
@@ -166,7 +191,7 @@ CREATE TABLE IF NOT EXISTS `auth_sessions` (
   `access_expires_at` datetime NOT NULL,
   `refresh_expires_at` datetime NOT NULL,
   `ip_address` varchar(45) DEFAULT NULL,
-  `user_agent` longtext DEFAULT NULL,
+  `user_agent` longtext NULL,
   `device_fingerprint` varchar(128) DEFAULT NULL,
   `device_hash` char(64) DEFAULT NULL,
   `device_os` varchar(100) DEFAULT NULL,
@@ -182,7 +207,10 @@ CREATE TABLE IF NOT EXISTS `auth_sessions` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_auth_sessions_selector` (`session_selector`),
   KEY `idx_auth_sessions_user` (`user_id`),
-  KEY `idx_auth_sessions_status` (`status`)
+  KEY `idx_auth_sessions_status` (`status`),
+  KEY `idx_auth_sessions_status_refresh` (`status`,`refresh_expires_at`),
+  KEY `idx_auth_sessions_selector_status` (`session_selector`,`status`),
+  KEY `idx_auth_sessions_legacy_session` (`legacy_session_token`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `auth_otp_codes` (
@@ -198,14 +226,16 @@ CREATE TABLE IF NOT EXISTS `auth_otp_codes` (
   `verified_at` datetime DEFAULT NULL,
   `consumed_at` datetime DEFAULT NULL,
   `ip_address` varchar(45) DEFAULT NULL,
-  `user_agent` longtext DEFAULT NULL,
+  `user_agent` longtext NULL,
   `device_hash` char(64) DEFAULT NULL,
-  `metadata_json` longtext DEFAULT NULL,
+  `metadata_json` longtext NULL,
   `created_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_auth_otp_challenge` (`challenge_id`),
   KEY `idx_auth_otp_user` (`user_id`),
-  KEY `idx_auth_otp_purpose` (`purpose`)
+  KEY `idx_auth_otp_purpose` (`purpose`),
+  KEY `idx_auth_otp_challenge_purpose` (`challenge_id`,`purpose`),
+  KEY `idx_auth_otp_expires` (`expires_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `user_trusted_devices` (
@@ -213,7 +243,7 @@ CREATE TABLE IF NOT EXISTS `user_trusted_devices` (
   `user_id` int(11) NOT NULL,
   `device_hash` char(64) NOT NULL,
   `ip_address` varchar(45) DEFAULT NULL,
-  `user_agent` longtext DEFAULT NULL,
+  `user_agent` longtext NULL,
   `os` varchar(100) DEFAULT NULL,
   `browser` varchar(100) DEFAULT NULL,
   `device_type` varchar(50) DEFAULT NULL,
@@ -223,7 +253,8 @@ CREATE TABLE IF NOT EXISTS `user_trusted_devices` (
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_user_device` (`user_id`,`device_hash`),
-  KEY `idx_user_device_until` (`trusted_until`)
+  KEY `idx_user_device_until` (`trusted_until`),
+  KEY `idx_user_device_user_until` (`user_id`,`trusted_until`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `auth_login_attempts` (
@@ -233,11 +264,12 @@ CREATE TABLE IF NOT EXISTS `auth_login_attempts` (
   `ip_address` varchar(45) DEFAULT NULL,
   `success` tinyint(1) NOT NULL DEFAULT 0,
   `reason` varchar(190) DEFAULT NULL,
-  `user_agent` longtext DEFAULT NULL,
+  `user_agent` longtext NULL,
   `created_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `idx_auth_attempt_action_ip_time` (`action`,`ip_address`,`created_at`),
-  KEY `idx_auth_attempt_user_ip_time` (`username_or_email`,`ip_address`,`created_at`)
+  KEY `idx_auth_attempt_user_ip_time` (`username_or_email`,`ip_address`,`created_at`),
+  KEY `idx_auth_attempt_action_user_ip_success_time` (`action`,`username_or_email`,`ip_address`,`success`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `setting` (
@@ -348,10 +380,24 @@ CREATE TABLE IF NOT EXISTS `user_fingerprints` (
   `components` longtext DEFAULT NULL COMMENT 'JSON: canvas, webgl, fonts, screen, etc.',
   `ip_address` varchar(45) DEFAULT NULL,
   `user_agent` text DEFAULT NULL,
+  `device_id` varchar(80) DEFAULT NULL,
+  `ip_prefix` varchar(64) DEFAULT NULL,
+  `user_agent_hash` char(64) DEFAULT NULL,
+  `accept_language` varchar(255) DEFAULT NULL,
+  `timezone` varchar(120) DEFAULT NULL,
+  `language` varchar(120) DEFAULT NULL,
+  `platform` varchar(120) DEFAULT NULL,
+  `screen_key` varchar(64) DEFAULT NULL,
+  `action` varchar(50) DEFAULT NULL,
+  `risk_score` int(11) NOT NULL DEFAULT 0,
+  `risk_flags` text DEFAULT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `idx_uf_user` (`user_id`),
-  KEY `idx_uf_hash` (`fingerprint_hash`)
+  KEY `idx_uf_hash` (`fingerprint_hash`),
+  KEY `idx_uf_device_id` (`device_id`),
+  KEY `idx_uf_ip_ua_time` (`ip_prefix`,`user_agent_hash`,`created_at`),
+  KEY `idx_uf_risk_time` (`risk_score`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `pending_deposits` (

@@ -85,8 +85,14 @@
     var selectedImages = [];
     var allImages = []; // Store api data for filtering
     var imageManagerAjaxUrl = '<?= APP_DIR ?>/admin/ajax-image.php';
+    var imageManagerTargetInput = '#image';
 
-    function openImageManager() {
+    function openImageManager(targetId) {
+        if (targetId) {
+            imageManagerTargetInput = targetId.startsWith('#') ? targetId : '#' + targetId;
+        } else {
+            imageManagerTargetInput = '#image';
+        }
         $('#imageManagerModal').modal('show');
         loadImages();
         selectedImages = [];

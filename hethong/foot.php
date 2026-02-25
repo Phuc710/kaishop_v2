@@ -75,20 +75,21 @@
     <div class="container">
         <div class="footer-top">
             <div class="row">
-                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
+                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12 text-center">
                     <div class="footer-widget">
                         <?php global $chungapi; ?>
-                        <a href="<?= url('') ?>">
-                            <img src="<?= $chungapi['logo_footer'] ?? $chungapi['logo']; ?>" width="150" alt="KaiShop">
+                        <a href="<?= url('') ?>" class="d-block mb-3">
+                            <img src="<?= $chungapi['logo_footer'] ?? $chungapi['logo']; ?>" width="150" alt="KaiShop"
+                                style="margin: 0 auto; display: block;">
                         </a>
-                        <p>
+                        <p class="mx-auto" style="max-width: 320px;">
                             <?= !empty($chungapi['mo_ta']) ? htmlspecialchars($chungapi['mo_ta']) : 'Hệ thống cung cấp Source Code, Tài khoản MMO, Công cụ và Dịch vụ chất lượng cao.'; ?>
                         </p>
                         <h6 class="mt-3"
                             style="background-color: rgba(255, 105, 0, 0.05); border-radius: 99px; padding: 8px 16px; display: inline-block; color: #ff6900; font-size: 14px; border: 1px solid rgba(255, 105, 0, 0.2);">
                             Thanh toán tự động &bull; Hỗ trợ 24/7</h6>
                         <div class="kai-footer-social mt-3">
-                            <div class="social-buttons">
+                            <div class="social-buttons d-flex justify-content-center">
                                 <?php if (!empty($chungapi['fb_admin'])): ?>
                                     <a href="<?= htmlspecialchars($chungapi['fb_admin']); ?>" target="_blank"
                                         class="social-btn facebook" aria-label="Facebook">
@@ -117,6 +118,7 @@
                         </div>
                     </div>
                 </div>
+
 
                 <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6">
                     <div class="footer-widget">
@@ -280,6 +282,37 @@ $loadInteractiveBundle = !empty($pageAssetFlagsResolved['interactive_bundle']);
 <script src="<?= asset('assets/js/clipboard.js') ?>"></script>
 
 <script>
+    // Global Sticky Menu & Back to top
+    function initGlobalStickyAndTop() {
+        var header = document.querySelector(".header-primary");
+        if (header) {
+            window.addEventListener("scroll", function () {
+                if (window.scrollY > 100) {
+                    header.classList.add("sticky");
+                } else {
+                    header.classList.remove("sticky");
+                }
+            });
+        }
+
+        var toTopBtn = document.getElementById("toTopBtn");
+        if (toTopBtn) {
+            window.addEventListener("scroll", function () {
+                if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
+                    toTopBtn.style.display = "block";
+                } else {
+                    toTopBtn.style.display = "none";
+                }
+            });
+            toTopBtn.addEventListener("click", function () {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            });
+        }
+    }
+    document.addEventListener("DOMContentLoaded", initGlobalStickyAndTop);
+</script>
+
+<script>
     var o = new ClipboardJS(".copy");
     o.on("success", function (e) {
         SwalHelper.toast('Sao chép thành công', 'success');
@@ -290,92 +323,92 @@ $loadInteractiveBundle = !empty($pageAssetFlagsResolved['interactive_bundle']);
 </script>
 
 <?php if (empty($_SESSION['admin'])): ?>
-<script>
-    (function () {
-        const banner = document.getElementById('maintenanceNoticeBanner');
-        const noticeText = document.getElementById('maintenanceNoticeText');
-        const statusUrl = '<?= url('api/system/maintenance-status') ?>';
-        const maintenanceUrl = '<?= url('bao-tri') ?>';
+    <script>
+        (function () {
+            const banner = document.getElementById('maintenanceNoticeBanner');
+            const noticeText = document.getElementById('maintenanceNoticeText');
+            const statusUrl = '<?= url('api/system/maintenance-status') ?>';
+            const maintenanceUrl = '<?= url('bao-tri') ?>';
 
-        if (!banner || !noticeText) {
-            return;
-        }
-
-        let nextPollDelay = 15000;
-        let timerId = null;
-
-        function normalizedPath(value) {
-            const raw = String(value || '/').replace(/\/+$/, '');
-            return raw === '' ? '/' : raw;
-        }
-
-        function formatSeconds(totalSeconds) {
-            const sec = Math.max(0, Number(totalSeconds || 0));
-            const minutes = Math.floor(sec / 60);
-            const seconds = sec % 60;
-            return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
-        }
-
-        function hideBanner() {
-            banner.hidden = true;
-            banner.classList.remove('is-visible');
-        }
-
-        function showBanner(secondsLeft) {
-            noticeText.textContent = 'Hệ thống sẽ bảo trì sau ' + formatSeconds(secondsLeft) + '. Vui lòng hoàn tất thao tác đang thực hiện.';
-            banner.hidden = false;
-            banner.classList.add('is-visible');
-        }
-
-        function redirectMaintenance() {
-            const currentPath = normalizedPath(window.location.pathname);
-            const targetPath = normalizedPath(new URL(maintenanceUrl, window.location.origin).pathname);
-            if (currentPath !== targetPath) {
-                window.location.href = maintenanceUrl;
+            if (!banner || !noticeText) {
+                return;
             }
-        }
 
-        function scheduleNext() {
-            window.clearTimeout(timerId);
-            timerId = window.setTimeout(pollStatus, nextPollDelay);
-        }
+            let nextPollDelay = 15000;
+            let timerId = null;
 
-        function pollStatus() {
-            fetch(statusUrl, { credentials: 'same-origin', cache: 'no-store' })
-                .then(function (response) { return response.json(); })
-                .then(function (data) {
-                    const m = data && data.maintenance ? data.maintenance : null;
+            function normalizedPath(value) {
+                const raw = String(value || '/').replace(/\/+$/, '');
+                return raw === '' ? '/' : raw;
+            }
 
-                    if (!m) {
-                        hideBanner();
+            function formatSeconds(totalSeconds) {
+                const sec = Math.max(0, Number(totalSeconds || 0));
+                const minutes = Math.floor(sec / 60);
+                const seconds = sec % 60;
+                return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+            }
+
+            function hideBanner() {
+                banner.hidden = true;
+                banner.classList.remove('is-visible');
+            }
+
+            function showBanner(secondsLeft) {
+                noticeText.textContent = 'Hệ thống sẽ bảo trì sau ' + formatSeconds(secondsLeft) + '. Vui lòng hoàn tất thao tác đang thực hiện.';
+                banner.hidden = false;
+                banner.classList.add('is-visible');
+            }
+
+            function redirectMaintenance() {
+                const currentPath = normalizedPath(window.location.pathname);
+                const targetPath = normalizedPath(new URL(maintenanceUrl, window.location.origin).pathname);
+                if (currentPath !== targetPath) {
+                    window.location.href = maintenanceUrl;
+                }
+            }
+
+            function scheduleNext() {
+                window.clearTimeout(timerId);
+                timerId = window.setTimeout(pollStatus, nextPollDelay);
+            }
+
+            function pollStatus() {
+                fetch(statusUrl, { credentials: 'same-origin', cache: 'no-store' })
+                    .then(function (response) { return response.json(); })
+                    .then(function (data) {
+                        const m = data && data.maintenance ? data.maintenance : null;
+
+                        if (!m) {
+                            hideBanner();
+                            nextPollDelay = 15000;
+                            scheduleNext();
+                            return;
+                        }
+
+                        if (m.active) {
+                            hideBanner();
+                            redirectMaintenance();
+                            return;
+                        }
+
+                        if (m.notice_active) {
+                            showBanner(m.notice_seconds_left || 0);
+                            nextPollDelay = 3000;
+                        } else {
+                            hideBanner();
+                            nextPollDelay = 15000;
+                        }
+
+                        scheduleNext();
+                    })
+                    .catch(function () {
                         nextPollDelay = 15000;
                         scheduleNext();
-                        return;
-                    }
+                    });
+            }
 
-                    if (m.active) {
-                        hideBanner();
-                        redirectMaintenance();
-                        return;
-                    }
-
-                    if (m.notice_active) {
-                        showBanner(m.notice_seconds_left || 0);
-                        nextPollDelay = 3000;
-                    } else {
-                        hideBanner();
-                        nextPollDelay = 15000;
-                    }
-
-                    scheduleNext();
-                })
-                .catch(function () {
-                    nextPollDelay = 15000;
-                    scheduleNext();
-                });
-        }
-
-        pollStatus();
-    })();
-</script>
+            pollStatus();
+        })();
+    </script>
 <?php endif; ?>

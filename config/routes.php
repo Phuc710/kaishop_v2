@@ -23,6 +23,7 @@ return [
     ['POST', '/login', 'AuthController@login'],
     ['GET', '/login-otp', 'AuthController@showLoginOtp'],
     ['POST', '/auth/2fa/verify-login', 'AuthController@verifyLoginOtp'],
+    ['POST', '/auth/2fa/resend-login', 'AuthController@resendLoginOtp'],
     ['GET', '/register', 'AuthController@showRegister'],
     ['POST', '/register', 'AuthController@register'],
     ['POST', '/auth/google', 'AuthController@googleLogin'],
@@ -36,6 +37,7 @@ return [
 
     // ========== PRODUCT ROUTES ==========
     ['GET', '/product/{id}', 'ProductController@show'],
+    ['POST', '/product/{id}/purchase', 'ProductController@purchase'],
 
     // ========== PROFILE ROUTES ==========
     ['GET', '/profile', 'ProfileController@index'],

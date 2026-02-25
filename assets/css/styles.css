@@ -7941,6 +7941,15 @@ html.menu-opened body {
 .footer-widget p {
     color: #cdcdcd;
     margin-bottom: 0;
+    text-align: center;
+}
+
+.footer-widget .social-buttons {
+    justify-content: center;
+}
+
+.footer-widget {
+    text-align: center;
 }
 
 .footer-widget .menu-items li a {
@@ -15782,94 +15791,268 @@ html.menu-opened body {
     }
 
     .banner-small-bg-two {
-        bottom: 33%;
-        right: 350px;
+        bottom: 74px;
+        right: 15px;
+    }
+}
+
+/* CUSTOM MOBILE RESPONSIVE UI */
+@media screen and (max-width: 991px) {
+
+    /* HEADER NAVBAR */
+    .header-primary .navbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        position: relative;
     }
 
-    .banner-small-bg-one {
-        bottom: 35%;
-        right: 100px;
-        max-width: 50px;
+    /* Set Đăng nhập on Right */
+    .navbar-right {
+        margin-left: auto !important;
+        margin-right: 0;
+        padding-right: 0;
+        order: 99;
     }
 
-    .banner-form .input-block {
-        min-width: 160px;
+    /* Set Logo in Center */
+    .header-primary .navbar>a:first-child {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        margin: 0;
     }
 
-    .popular-content h5 {
-        font-size: 18px;
+    .header-primary .navbar-brand {
+        max-width: 140px;
     }
 
-    .category-overlay-content h5 {
-        width: 150px;
-        font-size: 18px;
+    /* Set Hamburger Menu on Left */
+    .navbar-toggler {
+        order: -1;
+        margin-left: 0;
+        margin-right: auto;
     }
 
-    .filter-gigs h5 {
-        margin-right: 9px;
+    /* Fix Dropdown Mobile Nav (Side Menu Slide) */
+    .navbar .navbar-collapse {
+        padding: 40px 20px;
+        background: #fff;
+        border-radius: 0;
+        box-shadow: 15px 0 30px rgba(0, 0, 0, 0.1);
+        margin-top: 0;
+        /* Align with top: 0 in style.css */
+        display: flex !important;
+        flex-direction: column;
+        border-right: 1px solid rgba(0, 0, 0, 0.05);
     }
 
-    .filter-gigs .filter-select-boxes li {
-        margin-right: 9px;
+    .navbar .navbar-collapse .navbar-nav {
+        text-align: center;
+        width: 100%;
     }
 
-    .blog-content .user-info h6 {
-        font-size: 15px;
-    }
-
-    .seller-info-content {
-        height: auto;
-        max-height: 500px;
-    }
-
-    .footer-widget .menu-items li a {
-        font-size: 15px;
-    }
-
-    .login-slider h2 {
-        font-size: 30px;
-    }
-
-    .login-carousel .login-slider img {
-        width: 80%;
-        margin: 0 auto 30px;
-    }
-
-    .login-carousel {
+    .navbar .navbar-collapse .logo {
+        text-align: center;
         margin-bottom: 40px;
+        display: block;
+        width: 100%;
     }
 
-    .login-bg {
-        width: 120px;
+    .navbar .navbar-collapse .logo img {
+        max-width: 180px;
+        height: auto;
     }
 
-    .error-imgs .error-02 {
-        width: 60px;
+    .navbar .navbar-collapse .navbar-nav .nav-item .nav-link {
+        font-size: 24px;
+        /* Increase to 24px for "small" complaint */
+        padding: 18px 25px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        text-align: left;
+        /* Side menu usually left aligned */
+        border-radius: 12px;
+        background-color: transparent;
+        color: #111;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        margin-bottom: 5px;
     }
 
-    .error-imgs .error-01 {
-        width: 100px;
+    .navbar .navbar-collapse .navbar-nav .nav-item .nav-link:active,
+    .navbar .navbar-collapse .navbar-nav .nav-item .nav-link:hover {
+        background-color: rgba(255, 105, 0, 0.08);
+        color: #ff6900;
+        padding-left: 35px;
+        /* Swipe effect */
     }
 
-    .maintanence-sec .coming-content h2 {
-        font-size: 56px;
+    /* Icon spacing */
+    .navbar .navbar-collapse .navbar-nav .nav-item .nav-link i {
+        font-size: 22px;
+        width: 35px;
+        color: #ff6900;
     }
 
-    .main-menu-wrapper .main-nav>li+li {
-        margin-left: 25px;
+    .navbar .navbar-collapse .navbar-nav .nav-item.dropdown .dropdown-menu {
+        text-align: center;
+        border: none;
+        background: rgba(0, 0, 0, 0.02);
+        padding: 10px;
+        margin-top: 5px;
+        border-radius: 10px;
     }
 
-    .dash-widget.dash-credit .dash-icon {
-        margin: 0 8px 0 0;
+    .navbar .navbar-collapse .navbar-nav .nav-item.dropdown .dropdown-menu .dropdown-item {
+        font-size: 18px;
+        padding: 12px;
+        margin-bottom: 5px;
+        border-radius: 8px;
+        background-color: transparent;
+        color: #444;
+        font-weight: 500;
     }
 
-    .table-filter #tablefilter div.dataTables_filter .form-control {
-        max-width: 220px;
+    .navbar .navbar-collapse .navbar-nav .nav-item.dropdown .dropdown-menu .dropdown-item:active {
+        background-color: #ff6900;
+        color: #fff;
     }
 
-    .user-sidebar {
-        padding: 20px;
+    /* FOOTER */
+    .footer-widget,
+    .contact-widget {
+        margin-bottom: 30px;
+        text-align: center;
     }
+
+    .footer-widget h3,
+    .footer-widget p,
+    .footer-widget h6 {
+        text-align: center;
+    }
+
+    .footer-widget .menu-items li {
+        justify-content: center;
+        padding-left: 0;
+    }
+
+    .footer-widget .menu-items li::before {
+        display: none;
+    }
+
+    .footer-widget img {
+        margin: 0 auto;
+    }
+
+    .contact-widget .location-list li {
+        margin-right: 0;
+        margin-bottom: 20px;
+    }
+
+    .footer-bottom-links ul {
+        -webkit-box-pack: center;
+        -ms-flex-pack: center;
+        justify-content: center;
+        margin-top: 15px;
+    }
+
+    .social-links ul {
+        -webkit-box-pack: center;
+        -ms-flex-pack: center;
+        justify-content: center;
+    }
+
+    .copy-right {
+        text-align: center;
+    }
+}
+
+.banner-small-bg-one {
+    bottom: 35%;
+    right: 100px;
+    max-width: 50px;
+}
+
+.banner-form .input-block {
+    min-width: 160px;
+}
+
+.popular-content h5 {
+    font-size: 18px;
+}
+
+.category-overlay-content h5 {
+    width: 150px;
+    font-size: 18px;
+}
+
+.filter-gigs h5 {
+    margin-right: 9px;
+}
+
+.filter-gigs .filter-select-boxes li {
+    margin-right: 9px;
+}
+
+.blog-content .user-info h6 {
+    font-size: 15px;
+}
+
+.seller-info-content {
+    height: auto;
+    max-height: 500px;
+}
+
+.footer-widget .menu-items li a {
+    font-size: 15px;
+}
+
+.login-slider h2 {
+    font-size: 30px;
+}
+
+.login-carousel .login-slider img {
+    width: 80%;
+    margin: 0 auto 30px;
+}
+
+.login-carousel {
+    margin-bottom: 40px;
+}
+
+.login-bg {
+    width: 120px;
+}
+
+.error-imgs .error-02 {
+    width: 60px;
+}
+
+.error-imgs .error-01 {
+    width: 100px;
+}
+
+.maintanence-sec .coming-content h2 {
+    font-size: 56px;
+}
+
+.main-menu-wrapper .main-nav>li+li {
+    margin-left: 25px;
+}
+
+.dash-widget.dash-credit .dash-icon {
+    margin: 0 8px 0 0;
+}
+
+.table-filter #tablefilter div.dataTables_filter .form-control {
+    max-width: 220px;
+}
+
+.user-sidebar {
+    padding: 20px;
 }
 
 @media only screen and (max-width: 1299.98px) {

@@ -15,7 +15,6 @@ RewriteCond %{HTTP_REFERER} !^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?/ [NC]
 # Áp dụng cho các định dạng ảnh phổ biến
 RewriteRule \.(jpe?g|png|gif|webp|svg|ico|bmp)$ - [F,NC,L]
 
-# Redirect all requests to index_new.php (new router)
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php [QSA,L]

@@ -20,7 +20,8 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                 <div class="card custom-card">
                     <div class="card-header border-0 pb-0">
                         <h3 class="card-title text-uppercase font-weight-bold">
-                            HỒ SƠ THÀNH VIÊN: <span class="text-primary"><?= htmlspecialchars($toz_user['username']) ?></span>
+                            HỒ SƠ THÀNH VIÊN: <span
+                                class="text-primary"><?= htmlspecialchars($toz_user['username']) ?></span>
                         </h3>
                     </div>
 
@@ -28,14 +29,21 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                         <div class="row">
                             <!-- Cột Trái: Thông tin cơ bản -->
                             <div class="col-xl-7 col-lg-6 mb-4 mb-lg-0">
-                                <form id="userEditForm" action="<?= url('admin/users/edit/' . $toz_user['username']) ?>" method="post">
+                                <form id="userEditForm" action="<?= url('admin/users/edit/' . $toz_user['username']) ?>"
+                                    method="post">
                                     <div class="form-section h-100 mb-0 d-flex flex-column">
                                         <div class="form-section-title">Thông tin tài khoản</div>
 
                                         <div class="row">
-                                            <div class="col-md-6 text-center mb-3 d-flex flex-column align-items-center justify-content-center">
-                                                <img src="<?= asset('assets/images/avt.png') ?>" class="rounded-circle shadow-sm border mb-2" style="width: 80px; height: 80px; object-fit: cover;" alt="Avatar">
-                                                <div class="badge badge-light-primary text-primary px-3 py-1 font-weight-bold"><?= htmlspecialchars($toz_user['username']) ?></div>
+                                            <div
+                                                class="col-md-6 text-center mb-3 d-flex flex-column align-items-center justify-content-center">
+                                                <img src="<?= asset('assets/images/avt.png') ?>"
+                                                    class="rounded-circle shadow-sm border mb-2"
+                                                    style="width: 80px; height: 80px; object-fit: cover;" alt="Avatar">
+                                                <div
+                                                    class="badge badge-light-primary text-primary px-3 py-1 font-weight-bold">
+                                                    <?= htmlspecialchars($toz_user['username']) ?>
+                                                </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group mb-3">
@@ -76,9 +84,6 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                             </div>
                                         </div>
 
-                                        <div class="alert alert-info py-2 px-3 mt-auto" style="border-radius: 8px; font-size: 13px;">
-                                            <i class="fas fa-info-circle mr-1"></i> Cập nhật các thông tin định danh và quyền hạn của thành viên.
-                                        </div>
                                     </div>
                                 </form>
                             </div>
@@ -109,14 +114,21 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                         </button>
                                         <a href="<?= url('admin/logs/activities') ?>?user=<?= urlencode($toz_user['username']) ?>"
                                             target="_blank" class="btn btn-sm px-3 py-2 text-white font-weight-bold"
-                                            style="background: linear-gradient(135deg, #845adf, #6f42c1); border: none; border-radius: 8px;">
-                                            <i class="fas fa-history mr-1"></i> Lịch sử giao dịch
+                                            style="background: linear-gradient(135deg, #f59e0b, #d97706); border: none; border-radius: 8px;">
+                                            <i class="fas fa-shopping-bag mr-1"></i> Lịch sử mua hàng
                                         </a>
                                         <a href="<?= url('admin/logs/balance-changes') ?>?user=<?= urlencode($toz_user['username']) ?>"
                                             target="_blank" class="btn btn-sm px-3 py-2 text-white font-weight-bold"
                                             style="background: linear-gradient(135deg, #38bdf8, #0ea5e9); border: none; border-radius: 8px;">
                                             <i class="fas fa-history mr-1"></i> Biến động số dư
                                         </a>
+
+                                        <a href="<?= url('admin/logs/system') ?>" target="_blank"
+                                            class="btn btn-sm px-3 py-2 text-white font-weight-bold"
+                                            style="background: linear-gradient(135deg, #383bf8ff, #383bf8ff); border: none; border-radius: 8px;">
+                                            <i class="fas fa-history mr-1"></i> Nhật ký hệ thống
+                                        </a>
+
                                     </div>
 
                                 </div>
@@ -141,38 +153,53 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                 letter-spacing: 0.5px;
                             }
                         </style>
-                        <div class="form-section mt-4 bg-light-soft border-0 shadow-none" style="background: #fbfbfd; border-radius: 12px; padding: 25px;">
+                        <div class="form-section mt-4 bg-light-soft border-0 shadow-none"
+                            style="background: #fbfbfd; border-radius: 12px; padding: 25px;">
                             <div class="form-section-title">Thống kê tài chính nâng cao</div>
                             <div class="row mt-3">
                                 <div class="col-md-4 mb-3">
-                                    <div class="finance-stat-card p-3 h-100 bg-white shadow-sm" style="border-radius: 10px; border-left: 4px solid #28a745;">
-                                        <label class="font-weight-bold text-muted small text-uppercase mb-2 d-block">Số dư khả dụng</label>
+                                    <div class="finance-stat-card p-3 h-100 bg-white shadow-sm"
+                                        style="border-radius: 10px; border-left: 4px solid #28a745;">
+                                        <label class="font-weight-bold text-muted small text-uppercase mb-2 d-block">Số
+                                            dư khả dụng</label>
                                         <div class="d-flex align-items-center justify-content-between">
-                                            <span class="h4 font-weight-bold text-success mb-0"><?= number_format($money) ?>đ</span>
-                                            <div class="icon-circle bg-light-success text-success" style="width: 36px; height: 36px; background: #e8f5e9; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                                <i class="fas fa-wallet small"></i>
+                                            <span
+                                                class="h4 font-weight-bold text-success mb-0"><?= number_format($money) ?>đ</span>
+                                            <div class="icon-circle bg-light-success text-success"
+                                                style="width: 36px; height: 36px; background: #e8f5e9; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fas fa-wallet" style="font-size: 18px;"></i>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <div class="finance-stat-card p-3 h-100 bg-white shadow-sm" style="border-radius: 10px; border-left: 4px solid #ffc107;">
-                                        <label class="font-weight-bold text-muted small text-uppercase mb-2 d-block">Tổng tiền đã nạp</label>
+                                    <div class="finance-stat-card p-3 h-100 bg-white shadow-sm"
+                                        style="border-radius: 10px; border-left: 4px solid #ffc107;">
+                                        <label
+                                            class="font-weight-bold text-muted small text-uppercase mb-2 d-block">Tổng
+                                            tiền đã nạp</label>
                                         <div class="d-flex align-items-center justify-content-between">
-                                            <span class="h4 font-weight-bold mb-0" style="color: #444;"><?= number_format($tongNap) ?>đ</span>
-                                            <div class="icon-circle bg-light-warning text-warning" style="width: 36px; height: 36px; background: #fff8e1; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                                <i class="fas fa-coins small"></i>
+                                            <span class="h4 font-weight-bold mb-0"
+                                                style="color: #444;"><?= number_format($tongNap) ?>đ</span>
+                                            <div class="icon-circle bg-light-warning text-warning"
+                                                style="width: 36px; height: 36px; background: #fff8e1; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fas fa-coins" style="font-size: 18px;"></i>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <div class="finance-stat-card p-3 h-100 bg-white shadow-sm" style="border-radius: 10px; border-left: 4px solid #17a2b8;">
-                                        <label class="font-weight-bold text-muted small text-uppercase mb-2 d-block">Tổng chi tiêu</label>
+                                    <div class="finance-stat-card p-3 h-100 bg-white shadow-sm"
+                                        style="border-radius: 10px; border-left: 4px solid #17a2b8;">
+                                        <label
+                                            class="font-weight-bold text-muted small text-uppercase mb-2 d-block">Tổng
+                                            chi tiêu</label>
                                         <div class="d-flex align-items-center justify-content-between">
-                                            <span class="h4 font-weight-bold text-info mb-0"><?= number_format($tongSuDung) ?>đ</span>
-                                            <div class="icon-circle bg-light-info text-info" style="width: 36px; height: 36px; background: #e0f7fa; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                                <i class="fas fa-receipt small"></i>
+                                            <span
+                                                class="h4 font-weight-bold text-info mb-0"><?= number_format($tongSuDung) ?>đ</span>
+                                            <div class="icon-circle bg-light-info text-info"
+                                                style="width: 36px; height: 36px; background: #e0f7fa; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fas fa-receipt" style="font-size: 18px;"></i>
                                             </div>
                                         </div>
                                     </div>
@@ -277,7 +304,8 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                         <a href="<?= url('admin/users') ?>" class="btn btn-light border mr-2 px-4">
                             <i class="fas fa-times mr-1"></i> Hủy
                         </a>
-                        <button type="button" onclick="document.getElementById('userEditForm').submit()" class="btn btn-primary px-4">
+                        <button type="button" onclick="document.getElementById('userEditForm').submit()"
+                            class="btn btn-primary px-4">
                             <i class="fas fa-save mr-1"></i> LƯU THÔNG TIN
                         </button>
                     </div>

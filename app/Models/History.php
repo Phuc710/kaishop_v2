@@ -136,7 +136,7 @@ class History extends Model
                     'event_time' => $ts > 0 ? date('Y-m-d H:i:s', $ts) : (string) ($row['created_at'] ?? ''),
                     'raw_time' => (string) ($row['time'] ?? ''),
                     'change_amount' => (int) ($row['gia'] ?? 0),
-                    'reason_text' => $reason !== '' ? $reason : 'Sản phẩm',
+                    'reason_text' => $reason !== '' ? $reason : 'Mua hàng',
                 ];
             }
         }

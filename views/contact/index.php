@@ -1,39 +1,16 @@
 <?php
-require_once __DIR__ . '/../config.php';
-
-$siteName = (string) ($siteConfig['ten_web'] ?? ($chungapi['ten_web'] ?? 'KaiShop'));
-$defaultTitle = 'Liên hệ với chúng tôi | ' . $siteName;
-$defaultDescription = 'Thông tin liên hệ, hỗ trợ khách hàng và các kênh mạng xã hội chính thức của ' . $siteName . '. Kết nối với chúng tôi ngay hôm nay.';
-$defaultKeywords = 'liên hệ, hỗ trợ, chăm sóc khách hàng, ' . $siteName;
-
-$seoTitle = trim((string) ($chungapi['contact_seo_title'] ?? '')) ?: $defaultTitle;
-$seoDescription = trim((string) ($chungapi['contact_seo_desc'] ?? '')) ?: $defaultDescription;
-$seoKeywords = trim((string) ($chungapi['contact_seo_keywords'] ?? '')) ?: $defaultKeywords;
-
-$pageTitle = trim((string) ($chungapi['contact_page_title'] ?? '')) ?: ('Liên hệ ' . $siteName);
-$pageSubtitle = trim((string) ($chungapi['contact_page_subtitle'] ?? '')) ?: trim((string) ($chungapi['mo_ta'] ?? ''));
-$supportNote = trim((string) ($chungapi['contact_support_note'] ?? ''));
-
-$contactEmail = trim((string) ($chungapi['email_cf'] ?? ''));
-$contactPhone = trim((string) ($chungapi['sdt_admin'] ?? ''));
-$contactEmailLabel = trim((string) ($chungapi['contact_email_label'] ?? '')) ?: 'Email hỗ trợ';
-$contactPhoneLabel = trim((string) ($chungapi['contact_phone_label'] ?? '')) ?: 'Số điện thoại / Zalo';
-
-$socialItems = [
-    ['label' => 'Facebook', 'value' => (string) ($chungapi['fb_admin'] ?? ''), 'icon_class' => 'fa-brands fa-facebook-f'],
-    ['label' => 'Telegram', 'value' => (string) ($chungapi['tele_admin'] ?? ''), 'icon_class' => 'fa-brands fa-telegram'],
-    ['label' => 'TikTok', 'value' => (string) ($chungapi['tiktok_admin'] ?? ''), 'icon_class' => 'fa-brands fa-tiktok'],
-    ['label' => 'YouTube', 'value' => (string) ($chungapi['youtube_admin'] ?? ''), 'icon_class' => 'fa-brands fa-youtube'],
-];
-
-// PHP Logic finishes, HTML starts
+if (!defined('BASE_URL')) {
+    die('Direct access not permitted');
+}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
 
 <head>
-    <?php require __DIR__ . '/../hethong/head2.php'; ?>
-    <title><?= htmlspecialchars($seoTitle) ?></title>
+    <?php require __DIR__ . '/../../hethong/head2.php'; ?>
+    <title>
+        <?= htmlspecialchars($seoTitle) ?>
+    </title>
 
     <!-- Schema.org Markup for ContactPage -->
     <script type="application/ld+json">
@@ -66,7 +43,7 @@ $socialItems = [
 </head>
 
 <body>
-    <?php require __DIR__ . '/../hethong/nav.php'; ?>
+    <?php require __DIR__ . '/../../hethong/nav.php'; ?>
 
     <main>
         <section class="contact-section py-4">
@@ -75,13 +52,17 @@ $socialItems = [
                     <div class="row justify-content-center mb-4">
                         <div class="col-lg-9 text-center">
                             <h1 class="mb-2" style="font-weight:700; color:#1f2937; font-size: 2.5rem;">
-                                <?= htmlspecialchars($pageTitle) ?></h1>
+                                <?= htmlspecialchars($pageTitle) ?>
+                            </h1>
                             <?php if ($pageSubtitle !== ''): ?>
-                                <p class="text-muted mb-2"><?= htmlspecialchars($pageSubtitle) ?></p>
+                                <p class="text-muted mb-2">
+                                    <?= htmlspecialchars($pageSubtitle) ?>
+                                </p>
                             <?php endif; ?>
                             <?php if ($supportNote !== ''): ?>
                                 <p class="mb-0" style="color:#0f766e; font-weight:600;">
-                                    <?= htmlspecialchars($supportNote) ?></p>
+                                    <?= htmlspecialchars($supportNote) ?>
+                                </p>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -98,10 +79,13 @@ $socialItems = [
                                             </span>
                                         </div>
                                         <div class="contact-details">
-                                            <h6><?= htmlspecialchars($contactEmailLabel) ?></h6>
+                                            <h6>
+                                                <?= htmlspecialchars($contactEmailLabel) ?>
+                                            </h6>
                                             <p style="word-break: break-word;">
-                                                <a
-                                                    href="mailto:<?= htmlspecialchars($contactEmail) ?>"><?= htmlspecialchars($contactEmail) ?></a>
+                                                <a href="mailto:<?= htmlspecialchars($contactEmail) ?>">
+                                                    <?= htmlspecialchars($contactEmail) ?>
+                                                </a>
                                             </p>
                                         </div>
                                     </div>
@@ -121,10 +105,13 @@ $socialItems = [
                                             </span>
                                         </div>
                                         <div class="contact-details">
-                                            <h6><?= htmlspecialchars($contactPhoneLabel) ?></h6>
+                                            <h6>
+                                                <?= htmlspecialchars($contactPhoneLabel) ?>
+                                            </h6>
                                             <p>
-                                                <a
-                                                    href="tel:<?= htmlspecialchars($phoneHref) ?>"><?= htmlspecialchars($contactPhone) ?></a>
+                                                <a href="tel:<?= htmlspecialchars($phoneHref) ?>">
+                                                    <?= htmlspecialchars($contactPhone) ?>
+                                                </a>
                                             </p>
                                         </div>
                                     </div>
@@ -149,7 +136,8 @@ $socialItems = [
                                             </span>
                                         </div>
                                         <div class="contact-details">
-                                            <h6 style="color: #4b5563;"><?= htmlspecialchars((string) $item['label']) ?>
+                                            <h6 style="color: #4b5563;">
+                                                <?= htmlspecialchars((string) $item['label']) ?>
                                             </h6>
                                             <p style="word-break: break-word;">
                                                 <a href="<?= htmlspecialchars($socialHref) ?>" target="_blank"
@@ -168,7 +156,7 @@ $socialItems = [
         </section>
     </main>
 
-    <?php require __DIR__ . '/../hethong/foot.php'; ?>
+    <?php require __DIR__ . '/../../hethong/foot.php'; ?>
 </body>
 
 </html>

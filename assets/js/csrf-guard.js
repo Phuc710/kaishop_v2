@@ -1,4 +1,9 @@
 (function () {
+    if (window.__ksCsrfGuardInitialized) {
+        return;
+    }
+    window.__ksCsrfGuardInitialized = true;
+
     var token = '';
     try {
         token = (window.KS_CSRF_TOKEN || '').toString();
@@ -173,4 +178,3 @@
     document.addEventListener('DOMContentLoaded', patchJquery);
     window.setTimeout(patchJquery, 500);
 })();
-

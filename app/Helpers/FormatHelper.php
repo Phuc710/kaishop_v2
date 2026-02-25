@@ -160,3 +160,11 @@ class FormatHelper
         return trim($str, '-');
     }
 }
+
+// Global helper wrapper
+if (!function_exists('timeAgo')) {
+    function timeAgo($datetime, $full = false): string
+    {
+        return FormatHelper::timeAgo($datetime, $full);
+    }
+}

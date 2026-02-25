@@ -254,6 +254,8 @@ class AdminProductController extends Controller
         $displayOrder = max(0, (int) $this->post('display_order', 0));
         $status = $this->post('status', 'ON') === 'OFF' ? 'OFF' : 'ON';
         $slug = trim((string) $this->post('slug', ''));
+        $requiresInfo = $this->post('requires_info', 0) == 1 ? 1 : 0;
+        $infoInstructions = trim((string) $this->post('info_instructions', ''));
 
         $galleryInput = $this->post('gallery', []);
         $gallery = [];
@@ -289,6 +291,8 @@ class AdminProductController extends Controller
             'gallery' => !empty($gallery) ? json_encode($gallery, JSON_UNESCAPED_UNICODE) : null,
             'description' => $description,
             'seo_description' => $seoDescription !== '' ? $seoDescription : null,
+            'requires_info' => $requiresInfo,
+            'info_instructions' => $infoInstructions !== '' ? $infoInstructions : null,
         ];
 
         if ($excludeId === null) {

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 
 <head>
@@ -32,9 +32,11 @@
                     <div class="col-lg-9 col-md-8">
                         <div class="profile-card">
                             <div class="profile-card-header profile-card-header--with-actions">
-                                <h5 class="text-dark">Lịch sử sản phẩm</h5>
-                                <a href="<?= url('deposit-bank') ?>"
-                                    class="btn btn-edit-profile">
+                                <div>
+                                    <h5 class="text-dark mb-1">Biến động số dư</h5>
+                                    <div class="text-muted small">Bao gồm mua hàng, nạp tiền và điều chỉnh số dư.</div>
+                                </div>
+                                <a href="<?= url('deposit-bank') ?>" class="btn btn-edit-profile">
                                     <i class="fas fa-university mr-1"></i> Nạp tiền
                                 </a>
                             </div>
@@ -48,7 +50,7 @@
                                                         class="fas fa-search"></i></span>
                                                 <input type="text" id="filter-reason"
                                                     class="form-control border-start-0 ps-0"
-                                                    placeholder="Tìm nhanh theo lý do...">
+                                                    placeholder="Tìm theo nội dung biến động...">
                                             </div>
                                         </div>
                                         <div class="col-md-4 mb-2">
@@ -81,7 +83,7 @@
                                         </div>
 
                                         <div class="d-flex align-items-center">
-                                            <span class="text-secondary fw-bold small me-2 text-uppercase">Short by
+                                            <span class="text-secondary fw-bold small me-2 text-uppercase">Sort by
                                                 date:</span>
                                             <select id="f-sort" class="form-select form-select-sm shadow-none"
                                                 style="width: auto;">
@@ -103,7 +105,7 @@
                                                 <th class="py-3 text-nowrap text-center">SỐ DƯ TRƯỚC</th>
                                                 <th class="py-3 text-nowrap text-center">BIẾN ĐỘNG</th>
                                                 <th class="py-3 text-nowrap text-center">SỐ DƯ HIỆN TẠI</th>
-                                                <th class="py-3 text-nowrap text-center">LÝ DO</th>
+                                                <th class="py-3 text-nowrap text-center">NỘI DUNG BIẾN ĐỘNG</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -173,14 +175,14 @@
                 pageLength: 10,
                 dom: 't<"d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3"<"text-muted small"i><"d-flex align-items-center gap-3"p>>',
                 language: {
-                    info: "Hiển thị _START_ - _END_ trong tổng số _TOTAL_ giao dịch",
-                    infoEmpty: "Chưa có giao dịch nào",
+                    info: "Hiển thị _START_ - _END_ trong tổng số _TOTAL_ biến động",
+                    infoEmpty: "Chưa có biến động nào",
                     emptyTable: "Không có dữ liệu biến động số dư",
                     paginate: {
                         first: "Đầu",
                         last: "Cuối",
-                        next: "›",
-                        previous: "‹"
+                        next: "â€º",
+                        previous: "â€¹"
                     }
                 }
             });

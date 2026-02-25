@@ -37,6 +37,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js" crossorigin="anonymous"></script>
 <script src="<?= asset('assets/js/swal_helper.js') ?>"></script>
 <script src="<?= asset('assets/js/money_popup.js') ?>"></script>
+<script src="<?= asset('assets/js/csrf-guard.js') ?>"></script>
 
 <?php
 /**

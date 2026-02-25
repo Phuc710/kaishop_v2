@@ -6,6 +6,9 @@
  */
 class AuthController extends Controller
 {
+    private const RESET_PASSWORD_TOKEN_TTL_SECONDS = 900; // 15 minutes
+    private const LOGIN_OTP_TTL_SECONDS = 300; // 5 minutes
+    private const LOGIN_OTP_RESEND_COOLDOWN_SECONDS = 60;
     private $userModel;
     private $authService;
     private $authSecurity;
@@ -92,12 +95,12 @@ class AuthController extends Controller
 
         if (!$user) {
             $this->authSecurity->recordLoginAttempt('login', $username, false, 'user_not_found');
-            return $this->json(['success' => false, 'message' => 'ThÃ´ng tin Ä‘Äƒng nháº­p khÃ´ng chÃ­nh xÃ¡c.'], 401);
+            return $this->json(['success' => false, 'message' => 'Thông tin đăng nhập không chính xác.'], 401);
         }
 
         if (!$this->authSecurity->verifyPassword($user, $password)) {
             $this->authSecurity->recordLoginAttempt('login', $username, false, 'wrong_password');
-            return $this->json(['success' => false, 'message' => 'ThÃ´ng tin Ä‘Äƒng nháº­p khÃ´ng chÃ­nh xÃ¡c.'], 401);
+            return $this->json(['success' => false, 'message' => 'Thông tin đăng nhập không chính xác.'], 401);
         }
 
         if ($this->authSecurity->needsPasswordRehash($user)) {
@@ -110,22 +113,31 @@ class AuthController extends Controller
 
         $device = $this->authSecurity->getDeviceContext($fingerprintHash);
         if ($this->authSecurity->shouldRequireTwoFactor($user, $device)) {
-            $challenge = $this->authSecurity->createOtpChallenge($user, 'login_2fa', $device, [
-                'remember_me' => $rememberMe ? 1 : 0,
-                'fingerprint' => $fingerprintHash,
-                'fp_components' => $fpComponents,
-            ]);
+            try {
+                $challenge = $this->authSecurity->createOtpChallenge($user, 'login_2fa', $device, [
+                    'remember_me' => $rememberMe ? 1 : 0,
+                    'fingerprint' => $fingerprintHash,
+                    'fp_components' => $fpComponents,
+                ]);
+            } catch (Throwable $e) {
+                $this->authSecurity->recordLoginAttempt('login', $username, false, 'otp_send_failed');
+                Logger::danger('Auth', 'login_otp_send_failed', 'Không thể gửi OTP đăng nhập', [
+                    'username' => $username,
+                    'error' => $e->getMessage(),
+                ]);
+                return $this->json(['success' => false, 'message' => 'Không thể gửi OTP đăng nhập. Vui lòng kiểm tra cấu hình mail hoặc thử lại sau.'], 500);
+            }
 
             $this->authSecurity->recordLoginAttempt('login', $username, true, 'otp_sent');
             return $this->json([
                 'success' => true,
                 'requires_2fa' => true,
                 'challenge_id' => $challenge['challenge_id'],
-                'message' => 'ÄÃ£ gá»­i mÃ£ OTP Ä‘áº¿n email cá»§a báº¡n. Vui lÃ²ng nháº­p mÃ£ Ä‘á»ƒ hoÃ n táº¥t Ä‘Äƒng nháº­p.'
+                'message' => 'Đã gửi mã OTP đến email của bạn. Vui lòng nhập mã để hoàn tất đăng nhập.'
             ]);
         }
 
-        $this->completeAuthenticatedSession($user, $fingerprintHash, $fpComponents, $rememberMe);
+        $this->completeAuthenticatedSession($user, $fingerprintHash, $fpComponents, $rememberMe, 'login');
         $this->authSecurity->recordLoginAttempt('login', $username, true, 'login_success');
 
         Logger::info('Auth', 'login_success', 'Đăng nhập thành công', [
@@ -136,7 +148,7 @@ class AuthController extends Controller
 
         return $this->json([
             'success' => true,
-            'message' => 'ÄÄƒng nháº­p thÃ nh cÃ´ng.',
+            'message' => 'Đăng nhập thành công.',
             'access_expires_in' => 900,
             'refresh_expires_in' => $rememberMe ? 1209600 : 86400
         ]);
@@ -176,12 +188,12 @@ class AuthController extends Controller
 
         // Check if username exists
         if ($this->userModel->findByUsername($username)) {
-            return $this->json(['success' => false, 'message' => 'TÃƒÂªn Ã„â€˜Ã„Æ’ng nhÃ¡ÂºÂ­p Ã„â€˜ÃƒÂ£ tÃ¡Â»â€œn tÃ¡ÂºÂ¡i.'], 400);
+            return $this->json(['success' => false, 'message' => 'Tên đăng nhập đã tồn tại.'], 400);
         }
 
         // Check if email exists
         if ($this->userModel->emailExists($email)) {
-            return $this->json(['success' => false, 'message' => 'Email Ã„â€˜ÃƒÂ£ Ã„â€˜Ã†Â°Ã¡Â»Â£c sÃ¡Â»Â­ dÃ¡Â»Â¥ng.'], 400);
+            return $this->json(['success' => false, 'message' => 'Email đã được sử dụng.'], 400);
         }
 
         // Create user
@@ -209,29 +221,29 @@ class AuthController extends Controller
             $fingerprintHash = trim($this->post('fingerprint', ''));
             $newUser = $this->userModel->findById((int) $userId);
             if ($newUser) {
-                $this->completeAuthenticatedSession($newUser, $fingerprintHash, $this->post('fp_components', ''), false);
+                $this->completeAuthenticatedSession($newUser, $fingerprintHash, $this->post('fp_components', ''), false, 'register');
 
-                // Gá»­i email chÃ o má»«ng
+                // Gửi email chào mừng
                 try {
                     if (!class_exists('MailService')) {
                         require_once __DIR__ . '/../Services/MailService.php';
                     }
                     (new MailService())->sendWelcomeRegister($newUser);
                 } catch (Throwable $e) {
-                    // Non-blocking â€” khÃ´ng cháº·n Ä‘Äƒng kÃ½ náº¿u mail lá»—i
+                    // Non-blocking — không chặn đăng ký nếu mail lỗi
                 }
             }
 
-            Logger::info('Auth', 'register_success', 'Ã„ÂÃ„Æ’ng kÃƒÂ½ tÃƒÂ i khoÃ¡ÂºÂ£n thÃƒÂ nh cÃƒÂ´ng', [
+            Logger::info('Auth', 'register_success', 'Đăng ký tài khoản thành công', [
                 'username' => $username,
                 'email' => $email,
                 'fingerprint' => $fingerprintHash ?: 'none'
             ]);
 
-            return $this->json(['success' => true, 'message' => 'Ã„ÂÃ„Æ’ng kÃƒÂ½ thÃƒÂ nh cÃƒÂ´ng.']);
+            return $this->json(['success' => true, 'message' => 'Đăng ký thành công.']);
         }
 
-        return $this->json(['success' => false, 'message' => 'CÃ³ lá»—i xáº£y ra, vui lÃ²ng thá»­ láº¡i.'], 500);
+        return $this->json(['success' => false, 'message' => 'Có lỗi xảy ra, vui lòng thử lại.'], 500);
     }
 
     /**
@@ -275,48 +287,42 @@ class AuthController extends Controller
         }
 
         if (empty($username)) {
-            return $this->json(['success' => false, 'message' => 'Vui lÃƒÂ²ng nhÃ¡ÂºÂ­p Ã„â€˜Ã¡ÂºÂ§y Ã„â€˜Ã¡Â»Â§ thÃƒÂ´ng tin'], 400);
+            return $this->json(['success' => false, 'message' => 'Vui lòng nhập đầy đủ thông tin'], 400);
         }
 
         $user = $this->userModel->findByUsernameOrEmail($username);
 
         if ($user) {
-            $device = $this->authSecurity->getDeviceContext(trim((string) $this->post('fingerprint', '')));
-
-            if ((int) ($user['twofa_enabled'] ?? 0) === 1) {
-                if ($challengeId === '' || $otpCode === '') {
-                    $challenge = $this->authSecurity->createOtpChallenge($user, 'forgot_password', $device, []);
-                    $this->authSecurity->recordLoginAttempt('forgot_password', $username, true, 'otp_sent');
-                    return $this->json([
-                        'success' => true,
-                        'requires_2fa' => true,
-                        'challenge_id' => $challenge['challenge_id'],
-                        'message' => 'TÃ i khoáº£n Ä‘ang báº­t 2FA. ÄÃ£ gá»­i OTP Ä‘áº¿n email, vui lÃ²ng nháº­p mÃ£ Ä‘á»ƒ tiáº¿p tá»¥c.'
-                    ]);
-                }
-
-                $verifyOtp = $this->authSecurity->verifyOtpChallenge($challengeId, $otpCode, 'forgot_password');
-                if (!$verifyOtp['ok']) {
-                    return $this->json(['success' => false, 'message' => $verifyOtp['message']], 400);
-                }
+            if (trim((string) ($user['email'] ?? '')) === '') {
+                $this->authSecurity->recordLoginAttempt('forgot_password', $username, false, 'missing_email');
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Tài khoản này chưa có email khôi phục. Nếu bạn đăng nhập bằng Google, hãy dùng đúng Gmail đã liên kết hoặc liên hệ hỗ trợ.'
+                ], 400);
             }
 
-            $otpcode = bin2hex(random_bytes(16)); // MÃƒÂ£ reset
+            $device = $this->authSecurity->getDeviceContext(trim((string) $this->post('fingerprint', '')));
+
+            $otpcode = bin2hex(random_bytes(16));
+            $otpcodeExpiresAt = date('Y-m-d H:i:s', time() + self::RESET_PASSWORD_TOKEN_TTL_SECONDS);
             $send_status = $this->authSecurity->sendPasswordResetMail($user, $otpcode);
 
             if ($send_status) {
-                $this->userModel->update($user['id'], ['otpcode' => $otpcode]);
+                $this->userModel->update($user['id'], [
+                    'otpcode' => $otpcode,
+                    'otpcode_expires_at' => $otpcodeExpiresAt,
+                ]);
                 $this->authSecurity->recordLoginAttempt('forgot_password', $username, true, 'mail_sent');
-                Logger::warning('Auth', 'forgot_password_request', 'YÃƒÂªu cÃ¡ÂºÂ§u quÃƒÂªn mÃ¡ÂºÂ­t khÃ¡ÂºÂ©u', ['username' => $user['username'], 'email' => ($user['email'] ?? '')]);
-                return $this->json(['success' => true, 'message' => 'Email Ã„â€˜Ã¡ÂºÂ·t lÃ¡ÂºÂ¡i mÃ¡ÂºÂ­t khÃ¡ÂºÂ©u Ã„â€˜ÃƒÂ£ Ã„â€˜Ã†Â°Ã¡Â»Â£c gÃ¡Â»Â­i']);
+                Logger::warning('Auth', 'forgot_password_request', 'Yêu cầu quên mật khẩu', ['username' => $user['username'], 'email' => ($user['email'] ?? '')]);
+                return $this->json(['success' => true, 'message' => 'Email đặt lại mật khẩu đã được gửi (hiệu lực 15 phút)']);
             } else {
                 $this->authSecurity->recordLoginAttempt('forgot_password', $username, false, 'mail_send_failed');
-                return $this->json(['success' => false, 'message' => 'KhÃƒÂ´ng thÃ¡Â»Æ’ gÃ¡Â»Â­i email, vui lÃƒÂ²ng thÃ¡Â»Â­ lÃ¡ÂºÂ¡i']);
+                return $this->json(['success' => false, 'message' => 'Không thể gửi email, vui lòng thử lại']);
             }
         }
 
         $this->authSecurity->recordLoginAttempt('forgot_password', $username, false, 'user_not_found');
-        return $this->json(['success' => false, 'message' => 'TÃƒÂ i khoÃ¡ÂºÂ£n khÃƒÂ´ng tÃ¡Â»â€œn tÃ¡ÂºÂ¡i'], 404);
+        return $this->json(['success' => false, 'message' => 'Tài khoản không tồn tại'], 404);
     }
 
     /**
@@ -343,29 +349,47 @@ class AuthController extends Controller
         $otpcode = $id;
 
         if (empty($otpcode) || empty($password)) {
-            return $this->json(['success' => false, 'message' => 'Vui lÃƒÂ²ng nhÃ¡ÂºÂ­p Ã„â€˜Ã¡ÂºÂ§y Ã„â€˜Ã¡Â»Â§ thÃƒÂ´ng tin']);
+            return $this->json(['success' => false, 'message' => 'Vui lòng nhập đầy đủ thông tin']);
         }
 
         if (strlen($password) < 6) {
-            return $this->json(['success' => false, 'message' => 'MÃ¡ÂºÂ­t khÃ¡ÂºÂ©u phÃ¡ÂºÂ£i tÃ¡Â»Â« 6']);
+            return $this->json(['success' => false, 'message' => 'Mật khẩu phải từ 6']);
         }
 
         $user = $this->userModel->findByOtpcode($otpcode);
 
         if (!$user) {
-            return $this->json(['success' => false, 'message' => 'MÃƒÂ£ khÃƒÂ´i phÃ¡Â»Â¥c khÃƒÂ´ng hÃ¡Â»Â£p lÃ¡Â»â€¡ hoÃ¡ÂºÂ·c Ã„â€˜ÃƒÂ£ hÃ¡ÂºÂ¿t hÃ¡ÂºÂ¡n (OTP Code khÃƒÂ´ng Ã„â€˜ÃƒÂºng)']);
+            return $this->json(['success' => false, 'message' => 'Mã khôi phục không hợp lệ hoặc đã hết hạn (OTP Code không đúng)']);
+        }
+
+        $expiresAt = trim((string) ($user['otpcode_expires_at'] ?? ''));
+        if ($expiresAt === '' || strtotime($expiresAt) === false || strtotime($expiresAt) < time()) {
+            $this->userModel->update($user['id'], ['otpcode' => '', 'otpcode_expires_at' => null]);
+            return $this->json(['success' => false, 'message' => 'Mã khôi phục đã hết hạn. Vui lòng gửi lại yêu cầu (hiệu lực 15 phút).']);
         }
 
         $new_pass = $this->authSecurity->hashPassword($password);
         $this->userModel->update($user['id'], [
             'password' => $new_pass,
             'password_updated_at' => date('Y-m-d H:i:s'),
-            'otpcode' => ''
+            'otpcode' => '',
+            'otpcode_expires_at' => null,
+            'session' => ''
         ]);
 
-        Logger::info('Auth', 'reset_password_success', 'Ã„ÂÃ¡ÂºÂ·t lÃ¡ÂºÂ¡i mÃ¡ÂºÂ­t khÃ¡ÂºÂ©u thÃƒÂ nh cÃƒÂ´ng', ['username' => $user['username']]);
+        try {
+            $this->authSecurity->revokeAllUserSessions((int) $user['id'], 'password_reset');
+            $this->authSecurity->clearAuthCookies();
+        } catch (Throwable $e) {
+            // Non-blocking: password has been updated already.
+        }
 
-        return $this->json(['success' => true, 'message' => 'MÃ¡ÂºÂ­t khÃ¡ÂºÂ©u Ã„â€˜ÃƒÂ£ Ã„â€˜Ã†Â°Ã¡Â»Â£c cÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t thÃƒÂ nh cÃƒÂ´ng']);
+        Logger::info('Auth', 'reset_password_success', 'Đặt lại mật khẩu thành công', ['username' => $user['username']]);
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Mật khẩu đã được cập nhật thành công. Bạn có thể đăng nhập bằng mật khẩu mới (hoặc tiếp tục dùng Google).'
+        ]);
     }
 
     /**
@@ -377,7 +401,7 @@ class AuthController extends Controller
         $otpCode = trim((string) $this->post('otp_code', ''));
 
         if ($challengeId === '' || $otpCode === '') {
-            return $this->json(['success' => false, 'message' => 'Vui lÃ²ng nháº­p mÃ£ OTP.'], 400);
+            return $this->json(['success' => false, 'message' => 'Vui lòng nhập mã OTP.'], 400);
         }
 
         if (($turnstileError = $this->requireTurnstileToken()) !== null) {
@@ -392,7 +416,7 @@ class AuthController extends Controller
         $row = $verified['row'];
         $user = $this->userModel->findById((int) $row['user_id']);
         if (!$user) {
-            return $this->json(['success' => false, 'message' => 'TÃ i khoáº£n khÃ´ng tá»“n táº¡i.'], 404);
+            return $this->json(['success' => false, 'message' => 'Tài khoản không tồn tại.'], 404);
         }
 
         $meta = $verified['meta'];
@@ -401,18 +425,62 @@ class AuthController extends Controller
         $rememberMe = !empty($meta['remember_me']);
         $currentDevice = $this->authSecurity->getDeviceContext($fingerprintHash);
         if (!empty($row['device_hash']) && !hash_equals((string) $row['device_hash'], (string) $currentDevice['device_hash'])) {
-            return $this->json(['success' => false, 'message' => 'Thiáº¿t bá»‹ xÃ¡c minh khÃ´ng khá»›p. Vui lÃ²ng Ä‘Äƒng nháº­p láº¡i.'], 400);
+            return $this->json(['success' => false, 'message' => 'Thiết bị xác minh không khớp. Vui lòng đăng nhập lại.'], 400);
         }
 
-        $this->completeAuthenticatedSession($user, $fingerprintHash, $fpComponents, $rememberMe);
+        $this->completeAuthenticatedSession($user, $fingerprintHash, $fpComponents, $rememberMe, 'login_2fa');
         $this->authSecurity->recordLoginAttempt('login', (string) ($user['username'] ?? ''), true, '2fa_verified');
 
         return $this->json([
             'success' => true,
-            'message' => 'XÃ¡c minh OTP thÃ nh cÃ´ng. ÄÄƒng nháº­p thÃ nh cÃ´ng.',
+            'message' => 'Xác minh OTP thành công. Đăng nhập thành công.',
             'redirect' => BASE_URL . '/',
             'access_expires_in' => 900,
             'refresh_expires_in' => $rememberMe ? 1209600 : 86400
+        ]);
+    }
+
+    /**
+     * Resend login OTP (AJAX) with anti-spam throttling.
+     */
+    public function resendLoginOtp()
+    {
+        $challengeId = trim((string) $this->post('challenge_id', ''));
+        if ($challengeId === '') {
+            return $this->json(['success' => false, 'message' => 'Thiếu phiên xác minh OTP. Vui lòng đăng nhập lại.'], 400);
+        }
+
+        if (($turnstileError = $this->requireTurnstileToken()) !== null) {
+            return $this->json(['success' => false, 'message' => $turnstileError], 400);
+        }
+
+        $fingerprintHash = trim((string) $this->post('fingerprint', ''));
+        $device = $this->authSecurity->getDeviceContext($fingerprintHash);
+        $result = $this->authSecurity->resendLoginOtpChallenge(
+            $challengeId,
+            $device,
+            self::LOGIN_OTP_TTL_SECONDS,
+            self::LOGIN_OTP_RESEND_COOLDOWN_SECONDS
+        );
+
+        if (empty($result['ok'])) {
+            $status = (int) ($result['status'] ?? 400);
+            $payload = [
+                'success' => false,
+                'message' => (string) ($result['message'] ?? 'Không thể gửi lại OTP.'),
+            ];
+            if (isset($result['retry_after_seconds'])) {
+                $payload['retry_after_seconds'] = (int) $result['retry_after_seconds'];
+            }
+            return $this->json($payload, $status);
+        }
+
+        return $this->json([
+            'success' => true,
+            'message' => (string) ($result['message'] ?? 'Đã gửi lại OTP.'),
+            'challenge_id' => (string) ($result['challenge_id'] ?? ''),
+            'expires_in' => (int) ($result['expires_in'] ?? self::LOGIN_OTP_TTL_SECONDS),
+            'cooldown_seconds' => (int) ($result['cooldown_seconds'] ?? self::LOGIN_OTP_RESEND_COOLDOWN_SECONDS),
         ]);
     }
 
@@ -444,7 +512,13 @@ class AuthController extends Controller
             if (empty($latest) || $latest[0]['fingerprint_hash'] !== $fpHash) {
                 $fpComponents = $this->post('fp_components', '');
                 try {
-                    $this->fingerprintModel->saveFingerprint($user['id'], $user['username'], $fpHash, $fpComponents);
+                    $this->fingerprintModel->saveFingerprint(
+                        $user['id'],
+                        $user['username'],
+                        $fpHash,
+                        $fpComponents,
+                        ['action' => 'fingerprint_heartbeat']
+                    );
                 } catch (Exception $e) {
                 }
             }
@@ -470,16 +544,17 @@ class AuthController extends Controller
 
         $idToken = trim((string) $this->post('id_token', ''));
         if ($idToken === '') {
-            return $this->json(['success' => false, 'message' => 'Thiáº¿u ID token Google.'], 400);
+            return $this->json(['success' => false, 'message' => 'Thiếu ID token Google.'], 400);
         }
 
         $googleUser = $this->verifyFirebaseGoogleIdToken($idToken);
         if (!$googleUser || empty($googleUser['email'])) {
-            return $this->json(['success' => false, 'message' => 'KhÃ´ng xÃ¡c minh Ä‘Æ°á»£c tÃ i khoáº£n Google.'], 401);
+            return $this->json(['success' => false, 'message' => 'Không xác minh được tài khoản Google.'], 401);
         }
 
         $email = strtolower(trim((string) $googleUser['email']));
         $displayName = trim((string) ($googleUser['displayName'] ?? ''));
+        $googleAvatarUrl = $this->sanitizeRemoteImageUrl((string) ($googleUser['photoUrl'] ?? ($googleUser['photoURL'] ?? '')));
         $fingerprintHash = trim($this->post('fingerprint', ''));
         $fpComponents = $this->post('fp_components', '');
 
@@ -489,13 +564,12 @@ class AuthController extends Controller
         if (!$user) {
             $isNewGoogleUser = true;
             global $ip_address;
-            $baseSeed = $displayName !== '' ? $displayName : strstr($email, '@', true);
+            $baseSeed = $this->extractPreferredGoogleUsernameSeed($displayName, $email);
             $username = $this->generateUniqueUsernameFromSeed((string) $baseSeed);
             $randomId = $this->generateUniqueUserId();
             $apiKey = md5(bin2hex(random_bytes(16)));
             $time = date('h:i d-m-Y');
-
-            $newId = $this->userModel->create([
+            $newUserData = [
                 'id' => $randomId,
                 'username' => $username,
                 'password' => $this->authSecurity->hashPassword(bin2hex(random_bytes(16))),
@@ -508,14 +582,19 @@ class AuthController extends Controller
                 'ip' => $ip_address ?? ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'),
                 'api_key' => $apiKey,
                 'time' => $time
-            ]);
+            ];
+            if ($googleAvatarUrl !== '' && $this->userColumnExists('avatar_url')) {
+                $newUserData['avatar_url'] = $googleAvatarUrl;
+            }
+
+            $newId = $this->userModel->create($newUserData);
 
             $user = $this->userModel->findById((int) $newId);
             if (!$user) {
-                return $this->json(['success' => false, 'message' => 'KhÃ´ng thá»ƒ táº¡o tÃ i khoáº£n tá»« Google.'], 500);
+                return $this->json(['success' => false, 'message' => 'Không thể tạo tài khoản từ Google.'], 500);
             }
 
-            // Gá»­i email chÃ o má»«ng Google
+            // Gửi email chào mừng Google
             try {
                 if (!class_exists('MailService')) {
                     require_once __DIR__ . '/../Services/MailService.php';
@@ -525,32 +604,53 @@ class AuthController extends Controller
                 // Non-blocking
             }
 
-            Logger::info('Auth', 'register_google_success', 'ÄÄƒng kÃ½ báº±ng Google thÃ nh cÃ´ng', [
+            Logger::info('Auth', 'register_google_success', 'Đăng ký bằng Google thành công', [
                 'username' => $user['username'],
                 'email' => $email
             ]);
         }
 
+        // Keep avatar fresh on each Google login (safe: only if column exists)
+        if (!empty($user['id']) && $googleAvatarUrl !== '' && $this->userColumnExists('avatar_url')) {
+            $currentAvatar = trim((string) ($user['avatar_url'] ?? ''));
+            if ($currentAvatar !== $googleAvatarUrl) {
+                try {
+                    $this->userModel->update((int) $user['id'], ['avatar_url' => $googleAvatarUrl]);
+                    $user['avatar_url'] = $googleAvatarUrl;
+                } catch (Throwable $e) {
+                    // Non-blocking: avatar sync failure must not break login
+                }
+            }
+        }
+
         $device = $this->authSecurity->getDeviceContext($fingerprintHash);
         if (!$isNewGoogleUser && $this->authSecurity->shouldRequireTwoFactor($user, $device)) {
-            $challenge = $this->authSecurity->createOtpChallenge($user, 'login_2fa', $device, [
-                'remember_me' => $rememberMe ? 1 : 0,
-                'fingerprint' => $fingerprintHash,
-                'fp_components' => $fpComponents,
-                'source' => 'google'
-            ]);
+            try {
+                $challenge = $this->authSecurity->createOtpChallenge($user, 'login_2fa', $device, [
+                    'remember_me' => $rememberMe ? 1 : 0,
+                    'fingerprint' => $fingerprintHash,
+                    'fp_components' => $fpComponents,
+                    'source' => 'google'
+                ]);
+            } catch (Throwable $e) {
+                Logger::danger('Auth', 'login_google_otp_send_failed', 'Không thể gửi OTP đăng nhập Google', [
+                    'email' => $email,
+                    'error' => $e->getMessage(),
+                ]);
+                return $this->json(['success' => false, 'message' => 'Không thể gửi OTP đăng nhập Google. Vui lòng kiểm tra cấu hình mail hoặc thử lại sau.'], 500);
+            }
 
             return $this->json([
                 'success' => true,
                 'requires_2fa' => true,
                 'challenge_id' => $challenge['challenge_id'],
-                'message' => 'ÄÃ£ gá»­i mÃ£ OTP Ä‘áº¿n email cá»§a báº¡n. Vui lÃ²ng nháº­p mÃ£ Ä‘á»ƒ hoÃ n táº¥t Ä‘Äƒng nháº­p Google.'
+                'message' => 'Đã gửi mã OTP đến email của bạn. Vui lòng nhập mã để hoàn tất đăng nhập Google.'
             ]);
         }
 
-        $this->completeAuthenticatedSession($user, $fingerprintHash, $fpComponents, $rememberMe);
+        $this->completeAuthenticatedSession($user, $fingerprintHash, $fpComponents, $rememberMe, 'login_google');
 
-        Logger::info('Auth', 'login_google_success', 'ÄÄƒng nháº­p báº±ng Google thÃ nh cÃ´ng', [
+        Logger::info('Auth', 'login_google_success', 'Đăng nhập bằng Google thành công', [
             'username' => $user['username'],
             'email' => $user['email'] ?? $email,
             'ip' => $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'
@@ -558,7 +658,7 @@ class AuthController extends Controller
 
         return $this->json([
             'success' => true,
-            'message' => 'ÄÄƒng nháº­p Google thÃ nh cÃ´ng.',
+            'message' => 'Đăng nhập Google thành công.',
             'redirect' => BASE_URL . '/',
             'access_expires_in' => 900,
             'refresh_expires_in' => $rememberMe ? 1209600 : 86400
@@ -584,7 +684,7 @@ class AuthController extends Controller
 
         $token = trim((string) $this->post('turnstile_token', ''));
         if ($token === '') {
-            return 'Vui lÃ²ng xÃ¡c minh báº¡n lÃ  ngÆ°á»i tháº­t.';
+            return 'Vui lòng xác minh bạn là người thật.';
         }
 
         $verify = $this->postForm('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
@@ -594,7 +694,7 @@ class AuthController extends Controller
         ]);
 
         if (empty($verify['success'])) {
-            return 'XÃ¡c minh Cloudflare Turnstile tháº¥t báº¡i. Vui lÃ²ng thá»­ láº¡i.';
+            return 'Xác minh Cloudflare Turnstile thất bại. Vui lòng thử lại.';
         }
 
         return null;
@@ -635,7 +735,7 @@ class AuthController extends Controller
         return $response['users'][0];
     }
 
-    private function completeAuthenticatedSession(array $user, string $fingerprintHash = '', string $fpComponents = '', bool $rememberMe = false): void
+    private function completeAuthenticatedSession(array $user, string $fingerprintHash = '', string $fpComponents = '', bool $rememberMe = false, string $fingerprintAction = 'auth_login'): void
     {
         $device = $this->authSecurity->getDeviceContext($fingerprintHash);
         $this->authSecurity->issueLoginTokens($user, $device, $rememberMe);
@@ -653,7 +753,8 @@ class AuthController extends Controller
                 $user['id'],
                 $user['username'] ?? '',
                 $fingerprintHash,
-                $fpComponents
+                $fpComponents,
+                ['action' => $fingerprintAction]
             );
         } catch (Exception $e) {
             // Ignore fingerprint logging errors
@@ -662,7 +763,15 @@ class AuthController extends Controller
 
     private function generateUniqueUsernameFromSeed(string $seed): string
     {
-        $seed = strtolower($seed);
+        $seed = trim($seed);
+        if (function_exists('xoadau')) {
+            $seed = (string) xoadau($seed);
+        } elseif (class_exists('FormatHelper') && method_exists('FormatHelper', 'toSlug')) {
+            $seed = (string) FormatHelper::toSlug($seed);
+        }
+
+        $seed = strtolower((string) $seed);
+        $seed = str_replace('-', '', $seed);
         $seed = preg_replace('/[^a-z0-9]+/i', '', $seed);
         if ($seed === null || $seed === '') {
             $seed = 'user';
@@ -688,6 +797,63 @@ class AuthController extends Controller
         }
 
         return $candidate;
+    }
+
+    private function extractPreferredGoogleUsernameSeed(string $displayName, string $email): string
+    {
+        $name = trim(preg_replace('/\s+/u', ' ', $displayName) ?? '');
+        if ($name !== '') {
+            $parts = preg_split('/\s+/u', $name) ?: [];
+            $last = trim((string) end($parts));
+            if ($last !== '') {
+                return $last;
+            }
+            return $name;
+        }
+
+        $emailLocal = (string) strstr($email, '@', true);
+        return $emailLocal !== '' ? $emailLocal : 'user';
+    }
+
+    private function sanitizeRemoteImageUrl(string $url): string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return '';
+        }
+
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            return '';
+        }
+
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+        if (!in_array($scheme, ['http', 'https'], true)) {
+            return '';
+        }
+
+        return $url;
+    }
+
+    private function userColumnExists(string $column): bool
+    {
+        static $cache = [];
+        $column = trim($column);
+        if ($column === '') {
+            return false;
+        }
+        if (array_key_exists($column, $cache)) {
+            return $cache[$column];
+        }
+
+        try {
+            $stmt = $this->db->prepare('SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?');
+            $stmt->execute(['users', $column]);
+            $cache[$column] = ((int) $stmt->fetchColumn()) > 0;
+        } catch (Throwable $e) {
+            $cache[$column] = false;
+        }
+
+        return $cache[$column];
     }
 
     private function postJson(string $url, array $payload): array

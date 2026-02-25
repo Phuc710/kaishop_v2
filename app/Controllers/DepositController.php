@@ -115,10 +115,15 @@ class DepositController extends Controller
         ];
 
         if (($deposit['status'] ?? '') === 'completed') {
-            global $connection;
-            $stmt = $connection->query('SELECT `money` FROM `users` WHERE `id` = ' . (int) $user['id']);
-            $row = $stmt ? $stmt->fetch_assoc() : null;
-            $responseData['new_balance'] = (int) ($row['money'] ?? 0);
+            try {
+                $db = Database::getInstance()->getConnection();
+                $stmt = $db->prepare('SELECT `money` FROM `users` WHERE `id` = ? LIMIT 1');
+                $stmt->execute([(int) $user['id']]);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+                $responseData['new_balance'] = (int) ($row['money'] ?? 0);
+            } catch (Throwable $e) {
+                $responseData['new_balance'] = 0;
+            }
         }
 
         return $this->json($responseData);

@@ -36,24 +36,25 @@
     }
 
     async function registerAccount() {
+        const form = document.getElementById('registerForm');
+        const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
         const button1 = document.getElementById('button1');
         const button2 = document.getElementById('button2');
         const username = (document.getElementById('username')?.value || '').trim();
         const email = (document.getElementById('email')?.value || '').trim();
         const password = (document.getElementById('password')?.value || '').trim();
 
-        if (!button1 || !button2 || button2.disabled) return;
-        if (!username || !email || !password) {
-            SwalHelper.error('Vui lòng nhập đầy đủ thông tin.');
-            return;
-        }
+        if (!button1 || !button2) return;
+        if (submitBtn && submitBtn.disabled) return;
+        if (form && !form.reportValidity()) return;
+        if (!username || !email || !password) return;
 
         const turnstileToken = getTurnstileToken(cfg.turnstileContainerId || 'register-turnstile');
         if (!requireHuman(turnstileToken)) return;
 
         button1.style.display = 'none';
         button2.style.display = 'inline-block';
-        button2.disabled = true;
+        if (submitBtn) submitBtn.disabled = true;
 
         try {
             const { fpHash, fpComponents } = await collectFingerprintData();
@@ -80,7 +81,7 @@
         } finally {
             button1.style.display = 'inline-block';
             button2.style.display = 'none';
-            button2.disabled = false;
+            if (submitBtn) submitBtn.disabled = false;
         }
     }
 
@@ -91,11 +92,32 @@
     window.registerAccount = registerAccount;
 
     document.addEventListener('DOMContentLoaded', function () {
+        // Native HTML5 validation handles empty/invalid fields. Keep only visual ready state.
+        const registerSubmitBtn = document.querySelector('#registerForm button[type="submit"]');
+        const usernameInput = document.getElementById('username');
+        const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
-        if (passwordInput) {
-            passwordInput.addEventListener('keypress', function (event) {
-                if (event.key === 'Enter') registerAccount();
-            });
+
+        function updateRegisterBtnState() {
+            if (!registerSubmitBtn) return;
+            const ok = (usernameInput?.value || '').trim().length > 0
+                && (emailInput?.value || '').trim().length > 0
+                && (passwordInput?.value || '').trim().length > 0;
+            registerSubmitBtn.classList.toggle('btn-ready', ok);
         }
+
+        const fields = [usernameInput, emailInput, passwordInput].filter(Boolean);
+        fields.forEach(function (el, i) {
+            el.addEventListener('input', updateRegisterBtnState);
+            el.addEventListener('keypress', function (event) {
+                if (event.key === 'Enter') {
+                    const next = fields[i + 1];
+                    if (next) next.focus();
+                    else registerAccount();
+                }
+            });
+        });
+
+        updateRegisterBtnState();
     });
 })(window);

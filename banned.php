@@ -1,9 +1,6 @@
 <?php
 /**
  * banned.php — Trang truy cập bị hạn chế
- * 
- * SEO-friendly: noindex, nofollow
- * Hiển thị lý do nhưng không lộ loại ban (account / device)
  */
 require_once __DIR__ . '/hethong/config.php';
 http_response_code(403);

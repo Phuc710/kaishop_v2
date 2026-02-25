@@ -99,6 +99,53 @@ class AdminJournal extends Model
     }
 
     /**
+     * Get purchase history from orders table.
+     *
+     * @param array<string, mixed> $filters
+     * @return array<int, array<string, mixed>>
+     */
+    public function getPurchaseHistoryLogs(array $filters): array
+    {
+        if (!$this->tableExists('orders')) {
+            return [];
+        }
+
+        $params = [];
+        $conditions = ['1=1'];
+        $timeExpr = 'o.created_at';
+
+        if (!empty($filters['search'])) {
+            $search = '%' . trim((string) $filters['search']) . '%';
+            $conditions[] = '(o.username LIKE :s_user OR o.product_name LIKE :s_prod OR o.order_code LIKE :s_code)';
+            $params['s_user'] = $search;
+            $params['s_prod'] = $search;
+            $params['s_code'] = $search;
+        }
+
+        $this->appendDateConditions($conditions, $params, $timeExpr, $filters);
+
+        $sql = "
+            SELECT
+                o.id,
+                o.order_code,
+                o.username,
+                o.product_name,
+                o.price,
+                o.status,
+                o.payment_method,
+                o.created_at AS event_time,
+                o.created_at AS raw_time
+            FROM `orders` o
+            WHERE " . implode(' AND ', $conditions) . "
+            ORDER BY o.created_at DESC, o.id DESC
+        ";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Get balance change logs with shared filters.
      * Falls back to history_nap_bank if no dedicated table exists.
      *

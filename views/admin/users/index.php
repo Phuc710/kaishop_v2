@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * View: Danh sách thành viên
  * Route: GET /admin/users
@@ -73,22 +73,18 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             <div class="dt-filters">
                 <!-- Search Line -->
                 <div class="row g-2 mb-3">
-                    <div class="col-md-3 mb-2">
+                    <div class="col-md-4 mb-2">
                         <input id="f-keyword" class="form-control form-control-sm"
                             placeholder="Tìm Username hoặc Email...">
                     </div>
-                    <div class="col-md-3 mb-2">
-                        <input id="f-fingerprint" class="form-control form-control-sm"
-                            placeholder="Tìm Fingerprint hash...">
-                    </div>
-                    <div class="col-md-2 mb-2 text-center">
+                    <div class="col-md-3 mb-2 text-center">
                         <select id="f-status" class="form-control form-control-sm">
                             <option value="">-- TRẠNG THÁI --</option>
                             <option value="Active">ACTIVE</option>
                             <option value="Banned">BANNED</option>
                         </select>
                     </div>
-                    <div class="col-md-2 mb-2 text-center">
+                    <div class="col-md-3 mb-2 text-center">
                         <button type="button" id="btn-clear" class="btn btn-danger btn-sm shadow-sm w-100">
                             <i class="fas fa-trash"></i> Xóa Lọc
                         </button>
@@ -124,11 +120,9 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                             <tr>
                                 <th class="text-center font-weight-bold align-middle">USERNAME</th>
                                 <th class="text-center font-weight-bold align-middle">EMAIL</th>
-                                <th class="text-center font-weight-bold align-middle">SỐ DƯ</th>
                                 <th class="text-center font-weight-bold align-middle">TỔNG NẠP</th>
                                 <th class="text-center font-weight-bold align-middle">TRẠNG THÁI</th>
-                                <th class="text-center font-weight-bold align-middle">FINGERPRINT</th>
-                                <th class="text-center font-weight-bold align-middle">NGÀY TẠO</th>
+                                <th class="text-center font-weight-bold align-middle">NGÀY ĐĂNG KÝ</th>
                                 <th class="text-center font-weight-bold align-middle" style="width:120px">THAO TÁC</th>
                             </tr>
                         </thead>
@@ -136,13 +130,13 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                             <?php if (!empty($users)): ?>
                                 <?php foreach ($users as $row): ?>
                                     <tr>
-                                        <td class="text-center align-middle font-weight-bold">
-                                            <?= htmlspecialchars($row['username']) ?>
+                                        <td class="text-center align-middle">
+                                            <a href="<?= url('admin/users/edit/' . $row['username']) ?>"
+                                                class="font-weight-bold text-primary">
+                                                <?= htmlspecialchars($row['username']) ?>
+                                            </a>
                                         </td>
                                         <td class="text-center align-middle"><?= htmlspecialchars($row['email']) ?></td>
-                                        <td class="text-center align-middle font-weight-bold text-danger">
-                                            <?= number_format($row['money']) ?>đ
-                                        </td>
                                         <td class="text-center align-middle font-weight-bold text-success">
                                             <?= number_format($row['tong_nap'] ?? 0) ?>đ
                                         </td>
@@ -153,27 +147,23 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                                 <span class="badge badge-success px-2 py-1">Active</span>
                                             <?php endif; ?>
                                         </td>
+                                        <?php $fp = (string) ($row['fingerprint'] ?? ''); ?>
                                         <td class="text-center align-middle">
                                             <?php
-                                            $fp = (string) ($row['fingerprint'] ?? '');
-                                            if ($fp !== ''):
-                                                $fpShort = substr($fp, 0, 8) . '...';
-                                                ?>
-                                                <span class="badge badge-secondary px-2 py-1" data-toggle="tooltip"
-                                                    title="<?= htmlspecialchars($fp) ?>"
-                                                    style="font-family:monospace;cursor:default;">
-                                                    <?= htmlspecialchars($fpShort) ?>
-                                                </span>
-                                            <?php else: ?>
-                                                <span class="text-muted" style="font-size:12px;">—</span>
-                                            <?php endif; ?>
-                                            <!-- Hidden full hash for DataTable search -->
-                                            <span style="display:none;"><?= htmlspecialchars($fp) ?></span>
-                                        </td>
-                                        <td class="text-center align-middle">
+                                            $createdRaw = trim((string) (($row['created_at'] ?? '') !== '' ? $row['created_at'] : ($row['time'] ?? '')));
+                                            if ($createdRaw === '') {
+                                                $createdDisplay = '--';
+                                                $createdTooltip = 'Chưa có dữ liệu';
+                                            } else {
+                                                $createdDisplay = $createdRaw;
+                                                $createdTooltip = function_exists('timeAgo')
+                                                    ? (string) timeAgo($createdRaw)
+                                                    : $createdRaw;
+                                            }
+                                            ?>
                                             <span class="badge date-badge" data-toggle="tooltip" data-placement="top"
-                                                title="<?= timeAgo($row['time']) ?>">
-                                                <?= htmlspecialchars((string) ($row['time'] ?? '--')) ?>
+                                                title="<?= htmlspecialchars($createdTooltip, ENT_QUOTES, 'UTF-8') ?>">
+                                                <?= htmlspecialchars($createdDisplay, ENT_QUOTES, 'UTF-8') ?>
                                             </span>
                                         </td>
                                         <td class="text-center align-middle">
@@ -194,7 +184,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                                     </button>
                                                 <?php endif; ?>
                                                 <button type="button" class="btn btn-danger btn-sm ml-1" title="Xóa"
-                                                    onclick="deleteUser(<?= $row['id'] ?>)">
+                                                    onclick="deleteUser(<?= (int) ($row['id'] ?? 0) ?>)">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </div>
@@ -229,7 +219,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             order: [[0, "desc"]],
             pageLength: 10,
             columnDefs: [
-                { orderable: false, targets: [5, 7] }  // Fingerprint + action
+                { orderable: false, targets: [5] }  // action
             ],
             language: {
                 sLengthMenu: 'Hiển thị _MENU_ mục',
@@ -250,14 +240,9 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             dtUser.search(this.value.trim()).draw();
         });
 
-        // Fingerprint search — column 5 (full hash hidden span)
-        $('#f-fingerprint').on('input keyup', function () {
-            dtUser.column(5).search(this.value.trim()).draw();
-        });
-
-        // Status filter — column 4
+        // Status filter — column 3
         $('#f-status').change(function () {
-            dtUser.column(4).search($(this).val()).draw();
+            dtUser.column(3).search($(this).val()).draw();
         });
 
         // Date sort
@@ -270,7 +255,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             if (sortVal !== 'all') {
                 var days = parseInt(sortVal);
                 if (!isNaN(days)) {
-                    var dateStr = data[6].trim();
+                    var dateStr = data[4].trim();
                     var rowTime;
                     var parts = dateStr.split(' ');
                     if (parts.length === 2 && parts[1].includes('-')) {
@@ -288,7 +273,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
 
         // Clear
         $('#btn-clear').click(function () {
-            $('#f-keyword, #f-fingerprint').val('');
+            $('#f-keyword').val('');
             $('#f-status').val('');
             $('#f-length').val('10');
             $('#f-sort').val('all');
@@ -316,7 +301,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
 
     /**
      * banUser(username, fingerprint)
-     * fingerprint: trực tiếp từ data row â€” nếu rỗng thì ᡉn option khóa thiết bị.
+     * fingerprint: trực tiếp từ data row — nếu rỗng thì ẩn option khóa thiết bị.
      */
     function banUser(username, fp) {
         const hasFp = fp && fp.trim() !== '';

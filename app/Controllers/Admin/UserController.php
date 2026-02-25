@@ -255,15 +255,6 @@ class UserController extends Controller
             return $this->json(['success' => false, 'message' => 'Chua co du lieu Fingerprint cua nguoi dung nay de khoa thiet bi.']);
         }
 
-        $this->db->exec("CREATE TABLE IF NOT EXISTS `banned_fingerprints` (
-            `id` INT AUTO_INCREMENT PRIMARY KEY,
-            `fingerprint_hash` VARCHAR(255) NOT NULL,
-            `reason` TEXT DEFAULT NULL,
-            `banned_by` VARCHAR(100) DEFAULT NULL,
-            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE KEY `uniq_fp` (`fingerprint_hash`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-
         $fpHash = (string) $user['fingerprint'];
         $adminName = (string) ($_SESSION['admin'] ?? 'Admin');
 

@@ -1,48 +1,6 @@
 (function ($) {
     ("use strict");
 
-    // Sticky Menu
-    function hasStickyMenu() {
-        var header = document.querySelector(".header-primary");
-
-        if (header) {
-            window.addEventListener("scroll", function () {
-                if (window.scrollY > 100) {
-                    header.classList.add("sticky");
-                } else {
-                    header.classList.remove("sticky");
-                }
-            });
-        }
-    }
-    hasStickyMenu();
-
-    function hasBackToTop() {
-        // Slide to Top Button
-        var toTopBtn = document.getElementById("toTopBtn");
-        if (toTopBtn) {
-            window.onscroll = function () {
-                scrollFunction();
-            };
-
-            function scrollFunction() {
-                if (
-                    document.body.scrollTop > 200 ||
-                    document.documentElement.scrollTop > 200
-                ) {
-                    toTopBtn.style.display = "block";
-                } else {
-                    toTopBtn.style.display = "none";
-                }
-            }
-            toTopBtn.onclick = function () {
-                window.scrollTo({ top: 0, behavior: "smooth" });
-            };
-        }
-    }
-
-    hasBackToTop();
-
     function QuillExist() {
         const editorOne = document.querySelector("#editor");
         const editorTwo = document.querySelector("#editor-seo");

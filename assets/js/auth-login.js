@@ -43,15 +43,20 @@
 
     function showLoginOtpStep(challengeId, message) {
         login2faChallengeId = challengeId || '';
+
+        if (message) {
+            try {
+                sessionStorage.setItem('kai_auth_message', message);
+            } catch (e) { }
+        }
+
         if (cfg.loginOtpPageUrl && login2faChallengeId) {
             const url = new URL(cfg.loginOtpPageUrl, window.location.origin);
             url.searchParams.set('challenge_id', login2faChallengeId);
-            if (message) {
-                url.searchParams.set('message', message);
-            }
             window.location.href = url.toString();
             return;
         }
+
 
         const box = document.getElementById('login2faBox');
         if (box) box.style.display = 'block';
@@ -63,23 +68,24 @@
     }
 
     async function login() {
+        const form = document.getElementById('loginForm');
+        const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
         const button1 = document.getElementById('button1');
         const button2 = document.getElementById('button2');
         const username = (document.getElementById('username')?.value || '').trim();
         const password = (document.getElementById('password')?.value || '').trim();
 
-        if (!button1 || !button2 || button2.disabled) return;
-        if (!username || !password) {
-            SwalHelper.error('Vui lòng nhập đầy đủ thông tin.');
-            return;
-        }
+        if (!button1 || !button2) return;
+        if (submitBtn && submitBtn.disabled) return;
+        if (form && !form.reportValidity()) return;
+        if (!username || !password) return;
 
         const turnstileToken = getTurnstileToken(cfg.turnstileContainerId || 'login-turnstile');
         if (!requireHuman(turnstileToken)) return;
 
         button1.style.display = 'none';
         button2.style.display = 'inline-block';
-        button2.disabled = true;
+        if (submitBtn) submitBtn.disabled = true;
 
         try {
             const { fpHash, fpComponents } = await collectFingerprintData();
@@ -111,11 +117,12 @@
         } finally {
             button1.style.display = 'inline-block';
             button2.style.display = 'none';
-            button2.disabled = false;
+            if (submitBtn) submitBtn.disabled = false;
         }
     }
 
     async function verifyLoginOtp() {
+        const form = document.getElementById('loginInlineOtpForm');
         const btn = document.getElementById('verifyLoginOtpBtn');
         const txt = document.getElementById('verifyOtpText');
         const loading = document.getElementById('verifyOtpLoading');
@@ -125,6 +132,7 @@
             SwalHelper.error('Thiếu phiên xác minh OTP. Vui lòng đăng nhập lại.');
             return;
         }
+        if (form && !form.reportValidity()) return;
         if (!otpCode) {
             SwalHelper.error('Vui lòng nhập mã OTP.');
             return;
@@ -170,11 +178,34 @@
     window.verifyLoginOtp = verifyLoginOtp;
 
     document.addEventListener('DOMContentLoaded', function () {
+        // Native HTML5 validation handles empty fields. Keep only visual ready state.
+        const loginSubmitBtn = document.querySelector('#loginForm button[type="submit"]');
+        const usernameInput = document.getElementById('username');
         const passwordInput = document.getElementById('password');
+
+        function updateLoginBtnState() {
+            if (!loginSubmitBtn) return;
+            const hasUser = (usernameInput?.value || '').trim().length > 0;
+            const hasPass = (passwordInput?.value || '').trim().length > 0;
+            loginSubmitBtn.classList.toggle('btn-ready', hasUser && hasPass);
+        }
+
+        if (usernameInput) {
+            usernameInput.addEventListener('input', updateLoginBtnState);
+            usernameInput.addEventListener('keypress', function (event) {
+                if (event.key === 'Enter') {
+                    if ((passwordInput?.value || '').trim().length > 0) login();
+                    else passwordInput?.focus();
+                }
+            });
+        }
         if (passwordInput) {
+            passwordInput.addEventListener('input', updateLoginBtnState);
             passwordInput.addEventListener('keypress', function (event) {
                 if (event.key === 'Enter') login();
             });
         }
+
+        updateLoginBtnState();
     });
 })(window);

@@ -40,22 +40,23 @@ class JournalController extends Controller
         $this->requireAdmin();
 
         $query = $this->buildQueryState();
-        $rawRows = $this->journalModel->getActivityLogs($query);
+        $rawRows = $this->journalModel->getPurchaseHistoryLogs($query);
 
         $this->renderJournal([
             'basePath' => 'admin/logs/activities',
-            'pageTitle' => 'Lịch sử giao dịch',
-            'pageIcon' => 'fas fa-shopping-cart',
-            'cardTitle' => 'LỊCH SỬ GIAO DỊCH',
-            'tableId' => 'activityJournalTable',
+            'pageTitle' => 'Lịch sử mua hàng',
+            'pageIcon' => 'fas fa-shopping-bag',
+            'cardTitle' => 'LỊCH SỬ MUA HÀNG',
+            'tableId' => 'purchaseHistoryTable',
             'columns' => [
                 ['key' => 'time', 'label' => 'Thời gian', 'align' => 'center'],
-                ['key' => 'username', 'label' => 'Khách Hàng', 'align' => 'center'],
-                ['key' => 'action', 'label' => 'Dịch Vụ / Hàng Hoá', 'align' => 'center'],
-                ['key' => 'price', 'label' => 'Thành Tiền', 'align' => 'center'],
-                ['key' => 'ip', 'label' => 'Địa chỉ IP', 'align' => 'center'],
+                ['key' => 'order_code', 'label' => 'Mã đơn', 'align' => 'center'],
+                ['key' => 'username', 'label' => 'Khách hàng', 'align' => 'center'],
+                ['key' => 'product_name', 'label' => 'Sản phẩm', 'align' => 'center'],
+                ['key' => 'price', 'label' => 'Giá', 'align' => 'center'],
+                ['key' => 'status', 'label' => 'Trạng thái', 'align' => 'center'],
             ],
-            'rows' => $this->mapActivityRows($rawRows),
+            'rows' => $this->mapPurchaseRows($rawRows),
             'query' => $query,
         ]);
     }
@@ -199,6 +200,41 @@ class JournalController extends Controller
                 'action' => '<span class="font-weight-500 text-dark">' . htmlspecialchars(trim((string) ($row['action_name'] ?? '--'))) . '</span>',
                 'price' => FormatHelper::price($row['gia'] ?? null),
                 'ip' => $ip,
+            ];
+        }
+
+        return $output;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     * @return array<int, array<string, string|int>>
+     */
+    private function mapPurchaseRows(array $rows): array
+    {
+        $output = [];
+        foreach ($rows as $row) {
+            $username = $this->formatUsername($row['username'] ?? '');
+
+            $status = trim((string) ($row['status'] ?? 'processing'));
+            if ($status === 'completed') {
+                $statusLabel = '<span class="badge bg-success">Hoàn tất</span>';
+            } elseif ($status === 'processing') {
+                $statusLabel = '<span class="badge bg-warning text-dark">Đang xử lý</span>';
+            } else {
+                $statusLabel = '<span class="badge bg-secondary">' . htmlspecialchars($status) . '</span>';
+            }
+
+            $price = (int) ($row['price'] ?? 0);
+            $priceFormatted = '<span class="font-weight-bold" style="color:#ff0000;">-' . number_format($price, 0, '.', ',') . 'đ</span>';
+
+            $output[] = [
+                'time' => FormatHelper::eventTime($row['event_time'] ?? null, $row['raw_time'] ?? null),
+                'order_code' => '<span class="badge bg-light text-dark border font-weight-bold" style="font-family:monospace;">' . htmlspecialchars($row['order_code'] ?? '--') . '</span>',
+                'username' => '<a href="' . url('admin/users/edit/' . urlencode($username)) . '" class="font-weight-bold text-dark">' . htmlspecialchars($username) . '</a>',
+                'product_name' => '<span class="font-weight-500 text-dark">' . htmlspecialchars(trim((string) ($row['product_name'] ?? '--'))) . '</span>',
+                'price' => $priceFormatted,
+                'status' => $statusLabel,
             ];
         }
 

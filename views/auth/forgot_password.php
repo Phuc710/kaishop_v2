@@ -41,15 +41,15 @@ $GLOBALS['pageAssets'] = [
     <script src="<?= BASE_URL ?>/assets/js/auth-forms.js"></script>
 </head>
 
-<body>
+<body class="auth-layout">
     <?php require __DIR__ . '/../../hethong/nav.php'; ?>
 
-    <main>
-        <section class="py-5 bg-offWhite">
-            <div class="container">
+    <main class="auth-page">
+        <section class="py-5 bg-offWhite auth-page-section">
+            <div class="container auth-page-container">
                 <div class="rounded-3">
-                    <div class="row">
-                        <div class="col-lg-6 p-3 p-lg-5 m-auto">
+                    <div class="row auth-page-row">
+                        <div class="col-lg-6 p-3 p-lg-5 m-auto auth-page-col">
                             <div class="login-userset">
                                 <div class="login-card auth-card-white">
                                     <div class="login-heading">
@@ -57,9 +57,10 @@ $GLOBALS['pageAssets'] = [
                                         <p>Nhập tên đăng nhập hoặc email để nhận liên kết khôi phục</p>
                                     </div>
 
+                                    <form id="forgotPasswordForm" onsubmit="forgotPassword(); return false;">
                                     <div class="form-wrap form-focus">
-                                        <span class="form-icon"><i class="feather-mail"></i></span>
-                                        <input type="text" id="username" class="form-control floating">
+                                        <span class="form-icon"><i class="fa-regular fa-envelope"></i></span>
+                                        <input type="text" id="username" class="form-control floating" placeholder=" " autocomplete="username email" required>
                                         <label class="focus-label">Tên đăng nhập / Email</label>
                                     </div>
 
@@ -71,32 +72,15 @@ $GLOBALS['pageAssets'] = [
                                         </div>
                                     <?php endif; ?>
 
-                                    <button type="button" onclick="forgotPassword()" class="btn btn-primary w-100">
+                                    <button type="submit" class="btn btn-primary w-100">
                                         <span id="btnText" class="indicator-label">Gửi yêu cầu khôi phục</span>
                                         <span id="btnLoading" class="indicator-progress" style="display:none;">
                                             <i class="fa fa-spinner fa-spin"></i> Đang xử lý...
                                         </span>
                                     </button>
+                                    </form>
 
-                                    <div id="forgot2faBox" class="auth-otp-box" style="display:none;">
-                                        <p class="mb-2 text-muted" style="font-size:13px;">Tài khoản đang bật 2FA. Nhập
-                                            OTP đã gửi về Gmail để nhận email khôi phục mật khẩu.</p>
-                                        <div class="form-wrap form-focus mb-2">
-                                            <span class="form-icon"><i
-                                                    class="fa-solid fa-envelope-circle-check"></i></span>
-                                            <input type="text" id="forgotOtpCode" class="form-control floating"
-                                                inputmode="numeric" maxlength="6">
-                                            <label class="focus-label">Mã OTP 6 số</label>
-                                        </div>
-                                        <button type="button" class="btn btn-outline-primary w-100"
-                                            id="forgotOtpVerifyBtn" onclick="verifyForgotOtp()">
-                                            <span id="forgotOtpVerifyText">Xác minh OTP & gửi email reset</span>
-                                            <span id="forgotOtpVerifyLoading" style="display:none;"><i
-                                                    class="fa fa-spinner fa-spin"></i> Đang xử lý...</span>
-                                        </button>
-                                    </div>
-
-                                    <div class="acc-in mt-3">
+                                    <div class="acc-in">
                                         <p>Đã nhớ mật khẩu? <a href="<?= BASE_URL ?>/login">Đăng nhập ngay</a></p>
                                     </div>
                                 </div>
@@ -108,7 +92,7 @@ $GLOBALS['pageAssets'] = [
         </section>
     </main>
 
-    
+
     <script>
         window.KaiAuthForgotConfig = {
             resetUrl: '<?= BASE_URL ?>/password-reset',

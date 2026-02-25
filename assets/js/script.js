@@ -686,7 +686,11 @@
 	if ($('.toggle-password').length > 0) {
 		$(document).on('click', '.toggle-password', function() {
 			$(this).toggleClass("feather-eye feather-eye-off");
-			var input = $(".pass-input");
+			$(this).toggleClass("fa-eye fa-eye-slash");
+			var input = $(this).closest('.form-wrap').find('.pass-input').first();
+			if (input.length === 0) {
+				input = $(".pass-input").first();
+			}
 			if (input.attr("type") === "password") {
 				input.attr("type", "text");
 			} else {
@@ -697,7 +701,11 @@
 	if ($('.toggle-password-confirm').length > 0) {
 		$(document).on('click', '.toggle-password-confirm', function() {
 			$(this).toggleClass("feather-eye feather-eye-off");
-			var input = $(".pass-confirm");
+			$(this).toggleClass("fa-eye fa-eye-slash");
+			var input = $(this).closest('.form-wrap').find('.pass-confirm').first();
+			if (input.length === 0) {
+				input = $(".pass-confirm").first();
+			}
 			if (input.attr("type") === "password") {
 				input.attr("type", "text");
 			} else {

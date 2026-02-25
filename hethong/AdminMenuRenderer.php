@@ -73,7 +73,7 @@ class AdminMenuRenderer
             'children' => [
                 [
                     'href' => $activityHref,
-                    'label' => 'Lịch sử giao dịch',
+                    'label' => 'Lịch sử mua hàng',
                 ],
                 [
                     'href' => $depositHref,

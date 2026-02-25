@@ -7,7 +7,7 @@
             <a href="<?= url('/password') ?>" class="menu-item">Đổi mật khẩu</a>
         </li>
         <li>
-            <a href="<?= url('/history-code') ?>" class="menu-item">Lịch sử mua mã nguồn</a>
+            <a href="<?= url('/history-code') ?>" class="menu-item">Biến động số dư</a>
         </li>
 
     </ul>

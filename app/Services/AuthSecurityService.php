@@ -158,7 +158,11 @@ class AuthSecurityService
             json_encode($meta, JSON_UNESCAPED_UNICODE),
         ]);
 
-        $this->sendOtpEmail((string) $user['email'], (string) ($user['username'] ?? ''), $otpCode, $purpose, $ttlSeconds);
+        $sent = $this->sendOtpEmail((string) $user['email'], (string) ($user['username'] ?? ''), $otpCode, $purpose, $ttlSeconds);
+        if (!$sent) {
+            $this->db->prepare("DELETE FROM auth_otp_codes WHERE challenge_id = ?")->execute([$challengeId]);
+            throw new RuntimeException('Khong the gui OTP qua email. Vui long kiem tra cau hinh SMTP.');
+        }
 
         return [
             'challenge_id' => $challengeId,
@@ -202,6 +206,126 @@ class AuthSecurityService
         }
 
         return ['ok' => true, 'row' => $row, 'meta' => $meta];
+    }
+
+    /**
+     * Resend login OTP by issuing a new challenge for the same user/device.
+     * Applies server-side anti-spam cooldown and burst limits.
+     *
+     * @return array{ok:bool,status?:int,message:string,challenge_id?:string,expires_in?:int,cooldown_seconds?:int,retry_after_seconds?:int}
+     */
+    public function resendLoginOtpChallenge(string $challengeId, array $currentDevice, int $ttlSeconds = 300, int $cooldownSeconds = 60): array
+    {
+        $stmt = $this->db->prepare("SELECT * FROM auth_otp_codes WHERE challenge_id = ? AND purpose = 'login_2fa' LIMIT 1");
+        $stmt->execute([$challengeId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        if (!$row) {
+            return ['ok' => false, 'status' => 404, 'message' => 'Phien xac minh OTP khong hop le. Vui long dang nhap lai.'];
+        }
+
+        if (!empty($row['consumed_at']) || !empty($row['verified_at'])) {
+            return ['ok' => false, 'status' => 400, 'message' => 'Ma OTP nay da duoc su dung. Vui long dang nhap lai de nhan ma moi.'];
+        }
+
+        $expectedDeviceHash = (string) ($row['device_hash'] ?? '');
+        $actualDeviceHash = (string) ($currentDevice['device_hash'] ?? '');
+        if ($expectedDeviceHash !== '' && $actualDeviceHash !== '' && !hash_equals($expectedDeviceHash, $actualDeviceHash)) {
+            return ['ok' => false, 'status' => 400, 'message' => 'Thiet bi gui lai OTP khong khop. Vui long dang nhap lai.'];
+        }
+
+        $userStmt = $this->db->prepare("SELECT * FROM users WHERE id = ? LIMIT 1");
+        $userStmt->execute([(int) $row['user_id']]);
+        $user = $userStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        if (!$user) {
+            return ['ok' => false, 'status' => 404, 'message' => 'Tai khoan khong ton tai.'];
+        }
+        if (trim((string) ($user['email'] ?? '')) === '') {
+            return ['ok' => false, 'status' => 400, 'message' => 'Tai khoan chua co email de nhan OTP.'];
+        }
+
+        $identity = (string) (($user['username'] ?? '') !== '' ? $user['username'] : ($user['email'] ?? ''));
+        if (($limit = $this->checkRateLimit('login_otp_resend')) !== null) {
+            return ['ok' => false, 'status' => 429, 'message' => (string) ($limit['message'] ?? 'Ban thao tac qua nhanh.')];
+        }
+
+        // Cooldown: only allow 1 successful resend per cooldown window.
+        $cooldownStmt = $this->db->prepare("
+            SELECT TIMESTAMPDIFF(SECOND, created_at, NOW()) AS age_seconds
+            FROM auth_login_attempts
+            WHERE action = 'login_otp_resend'
+              AND username_or_email = ?
+              AND success = 1
+              AND created_at >= (NOW() - INTERVAL 10 MINUTE)
+            ORDER BY id DESC
+            LIMIT 1
+        ");
+        $cooldownStmt->execute([mb_substr($identity, 0, 190)]);
+        $lastAge = $cooldownStmt->fetchColumn();
+        if ($lastAge !== false) {
+            $ageSeconds = max(0, (int) $lastAge);
+            if ($ageSeconds < $cooldownSeconds) {
+                $retryAfter = max(1, $cooldownSeconds - $ageSeconds);
+                $this->recordLoginAttempt('login_otp_resend', $identity, false, 'cooldown_active');
+                return [
+                    'ok' => false,
+                    'status' => 429,
+                    'message' => 'Ban vua yeu cau gui lai OTP. Vui long doi them truoc khi thu lai.',
+                    'retry_after_seconds' => $retryAfter,
+                ];
+            }
+        }
+
+        // Additional success burst limit (per user+IP) for resend action.
+        $burstStmt = $this->db->prepare("
+            SELECT COUNT(*) c
+            FROM auth_login_attempts
+            WHERE action = 'login_otp_resend'
+              AND username_or_email = ?
+              AND ip_address = ?
+              AND success = 1
+              AND created_at >= (NOW() - INTERVAL 10 MINUTE)
+        ");
+        $burstStmt->execute([mb_substr($identity, 0, 190), $this->clientIp()]);
+        if ((int) $burstStmt->fetchColumn() >= 5) {
+            $this->recordLoginAttempt('login_otp_resend', $identity, false, 'burst_limited');
+            return [
+                'ok' => false,
+                'status' => 429,
+                'message' => 'Ban da gui lai OTP qua nhieu lan. Vui long thu lai sau it phut.',
+                'retry_after_seconds' => 120,
+            ];
+        }
+
+        $meta = [];
+        if (!empty($row['metadata_json'])) {
+            $tmp = json_decode((string) $row['metadata_json'], true);
+            if (is_array($tmp)) {
+                $meta = $tmp;
+            }
+        }
+        $meta['resend_of'] = $challengeId;
+        $meta['resend_count'] = (int) (($meta['resend_count'] ?? 0)) + 1;
+
+        try {
+            $newChallenge = $this->createOtpChallenge($user, 'login_2fa', $currentDevice, $meta, $ttlSeconds);
+        } catch (Throwable $e) {
+            $this->recordLoginAttempt('login_otp_resend', $identity, false, 'send_failed');
+            return ['ok' => false, 'status' => 500, 'message' => 'Khong the gui lai OTP luc nay. Vui long thu lai sau.'];
+        }
+
+        // Invalidate previous challenge after the new OTP has been sent successfully.
+        $this->db->prepare("UPDATE auth_otp_codes SET consumed_at = NOW() WHERE id = ? AND consumed_at IS NULL AND verified_at IS NULL")
+            ->execute([(int) $row['id']]);
+
+        $this->recordLoginAttempt('login_otp_resend', $identity, true, 'resent');
+
+        return [
+            'ok' => true,
+            'message' => 'Da gui lai ma OTP moi den email cua ban.',
+            'challenge_id' => (string) $newChallenge['challenge_id'],
+            'expires_in' => (int) ($newChallenge['expires_in'] ?? $ttlSeconds),
+            'cooldown_seconds' => $cooldownSeconds,
+        ];
     }
 
     public function issueLoginTokens(array $user, array $device, bool $rememberMe = false): array
@@ -396,9 +520,9 @@ class AuthSecurityService
         return $this->mailService()->sendPasswordReset($user, $otpcode);
     }
 
-    private function sendOtpEmail(string $email, string $username, string $otpCode, string $purpose, int $ttlSeconds): void
+    private function sendOtpEmail(string $email, string $username, string $otpCode, string $purpose, int $ttlSeconds): bool
     {
-        $this->mailService()->sendOtp($email, $username, $otpCode, $purpose, $ttlSeconds);
+        return $this->mailService()->sendOtp($email, $username, $otpCode, $purpose, $ttlSeconds);
     }
 
     /** @return MailService */
@@ -468,10 +592,22 @@ class AuthSecurityService
         }
     }
 
+    public function revokeAllUserSessions(int $userId, string $reason = 'manual'): void
+    {
+        if ($userId <= 0) {
+            return;
+        }
+
+        $stmt = $this->db->prepare("UPDATE auth_sessions SET status = 'revoked', revoked_at = NOW(), revoke_reason = ?, updated_at = NOW() WHERE user_id = ? AND status = 'active'");
+        $stmt->execute([mb_substr($reason, 0, 190), $userId]);
+
+        // Legacy single-session token still exists in users table; clear it too.
+        $this->db->prepare("UPDATE users SET session = '' WHERE id = ?")->execute([$userId]);
+    }
+
     private function revokeAllSessionsForUser(int $userId): void
     {
-        $stmt = $this->db->prepare("UPDATE auth_sessions SET status = 'revoked', revoked_at = NOW(), revoke_reason = 'new_login', updated_at = NOW() WHERE user_id = ? AND status = 'active'");
-        $stmt->execute([$userId]);
+        $this->revokeAllUserSessions($userId, 'new_login');
     }
 
     private function revokeSessionById(int $id, string $reason): void
@@ -626,95 +762,20 @@ class AuthSecurityService
         }
         self::$schemaReady = true;
 
-        $this->db->exec("CREATE TABLE IF NOT EXISTS auth_sessions (
-            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
-            session_selector VARCHAR(64) NOT NULL,
-            access_token_hash CHAR(64) NOT NULL,
-            refresh_token_hash CHAR(64) NOT NULL,
-            legacy_session_token VARCHAR(100) DEFAULT NULL,
-            access_expires_at DATETIME NOT NULL,
-            refresh_expires_at DATETIME NOT NULL,
-            ip_address VARCHAR(45) DEFAULT NULL,
-            user_agent TEXT DEFAULT NULL,
-            device_fingerprint VARCHAR(128) DEFAULT NULL,
-            device_hash CHAR(64) DEFAULT NULL,
-            device_os VARCHAR(100) DEFAULT NULL,
-            device_browser VARCHAR(100) DEFAULT NULL,
-            device_type VARCHAR(50) DEFAULT NULL,
-            remember_me TINYINT(1) NOT NULL DEFAULT 0,
-            status VARCHAR(20) NOT NULL DEFAULT 'active',
-            revoke_reason VARCHAR(64) DEFAULT NULL,
-            last_rotated_at DATETIME DEFAULT NULL,
-            revoked_at DATETIME DEFAULT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT NULL,
-            UNIQUE KEY uniq_auth_sessions_selector (session_selector),
-            KEY idx_auth_sessions_user (user_id),
-            KEY idx_auth_sessions_status (status)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
         $this->ensureIndex('auth_sessions', 'idx_auth_sessions_status_refresh', "ALTER TABLE auth_sessions ADD INDEX idx_auth_sessions_status_refresh (status, refresh_expires_at)");
         $this->ensureIndex('auth_sessions', 'idx_auth_sessions_selector_status', "ALTER TABLE auth_sessions ADD INDEX idx_auth_sessions_selector_status (session_selector, status)");
         $this->ensureIndex('auth_sessions', 'idx_auth_sessions_legacy_session', "ALTER TABLE auth_sessions ADD INDEX idx_auth_sessions_legacy_session (legacy_session_token)");
 
-        $this->db->exec("CREATE TABLE IF NOT EXISTS auth_otp_codes (
-            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            challenge_id VARCHAR(64) NOT NULL,
-            user_id INT NOT NULL,
-            purpose VARCHAR(30) NOT NULL,
-            email VARCHAR(190) DEFAULT NULL,
-            code_hash CHAR(64) NOT NULL,
-            attempts INT NOT NULL DEFAULT 0,
-            max_attempts INT NOT NULL DEFAULT 5,
-            expires_at DATETIME NOT NULL,
-            verified_at DATETIME DEFAULT NULL,
-            consumed_at DATETIME DEFAULT NULL,
-            ip_address VARCHAR(45) DEFAULT NULL,
-            user_agent TEXT DEFAULT NULL,
-            device_hash CHAR(64) DEFAULT NULL,
-            metadata_json LONGTEXT DEFAULT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE KEY uniq_auth_otp_challenge (challenge_id),
-            KEY idx_auth_otp_user (user_id),
-            KEY idx_auth_otp_purpose (purpose)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
         $this->ensureIndex('auth_otp_codes', 'idx_auth_otp_challenge_purpose', "ALTER TABLE auth_otp_codes ADD INDEX idx_auth_otp_challenge_purpose (challenge_id, purpose)");
         $this->ensureIndex('auth_otp_codes', 'idx_auth_otp_expires', "ALTER TABLE auth_otp_codes ADD INDEX idx_auth_otp_expires (expires_at)");
 
-        $this->db->exec("CREATE TABLE IF NOT EXISTS user_trusted_devices (
-            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
-            device_hash CHAR(64) NOT NULL,
-            ip_address VARCHAR(45) DEFAULT NULL,
-            user_agent TEXT DEFAULT NULL,
-            os VARCHAR(100) DEFAULT NULL,
-            browser VARCHAR(100) DEFAULT NULL,
-            device_type VARCHAR(50) DEFAULT NULL,
-            trusted_until DATETIME DEFAULT NULL,
-            last_seen_at DATETIME DEFAULT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT NULL,
-            UNIQUE KEY uniq_user_device (user_id, device_hash),
-            KEY idx_user_device_until (trusted_until)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
         $this->ensureIndex('user_trusted_devices', 'idx_user_device_user_until', "ALTER TABLE user_trusted_devices ADD INDEX idx_user_device_user_until (user_id, trusted_until)");
 
-        $this->db->exec("CREATE TABLE IF NOT EXISTS auth_login_attempts (
-            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            action VARCHAR(30) NOT NULL,
-            username_or_email VARCHAR(190) DEFAULT NULL,
-            ip_address VARCHAR(45) DEFAULT NULL,
-            success TINYINT(1) NOT NULL DEFAULT 0,
-            reason VARCHAR(190) DEFAULT NULL,
-            user_agent TEXT DEFAULT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            KEY idx_auth_attempt_action_ip_time (action, ip_address, created_at),
-            KEY idx_auth_attempt_user_ip_time (username_or_email, ip_address, created_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
         $this->ensureIndex('auth_login_attempts', 'idx_auth_attempt_action_user_ip_success_time', "ALTER TABLE auth_login_attempts ADD INDEX idx_auth_attempt_action_user_ip_success_time (action, username_or_email, ip_address, success, created_at)");
 
         $this->ensureUserColumn('twofa_enabled', "ALTER TABLE users ADD COLUMN twofa_enabled TINYINT(1) NOT NULL DEFAULT 0 AFTER email");
         $this->ensureUserColumn('password_updated_at', "ALTER TABLE users ADD COLUMN password_updated_at DATETIME DEFAULT NULL AFTER password");
+        $this->ensureUserColumn('otpcode_expires_at', "ALTER TABLE users ADD COLUMN otpcode_expires_at DATETIME DEFAULT NULL AFTER otpcode");
     }
 
     private function ensureIndex(string $table, string $indexName, string $sql): void
@@ -756,6 +817,7 @@ class AuthSecurityService
             $this->db->exec("DELETE FROM auth_login_attempts WHERE created_at < (NOW() - INTERVAL 14 DAY)");
             $this->db->exec("DELETE FROM user_trusted_devices WHERE trusted_until IS NOT NULL AND trusted_until < (NOW() - INTERVAL 30 DAY)");
             $this->db->exec("DELETE FROM auth_sessions WHERE (status <> 'active' AND COALESCE(updated_at, created_at) < (NOW() - INTERVAL 30 DAY)) OR (refresh_expires_at < (NOW() - INTERVAL 30 DAY))");
+            $this->db->exec("UPDATE users SET otpcode = NULL, otpcode_expires_at = NULL WHERE otpcode IS NOT NULL AND otpcode_expires_at IS NOT NULL AND otpcode_expires_at < NOW()");
         } catch (Throwable $e) {
             // non-blocking
         }

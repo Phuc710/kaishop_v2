@@ -29,15 +29,15 @@ class MailService
         // Read from DB setting (chungapi) first, fallback to .env
         $cfg = $this->loadConfig();
 
-        $this->smtpHost = $cfg['smtp_host'];
-        $this->smtpPort = (int) $cfg['smtp_port'];
-        $this->smtpUser = $cfg['smtp_user'];
-        $this->smtpPass = $cfg['smtp_pass'];
-        $this->fromEmail = $cfg['from_email'];
-        $this->fromName = $cfg['from_name'];
-        $this->siteUrl = $cfg['site_url'];
-        $this->siteName = $cfg['site_name'];
-        $this->siteLogo = $cfg['site_logo'];
+        $this->smtpHost = (string) ($cfg['smtp_host'] ?? 'smtp.gmail.com');
+        $this->smtpPort = max(1, (int) ($cfg['smtp_port'] ?? 587));
+        $this->smtpUser = (string) ($cfg['smtp_user'] ?? '');
+        $this->smtpPass = (string) ($cfg['smtp_pass'] ?? '');
+        $this->fromEmail = (string) ($cfg['from_email'] ?? $this->smtpUser);
+        $this->fromName = (string) ($cfg['from_name'] ?? 'KaiShop');
+        $this->siteUrl = (string) ($cfg['site_url'] ?? '');
+        $this->siteName = (string) ($cfg['site_name'] ?? 'KaiShop');
+        $this->siteLogo = (string) ($cfg['site_logo'] ?? '');
     }
 
     // ═══════════════════════════════════════════════════════
@@ -114,7 +114,7 @@ class MailService
      * @param  string $otpCode
      * @param  string $purpose    'login_2fa' | 'forgot_password'
      * @param  int    $ttlSeconds
-     * @return void
+     * @return bool
      */
     public function sendOtp(
         string $email,
@@ -122,9 +122,9 @@ class MailService
         string $otpCode,
         string $purpose = 'login_2fa',
         int $ttlSeconds = 300
-    ): void {
+    ): bool {
         if ($email === '') {
-            return;
+            return false;
         }
 
         $minutes = max(1, (int) ceil($ttlSeconds / 60));
@@ -139,7 +139,7 @@ class MailService
             content: $this->tplOtp($username, $otpCode, $purposeText, $minutes),
         );
 
-        $this->send(
+        return $this->send(
             toEmail: $email,
             toName: $username,
             subject: $subject,
@@ -433,18 +433,42 @@ class MailService
 
         // Override with DB settings (chungapi) if available
         if (function_exists('get_setting')) {
-            $host = get_setting('smtp', $host);
-            $port = get_setting('port_smtp', $port);
-            $user = get_setting('email_auto', $user);
-            $pass = get_setting('pass_mail_auto', $pass);
-            $fromName = get_setting('ten_nguoi_gui', $fromName);
-            $fromMail = $fromMail !== '' ? $fromMail : $user;
+            $dbHost = (string) get_setting('smtp', '');
+            $dbPort = (string) get_setting('port_smtp', '');
+            $dbUser = (string) get_setting('email_auto', '');
+            $dbPass = (string) get_setting('pass_mail_auto', '');
+            $dbFromName = (string) get_setting('ten_nguoi_gui', '');
+
+            if ($dbHost !== '') {
+                $host = $dbHost;
+            }
+            if ($dbPort !== '') {
+                $port = $dbPort;
+            }
+            if ($dbUser !== '') {
+                $user = $dbUser;
+            }
+            if ($dbPass !== '') {
+                $pass = $dbPass;
+            }
+            if ($dbFromName !== '') {
+                $fromName = $dbFromName;
+            }
+            if ($fromMail === '') {
+                $fromMail = $user;
+            }
         }
 
         // Site info
         if (function_exists('get_setting')) {
-            $siteName = get_setting('ten_web', 'KaiShop');
-            $logo = get_setting('logo', '');
+            $dbSiteName = (string) get_setting('ten_web', '');
+            $dbLogo = (string) get_setting('logo', '');
+            if ($dbSiteName !== '') {
+                $siteName = $dbSiteName;
+            }
+            if ($dbLogo !== '') {
+                $logo = $dbLogo;
+            }
         }
 
         if (defined('BASE_URL')) {
@@ -457,15 +481,15 @@ class MailService
         }
 
         return [
-            'smtp_host' => $host,
-            'smtp_port' => $port,
-            'smtp_user' => $user,
-            'smtp_pass' => $pass,
-            'from_email' => $fromMail !== '' ? $fromMail : $user,
-            'from_name' => $fromName,
-            'site_url' => $siteUrl,
-            'site_name' => $siteName,
-            'site_logo' => $logo,
+            'smtp_host' => (string) ($host !== '' ? $host : 'smtp.gmail.com'),
+            'smtp_port' => (string) ($port !== '' ? $port : '587'),
+            'smtp_user' => (string) $user,
+            'smtp_pass' => (string) $pass,
+            'from_email' => (string) ($fromMail !== '' ? $fromMail : $user),
+            'from_name' => (string) $fromName,
+            'site_url' => (string) $siteUrl,
+            'site_name' => (string) $siteName,
+            'site_logo' => (string) $logo,
         ];
     }
 }

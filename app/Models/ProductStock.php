@@ -15,31 +15,7 @@ class ProductStock extends Model
         if (class_exists('CryptoService')) {
             $this->crypto = new CryptoService();
         }
-        $this->ensureTable();
         $this->ensureSchema();
-    }
-
-    /**
-     * Ensure the product_stock table exists
-     */
-    private function ensureTable(): void
-    {
-        $this->db->exec("CREATE TABLE IF NOT EXISTS `product_stock` (
-            `id` int(11) NOT NULL AUTO_INCREMENT,
-            `product_id` int(11) NOT NULL,
-            `content` text NOT NULL,
-            `content_hash` char(64) DEFAULT NULL,
-            `status` enum('available','sold') NOT NULL DEFAULT 'available',
-            `order_id` int(11) DEFAULT NULL,
-            `buyer_id` int(11) DEFAULT NULL,
-            `note` varchar(255) DEFAULT NULL,
-            `sold_at` datetime DEFAULT NULL,
-            `created_at` datetime DEFAULT current_timestamp(),
-            PRIMARY KEY (`id`),
-            KEY `idx_stock_product` (`product_id`),
-            KEY `idx_stock_status` (`status`),
-            UNIQUE KEY `uniq_stock_product_hash` (`product_id`, `content_hash`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
     }
 
     private function ensureSchema(): void
@@ -121,37 +97,54 @@ class ProductStock extends Model
      */
     public function claimOne(int $productId, int $buyerId, ?int $orderId = null): ?array
     {
-        // Atomic: select + update in one step to avoid race condition
-        $this->db->beginTransaction();
+        $startedTx = false;
+        if (!$this->db->inTransaction()) {
+            $this->db->beginTransaction();
+            $startedTx = true;
+        }
+
         try {
-            $stmt = $this->db->prepare(
-                "SELECT id FROM {$this->table} WHERE product_id = ? AND status = 'available' ORDER BY id ASC LIMIT 1 FOR UPDATE"
-            );
-            $stmt->execute([$productId]);
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$row) {
-                $this->db->rollBack();
-                return null;
+            $row = $this->claimOneInCurrentTransaction($productId, $buyerId, $orderId);
+            if ($startedTx && $this->db->inTransaction()) {
+                $this->db->commit();
             }
-
-            $now = date('Y-m-d H:i:s');
-            $update = $this->db->prepare(
-                "UPDATE {$this->table} SET status='sold', buyer_id=?, order_id=?, sold_at=? WHERE id=?"
-            );
-            $update->execute([$buyerId, $orderId, $now, $row['id']]);
-
-            $this->db->commit();
-
-            // Return full row
-            $stmt2 = $this->db->prepare("SELECT * FROM {$this->table} WHERE id=?");
-            $stmt2->execute([$row['id']]);
-            $fullRow = $stmt2->fetch(PDO::FETCH_ASSOC) ?: null;
-            return $fullRow ? $this->decryptRow($fullRow) : null;
+            return $row;
         } catch (\Throwable $e) {
-            $this->db->rollBack();
+            if ($startedTx && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             return null;
         }
+    }
+
+    /**
+     * Claim one available stock item assuming caller already manages transaction.
+     */
+    public function claimOneInCurrentTransaction(int $productId, int $buyerId, ?int $orderId = null): ?array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT id FROM {$this->table} WHERE product_id = ? AND status = 'available' ORDER BY id ASC LIMIT 1 FOR UPDATE"
+        );
+        $stmt->execute([$productId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            return null;
+        }
+
+        $now = date('Y-m-d H:i:s');
+        $update = $this->db->prepare(
+            "UPDATE {$this->table} SET status='sold', buyer_id=?, order_id=?, sold_at=? WHERE id=? AND status='available'"
+        );
+        $update->execute([$buyerId, $orderId, $now, $row['id']]);
+        if ($update->rowCount() < 1) {
+            return null;
+        }
+
+        $stmt2 = $this->db->prepare("SELECT * FROM {$this->table} WHERE id=?");
+        $stmt2->execute([$row['id']]);
+        $fullRow = $stmt2->fetch(PDO::FETCH_ASSOC) ?: null;
+        return $fullRow ? $this->decryptRow($fullRow) : null;
     }
 
     /**
