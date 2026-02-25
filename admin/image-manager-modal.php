@@ -3,81 +3,115 @@
     aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header flex-wrap">
                 <h5 class="modal-title" id="imageManagerModalLabel">Thư viện ảnh</h5>
-                <div class="ml-auto d-flex align-items-center">
+                <div class="ml-auto d-flex align-items-center mt-2 mt-md-0">
                     <button class="btn btn-danger btn-sm mr-2" id="btnDeleteSelected" style="display: none;"
                         onclick="deleteSelectedImages()">
-                        <i class="fas fa-trash"></i> Xóa (<span id="deleteCount">0</span>)
+                        <i class="fas fa-trash"></i> <span class="d-none d-sm-inline">Xóa</span> (<span
+                            id="deleteCount">0</span>)
                     </button>
-                    <input type="text" id="imageSearch" class="form-control form-control-sm mr-2"
-                        placeholder="Tìm kiếm ảnh..." style="width: 200px;">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <input type="text" id="imageSearch" class="form-control form-control-sm" placeholder="Tìm kiếm..."
+                        style="width: 140px; max-width: 100%;">
+                    <button type="button" class="close ml-2" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
             </div>
-            <div class="modal-body">
-                <div class="row mb-3">
-                    <div class="col-md-9">
-                        <div class="custom-file">
-                            <!-- multiple attribute for multi-select -->
+            <div class="modal-body p-2 p-md-3">
+                <div class="row no-gutters mb-3">
+                    <div class="col-8 col-md-9 pr-1">
+                        <div class="custom-file custom-file-sm">
                             <input type="file" class="custom-file-input" id="uploadImageInput" accept="image/*"
                                 multiple>
-                            <label class="custom-file-label" for="uploadImageInput">Chọn ảnh...</label>
+                            <label class="custom-file-label text-truncate" for="uploadImageInput">Chọn ảnh...</label>
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <button class="btn btn-primary btn-block" type="button" id="btnUploadAction">
-                            <i class="fas fa-upload"></i> Upload
+                    <div class="col-4 col-md-3 pl-1">
+                        <button class="btn btn-primary btn-block btn-sm" type="button" id="btnUploadAction"
+                            style="background-color: #6f42c1; border-color: #6f42c1;">
+                            <i class="fas fa-upload"></i> <span class="d-none d-sm-inline">Upload</span>
                         </button>
                     </div>
                 </div>
-                <div class="row" id="imageList" style="max-height: 500px; overflow-y: auto;">
+                <div class="row no-gutters" id="imageList" style="max-height: 60vh; overflow-y: auto;">
                     <!-- Images will be loaded here -->
                 </div>
             </div>
-            <div class="modal-footer">
-                <small class="text-muted mr-auto">Tip: Click để chọn nhiều ảnh. Double-click để chọn ảnh cho sản
-                    phẩm.</small>
-                <button type="button" class="btn btn-primary" id="btnChooseImage">Chọn ảnh</button>
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+            <div class="modal-footer p-2">
+                <small class="text-muted mr-auto d-none d-md-block">Tip: Click để chọn nhiều. Double-click để chọn
+                    ngay.</small>
+                <div class="d-flex w-100 justify-content-end">
+                    <button type="button" class="btn btn-primary btn-sm mr-2" id="btnChooseImage"
+                        style="background-color: #6f42c1; border-color: #6f42c1;">Chọn ảnh</button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Đóng</button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <style>
+    .custom-file-sm,
+    .custom-file-sm .custom-file-label,
+    .custom-file-sm .custom-file-input {
+        height: 31px;
+    }
+
+    .custom-file-sm .custom-file-label {
+        line-height: 20px;
+        font-size: 13px;
+    }
+
+    .custom-file-sm .custom-file-label::after {
+        padding: 0.25rem 0.5rem;
+        height: 29px;
+        line-height: 20px;
+    }
+
     .image-item {
         position: relative;
         cursor: pointer;
-        border: 2px solid transparent;
+        border: 2px solid #f1f5f9;
+        border-radius: 8px;
         transition: all 0.2s;
+        overflow: hidden;
     }
 
     .image-item.selected {
-        border-color: #007bff;
-        background-color: #e8f0fe;
-        transform: scale(0.95);
+        border-color: #6f42c1;
+        background-color: #f3f0ff;
+        transform: scale(0.96);
     }
 
     .image-item .check-icon {
         display: none;
         position: absolute;
-        top: 5px;
-        right: 5px;
-        background: #007bff;
+        top: 4px;
+        right: 4px;
+        background: #6f42c1;
         color: white;
         border-radius: 50%;
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
         text-align: center;
-        line-height: 20px;
-        font-size: 12px;
+        line-height: 18px;
+        font-size: 10px;
+        z-index: 10;
     }
 
     .image-item.selected .check-icon {
         display: block;
+    }
+
+    @media (max-width: 575.98px) {
+        .modal-xl {
+            margin: 0.5rem;
+        }
+
+        .image-item .card-img-top {
+            height: 80px !important;
+        }
     }
 </style>
 
@@ -99,23 +133,35 @@
             type: 'POST',
             data: { action: 'list' },
             dataType: 'json',
-            cache: false, // Prevent caching
+            cache: false,
             success: function (response) {
-                if (response.data) {
+                if (response && Array.isArray(response.data)) {
                     allImages = response.data;
-                    // Re-apply search if exists
                     var searchText = $('#imageSearch').val().toLowerCase();
                     if (searchText.length >= 3) {
                         var filteredImages = allImages.filter(function (img) {
-                            return img.name.toLowerCase().indexOf(searchText) > -1;
+                            return String(img.name || '').toLowerCase().indexOf(searchText) > -1;
                         });
                         renderImages(filteredImages);
                     } else {
                         renderImages(allImages);
                     }
                 } else {
-                    $('#imageList').html('<div class="col-12 text-center">Chưa có ảnh nào</div>');
+                    allImages = [];
+                    $('#imageList').html('<div class="col-12 text-center">Chua co anh nao</div>');
                 }
+            },
+            error: function (xhr) {
+                var msg = 'Khong tai duoc thu vien anh.';
+                if (xhr && xhr.responseJSON && (xhr.responseJSON.error || xhr.responseJSON.message)) {
+                    msg = xhr.responseJSON.error || xhr.responseJSON.message;
+                } else if (xhr && xhr.status === 403) {
+                    msg = 'Forbidden - ban khong co quyen truy cap.';
+                } else if (xhr && xhr.status === 419) {
+                    msg = 'CSRF token het han. Vui long tai lai trang.';
+                }
+                allImages = [];
+                $('#imageList').html('<div class="col-12 text-center text-danger">' + msg + '</div>');
             }
         });
     }
@@ -127,7 +173,7 @@
                 var isSelected = selectedImages.includes(img.url);
                 var selectedClass = isSelected ? 'selected' : '';
 
-                html += '<div class="col-md-2 col-4 mb-3">';
+                html += '<div class="col-md-2 col-6 mb-2 p-1">';
                 html += '<div class="card h-100 image-item ' + selectedClass + '" onclick="toggleSelection(\'' + img.url + '\')" ondblclick="selectImage(\'' + img.url + '\')">';
                 html += '<div class="check-icon"><i class="fas fa-check"></i></div>';
                 html += '<img src="' + img.url + '" class="card-img-top" loading="lazy" style="height: 100px; object-fit: cover;">';
@@ -172,7 +218,7 @@
     }
 
     function selectImage(url) {
-        $('#image').val(url).trigger('change');
+        $(imageManagerTargetInput).val(url).trigger('change');
         $('#imageManagerModal').modal('hide');
     }
 

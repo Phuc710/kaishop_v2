@@ -1,6 +1,6 @@
 <?php
 /**
- * View: Danh sách Mã giảm giá
+ * View: Danh sách mã giảm giá
  */
 $pageTitle = 'Mã giảm giá';
 $breadcrumbs = [
@@ -9,10 +9,16 @@ $breadcrumbs = [
 ];
 require_once __DIR__ . '/../layout/head.php';
 require_once __DIR__ . '/../layout/breadcrumb.php';
+
+$summary = $summary ?? [
+    'total_codes' => 0,
+    'total_quantity' => 0,
+    'total_used' => 0,
+    'total_remaining' => 0,
+];
 ?>
 
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
-<!-- Daterange picker -->
 <link rel="stylesheet"
     href="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/plugins/daterangepicker/daterangepicker.css">
 
@@ -23,37 +29,103 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                 <h3 class="card-title text-uppercase font-weight-bold">QUẢN LÝ MÃ GIẢM GIÁ</h3>
             </div>
 
-            <!-- Filter Bar -->
+            <div class="card-body pb-0">
+                <div class="row">
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="info-box mb-3 border-0 shadow-sm" style="border-radius: 12px;">
+                            <span class="info-box-icon bg-primary elevation-1"
+                                style="border-radius: 12px; height: 60px; width: 60px; margin: auto 15px;">
+                                <i class="fas fa-tags"></i>
+                            </span>
+                            <div class="info-box-content">
+                                <span class="info-box-text font-weight-bold text-muted small text-uppercase">Tổng
+                                    mã</span>
+                                <span
+                                    class="info-box-number h3 mb-0 font-weight-bold"><?= (int) ($summary['total_codes'] ?? 0) ?></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="info-box mb-3 border-0 shadow-sm" style="border-radius: 12px;">
+                            <span class="info-box-icon bg-info elevation-1"
+                                style="border-radius: 12px; height: 60px; width: 60px; margin: auto 15px;">
+                                <i class="fas fa-layer-group"></i>
+                            </span>
+                            <div class="info-box-content">
+                                <span class="info-box-text font-weight-bold text-muted small text-uppercase">Tổng số
+                                    lượng</span>
+                                <span
+                                    class="info-box-number h3 mb-0 font-weight-bold"><?= (int) ($summary['total_quantity'] ?? 0) ?></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="info-box mb-3 border-0 shadow-sm" style="border-radius: 12px;">
+                            <span class="info-box-icon bg-danger elevation-1"
+                                style="border-radius: 12px; height: 60px; width: 60px; margin: auto 15px;">
+                                <i class="fas fa-check-circle"></i>
+                            </span>
+                            <div class="info-box-content">
+                                <span class="info-box-text font-weight-bold text-muted small text-uppercase">Tổng số
+                                    lượng đã sử dụng</span>
+                                <span
+                                    class="info-box-number h3 mb-0 font-weight-bold"><?= (int) ($summary['total_used'] ?? 0) ?></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="info-box mb-3 border-0 shadow-sm" style="border-radius: 12px;">
+                            <span class="info-box-icon bg-success elevation-1"
+                                style="border-radius: 12px; height: 60px; width: 60px; margin: auto 15px;">
+                                <i class="fas fa-hourglass-half"></i>
+                            </span>
+                            <div class="info-box-content">
+                                <span class="info-box-text font-weight-bold text-muted small text-uppercase">Còn lại
+                                    chưa sử dụng</span>
+                                <span
+                                    class="info-box-number h3 mb-0 font-weight-bold"><?= (int) ($summary['total_remaining'] ?? 0) ?></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="dt-filters">
-                <!-- Search Line -->
                 <div class="row g-2 justify-content-center align-items-center mb-3">
                     <div class="col-md-3 mb-2">
-                        <input id="f-code" class="form-control form-control-sm" placeholder="Tìm mã giảm giá...">
+                        <div class="input-group input-group-sm shadow-xs border-radius-sm">
+                            <input id="f-code" class="form-control border-left-0" placeholder="Tìm mã giảm giá...">
+                        </div>
                     </div>
                     <div class="col-md-3 mb-2">
-                        <input id="f-product" class="form-control form-control-sm"
-                            placeholder="Tìm sản phẩm áp dụng...">
+                        <div class="input-group input-group-sm shadow-xs border-radius-sm">
+                            <input id="f-product" class="form-control border-left-0" placeholder="Tìm sản phẩm...">
+                        </div>
                     </div>
                     <div class="col-md-2 mb-2">
-                        <input id="f-date" class="form-control form-control-sm" placeholder="Thời gian...">
+                        <div class="input-group input-group-sm shadow-xs border-radius-sm">
+                            <input id="f-date" class="form-control border-left-0" placeholder="Thời gian...">
+                        </div>
                     </div>
                     <div class="col-md-2 mb-2 text-center">
-                        <button type="button" id="btn-clear" class="btn btn-danger btn-sm shadow-sm w-100">
-                            <i class="fas fa-trash"></i> Xóa Lọc
+                        <button type="button" id="btn-clear"
+                            class="btn btn-outline-danger btn-sm shadow-sm w-100 font-weight-bold"
+                            style="border-radius: 8px; height: 38px;">
+                            <i class="fas fa-trash-alt mr-1"></i> XÓA LỌC
                         </button>
                     </div>
                     <div class="col-md-2 mb-2 text-right">
                         <a href="<?= url('admin/finance/giftcodes/add') ?>"
-                            class="btn btn-primary btn-sm shadow-sm w-100">
-                            <i class="fas fa-plus mr-1"></i> Tạo mã mới
+                            class="btn btn-primary btn-sm shadow-sm w-100 font-weight-bold"
+                            style="border-radius: 8px; height: 38px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-plus-circle mr-1"></i> TẠO MÃ MỚI
                         </a>
                     </div>
                 </div>
 
-                <!-- Dropdown Line -->
                 <div class="top-filter mb-2">
                     <div class="filter-show">
-                        <span class="filter-label">SHOW :</span>
+                        <span class="filter-label">HIỂN THỊ:</span>
                         <select id="f-length" class="filter-select flex-grow-1">
                             <option value="10">10</option>
                             <option value="20">20</option>
@@ -63,12 +135,12 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                     </div>
 
                     <div class="filter-short justify-content-end">
-                        <span class="filter-label">SHORT BY DATE:</span>
+                        <span class="filter-label">LỌC THEO NGÀY:</span>
                         <select id="f-sort" class="filter-select flex-grow-1">
                             <option value="all">Tất cả</option>
-                            <option value="7">7 days</option>
-                            <option value="15">15 days</option>
-                            <option value="30">30 days</option>
+                            <option value="7">7 ngày</option>
+                            <option value="15">15 ngày</option>
+                            <option value="30">30 ngày</option>
                         </select>
                     </div>
                 </div>
@@ -97,14 +169,15 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                             <?= htmlspecialchars($row['giftcode']) ?><br>
                                             <small
                                                 class="font-weight-bold <?= $row['remaining'] > 0 && $row['status'] == 'ON' ? 'text-success' : 'text-danger' ?>">
-                                                (Còn <?= $row['remaining'] ?> lượt sử dụng)
+                                                (Còn <?= (int) $row['remaining'] ?> lượt sử dụng)
                                             </small>
                                         </td>
                                         <td class="text-center align-middle">
                                             <?php if ($row['type'] == 'all' || empty($row['product_names'])): ?>
                                                 <span class="badge badge-info"
-                                                    style="background:#e0f2fe; color:#0369a1; border:0; padding:5px 8px;">Áp dụng
-                                                    cho toàn bộ sản phẩm</span>
+                                                    style="background:#e0f2fe; color:#0369a1; border:0; padding:5px 8px;">
+                                                    Áp dụng cho toàn bộ sản phẩm
+                                                </span>
                                             <?php else: ?>
                                                 <?php foreach ($row['product_names'] as $p): ?>
                                                     <span class="badge badge-secondary mb-1"
@@ -112,13 +185,22 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                                 <?php endforeach; ?>
                                             <?php endif; ?>
                                         </td>
-                                        <td class="text-center align-middle"><span
-                                                class="badge badge-primary px-2 py-1"><?= $row['soluong'] ?></span></td>
-                                        <td class="text-center align-middle"><span
-                                                class="badge badge-danger px-2 py-1"><?= $row['dadung'] ?></span></td>
-                                        <td class="text-center align-middle"><span class="badge badge-success px-2 py-1"
-                                                style="background-color: #8b5cf6;"><?= $row['giamgia'] ?>%</span></td>
                                         <td class="text-center align-middle">
+                                            <span class="badge badge-primary px-2 py-1"><?= (int) $row['soluong'] ?></span>
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <span class="badge badge-danger px-2 py-1"><?= (int) $row['dadung'] ?></span>
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <span class="badge badge-success px-2 py-1"
+                                                style="background-color: #8b5cf6;"><?= (int) $row['giamgia'] ?>%</span>
+                                        </td>
+                                        <?php
+                                        $rawTime = !empty($row['time']) ? date('Y-m-d H:i:s', strtotime($row['time'])) : '';
+                                        $rawTimeTs = !empty($row['time']) ? (int) strtotime($row['time']) : 0;
+                                        ?>
+                                        <td class="text-center align-middle" data-order="<?= $rawTimeTs ?>"
+                                            data-raw-datetime="<?= htmlspecialchars($rawTime, ENT_QUOTES, 'UTF-8') ?>">
                                             <?= FormatHelper::eventTime($row['time'], $row['time']) ?>
                                         </td>
                                         <td class="text-center align-middle">
@@ -133,7 +215,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                                     <i class="fas fa-edit"></i>
                                                 </a>
                                                 <button type="button" class="btn btn-danger btn-sm" title="Xóa"
-                                                    onclick="deleteGiftcode(<?= $row['id'] ?>)">
+                                                    onclick="deleteGiftcode(<?= (int) $row['id'] ?>)">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </div>
@@ -157,8 +239,8 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
 <script>
     let dt;
 
-    document.addEventListener("DOMContentLoaded", function () {
-        let checkExist = setInterval(function () {
+    document.addEventListener('DOMContentLoaded', function () {
+        const checkExist = setInterval(function () {
             if (window.jQuery && $.fn.DataTable) {
                 clearInterval(checkExist);
                 initGiftcodeTable();
@@ -171,7 +253,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             dom: 't<"row align-items-center mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7 d-flex justify-content-md-end justify-content-center"p>>',
             responsive: true,
             autoWidth: false,
-            order: [[5, "desc"]], // Sort by time desc
+            order: [[5, 'desc']],
             pageLength: 10,
             columnDefs: [
                 { orderable: false, targets: [1, 6] }
@@ -183,16 +265,15 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                 sInfoEmpty: 'Xem 0-0 / 0 mục',
                 sInfoFiltered: '(lọc từ _MAX_)',
                 sSearch: 'Tìm nhanh:',
-                oPaginate: { sPrevious: '‹', sNext: '›' }
+                oPaginate: { sPrevious: '&lsaquo;', sNext: '&rsaquo;' }
             }
         });
 
-        // Date Picker initialization (Flatpickr)
         if (typeof flatpickr !== 'undefined') {
             flatpickr('#f-date', {
                 mode: 'range',
                 dateFormat: 'Y-m-d',
-                onChange: function (selectedDates, dateStr, instance) {
+                onChange: function (selectedDates) {
                     if (selectedDates.length === 2) {
                         dt.draw();
                     }
@@ -200,7 +281,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                 onReady: function (selectedDates, dateStr, instance) {
                     const clearBtn = document.createElement('div');
                     clearBtn.className = 'flatpickr-clear-btn mt-2 text-center text-danger';
-                    clearBtn.innerHTML = '<span style="cursor:pointer;font-weight:bold;">Clear Selection</span>';
+                    clearBtn.innerHTML = '<span style="cursor:pointer;font-weight:bold;">Xóa lựa chọn</span>';
                     clearBtn.onclick = function () {
                         instance.clear();
                         dt.draw();
@@ -210,19 +291,16 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             });
         }
 
-        // Dropdown Page Length
         $('#f-length').change(function () {
             dt.page.len($(this).val()).draw();
         });
 
-        // Custom Filters Action
         $('#f-code, #f-product').on('input keyup', function () {
             dt.column(0).search($('#f-code').val().trim());
             dt.column(1).search($('#f-product').val().trim());
             dt.draw();
         });
 
-        // Clear Filters
         $('#btn-clear').click(function () {
             $('#f-code, #f-product, #f-date').val('');
             $('#f-length').val('10');
@@ -231,46 +309,50 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             dt.page.len(10).order([5, 'desc']).draw();
         });
 
-        // Dropdown Sort/Date Logic Ext
         $('#f-sort').change(function () {
             dt.draw();
         });
 
-        // Date Filter Logic Ext
-        $.fn.dataTable.ext.search.push(
-            function (settings, data, dataIndex) {
-                if (settings.nTable.id !== 'giftTable') return true;
+        function getGiftRowTimestamp(settings, dataIndex) {
+            const rowMeta = settings.aoData && settings.aoData[dataIndex] ? settings.aoData[dataIndex] : null;
+            const rowNode = rowMeta ? rowMeta.nTr : null;
+            if (!rowNode || !rowNode.cells || !rowNode.cells[5]) return NaN;
 
-                // Sort theo dropdown (7, 15, 30 ngày)
-                var sortVal = $('#f-sort').val();
-                if (sortVal !== 'all') {
-                    var days = parseInt(sortVal);
-                    if (!isNaN(days)) {
-                        var rowTime = new Date(data[5]).getTime();
-                        var pastTime = new Date().getTime() - (days * 24 * 60 * 60 * 1000);
-                        if (rowTime < pastTime) return false;
-                    }
+            const rawTime = rowNode.cells[5].getAttribute('data-raw-datetime');
+            if (!rawTime) return NaN;
+
+            return new Date(rawTime.replace(' ', 'T')).getTime();
+        }
+
+        $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+            if (settings.nTable.id !== 'giftTable') return true;
+
+            const sortVal = $('#f-sort').val();
+            if (sortVal !== 'all') {
+                const days = parseInt(sortVal, 10);
+                if (!isNaN(days)) {
+                    const rowTime = getGiftRowTimestamp(settings, dataIndex);
+                    const pastTime = Date.now() - (days * 24 * 60 * 60 * 1000);
+                    if (!isNaN(rowTime) && rowTime < pastTime) return false;
                 }
-
-                // Sort theo flatpickr
-                var dr = $('#f-date').val();
-                if (!dr) return true;
-
-                var separator = dr.includes(' to ') ? ' to ' : ' - ';
-                var range = dr.split(separator);
-                if (range.length !== 2) return true;
-
-                var min = new Date(range[0] + ' 00:00:00').getTime();
-                var max = new Date(range[1] + ' 23:59:59').getTime();
-                var timeCol = new Date(data[5]).getTime();
-
-                if (isNaN(min) || isNaN(max) || isNaN(timeCol)) return true;
-                return timeCol >= min && timeCol <= max;
             }
-        );
+
+            const dr = $('#f-date').val();
+            if (!dr) return true;
+
+            const separator = dr.includes(' to ') ? ' to ' : ' - ';
+            const range = dr.split(separator);
+            if (range.length !== 2) return true;
+
+            const min = new Date(range[0] + ' 00:00:00').getTime();
+            const max = new Date(range[1] + ' 23:59:59').getTime();
+            const timeCol = getGiftRowTimestamp(settings, dataIndex);
+
+            if (isNaN(min) || isNaN(max) || isNaN(timeCol)) return true;
+            return timeCol >= min && timeCol <= max;
+        });
     }
 
-    /* ── AJAX Delete bằng SweetAlert ── */
     function deleteGiftcode(id) {
         Swal.fire({
             title: 'Xác nhận xóa mã?',

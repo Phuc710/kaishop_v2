@@ -32,6 +32,7 @@ if (empty($_SESSION['admin'])) {
 <link rel="stylesheet"
     href="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/plugins/daterangepicker/daterangepicker.css"
     crossorigin="anonymous">
+<link rel="stylesheet" href="<?= asset('assets/css/flatpickr.css') ?>">
 <link rel="stylesheet"
     href="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/plugins/summernote/summernote-bs4.min.css"
     crossorigin="anonymous">

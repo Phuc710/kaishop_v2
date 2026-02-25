@@ -52,9 +52,21 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             <!-- IMPORT PANEL -->
             <div class="col-md-4">
                 <div class="card custom-card">
-                    <div class="card-header border-0">
+                    <div class="card-header border-0 d-flex justify-content-between align-items-center">
                         <h4 class="card-title font-weight-bold mb-0"><i class="fas fa-upload mr-1"></i> NHẬP HÀNG MỚI
                         </h4>
+                        <div class="d-flex gap-1">
+                            <button type="button" class="btn btn-xs btn-outline-info"
+                                onclick="$('#addSingleModal').modal('show')">
+                                <i class="fas fa-plus mr-1"></i>Thêm 1
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline-primary"
+                                onclick="$('#stockFile').click()">
+                                <i class="fas fa-file-import mr-1"></i>Chọn file .txt
+                            </button>
+                        </div>
+                        <input type="file" id="stockFile" style="display:none;" accept=".txt"
+                            onchange="handleStockFile(this)">
                     </div>
                     <div class="card-body">
                         <div class="form-group">
@@ -79,7 +91,16 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                     <div class="card-header border-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <h4 class="card-title font-weight-bold mb-0"><i class="fas fa-list mr-1"></i> DANH SÁCH TRONG
                             KHO</h4>
-                        <div class="d-flex gap-2">
+                        <div class="d-flex gap-2 align-items-center">
+                            <div class="input-group input-group-sm" style="width: 200px;">
+                                <input type="text" id="searchTerm" class="form-control" placeholder="Tìm nội dung..."
+                                    value="<?= htmlspecialchars($search ?? '') ?>">
+                                <div class="input-group-append">
+                                    <button class="btn btn-primary" type="button" id="btnSearch">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
                             <select id="filterStatus" class="form-control form-control-sm" style="width:140px;">
                                 <option value="" <?= $statusFilter === '' ? 'selected' : '' ?>>Tất cả trạng thái</option>
                                 <option value="available" <?= $statusFilter === 'available' ? 'selected' : '' ?>>Còn lại
@@ -87,6 +108,10 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                 <option value="sold" <?= $statusFilter === 'sold' ? 'selected' : '' ?>>Đã bán (Sold)
                                 </option>
                             </select>
+                            <button id="btnClean" class="btn btn-sm btn-outline-danger"
+                                title="Xóa toàn bộ hàng chưa bán">
+                                <i class="fas fa-eraser mr-1"></i>Dọn kho
+                            </button>
                             <a href="<?= url('admin/products/edit/' . $product['id']) ?>"
                                 class="btn btn-sm btn-outline-secondary">
                                 <i class="fas fa-edit mr-1"></i>Quay lại Sửa SP
@@ -169,6 +194,29 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
     </div>
 </section>
 
+<!-- MODAL ADD SINGLE STOCK -->
+<div class="modal fade" id="addSingleModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content border-0">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title font-weight-bold">THÊM 1 TÀI KHOẢN MỚI</h5>
+                <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group mb-0">
+                    <label class="font-weight-bold">Nội dung tài khoản</label>
+                    <input type="text" id="singleContent" class="form-control" placeholder="Ví dụ: user|pass|extra...">
+                    <small class="text-muted">Nhập nội dung 1 dòng duy nhất.</small>
+                </div>
+            </div>
+            <div class="modal-footer pb-3 border-0">
+                <button type="button" class="btn btn-light border" data-dismiss="modal">Hủy</button>
+                <button type="button" id="btnSaveSingle" class="btn btn-info font-weight-bold px-4">THÊM NGAY</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- MODAL EDIT STOCK -->
 <div class="modal fade" id="editStockModal" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
@@ -179,14 +227,15 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             </div>
             <div class="modal-body">
                 <input type="hidden" id="editId">
-                <div class="form-group">
+                <div class="form-group mb-0">
                     <label class="font-weight-bold">Nội dung (1 dòng)</label>
                     <input type="text" id="editContent" class="form-control" placeholder="user:pass...">
                 </div>
             </div>
             <div class="modal-footer pb-3 border-0">
                 <button type="button" class="btn btn-light border" data-dismiss="modal">Hủy</button>
-                <button type="button" id="btnSaveEdit" class="btn btn-warning font-weight-bold">LƯU THAY ĐỔI</button>
+                <button type="button" id="btnSaveEdit" class="btn btn-warning font-weight-bold px-4">LƯU THAY
+                    ĐỔI</button>
             </div>
         </div>
     </div>
@@ -200,6 +249,20 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
         const importUrl = '<?= url("admin/products/stock/" . $product['id'] . "/import") ?>';
         const deleteUrl = '<?= url("admin/products/stock/delete") ?>';
         const updateUrl = '<?= url("admin/products/stock/update") ?>';
+        const cleanUrl = '<?= url("admin/products/stock/" . $product['id'] . "/clean") ?>';
+        const baseUrl = '<?= url("admin/products/stock/" . $product['id']) ?>';
+
+        window.handleStockFile = function (input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                $('#importContent').val(e.target.result);
+                Toast.fire({ icon: 'success', title: 'Đã tải nội dung từ file' });
+            };
+            reader.readAsText(file);
+            input.value = '';
+        };
 
         // Import
         $('#btnImport').on('click', function () {
@@ -270,10 +333,65 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
         });
 
         // Filter
-        $('#filterStatus').on('change', function () {
-            var val = $(this).val();
-            var base = '<?= url("admin/products/stock/" . $product['id']) ?>';
-            window.location.href = val ? base + '?status_filter=' + val : base;
+        $('#filterStatus').on('change', applyFilters);
+
+        // Search
+        $('#btnSearch').on('click', applyFilters);
+        $('#searchTerm').on('keypress', function (e) { if (e.which == 13) applyFilters(); });
+
+        function applyFilters() {
+            const status = $('#filterStatus').val();
+            const search = $('#searchTerm').val().trim();
+            let url = baseUrl + '?';
+            if (status) url += 'status_filter=' + status + '&';
+            if (search) url += 'search=' + encodeURIComponent(search);
+            window.location.href = url;
+        }
+
+        // Clean
+        $('#btnClean').on('click', function () {
+            Swal.fire({
+                title: 'Dọn sạch kho?',
+                text: 'Toàn bộ nội dung CHƯA BÁN sẽ bị xóa vĩnh viễn!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Đồng ý, Xóa hết',
+                cancelButtonText: 'Hủy'
+            }).then(r => {
+                if (!r.isConfirmed) return;
+                const btn = $(this);
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>...');
+                $.post(cleanUrl, {}, function (res) {
+                    if (res.success) {
+                        Toast.fire({ icon: 'success', title: res.message });
+                        setTimeout(() => location.reload(), 1200);
+                    } else {
+                        btn.prop('disabled', false).html('<i class="fas fa-eraser mr-1"></i>Dọn kho');
+                        Toast.fire({ icon: 'error', title: res.message });
+                    }
+                }, 'json');
+            });
+        });
+
+        // Add Single
+        $('#btnSaveSingle').on('click', function () {
+            const content = $('#singleContent').val().trim();
+            if (!content) return;
+
+            const btn = $(this);
+            btn.prop('disabled', true).text('Đang thêm...');
+            $.post(importUrl, { content: content }, function (res) {
+                btn.prop('disabled', false).text('THÊM NGAY');
+                if (res.success) {
+                    Toast.fire({ icon: 'success', title: 'Đã thêm thành công' });
+                    $('#addSingleModal').modal('hide');
+                    $('#singleContent').val('');
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    Toast.fire({ icon: 'error', title: res.message });
+                }
+            }, 'json');
         });
     });
 </script>

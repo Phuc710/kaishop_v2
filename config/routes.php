@@ -13,6 +13,8 @@ return [
     // ========== POLICY & TERMS ROUTES ==========
     ['GET', '/chinh-sach', 'PolicyController@index'],
     ['GET', '/dieu-khoan', 'TermsController@index'],
+    ['GET', '/lien-he', 'ContactController@index'],
+    ['GET', '/lienhe', 'ContactController@index'],
     ['GET', '/bao-tri', 'MaintenanceController@index'],
     ['GET', '/api/system/maintenance-status', 'Api\\MaintenanceStatusController@show'],
 
@@ -21,6 +23,7 @@ return [
     ['POST', '/login', 'AuthController@login'],
     ['GET', '/login-otp', 'AuthController@showLoginOtp'],
     ['POST', '/auth/2fa/verify-login', 'AuthController@verifyLoginOtp'],
+    ['POST', '/auth/2fa/resend-login', 'AuthController@resendLoginOtp'],
     ['GET', '/register', 'AuthController@showRegister'],
     ['POST', '/register', 'AuthController@register'],
     ['POST', '/auth/google', 'AuthController@googleLogin'],
@@ -34,17 +37,33 @@ return [
 
     // ========== PRODUCT ROUTES ==========
     ['GET', '/product/{id}', 'ProductController@show'],
+    ['POST', '/product/{id}/quote', 'ProductController@quote'],
+    ['POST', '/product/{id}/purchase', 'ProductController@purchase'],
 
     // ========== PROFILE ROUTES ==========
     ['GET', '/profile', 'ProfileController@index'],
     ['POST', '/profile/update', 'ProfileController@update'],
     ['GET', '/password', 'PasswordController@index'],
     ['POST', '/password/update', 'PasswordController@update'],
+    ['POST', '/password/security', 'PasswordController@updateSecurity'],
+    // Balance history (preferred canonical routes)
+    ['GET', '/history-balance', 'HistoryController@index'],
+    ['POST', '/api/history-balance', 'HistoryController@data'],
+    // Legacy aliases (backward compatibility)
     ['GET', '/history-code', 'HistoryController@index'],
     ['POST', '/api/history-code', 'HistoryController@data'],
+    ['GET', '/history-orders', 'OrderHistoryController@index'],
+    ['POST', '/api/history-orders', 'OrderHistoryController@data'],
+    ['GET', '/api/history-orders/detail/{id}', 'OrderHistoryController@detail'],
+    ['GET', '/history-orders/download/{id}', 'OrderHistoryController@download'],
+    ['POST', '/api/history-orders/delete', 'OrderHistoryController@delete'],
 
     // ========== ADMIN ROUTES ==========
     ['GET', '/admin', 'Admin\\DashboardController@index'],
+
+    // Admin Settings
+    ['GET', '/admin/setting', 'Admin\\SettingController@index'],
+    ['POST', '/admin/setting/update', 'Admin\\SettingController@update'],
 
     // Admin Users
     ['GET', '/admin/users', 'Admin\\UserController@index'],
@@ -66,10 +85,13 @@ return [
     ['POST', '/admin/categories/delete', 'Admin\\CategoryController@delete'],
 
     // Admin Journals
-    ['GET', '/admin/logs/activities', 'Admin\\JournalController@activities'],
+    ['GET', '/admin/logs/buying', 'Admin\\JournalController@buying'],
+    ['GET', '/admin/logs/buying/detail/{id}', 'Admin\\JournalController@purchaseDetail'],
+    ['POST', '/admin/logs/buying/fulfill', 'Admin\\JournalController@fulfillPurchase'],
+    ['POST', '/admin/logs/buying/cancel', 'Admin\\JournalController@cancelPurchase'],
     ['GET', '/admin/logs/balance-changes', 'Admin\\JournalController@balanceChanges'],
     ['GET', '/admin/logs/system', 'Admin\\JournalController@systemLogs'],
-    ['GET', '/admin/deposits', 'Admin\\JournalController@deposits'],
+    ['GET', '/admin/logs/deposits', 'Admin\\JournalController@deposits'],
 
     // Admin Finance - Giftcodes
     ['GET', '/admin/finance/giftcodes', 'Admin\\FinanceController@giftcodes'],
@@ -95,11 +117,16 @@ return [
     ['POST', '/admin/products/stock/delete', 'Admin\\AdminProductController@stockDelete'],
     ['POST', '/admin/products/stock/update', 'Admin\\AdminProductController@stockUpdate'],
     // ========== DEPOSIT (User) ==========
-    ['GET', '/deposit', 'DepositController@index'],
+    ['GET', '/deposit-bank', 'DepositController@index'],
+    ['GET', '/deposit', 'DepositController@legacyRedirect'],
     ['POST', '/deposit/create', 'DepositController@create'],
     ['GET', '/deposit/status/{code}', 'DepositController@status'],
     ['POST', '/deposit/cancel', 'DepositController@cancel'],
 
     // ========== SEPAY WEBHOOK (API) ==========
     ['POST', '/api/sepay/webhook', 'Api\\SepayWebhookController@handle'],
+
+    // ========== CANONICAL PRODUCT SLUG ROUTE ==========
+    // Keep this near the end to avoid catching admin/api routes like /admin/users
+    ['GET', '/{categorySlug}/{productSlug}', 'ProductController@showBySlug'],
 ];

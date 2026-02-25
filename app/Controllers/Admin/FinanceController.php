@@ -46,6 +46,12 @@ class FinanceController extends Controller
         global $chungapi;
 
         $giftcodes = $this->giftCodeModel->getAll();
+        $summary = [
+            'total_codes' => 0,
+            'total_quantity' => 0,
+            'total_used' => 0,
+            'total_remaining' => 0,
+        ];
 
         // Gắn tên sản phẩm cho mỗi mã
         foreach ($giftcodes as &$gc) {
@@ -56,10 +62,15 @@ class FinanceController extends Controller
             }
             // Tính lượt còn lại
             $gc['remaining'] = max(0, (int) $gc['soluong'] - (int) $gc['dadung']);
+            $summary['total_codes']++;
+            $summary['total_quantity'] += (int) ($gc['soluong'] ?? 0);
+            $summary['total_used'] += (int) ($gc['dadung'] ?? 0);
+            $summary['total_remaining'] += (int) $gc['remaining'];
         }
 
         $this->view('admin/finance/giftcodes', [
             'giftcodes' => $giftcodes,
+            'summary' => $summary,
             'chungapi' => $chungapi,
         ]);
     }

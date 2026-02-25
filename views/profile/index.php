@@ -2,14 +2,9 @@
 <html lang="vi">
 
 <head>
-    <?php
-    $GLOBALS['pageAssets'] = array_merge($GLOBALS['pageAssets'] ?? [], [
-        'interactive_bundle' => false,
-    ]);
-    require __DIR__ . '/../../hethong/head2.php';
-    ?>
-    <title>Thông Tin Tài Khoản |
-        <?= htmlspecialchars((string) ($chungapi['ten_web'] ?? 'KaiShop'), ENT_QUOTES, 'UTF-8'); ?></title>
+    <?php require __DIR__ . '/../../hethong/head2.php'; ?>
+    <title>Thông tin tài khoản | <?= htmlspecialchars((string) ($chungapi['ten_web'] ?? 'KaiShop'), ENT_QUOTES, 'UTF-8'); ?></title>
+    <meta name="robots" content="noindex, nofollow">
 </head>
 
 <body>
@@ -27,7 +22,7 @@
                     <div class="col-lg-9 col-md-8">
                         <div class="profile-card" id="profile-info-card">
                             <div class="profile-card-header">
-                                <h5 class="text-dark">Ví của tôi</h5>
+                                <h1 class="h5 text-dark mb-0">Ví của tôi</h1>
                             </div>
                             <div class="profile-card-body pt-0">
                                 <div class="row g-3">
@@ -42,16 +37,16 @@
                                     <div class="col-md-4 col-sm-6">
                                         <div class="stat-box neutral">
                                             <div class="user-label">Tổng tiền nạp</div>
-                                            <div class="fw-bold fs-5 text-dark mt-2"><?= tien($user['tong_nap']); ?>đ
-                                            </div>
+                                            <div class="balance-amount"><?= tien($user['tong_nap']); ?>đ</div>
                                         </div>
                                     </div>
                                     <div class="col-md-4 col-sm-6">
                                         <div class="stat-box neutral">
                                             <div class="user-label">Số dư đã sử dụng</div>
                                             <?php $used = (int) $user['tong_nap'] - (int) $user['money']; ?>
-                                            <div class="fw-bold fs-5 text-dark mt-2">
-                                                <?= tien($used > 0 ? $used : 0); ?>đ</div>
+                                            <div class="balance-amount">
+                                                <?= tien($used > 0 ? $used : 0); ?>đ
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -60,7 +55,7 @@
 
                         <div class="profile-card">
                             <div class="profile-card-header mb-3">
-                                <h5 class="text-dark mb-0">Hồ sơ của bạn</h5>
+                                <h2 class="h5 text-dark mb-0">Hồ sơ của bạn</h2>
                                 <button type="button" id="btn-edit" class="btn btn-edit-profile">Chỉnh sửa thông
                                     tin</button>
                             </div>
@@ -86,22 +81,6 @@
                                     </div>
 
                                     <div class="col-md-6">
-                                        <label class="form-label user-label">Xác minh 2 bước (OTP Gmail)</label>
-                                        <div class="custom-input-wrap">
-                                            <div class="form-check form-switch pt-2 ps-0">
-                                                <input class="form-check-input ms-0" type="checkbox" role="switch"
-                                                    id="twofa_enabled_input" <?= !empty($user['twofa_enabled']) ? 'checked' : '' ?> disabled>
-                                                <label class="form-check-label ms-5" for="twofa_enabled_input">
-                                                    Bật OTP 6 số khi đăng nhập
-                                                </label>
-                                            </div>
-                                            <small class="text-muted d-block mt-2">
-                                                Chỉ khi bật mục này, tài khoản mới cần nhập OTP khi đăng nhập.
-                                            </small>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-md-6">
                                         <label class="form-label user-label">Ngày đăng ký</label>
                                         <div class="custom-input-wrap">
                                             <input type="text" class="form-control custom-readonly"
@@ -121,8 +100,6 @@
                                 </form>
                             </div>
                         </div>
-
-                        <?php require __DIR__ . '/partials/deposit_bank_panel.php'; ?>
                     </div>
                 </div>
             </div>
@@ -131,7 +108,6 @@
 
     <?php require __DIR__ . '/../../hethong/foot.php'; ?>
 
-    <script src="<?= asset('assets/js/deposit-bank.js') ?>"></script>
     <script>
         (function () {
             let editMode = false;
@@ -192,15 +168,6 @@
                 });
             }
 
-            const profileSection = <?= json_encode((string) ($profileSection ?? 'profile'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
-            if (profileSection === 'deposit') {
-                const target = document.getElementById('profile-deposit-card');
-                if (target) {
-                    setTimeout(function () {
-                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }, 150);
-                }
-            }
         })();
     </script>
 </body>

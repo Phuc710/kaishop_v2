@@ -223,7 +223,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                 sInfoEmpty: 'Không có dữ liệu',
                 sInfoFiltered: '(lọc từ _MAX_)',
                 sSearch: 'Tìm kiếm:',
-                oPaginate: { sPrevious: '‹', sNext: '›' },
+                oPaginate: { sPrevious: '&lsaquo;', sNext: '&rsaquo;' },
             },
         });
 

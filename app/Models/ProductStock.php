@@ -38,13 +38,17 @@ class ProductStock extends Model
     /**
      * Get all stock items for a product
      */
-    public function getByProduct(int $productId, string $statusFilter = ''): array
+    public function getByProduct(int $productId, string $statusFilter = '', string $search = ''): array
     {
         $sql = "SELECT * FROM {$this->table} WHERE product_id = ?";
         $params = [$productId];
         if ($statusFilter !== '') {
             $sql .= " AND status = ?";
             $params[] = $statusFilter;
+        }
+        if ($search !== '') {
+            $sql .= " AND content LIKE ?";
+            $params[] = '%' . $search . '%';
         }
         $sql .= " ORDER BY id DESC";
         return $this->query($sql, $params)->fetchAll(PDO::FETCH_ASSOC);
@@ -176,6 +180,18 @@ class ProductStock extends Model
         );
         $stmt->execute([$id]);
         return $stmt->rowCount() > 0;
+    }
+
+    /**
+     * Delete ALL available stock for a product
+     */
+    public function deleteAllAvailable(int $productId): int
+    {
+        $stmt = $this->db->prepare(
+            "DELETE FROM {$this->table} WHERE product_id=? AND status='available'"
+        );
+        $stmt->execute([$productId]);
+        return $stmt->rowCount();
     }
 
     /**

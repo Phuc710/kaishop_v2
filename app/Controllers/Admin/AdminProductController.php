@@ -107,7 +107,7 @@ class AdminProductController extends Controller
         $productId = (int) $this->productModel->create($data);
 
         // If account type: import initial stock from textarea
-        if (($data['product_type'] ?? 'account') === 'account') {
+        if (($data['product_type'] ?? 'account') === 'account' && (int) ($data['requires_info'] ?? 0) !== 1) {
             $rawStock = trim((string) $this->post('initial_stock', ''));
             if ($rawStock !== '' && $productId > 0) {
                 $this->stockModel->importBulk($productId, $rawStock);
@@ -172,7 +172,8 @@ class AdminProductController extends Controller
         }
 
         $statusFilter = $this->get('status_filter', '');
-        $items = $this->stockModel->getByProduct($id, $statusFilter);
+        $search = $this->get('search', '');
+        $items = $this->stockModel->getByProduct($id, $statusFilter, $search);
         $stats = $this->stockModel->getStats($id);
 
         $this->view('admin/products/stock', [
@@ -181,6 +182,7 @@ class AdminProductController extends Controller
             'items' => $items,
             'stats' => $stats,
             'statusFilter' => $statusFilter,
+            'search' => $search,
         ]);
     }
 
@@ -220,6 +222,22 @@ class AdminProductController extends Controller
         return $this->json(['success' => false, 'message' => 'Không thể xóa (đã bán hoặc không tồn tại)'], 400);
     }
 
+    public function stockClean($id)
+    {
+        $this->requireAdmin();
+        $id = (int) $id;
+        $product = $this->productModel->find($id);
+        if (!$product)
+            return $this->json(['success' => false, 'message' => 'Sản phẩm không tồn tại'], 404);
+
+        $count = $this->stockModel->deleteAllAvailable($id);
+        return $this->json([
+            'success' => true,
+            'message' => "Đã xóa toàn bộ {$count} tài khoản chưa bán.",
+            'count' => $count
+        ]);
+    }
+
     public function stockUpdate()
     {
         $this->requireAdmin();
@@ -246,6 +264,8 @@ class AdminProductController extends Controller
         $productType = $this->post('product_type', 'account') === 'link' ? 'link' : 'account';
         $priceVnd = max(0, (int) $this->post('price_vnd', 0));
         $sourceLink = trim((string) $this->post('source_link', ''));
+        $minPurchaseQty = max(1, (int) $this->post('min_purchase_qty', 1));
+        $maxPurchaseQty = max(0, (int) $this->post('max_purchase_qty', 0));
         $description = (string) $this->post('description', '');
         $image = trim((string) $this->post('image', ''));
         $badgeText = trim((string) $this->post('badge_text', ''));
@@ -270,8 +290,15 @@ class AdminProductController extends Controller
             $errors[] = 'Vui lòng nhập tên sản phẩm';
         if ($priceVnd <= 0)
             $errors[] = 'Giá bán phải lớn hơn 0';
+        if ($catId <= 0)
+            $errors[] = 'Vui long chon danh muc cho san pham';
         if ($productType === 'link' && $sourceLink === '')
             $errors[] = 'Vui lòng nhập link download cho sản phẩm loại Source Link';
+
+        if ($minPurchaseQty < 1)
+            $errors[] = 'So luong mua toi thieu phai tu 1';
+        if ($maxPurchaseQty > 0 && $maxPurchaseQty < $minPurchaseQty)
+            $errors[] = 'So luong mua toi da phai >= toi thieu hoac = 0';
 
         $slug = $slug === '' ? $this->productModel->generateSlug($name, $excludeId) : $this->productModel->generateSlug($slug, $excludeId);
 
@@ -281,6 +308,8 @@ class AdminProductController extends Controller
             'product_type' => $productType,
             'price_vnd' => $priceVnd,
             'source_link' => $productType === 'link' && $sourceLink !== '' ? $sourceLink : null,
+            'min_purchase_qty' => $minPurchaseQty,
+            'max_purchase_qty' => $maxPurchaseQty,
             'badge_text' => $badgeText !== '' ? $badgeText : null,
             'category_id' => $catId > 0 ? $catId : null,
             'display_order' => $displayOrder,

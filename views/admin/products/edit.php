@@ -17,9 +17,8 @@ $productType = $product['product_type'] ?? 'account';
 ?>
 
 <section class="content pb-4 mt-3">
-    <div class="row justify-content-center">
-        <div class="col-md-11">
-            <div class="card custom-card">
+    <div class="container-fluid">
+        <div class="card custom-card">
                 <div class="card-header border-0 d-flex justify-content-between align-items-center">
                     <h3 class="card-title font-weight-bold text-uppercase mb-0">
                         CẬP NHẬT: <span class="text-primary"><?= htmlspecialchars($product['name']) ?></span>
@@ -27,24 +26,119 @@ $productType = $product['product_type'] ?? 'account';
                     <?php if ($productType === 'account'): ?>
                         <a href="<?= url('admin/products/stock/' . $product['id']) ?>"
                             class="btn btn-info btn-sm shadow-sm">
-                            <i class="fas fa-warehouse mr-1"></i>QUẢN LÝ KHO (STOCK)
+                            <i class="fas fa-warehouse mr-1"></i>QUẢN LÝ KHO
                         </a>
                     <?php endif; ?>
                 </div>
 
                 <form action="<?= url('admin/products/edit/' . $product['id']) ?>" method="POST" id="productForm">
                     <div class="card-body pt-3">
+                        <style>
+                            .mode-card-group {
+                                display: grid;
+                                grid-template-columns: repeat(3, minmax(0, 1fr));
+                                gap: 12px;
+                            }
 
-                        <!-- ===== THÔNG TIN CƠ BẢN ===== -->
-                        <div class="form-section">
-                            <div class="form-section-title">Thông tin sản phẩm</div>
+                            .mode-card {
+                                border: 1px solid #dbe4f0;
+                                border-radius: 10px;
+                                padding: 14px 12px;
+                                cursor: pointer;
+                                background: #fff;
+                                transition: all .15s ease;
+                                user-select: none;
+                                position: relative;
+                                margin-bottom: 0 !important;
+                            }
 
+                            .mode-card:hover {
+                                border-color: #7aa7ff;
+                                box-shadow: 0 4px 14px rgba(27, 84, 255, .08);
+                            }
+
+                            .mode-card.active {
+                                border-color: #4f7cff;
+                                background: #f0f7ff;
+                                box-shadow: 0 0 0 1px #4f7cff;
+                                padding-right: 40px;
+                            }
+
+                            .mode-card::after {
+                                content: '';
+                                position: absolute;
+                                top: 50%;
+                                right: 15px;
+                                transform: translateY(-50%);
+                                width: 20px;
+                                height: 20px;
+                                border: 2px solid #dbe4f0;
+                                border-radius: 50%;
+                                background: #fff;
+                                transition: all .2s;
+                            }
+
+                            .mode-card.active::after {
+                                border-color: #4f7cff;
+                                background: #4f7cff;
+                            }
+
+                            .mode-card.active::before {
+                                content: '\f00c';
+                                font-family: 'Font Awesome 5 Free';
+                                font-weight: 900;
+                                position: absolute;
+                                top: 50%;
+                                right: 18px;
+                                transform: translateY(-50%);
+                                font-size: 10px;
+                                color: #fff;
+                                z-index: 1;
+                            }
+
+                            .mode-card input[type="radio"] {
+                                display: none;
+                            }
+
+                            .mode-card-title {
+                                font-weight: 700;
+                                font-size: 14px;
+                                color: #1f2937;
+                                margin-bottom: 4px;
+                            }
+
+                            .mode-card-desc {
+                                font-size: 12px;
+                                color: #6b7280;
+                                line-height: 1.35;
+                            }
+
+                            @media (max-width: 991.98px) {
+                                .mode-card-group {
+                                    grid-template-columns: 1fr;
+                                }
+                            }
+                        </style>
+
+                        <!-- Row 1: Tên, Slug, Giá -->
+                        <div class="form-section mb-4">
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-5">
                                     <div class="form-group mb-3">
                                         <label class="font-weight-bold form-label-req">Tên sản phẩm</label>
                                         <input type="text" class="form-control" id="name" name="name"
                                             value="<?= htmlspecialchars($product['name'] ?? '') ?>" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group mb-3">
+                                        <label class="font-weight-bold">Đường dẫn (Slug)</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend"><span class="input-group-text"
+                                                    id="slugPrefix">/danh-muc/</span></div>
+                                            <input type="text" class="form-control" name="slug" id="slug"
+                                                value="<?= htmlspecialchars($product['slug'] ?? '') ?>">
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
@@ -59,50 +153,134 @@ $productType = $product['product_type'] ?? 'account';
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
-                                    <div class="form-group mb-3">
-                                        <label class="font-weight-bold">Loại sản phẩm</label>
-                                        <select class="form-control font-weight-bold btn-outline-primary"
-                                            name="product_type" id="productType">
-                                            <option value="account" <?= $productType === 'account' ? 'selected' : '' ?>>🔑
-                                                Tài khoản</option>
-                                            <option value="link" <?= $productType === 'link' ? 'selected' : '' ?>>🔗 Source
-                                                Link</option>
-                                        </select>
+                            </div>
+                        </div>
+
+                        <!-- Row 2: Loại sản phẩm, Config & SEO -->
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <div class="form-section h-100 mb-0">
+                                    <label class="font-weight-bold d-block mb-3 text-primary"><i
+                                            class="fas fa-shipping-fast mr-1"></i>LOẠI SẢN PHẨM / CÁCH GIAO HÀNG</label>
+                                    <?php
+                                    $currentMode = 'account_stock';
+                                    if ($productType === 'link')
+                                        $currentMode = 'source_link';
+                                    else if ((int) $product['requires_info'] === 1)
+                                        $currentMode = 'manual_info';
+                                    ?>
+                                    <div class="mode-card-group">
+                                        <label class="mode-card <?= $currentMode === 'account_stock' ? 'active' : '' ?>"
+                                            data-mode="account_stock">
+                                            <input type="radio" name="sale_mode_ui" value="account_stock"
+                                                <?= $currentMode === 'account_stock' ? 'checked' : '' ?>>
+                                            <div class="mode-card-title"><i
+                                                    class="fas fa-user-lock mr-1 text-primary"></i> Tài khoản</div>
+                                            <div class="mode-card-desc">Bán từ kho, giao ngay.</div>
+                                        </label>
+                                        <label class="mode-card <?= $currentMode === 'source_link' ? 'active' : '' ?>"
+                                            data-mode="source_link">
+                                            <input type="radio" name="sale_mode_ui" value="source_link"
+                                                <?= $currentMode === 'source_link' ? 'checked' : '' ?>>
+                                            <div class="mode-card-title"><i class="fas fa-link mr-1 text-info"></i>
+                                                Source / Link</div>
+                                            <div class="mode-card-desc">Trả link cố định.</div>
+                                        </label>
+                                        <label class="mode-card <?= $currentMode === 'manual_info' ? 'active' : '' ?>"
+                                            data-mode="manual_info">
+                                            <input type="radio" name="sale_mode_ui" value="manual_info"
+                                                <?= $currentMode === 'manual_info' ? 'checked' : '' ?>>
+                                            <div class="mode-card-title"><i
+                                                    class="fas fa-keyboard mr-1 text-warning"></i> Yêu cầu info</div>
+                                            <div class="mode-card-desc">Khách nhập form.</div>
+                                        </label>
+                                    </div>
+
+                                    <!-- KHUNG CẤU HÌNH GIAO HÀNG -->
+                                    <div id="delivery-config-box" class="mt-3">
+                                        <div class="p-3 border rounded shadow-sm"
+                                            style="background: #f8fafc; border: 2px dashed #cbd5e1 !important;">
+                                            <!-- Section Kho -->
+                                            <div id="section-stock-info"
+                                                style="<?= $currentMode !== 'account_stock' ? 'display: none;' : '' ?>">
+                                                <h6 class="font-weight-bold mb-2 text-primary small"><i
+                                                        class="fas fa-box-open mr-1"></i> THÔNG TIN KHO</h6>
+                                                <div class="alert alert-info py-2 mb-0" style="font-size: 12px;">
+                                                    <i class="fas fa-info-circle mr-1"></i>
+                                                    Quản lý tại trang riêng.
+                                                    <a href="<?= url('admin/products/stock/' . $product['id']) ?>"
+                                                        class="btn btn-xs btn-primary ml-1">
+                                                        Vào Kho
+                                                    </a>
+                                                </div>
+                                            </div>
+
+                                            <!-- Section Link -->
+                                            <div id="section-link"
+                                                style="<?= $currentMode !== 'source_link' ? 'display: none;' : '' ?>">
+                                                <h6 class="font-weight-bold mb-2 text-info small"><i
+                                                        class="fas fa-link mr-1"></i> CẤU HÌNH LINK SOURCE</h6>
+                                                <input type="text" class="form-control form-control-sm"
+                                                    name="source_link" id="source_link"
+                                                    value="<?= htmlspecialchars($product['source_link'] ?? '') ?>"
+                                                    placeholder="https://..." <?= $currentMode === 'source_link' ? 'required' : 'disabled' ?>>
+                                            </div>
+
+                                            <!-- Section Manual Info -->
+                                            <div id="section-info"
+                                                style="<?= $currentMode !== 'manual_info' ? 'display: none;' : '' ?>">
+                                                <h6 class="font-weight-bold mb-2 text-warning small"><i
+                                                        class="fas fa-user-edit mr-1"></i> YÊU CẦU INFO</h6>
+                                                <textarea class="form-control" name="info_instructions"
+                                                    id="info_instructions" rows="3" <?= $currentMode === 'manual_info' ? '' : 'disabled' ?>
+                                                    placeholder="Ví dụ: Nhập UID game..."><?= htmlspecialchars($product['info_instructions'] ?? '') ?></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="product_type" id="productType"
+                                        value="<?= htmlspecialchars($productType) ?>">
+                                    <input type="hidden" name="requires_info" id="requires_info"
+                                        value="<?= (int) $product['requires_info'] ?>">
+
+                                    <!-- QUY ĐỊNH SỐ LƯỢNG MUA -->
+                                    <div class="row mt-3">
+                                        <div class="col-6">
+                                            <div class="form-group mb-0">
+                                                <label class="font-weight-bold small">Mua tối thiểu</label>
+                                                <input type="number" class="form-control form-control-sm"
+                                                    name="min_purchase_qty"
+                                                    value="<?= (int) ($product['min_purchase_qty'] ?? 1) ?>" min="1"
+                                                    step="1">
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-group mb-0">
+                                                <label class="font-weight-bold small">Mua tối đa</label>
+                                                <input type="number" class="form-control form-control-sm"
+                                                    name="max_purchase_qty"
+                                                    value="<?= (int) ($product['max_purchase_qty'] ?? 0) ?>" min="0"
+                                                    step="1">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                            <div class="col-md-6 mb-4">
+                                <div class="form-section h-100 mb-0">
+                                    <div class="form-section-title">🔍 Thông tin SEO / Thẻ</div>
+                                    <div class="form-group mb-0">
+                                        <label class="font-weight-bold small text-muted">Mô tả SEO</label>
+                                        <textarea class="form-control" name="seo_description"
+                                            rows="9"><?= htmlspecialchars($product['seo_description'] ?? '') ?></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
+                        <!-- Row 3: Trạng thái, Danh mục, Thứ tự -->
+                        <div class="form-section mb-4">
                             <div class="row">
                                 <div class="col-md-3">
-                                    <div class="form-group mb-3">
-                                        <label class="font-weight-bold">Danh mục</label>
-                                        <select class="form-control" name="category_id">
-                                            <option value="0">— Chọn danh mục —</option>
-                                            <?php foreach ($categories as $cat): ?>
-                                                <option value="<?= (int) $cat['id'] ?>" <?= ((int) ($product['category_id'] ?? 0) === (int) $cat['id']) ? 'selected' : '' ?>>
-                                                    <?= htmlspecialchars($cat['name']) ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="form-group mb-3">
-                                        <label class="font-weight-bold">Badge (Nhãn)</label>
-                                        <input type="text" class="form-control" name="badge_text"
-                                            value="<?= htmlspecialchars($product['badge_text'] ?? '') ?>"
-                                            placeholder="NEW / HOT / -50%">
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="form-group mb-3">
-                                        <label class="font-weight-bold">Thứ tự</label>
-                                        <input type="number" class="form-control" name="display_order"
-                                            value="<?= (int) ($product['display_order'] ?? 0) ?>" min="0">
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
                                     <div class="form-group mb-3">
                                         <label class="font-weight-bold">Trạng thái hiển thị</label>
                                         <select class="form-control font-weight-bold" name="status">
@@ -111,129 +289,143 @@ $productType = $product['product_type'] ?? 'account';
                                         </select>
                                     </div>
                                 </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label class="font-weight-bold">Danh mục</label>
+                                        <select class="form-control" name="category_id" id="category_id" required>
+                                            <option value="0">— Chọn danh mục —</option>
+                                            <?php foreach ($categories as $cat): ?>
+                                                <option value="<?= (int) $cat['id'] ?>"
+                                                    data-slug="<?= htmlspecialchars((string) ($cat['slug'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                                    <?= ((int) ($product['category_id'] ?? 0) === (int) $cat['id']) ? 'selected' : '' ?>>
+                                                    <?= htmlspecialchars($cat['name']) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group mb-3">
+                                        <label class="font-weight-bold">Thứ tự ưu tiên</label>
+                                        <input type="number" class="form-control" name="display_order"
+                                            value="<?= (int) ($product['display_order'] ?? 0) ?>" min="0">
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- ===== SOURCE LINK ===== -->
-                        <div class="form-section" id="section-link"
-                            style="<?= $productType !== 'link' ? 'display:none;' : '' ?> background: #f8f9fa; border: 1px dashed #dee2e6;">
-                            <div class="form-section-title">🔗 Cấu hình Link Download</div>
-                            <div class="form-group mb-0 p-2">
-                                <label
-                                    class="font-weight-bold text-primary <?= $productType === 'link' ? 'form-label-req' : '' ?>">Source
-                                    Link (Mega / GDrive / ...)</label>
-                                <input type="text" class="form-control form-control-lg" name="source_link"
-                                    id="source_link" value="<?= htmlspecialchars($product['source_link'] ?? '') ?>"
-                                    placeholder="https://mega.nz/file/..." <?= $productType === 'link' ? 'required' : '' ?>>
-                                <small class="text-muted"><i class="fas fa-info-circle mr-1"></i> Link được giao tự
-                                    động. Vô hạn lượt.</small>
-                            </div>
-                        </div>
 
-                        <!-- ===== KHO INFO (account) ===== -->
-                        <?php if ($productType === 'account'): ?>
-                            <div class="form-section" id="section-stock-info">
-                                <div class="form-section-title">📦 Kho tài khoản</div>
-                                <div class="alert alert-info py-2">
-                                    <i class="fas fa-info-circle mr-1"></i>
-                                    Quản lý nội dung tài khoản tại
-                                    <a href="<?= url('admin/products/stock/' . $product['id']) ?>"
-                                        class="font-weight-bold text-dark">Trang quản lý kho</a>.
-                                </div>
-                            </div>
-                        <?php endif; ?>
-
-                        <!-- ===== SEO & URL ===== -->
-                        <div class="form-section">
-                            <div class="form-section-title">SEO & Hình ảnh</div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label class="font-weight-bold">Đường dẫn (Slug)</label>
-                                        <div class="input-group">
-                                            <div class="input-group-prepend"><span class="input-group-text">/p/</span>
-                                            </div>
-                                            <input type="text" class="form-control" name="slug" id="slug"
-                                                value="<?= htmlspecialchars($product['slug'] ?? '') ?>">
-                                        </div>
-                                    </div>
-                                    <div class="form-group mb-3">
-                                        <label class="font-weight-bold">Mô tả SEO</label>
-                                        <textarea class="form-control" name="seo_description"
-                                            rows="3"><?= htmlspecialchars($product['seo_description'] ?? '') ?></textarea>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group mb-3">
+                        <!-- Row 5: Ảnh Thumbnail -->
+                        <div class="form-section mb-4">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <div class="form-group mb-0">
                                         <label class="font-weight-bold">Ảnh sản phẩm (Thumbnail)</label>
                                         <div class="input-group">
                                             <input type="text" class="form-control" id="image" name="image"
                                                 value="<?= htmlspecialchars($product['image'] ?? '') ?>">
                                             <div class="input-group-append">
                                                 <button type="button" class="btn btn-primary"
-                                                    onclick="openImageManager && openImageManager()">Chọn ảnh</button>
+                                                    style="background-color: #6f42c1; border-color: #6f42c1;"
+                                                    onclick="openImageManager && openImageManager('image')">Chọn
+                                                    ảnh</button>
                                             </div>
-                                        </div>
-                                        <div class="mt-2 text-center border rounded p-1 bg-light"
-                                            style="height: 100px; display: flex; align-items: center; justify-content: center;">
-                                            <img id="imagePreview"
-                                                src="<?= htmlspecialchars($product['image'] ?? '') ?>" alt=""
-                                                style="max-height: 90px; max-width: 100%; display: <?= empty($product['image']) ? 'none' : 'inline-block' ?>;">
-                                            <span id="noImage" class="text-muted small"
-                                                style="display: <?= empty($product['image']) ? 'inline-block' : 'none' ?>;">Chưa
-                                                có ảnh</span>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            <div class="form-group mb-0">
-                                <label class="font-weight-bold">Ảnh Gallery</label>
-                                <div id="gallery-container" class="row no-gutters">
-                                    <?php foreach ($galleryArr as $i => $gUrl): ?>
-                                        <div class="col-md-4 p-1 gallery-item" id="gallery-<?= (int) $i ?>">
-                                            <div class="input-group input-group-sm">
-                                                <input type="text" class="form-control" name="gallery[]"
-                                                    value="<?= htmlspecialchars($gUrl) ?>">
-                                                <div class="input-group-append"><button type="button" class="btn btn-danger"
-                                                        onclick="removeGalleryItem(<?= (int) $i ?>)">×</button></div>
-                                            </div>
-                                        </div>
-                                    <?php endforeach; ?>
+                                <div class="col-md-4 mt-2 mt-md-0">
+                                    <div class="thumb-preview-box p-1 border rounded bg-light text-center"
+                                        style="height: 50px; display: flex; align-items: center; justify-content: center;">
+                                        <img id="imagePreview" src="<?= htmlspecialchars($product['image'] ?? '') ?>"
+                                            alt=""
+                                            style="max-height: 40px; max-width: 100%; display: <?= empty($product['image']) ? 'none' : 'inline-block' ?>;">
+                                        <span id="noImage" class="text-muted small"
+                                            style="display: <?= empty($product['image']) ? 'inline-block' : 'none' ?>;">Xem
+                                            trước</span>
+                                    </div>
                                 </div>
-                                <button type="button" class="btn btn-outline-info btn-sm mt-2"
-                                    onclick="addGalleryItem()">
-                                    <i class="fas fa-plus mr-1"></i>Thêm ảnh phụ
-                                </button>
                             </div>
                         </div>
 
-                        <!-- ===== MÔ TẢ ===== -->
-                        <div class="form-section">
-                            <div class="form-section-title">Mô tả sản phẩm</div>
+                        <!-- Row 6: Gallery -->
+                        <div class="form-section mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="font-weight-bold mb-0">Ảnh Gallery</label>
+                                <button type="button" class="btn btn-outline-primary btn-sm"
+                                    style="color: #6f42c1; border-color: #6f42c1;" onclick="addGalleryItem()">
+                                    <i class="fas fa-plus mr-1"></i>Thêm ảnh
+                                </button>
+                            </div>
+                            <div id="gallery-container">
+                                <?php foreach ($galleryArr as $i => $gUrl): ?>
+                                    <div class="gallery-line mb-3" id="gallery-row-<?= (int) $i ?>">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-9">
+                                                <div class="input-group input-group-sm">
+                                                    <input type="text" class="form-control" name="gallery[]"
+                                                        id="gallery-input-<?= (int) $i ?>"
+                                                        value="<?= htmlspecialchars($gUrl) ?>">
+                                                    <div class="input-group-append">
+                                                        <button type="button" class="btn btn-primary"
+                                                            style="background-color: #6f42c1; border-color: #6f42c1;"
+                                                            onclick="openImageManager('gallery-input-<?= (int) $i ?>')">
+                                                            <i class="fas fa-images"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-danger"
+                                                            onclick="removeGalleryItem(<?= (int) $i ?>)">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3 mt-2 mt-md-0">
+                                                <div class="gallery-line-preview m-0"
+                                                    style="height: 31px; display: flex; align-items: center; justify-content: center; border: 1px dashed #d1d5db; border-radius: 8px; background: #f8fafc;">
+                                                    <img class="gallery-preview-img" alt="preview"
+                                                        style="max-height: 27px; max-width: 100%;"
+                                                        src="<?= htmlspecialchars($gUrl) ?>">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+
+                        <!-- Row 7: Mô tả -->
+                        <div class="form-section mt-4">
+                            <div class="form-section-title">📝 Mô tả sản phẩm</div>
                             <div class="form-group mb-0">
                                 <textarea class="form-control" id="description" name="description"
-                                    rows="8"><?= htmlspecialchars($product['description'] ?? '') ?></textarea>
+                                    rows="12"><?= htmlspecialchars($product['description'] ?? '') ?></textarea>
                             </div>
                         </div>
 
                     </div>
-                    <div class="card-footer text-right border-top-0 pt-0 pb-4">
-                        <hr>
-                        <a href="<?= url('admin/products') ?>" class="btn btn-light border mr-2 px-4">Quay lại</a>
-                        <button type="submit" class="btn btn-primary btn-lg px-5 font-weight-bold">LƯU THAY ĐỔI</button>
+                    <div class="card-footer text-right bg-transparent border-top-0 pt-0 pb-4">
+                        <a href="<?= url('admin/products') ?>" class="btn btn-light border mr-2 px-4">Hủy thay đổi</a>
+                        <button type="submit" class="btn btn-primary px-4 shadow">CẬP NHẬT SẢN PHẨM</button>
                     </div>
                 </form>
             </div>
         </div>
-    </div>
 </section>
 
 <?php require_once __DIR__ . '/../layout/foot.php'; ?>
 <?php include ROOT_PATH . '/admin/image-manager-modal.php'; ?>
 
 <script>
-    $(function () {
+    // Wait for jQuery
+    document.addEventListener("DOMContentLoaded", function () {
+        let checkJquery = setInterval(function () {
+            if (window.jQuery) {
+                clearInterval(checkJquery);
+                initEditScripts();
+            }
+        }, 100);
+    });
+
+    function initEditScripts() {
         if ($.fn.summernote) $('#description').summernote({ height: 300 });
 
         $('#image').on('change keyup paste', function () {
@@ -248,33 +440,123 @@ $productType = $product['product_type'] ?? 'account';
         });
 
         $('#slug').on('input', function () { $(this).data('manual', true); });
+        bindCategorySlugPrefix();
 
-        $('#productType').on('change', function () {
-            var type = $(this).val();
-            if (type === 'link') {
+        function bindCategorySlugPrefix() {
+            $('#category_id').on('change', updateSlugPrefixFromCategory);
+            updateSlugPrefixFromCategory();
+        }
+
+        function updateSlugPrefixFromCategory() {
+            var opt = $('#category_id option:selected');
+            var catSlug = String(opt.data('slug') || '').trim();
+            if (!catSlug) catSlug = 'danh-muc';
+            $('#slugPrefix').text('/' + catSlug + '/');
+        }
+
+        function updateDeliveryModeUI() {
+            var mode = $('input[name="sale_mode_ui"]:checked').val() || 'account_stock';
+            $('.mode-card').removeClass('active');
+            $('.mode-card[data-mode="' + mode + '"]').addClass('active');
+
+            var type = 'account';
+            var requiresInfo = 0;
+
+            if (mode === 'source_link') {
+                type = 'link';
+                requiresInfo = 0;
+            } else if (mode === 'manual_info') {
+                type = 'account';
+                requiresInfo = 1;
+            }
+
+            $('#productType').val(type);
+            $('#requires_info').val(requiresInfo);
+
+            $('#section-stock-info').toggle(mode === 'account_stock');
+
+            if (mode === 'source_link') {
                 $('#section-link').slideDown();
-                $('#section-stock-info').slideUp();
-                $('#source_link').prop('required', true);
+                $('#source_link').prop('required', true).prop('disabled', false);
             } else {
                 $('#section-link').slideUp();
-                $('#section-stock-info').slideDown();
-                $('#source_link').prop('required', false);
+                $('#source_link').prop('required', false).prop('disabled', true);
             }
+
+            if (mode === 'manual_info') {
+                $('#section-info').slideDown();
+                $('#info_instructions').prop('disabled', false);
+            } else {
+                $('#section-info').slideUp();
+                $('#info_instructions').prop('disabled', true);
+            }
+
+            // Khóa số lượng tối đa là 1 nếu là Source / Link
+            if (mode === 'source_link') {
+                $('input[name="max_purchase_qty"]').val(1).prop('readonly', true).css('background-color', '#e9ecef');
+            } else {
+                $('input[name="max_purchase_qty"]').prop('readonly', false).css('background-color', '');
+            }
+        }
+
+        $('input[name="sale_mode_ui"]').on('change', updateDeliveryModeUI);
+        $('.mode-card').on('click', function () {
+            $(this).find('input').prop('checked', true).trigger('change');
         });
-    });
+        updateDeliveryModeUI();
+    }
 
     let galleryIndex = <?= count($galleryArr) ?>;
     function addGalleryItem(url) {
         url = url || '';
-        const html = `<div class="col-md-4 p-1 gallery-item" id="gallery-${galleryIndex}">
-        <div class="input-group input-group-sm">
-            <input type="text" class="form-control" name="gallery[]" value="${escHtml(url)}" placeholder="Link ảnh...">
-            <div class="input-group-append"><button type="button" class="btn btn-danger" onclick="removeGalleryItem(${galleryIndex})">×</button></div>
-        </div>
-    </div>`;
+        const id = `gallery-input-${galleryIndex}`;
+        const previewImgId = `gallery-preview-img-${galleryIndex}`;
+        const previewEmptyId = `gallery-preview-empty-${galleryIndex}`;
+        const rowId = `gallery-row-${galleryIndex}`;
+
+        const html = `
+            <div class="gallery-line mb-3" id="${rowId}">
+                <div class="row align-items-center">
+                    <div class="col-md-9">
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control" name="gallery[]" id="${id}" value="${escHtml(url)}" placeholder="Link ảnh...">
+                            <div class="input-group-append">
+                                <button type="button" class="btn btn-primary" style="background-color: #6f42c1; border-color: #6f42c1;" onclick="openImageManager('${id}')">
+                                    <i class="fas fa-images"></i>
+                                </button>
+                                <button type="button" class="btn btn-danger" onclick="removeGalleryItem(${galleryIndex})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mt-2 mt-md-0">
+                        <div class="gallery-line-preview m-0" style="height: 31px; display: flex; align-items: center; justify-content: center; border: 1px dashed #d1d5db; border-radius: 8px; background: #f8fafc;">
+                            <img id="${previewImgId}" class="gallery-preview-img" alt="preview" style="max-height: 27px; max-width: 100%; ${url ? '' : 'display: none;'} " src="${escHtml(url)}">
+                            <span id="${previewEmptyId}" class="gallery-preview-empty text-muted" style="font-size: 10px; ${url ? 'display: none;' : ''}">Xem trước</span>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
         $('#gallery-container').append(html);
         galleryIndex++;
     }
-    function removeGalleryItem(idx) { $('#gallery-' + idx).remove(); }
-    function escHtml(s) { return $('<div/>').text(s).html(); }
+
+    // Add change event for manual input in gallery
+    $(document).on('change keyup paste', '.gallery-line input', function () {
+        const url = $(this).val();
+        const row = $(this).closest('.gallery-line');
+        const img = row.find('.gallery-preview-img');
+        const empty = row.find('.gallery-preview-empty');
+        if (url) {
+            img.attr('src', url).show();
+            empty.hide();
+        } else {
+            img.hide();
+            empty.show();
+        }
+    });
+
+    function removeGalleryItem(idx) { $('#gallery-row-' + idx).remove(); }
+    function escHtml(s) { return s ? String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : ''; }
 </script>

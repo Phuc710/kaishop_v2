@@ -114,8 +114,12 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                             <?php endif; ?>
                                         </td>
                                         <td class="text-center align-middle">
+                                            <?php
+                                            $createdRaw = (string) ($row['created_at'] ?? '');
+                                            $createdTooltip = function_exists('timeAgo') ? (string) timeAgo($createdRaw) : $createdRaw;
+                                            ?>
                                             <span class="badge date-badge" data-toggle="tooltip" data-placement="top"
-                                                title="<?= timeAgo($row['created_at']) ?>">
+                                                title="<?= htmlspecialchars($createdTooltip, ENT_QUOTES, 'UTF-8') ?>">
                                                 <?= htmlspecialchars($row['created_at']) ?>
                                             </span>
                                         </td>
@@ -176,7 +180,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                 sInfoEmpty: 'Xem 0-0 / 0 mục',
                 sInfoFiltered: '(lọc từ _MAX_)',
                 sSearch: 'Tìm nhanh:',
-                oPaginate: { sPrevious: '‹', sNext: '›' }
+                oPaginate: { sPrevious: '&lsaquo;', sNext: '&rsaquo;' }
             }
         });
 

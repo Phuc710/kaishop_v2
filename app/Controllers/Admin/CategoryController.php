@@ -49,10 +49,9 @@ class CategoryController extends Controller
         $stats = $this->categoryModel->getStats();
 
         // Add product count per category
-        foreach ($categories as &$cat) {
-            $cat['product_count'] = $this->categoryModel->countProducts($cat['id']);
+        foreach ($categories as $index => $cat) {
+            $categories[$index]['product_count'] = $this->categoryModel->countProducts($cat['id']);
         }
-        unset($cat);
 
         $this->view('admin/categories/index', [
             'categories' => $categories,
@@ -70,7 +69,7 @@ class CategoryController extends Controller
         global $chungapi;
 
         $this->view('admin/categories/add', [
-            'chungapi' => $chungapi,
+            'chungapi' => $chungapi ?? null,
         ]);
     }
 
@@ -135,7 +134,7 @@ class CategoryController extends Controller
         }
 
         $this->view('admin/categories/edit', [
-            'chungapi' => $chungapi,
+            'chungapi' => $chungapi ?? null,
             'category' => $category,
         ]);
     }

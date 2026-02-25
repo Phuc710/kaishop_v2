@@ -6,9 +6,15 @@
  */
 class ProductController extends Controller {
     private $productModel;
+    private $stockModel;
+    private $authService;
+    private $purchaseService;
     
     public function __construct() {
         $this->productModel = new Product();
+        $this->stockModel = new ProductStock();
+        $this->authService = new AuthService();
+        $this->purchaseService = new PurchaseService();
     }
     
     /**
@@ -16,14 +22,104 @@ class ProductController extends Controller {
      * @param int $id
      */
     public function show($id) {
-        global $chungapi, $user;
-        
         $product = $this->productModel->find($id);
-        
-        if (!$product || $product['status'] != 'ON') {
+        if (!$product || (string) ($product['status'] ?? '') !== 'ON') {
+            http_response_code(404);
             die('Product not found or unavailable');
         }
-        
+
+        $canonicalPath = (string) ($product['public_path'] ?? '');
+        if ($canonicalPath !== '' && strpos($canonicalPath, 'product/') !== 0) {
+            header('Location: ' . url($canonicalPath), true, 301);
+            exit;
+        }
+
+        $this->renderDetail($product);
+    }
+
+    /**
+     * Show product detail by canonical slug URL: /{category-slug}/{product-slug}
+     */
+    public function showBySlug($categorySlug, $productSlug)
+    {
+        $product = $this->productModel->findByCategoryAndProductSlug((string) $categorySlug, (string) $productSlug);
+        if (!$product) {
+            http_response_code(404);
+            die('Product not found or unavailable');
+        }
+
+        $this->renderDetail($product);
+    }
+
+    /**
+     * POST /product/{id}/quote
+     * Preview pricing (quantity + giftcode) before purchase
+     */
+    public function quote($id)
+    {
+        $payload = $_POST;
+        if (empty($payload)) {
+            $raw = file_get_contents('php://input');
+            $decoded = is_string($raw) ? json_decode($raw, true) : null;
+            if (is_array($decoded)) {
+                $payload = $decoded;
+            }
+        }
+
+        $result = $this->purchaseService->quoteForDisplay((int) $id, [
+            'quantity' => (int) ($payload['quantity'] ?? 1),
+            'giftcode' => (string) ($payload['giftcode'] ?? ''),
+        ]);
+
+        return $this->json($result, !empty($result['success']) ? 200 : 400);
+    }
+
+    /**
+     * POST /product/{id}/purchase
+     */
+    public function purchase($id)
+    {
+        if (!$this->authService->isLoggedIn()) {
+            return $this->json(['success' => false, 'message' => 'Ban chua dang nhap.'], 401);
+        }
+
+        $user = $this->authService->getCurrentUser();
+        if (!$user) {
+            return $this->json(['success' => false, 'message' => 'Khong the xac thuc tai khoan.'], 401);
+        }
+
+        $payload = $_POST;
+        if (empty($payload)) {
+            $raw = file_get_contents('php://input');
+            $decoded = is_string($raw) ? json_decode($raw, true) : null;
+            if (is_array($decoded)) {
+                $payload = $decoded;
+            }
+        }
+
+        $result = $this->purchaseService->purchaseWithWallet((int) $id, $user, [
+            'quantity' => (int) ($payload['quantity'] ?? 1),
+            'customer_input' => (string) ($payload['customer_input'] ?? ''),
+            'giftcode' => (string) ($payload['giftcode'] ?? ''),
+        ]);
+        return $this->json($result, !empty($result['success']) ? 200 : 400);
+    }
+
+    private function renderDetail(array $product): void
+    {
+        global $chungapi, $user;
+
+        $requiresInfo = (int) ($product['requires_info'] ?? 0) === 1;
+        $productType = (string) ($product['product_type'] ?? 'account');
+
+        $availableStock = null;
+        if ($productType === 'account' && !$requiresInfo) {
+            $availableStock = $this->stockModel->countAvailable((int) ($product['id'] ?? 0));
+        }
+
+        $product['available_stock'] = $availableStock;
+        $product['public_url'] = url((string) ($product['public_path'] ?? ('product/' . (int) ($product['id'] ?? 0))));
+
         $this->view('product/detail', [
             'user' => isset($_SESSION['session']) ? $user : null,
             'chungapi' => $chungapi,

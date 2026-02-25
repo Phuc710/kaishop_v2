@@ -7,6 +7,7 @@
 class Product extends Model
 {
     protected $table = 'products';
+    private ?array $columnMap = null;
 
     public function __construct()
     {
@@ -22,14 +23,73 @@ class Product extends Model
         $cols = [
             'product_type' => "ALTER TABLE {$this->table} ADD COLUMN product_type ENUM('account','link') NOT NULL DEFAULT 'account' AFTER slug",
             'source_link' => "ALTER TABLE {$this->table} ADD COLUMN source_link TEXT DEFAULT NULL AFTER price_vnd",
+            'min_purchase_qty' => "ALTER TABLE {$this->table} ADD COLUMN min_purchase_qty INT NOT NULL DEFAULT 1 AFTER source_link",
+            'max_purchase_qty' => "ALTER TABLE {$this->table} ADD COLUMN max_purchase_qty INT NOT NULL DEFAULT 0 AFTER min_purchase_qty",
+            'requires_info' => "ALTER TABLE {$this->table} ADD COLUMN requires_info TINYINT(1) NOT NULL DEFAULT 0 AFTER seo_description",
+            'info_instructions' => "ALTER TABLE {$this->table} ADD COLUMN info_instructions TEXT DEFAULT NULL AFTER requires_info",
         ];
         foreach ($cols as $col => $sql) {
             $stmt = $this->db->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND COLUMN_NAME=?");
             $stmt->execute([$this->table, $col]);
             if ((int) $stmt->fetchColumn() === 0) {
-                $this->db->exec($sql);
+                try {
+                    $this->db->exec($sql);
+                } catch (Throwable $e) {
+                    // Fallback path: create()/update() will drop unknown columns on older schemas.
+                }
             }
         }
+    }
+
+    public function create($data)
+    {
+        $filtered = $this->filterWritableColumns((array) $data);
+        return parent::create($filtered);
+    }
+
+    public function update($id, $data)
+    {
+        $filtered = $this->filterWritableColumns((array) $data);
+        return parent::update($id, $filtered);
+    }
+
+    private function filterWritableColumns(array $data): array
+    {
+        if (empty($data)) {
+            return $data;
+        }
+
+        $columns = $this->getColumnMap();
+        $filtered = [];
+        foreach ($data as $key => $value) {
+            if (isset($columns[$key])) {
+                $filtered[$key] = $value;
+            }
+        }
+
+        return $filtered;
+    }
+
+    private function getColumnMap(): array
+    {
+        if (is_array($this->columnMap)) {
+            return $this->columnMap;
+        }
+
+        $stmt = $this->db->prepare("
+            SELECT COLUMN_NAME
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
+        ");
+        $stmt->execute([$this->table]);
+
+        $map = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $columnName) {
+            $map[(string) $columnName] = true;
+        }
+
+        $this->columnMap = $map;
+        return $this->columnMap;
     }
 
     /**
@@ -39,7 +99,7 @@ class Product extends Model
      */
     public function find($id)
     {
-        $stmt = $this->db->prepare("SELECT p.*, c.name as category_name
+        $stmt = $this->db->prepare("SELECT p.*, c.name as category_name, c.slug as category_slug
             FROM {$this->table} p
             LEFT JOIN categories c ON p.category_id = c.id
             WHERE p.id = ? LIMIT 1");
@@ -55,7 +115,7 @@ class Product extends Model
      */
     public function getAvailable()
     {
-        $sql = "SELECT p.*, c.name as category_name 
+        $sql = "SELECT p.*, c.name as category_name, c.slug as category_slug
                 FROM {$this->table} p
                 LEFT JOIN categories c ON p.category_id = c.id
                 WHERE p.status = 'ON'
@@ -98,7 +158,7 @@ class Product extends Model
 
         $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
 
-        $sql = "SELECT p.*, c.name as category_name 
+        $sql = "SELECT p.*, c.name as category_name, c.slug as category_slug
                 FROM {$this->table} p
                 LEFT JOIN categories c ON p.category_id = c.id
                 {$whereClause} 
@@ -114,12 +174,28 @@ class Product extends Model
      */
     public function findBySlug($slug)
     {
-        $sql = "SELECT p.*, c.name as category_name 
+        $sql = "SELECT p.*, c.name as category_name, c.slug as category_slug
                 FROM {$this->table} p
                 LEFT JOIN categories c ON p.category_id = c.id
                 WHERE p.slug = ? LIMIT 1";
         $result = $this->query($sql, [$slug])->fetch(PDO::FETCH_ASSOC);
         return $result ? $this->hydrateProductRow($result) : null;
+    }
+
+    /**
+     * Find active product by category slug + product slug (public canonical URL)
+     */
+    public function findByCategoryAndProductSlug(string $categorySlug, string $productSlug): ?array
+    {
+        $sql = "SELECT p.*, c.name as category_name, c.slug as category_slug
+                FROM {$this->table} p
+                INNER JOIN categories c ON p.category_id = c.id
+                WHERE c.slug = ? AND p.slug = ? AND p.status = 'ON'
+                LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$categorySlug, $productSlug]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        return $row ? $this->hydrateProductRow($row) : null;
     }
 
     /**
@@ -189,7 +265,7 @@ class Product extends Model
      */
     public function getCategories()
     {
-        $sql = "SELECT id, name FROM categories WHERE status = 'ON' ORDER BY display_order ASC, name ASC";
+        $sql = "SELECT id, name, slug FROM categories WHERE status = 'ON' ORDER BY display_order ASC, name ASC";
         return $this->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -220,9 +296,31 @@ class Product extends Model
     {
         $row['product_type'] = $row['product_type'] ?? 'account';
         $row['source_link'] = $row['source_link'] ?? null;
+        $row['min_purchase_qty'] = max(1, (int) ($row['min_purchase_qty'] ?? 1));
+        $row['max_purchase_qty'] = max(0, (int) ($row['max_purchase_qty'] ?? 0));
+        $row['requires_info'] = (int) ($row['requires_info'] ?? 0);
+        $row['info_instructions'] = $row['info_instructions'] ?? null;
         $row['gallery_arr'] = $this->decodeJsonArray($row['gallery'] ?? null);
+        $row['category_slug'] = trim((string) ($row['category_slug'] ?? ''));
+        $row['public_path'] = $this->buildPublicPath(
+            $row['category_slug'],
+            (string) ($row['slug'] ?? ''),
+            (int) ($row['id'] ?? 0)
+        );
 
         return $row;
+    }
+
+    private function buildPublicPath(string $categorySlug, string $productSlug, int $productId): string
+    {
+        $categorySlug = trim($categorySlug);
+        $productSlug = trim($productSlug);
+
+        if ($categorySlug !== '' && $productSlug !== '') {
+            return $categorySlug . '/' . $productSlug;
+        }
+
+        return 'product/' . max(0, $productId);
     }
 
     private function decodeJsonArray($json): array

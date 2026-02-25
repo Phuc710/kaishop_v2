@@ -8,18 +8,18 @@
         'flatpickr' => true,
         'interactive_bundle' => false,
     ]);
-    require __DIR__ . '/../../hethong/head2.php';
     ?>
-    <title>Biến động số dư |
-        <?= $chungapi['ten_web']; ?>
-    </title>
+    <?php require __DIR__ . '/../../hethong/head2.php'; ?>
+    <title>Lịch sử nạp tiền |
+        <?= htmlspecialchars((string) ($chungapi['ten_web'] ?? 'KaiShop'), ENT_QUOTES, 'UTF-8'); ?></title>
+    <meta name="robots" content="noindex, nofollow">
 </head>
 
 <body>
     <?php require __DIR__ . '/../../hethong/nav.php'; ?>
 
     <main class="bg-light">
-        <section class="py-5">
+        <section class="py-5" style="padding-top: 80px !important;">
             <div class="container user-page-container">
                 <div class="row">
                     <!-- Sidebar (DRY component) -->
@@ -176,8 +176,8 @@
                     paginate: {
                         first: "Đầu",
                         last: "Cuối",
-                        next: "›",
-                        previous: "‹"
+                        next: "&rsaquo;",
+                        previous: "&lsaquo;"
                     }
                 }
             });

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 
 <head>
@@ -10,16 +10,15 @@
     ]);
     require __DIR__ . '/../../hethong/head2.php';
     ?>
-    <title>Biến động số dư |
-        <?= $chungapi['ten_web']; ?>
-    </title>
+    <title>Biến động số dư | <?= htmlspecialchars((string) ($chungapi['ten_web'] ?? 'KaiShop'), ENT_QUOTES, 'UTF-8'); ?></title>
+    <meta name="robots" content="noindex, nofollow">
 </head>
 
 <body>
     <?php require __DIR__ . '/../../hethong/nav.php'; ?>
 
     <main class="bg-light">
-        <section class="py-5">
+        <section class="py-5" style="padding-top: 80px !important;">
             <div class="container user-page-container">
                 <div class="row">
                     <!-- Sidebar (DRY component) -->
@@ -32,9 +31,10 @@
                     <div class="col-lg-9 col-md-8">
                         <div class="profile-card">
                             <div class="profile-card-header profile-card-header--with-actions">
-                                <h5 class="text-dark">Lịch sử sản phẩm</h5>
-                                <a href="<?= url('profile?section=deposit#profile-deposit-card') ?>"
-                                    class="btn btn-edit-profile">
+                                <div>
+                                    <h1 class="h5 text-dark mb-1">Biến động số dư</h1>
+                                </div>
+                                <a href="<?= url('deposit-bank') ?>" class="btn btn-edit-profile">
                                     <i class="fas fa-university mr-1"></i> Nạp tiền
                                 </a>
                             </div>
@@ -48,7 +48,7 @@
                                                         class="fas fa-search"></i></span>
                                                 <input type="text" id="filter-reason"
                                                     class="form-control border-start-0 ps-0"
-                                                    placeholder="Tìm nhanh theo lý do...">
+                                                    placeholder="Tìm theo nội dung biến động...">
                                             </div>
                                         </div>
                                         <div class="col-md-4 mb-2">
@@ -81,7 +81,7 @@
                                         </div>
 
                                         <div class="d-flex align-items-center">
-                                            <span class="text-secondary fw-bold small me-2 text-uppercase">Short by
+                                            <span class="text-secondary fw-bold small me-2 text-uppercase">Sort by
                                                 date:</span>
                                             <select id="f-sort" class="form-select form-select-sm shadow-none"
                                                 style="width: auto;">
@@ -103,7 +103,7 @@
                                                 <th class="py-3 text-nowrap text-center">SỐ DƯ TRƯỚC</th>
                                                 <th class="py-3 text-nowrap text-center">BIẾN ĐỘNG</th>
                                                 <th class="py-3 text-nowrap text-center">SỐ DƯ HIỆN TẠI</th>
-                                                <th class="py-3 text-nowrap text-center">LÝ DO</th>
+                                                <th class="py-3 text-nowrap text-center">NỘI DUNG BIẾN ĐỘNG</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -146,7 +146,7 @@
             const table = $('#history-table').DataTable({
                 serverSide: true,
                 ajax: {
-                    url: BASE_URL + '/api/history-code',
+                    url: BASE_URL + '/api/history-balance',
                     type: 'POST',
                     data: function (d) {
                         d.reason = $('#filter-reason').val();
@@ -173,14 +173,14 @@
                 pageLength: 10,
                 dom: 't<"d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3"<"text-muted small"i><"d-flex align-items-center gap-3"p>>',
                 language: {
-                    info: "Hiển thị _START_ - _END_ trong tổng số _TOTAL_ giao dịch",
-                    infoEmpty: "Chưa có giao dịch nào",
+                    info: "Hiển thị _START_ - _END_ trong tổng số _TOTAL_ biến động",
+                    infoEmpty: "Chưa có biến động nào",
                     emptyTable: "Không có dữ liệu biến động số dư",
                     paginate: {
                         first: "Đầu",
                         last: "Cuối",
-                        next: "›",
-                        previous: "‹"
+                        next: "&rsaquo;",
+                        previous: "&lsaquo;"
                     }
                 }
             });

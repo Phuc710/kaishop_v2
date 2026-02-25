@@ -47,8 +47,8 @@
                                         <?php
                                         $is_offline = $product['status'] !== 'ON';
                                         $discount = 0;
-                                        if ($product['old_price'] > $product['price']) {
-                                            $discount = round((($product['old_price'] - $product['price']) / $product['old_price']) * 100);
+                                        if (isset($product['old_price_vnd']) && $product['old_price_vnd'] > $product['price_vnd']) {
+                                            $discount = round((($product['old_price_vnd'] - $product['price_vnd']) / $product['old_price_vnd']) * 100);
                                         }
                                         $badge_class = '';
                                         if (stripos($product['name'], 'Premium') !== false)
@@ -58,7 +58,7 @@
                                         ?>
                                         <div class="ds-card <?= $is_offline ? 'offline' : '' ?>">
                                             <div class="ds-card-img-wrap">
-                                                <a href="<?= url('product/' . $product['id']) ?>">
+                                                <a href="<?= url($product['public_path'] ?? ('product/' . $product['id'])) ?>">
                                                     <img src="<?= $product['image'] ?>" class="ds-card-img"
                                                         alt="<?= $product['name'] ?>">
                                                 </a>
@@ -72,7 +72,7 @@
                                             <div class="ds-card-body">
                                                 <div class="ds-card-title">
                                                     <a
-                                                        href="<?= url('product/' . $product['id']) ?>"><?= htmlspecialchars($product['name']) ?></a>
+                                                        href="<?= url($product['public_path'] ?? ('product/' . $product['id'])) ?>"><?= htmlspecialchars($product['name']) ?></a>
                                                 </div>
                                                 <div class="ds-price-row">
                                                     <div class="ds-price"><?= number_format($product['price_vnd']) ?>đ</div>

@@ -4,25 +4,122 @@
  * Application Configuration
  */
 
-// Start session if not already started
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// require EnvHelper for dynamic base URL
+// Load env helper early for runtime configuration (APP_DIR / APP_DEBUG / APP_KEY...)
 require_once dirname(__DIR__) . '/app/Helpers/EnvHelper.php';
 EnvHelper::load(dirname(__DIR__) . '/.env');
+
+// Start session with safer cookie flags
+if (session_status() === PHP_SESSION_NONE) {
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443);
+
+    if (PHP_VERSION_ID >= 70300) {
+        session_set_cookie_params([
+            'lifetime' => 0,
+            'path' => '/',
+            'domain' => '',
+            'secure' => $isHttps,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    } else {
+        session_set_cookie_params(0, '/; samesite=Lax', '', $isHttps, true);
+    }
+
+    ini_set('session.use_strict_mode', '1');
+    ini_set('session.use_only_cookies', '1');
+    ini_set('session.cookie_httponly', '1');
+    session_start();
+}
 
 // Base URL configuration
 define('BASE_PATH', dirname(__DIR__));
 define('BASE_URL', (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER["HTTP_HOST"] . EnvHelper::get('APP_DIR', ''));
+if (!defined('APP_KEY')) {
+    define('APP_KEY', (string) EnvHelper::get('APP_KEY', ''));
+}
 
 // Set timezone
 date_default_timezone_set('Asia/Ho_Chi_Minh');
 
-// Error reporting (disable in production)
+// Error reporting (production-safe by default unless APP_DEBUG=1)
+$appDebug = in_array(strtolower((string) EnvHelper::get('APP_DEBUG', '0')), ['1', 'true', 'yes', 'on'], true);
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', $appDebug ? '1' : '0');
+
+// Handle CORS and preflight requests (OPTIONS) for APIs and cross-origin Auth fetches
+$httpOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if ($httpOrigin !== '' && !headers_sent()) {
+    header("Access-Control-Allow-Origin: $httpOrigin");
+    header("Access-Control-Allow-Credentials: true");
+    header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-CSRF-TOKEN, Accept");
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+// Baseline security headers (avoid CSP here due legacy inline scripts)
+if (!headers_sent()) {
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: SAMEORIGIN');
+    // Important: Allow popups/redirects for Firebase Google Login (OAuth)
+    header('Cross-Origin-Opener-Policy: same-origin-allow-popups');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
+}
+
+// CSRF token helpers (shared across legacy + MVC views)
+if (empty($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token']) || strlen($_SESSION['csrf_token']) < 32) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+if (empty($_SESSION['csrf_token_created_at'])) {
+    $_SESSION['csrf_token_created_at'] = time();
+}
+
+if (!function_exists('csrf_token')) {
+    function csrf_token(): string
+    {
+        return (string) ($_SESSION['csrf_token'] ?? '');
+    }
+}
+
+if (!function_exists('csrf_field')) {
+    function csrf_field(): string
+    {
+        return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') . '">';
+    }
+}
+
+if (!function_exists('csrf_regenerate')) {
+    function csrf_regenerate(): string
+    {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        $_SESSION['csrf_token_created_at'] = time();
+        return (string) $_SESSION['csrf_token'];
+    }
+}
+
+if (!function_exists('csrf_validate_request')) {
+    function csrf_validate_request(): bool
+    {
+        $sessionToken = (string) ($_SESSION['csrf_token'] ?? '');
+        if ($sessionToken === '') {
+            return false;
+        }
+
+        $provided = '';
+        if (isset($_SERVER['HTTP_X_CSRF_TOKEN'])) {
+            $provided = (string) $_SERVER['HTTP_X_CSRF_TOKEN'];
+        } elseif (isset($_POST['csrf_token'])) {
+            $provided = (string) $_POST['csrf_token'];
+        }
+
+        return $provided !== '' && hash_equals($sessionToken, $provided);
+    }
+}
 
 // Autoload core classes
 spl_autoload_register(function ($class) {

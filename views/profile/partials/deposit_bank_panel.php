@@ -17,7 +17,6 @@ $qrUrl = $activeDepositExists ? (string) ($activeDepositPayload['qr_url'] ?? $pl
     <div class="profile-card-header profile-card-header--with-actions">
         <div>
             <h5 class="text-dark mb-1">Nạp tiền</h5>
-            <div class="user-card-subtitle">Nạp tiền tự động qua ngân hàng</div>
         </div>
         <div class="profile-card-header-actions">
             <span class="user-card-badge user-card-badge--top-right">Ngân hàng</span>

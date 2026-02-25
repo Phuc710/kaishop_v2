@@ -65,15 +65,15 @@ class AdminMenuRenderer
     /**
      * Cau hinh menu Nhat ky dung chung.
      */
-    public static function journalGroup(string $activityHref, string $balanceHref, string $depositHref): array
+    public static function journalGroup(string $buyingHref, string $balanceHref, string $depositHref): array
     {
         return [
             'icon' => 'bx bx-history side-menu__icon',
             'label' => 'Nhật ký',
             'children' => [
                 [
-                    'href' => $activityHref,
-                    'label' => 'Lịch sử giao dịch',
+                    'href' => $buyingHref,
+                    'label' => 'Lịch sử mua hàng',
                 ],
                 [
                     'href' => $depositHref,

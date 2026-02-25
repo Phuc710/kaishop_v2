@@ -39,22 +39,22 @@ class HomeController extends Controller
      */
     public function category($slug)
     {
-        global $connection, $chungapi, $username, $user;
+        global $chungapi, $user;
 
         $categoryModel = new Category();
         $productModel = new Product();
 
-        // Fetch specific category by slug (or exact name match if no dedicated slug column)
-        // Note: admin uses xoadau() to generate slugs, we'll assume the URL passes that.
-        // We'll search by matching the generated slug dynamically in the query or if a slug column exists.
+        // Find category by slug (or name using xoadau for backward compatibility)
+        $categoryData = $categoryModel->findBySlug($slug);
 
-        $categories = $categoryModel->getActive();
-        $categoryData = null;
-
-        foreach ($categories as $cat) {
-            if (xoadau($cat['name']) === $slug) {
-                $categoryData = $cat;
-                break;
+        if (!$categoryData) {
+            // Fallback: search active categories by xoadau() name just in case
+            $categories = $categoryModel->getActive();
+            foreach ($categories as $cat) {
+                if (xoadau($cat['name']) === $slug) {
+                    $categoryData = $cat;
+                    break;
+                }
             }
         }
 

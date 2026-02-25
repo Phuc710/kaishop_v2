@@ -20,6 +20,7 @@
 <script src="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/plugins/daterangepicker/daterangepicker.js"
     crossorigin="anonymous">
     </script>
+<script src="<?= asset('assets/js/flatpickr.js') ?>"></script>
 <!-- Tempusdominus Bootstrap 4 -->
 <script
     src="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js"
