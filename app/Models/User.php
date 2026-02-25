@@ -124,4 +124,12 @@ class User extends Model
     {
         return $this->update($userId, ['email' => $email]);
     }
+
+    /**
+     * Update 2FA (OTP Gmail) setting
+     */
+    public function updateTwoFactorSetting($userId, bool $enabled)
+    {
+        return $this->update($userId, ['twofa_enabled' => $enabled ? 1 : 0]);
+    }
 }

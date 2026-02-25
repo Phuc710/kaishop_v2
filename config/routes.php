@@ -19,6 +19,7 @@ return [
     // ========== AUTH ROUTES ==========
     ['GET', '/login', 'AuthController@showLogin'],
     ['POST', '/login', 'AuthController@login'],
+    ['GET', '/login-otp', 'AuthController@showLoginOtp'],
     ['POST', '/auth/2fa/verify-login', 'AuthController@verifyLoginOtp'],
     ['GET', '/register', 'AuthController@showRegister'],
     ['POST', '/register', 'AuthController@register'],

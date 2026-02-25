@@ -79,7 +79,7 @@
         ta.value = text;
         document.body.appendChild(ta);
         ta.select();
-        try { document.execCommand('copy'); } catch (e) {}
+        try { document.execCommand('copy'); } catch (e) { }
         document.body.removeChild(ta);
         toastCopySuccess(text);
     }
@@ -262,17 +262,89 @@
                         if (!res || !res.success) return;
                         if (res.status === 'completed') {
                             stopAll();
+
+                            // Inject CSS for animated checkmark
+                            var styleId = 'success-checkmark-style';
+                            if (!document.getElementById(styleId)) {
+                                var style = document.createElement('style');
+                                style.id = styleId;
+                                style.innerHTML = `
+                                    .success-checkmark {
+                                        width: 80px;
+                                        height: 80px;
+                                        border-radius: 50%;
+                                        display: block;
+                                        stroke-width: 2;
+                                        stroke: #4caf50;
+                                        stroke-miterlimit: 10;
+                                        margin: 10px auto 20px;
+                                        box-shadow: inset 0px 0px 0px #4caf50;
+                                        animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;
+                                    }
+                                    @keyframes fill { 100% { box-shadow: inset 0px 0px 0px 40px #4caf50; } }
+                                    @keyframes scale { 0%, 100% { transform: none; } 50% { transform: scale3d(1.1, 1.1, 1); } }
+                                    .swal2-icon.swal2-success { display: none !important; } /* Hide default icon */
+                                `;
+                                document.head.appendChild(style);
+                            }
+
+                            // SVG Checkmark HTML
+                            var checkmarkSvg = `
+                                <svg class="success-checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                                    <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
+                                    <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" stroke="#fff" stroke-width="4"/>
+                                </svg>
+                            `;
+
+                            var detailsHtml = checkmarkSvg + '<div style="text-align: left; padding: 15px; background: #f8f9fa; border-radius: 10px; margin-top: 15px;">';
+                            if (res.deposit_info) {
+                                detailsHtml += '<p style="margin-bottom: 5px;">Mã giao dịch: <strong>' + (res.deposit_info.deposit_code || '') + '</strong></p>';
+                                detailsHtml += '<p style="margin-bottom: 5px;">Số tiền nạp: <strong>' + formatVnd(res.deposit_info.amount || 0) + 'đ</strong></p>';
+                                if (res.deposit_info.bonus_percent > 0) {
+                                    detailsHtml += '<p style="margin-bottom: 5px;">Khuyến mãi: <strong>+' + res.deposit_info.bonus_percent + '%</strong></p>';
+                                }
+                            }
+                            detailsHtml += '<div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ccc; text-align: center; font-size: 18px;">Số dư hiện tại<br><strong style="color: #4caf50; font-size: 25px;">' + formatVnd(Number(res.new_balance || 0)) + 'đ</strong></div></div>';
+
                             if (window.Swal) {
                                 Swal.fire({
-                                    icon: 'success',
-                                    title: 'Nạp tiền thành công',
-                                    html: 'Số dư mới: <b>' + formatVnd(Number(res.new_balance || 0)) + 'đ</b>',
-                                    confirmButtonText: 'OK'
+                                    title: 'Thành Công!',
+                                    html: detailsHtml,
+                                    confirmButtonText: 'OK',
+                                    confirmButtonColor: '#ff6900',
+                                    allowOutsideClick: false,
+                                    didOpen: function () {
+                                        if (typeof confetti === 'function') {
+                                            // Phát nổ chính giữa
+                                            confetti({
+                                                particleCount: 150,
+                                                spread: 70,
+                                                origin: { y: 0.5 },
+                                                zIndex: 9999
+                                            });
+
+                                            // Bắn thêm một chút ở hai bên cho xịn
+                                            setTimeout(function () {
+                                                confetti({
+                                                    particleCount: 50,
+                                                    angle: 60,
+                                                    spread: 55,
+                                                    origin: { x: 0 }
+                                                });
+                                                confetti({
+                                                    particleCount: 50,
+                                                    angle: 120,
+                                                    spread: 55,
+                                                    origin: { x: 1 }
+                                                });
+                                            }, 200);
+                                        }
+                                    }
                                 }).then(function () {
                                     window.location.href = endpoints.profile || (window.location.origin + '/profile');
                                 });
                             } else {
-                                alertSuccess('Nạp tiền thành công');
+                                alertSuccess('Nạp tiền thành công. Số dư: ' + formatVnd(Number(res.new_balance || 0)) + 'đ');
                                 window.location.href = endpoints.profile || (window.location.origin + '/profile');
                             }
                             return;
@@ -446,7 +518,7 @@
     document.addEventListener('DOMContentLoaded', function () {
         var root = document.querySelector('[data-deposit-bank-root]');
         if (!root) return;
-        var config = parseJsonConfig('profile-deposit-bank-config');
+        var config = parseJsonConfig('deposit-bank-config');
         initBankDeposit(root, config);
     });
 })();

@@ -59,7 +59,8 @@ class ProfileController extends Controller
         }
 
         $user = $this->authService->getCurrentUser();
-        $newEmail = trim($this->post('email', ''));
+        $newEmail = trim((string) $this->post('email', ''));
+        $twofaEnabled = in_array((string) $this->post('twofa_enabled', '0'), ['1', 'true', 'on'], true);
 
         $errors = $this->validator->validateEmail($newEmail);
         if (!empty($errors)) {
@@ -76,11 +77,16 @@ class ProfileController extends Controller
             ], 400);
         }
 
-        $success = $this->userModel->updateEmail($user['id'], $newEmail);
+        $success = $this->userModel->update($user['id'], [
+            'email' => $newEmail,
+            'twofa_enabled' => $twofaEnabled ? 1 : 0,
+        ]);
+
         if ($success) {
             return $this->json([
                 'success' => true,
-                'message' => 'Cập nhật email thành công'
+                'message' => 'Cập nhật thông tin bảo mật thành công',
+                'twofa_enabled' => $twofaEnabled ? 1 : 0,
             ]);
         }
 

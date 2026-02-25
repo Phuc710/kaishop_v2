@@ -39,6 +39,28 @@ class AuthController extends Controller
     }
 
     /**
+     * Show dedicated OTP page for login 2FA
+     */
+    public function showLoginOtp()
+    {
+        if ($this->authService->isLoggedIn()) {
+            $this->redirect(BASE_URL . '/');
+        }
+
+        $challengeId = trim((string) $this->get('challenge_id', ''));
+        if ($challengeId === '') {
+            $this->redirect(BASE_URL . '/login');
+        }
+
+        $siteConfig = Config::getSiteConfig();
+        $this->view('auth/login_otp', [
+            'chungapi' => $siteConfig,
+            'siteConfig' => $siteConfig,
+            'challengeId' => $challengeId,
+        ]);
+    }
+
+    /**
      * Process login (AJAX)
      */
     public function login()

@@ -131,9 +131,8 @@ class AuthSecurityService
 
     public function shouldRequireTwoFactor(array $user, array $device): bool
     {
-        $twofaEnabled = (int) ($user['twofa_enabled'] ?? 0) === 1;
-        $trusted = $this->isTrustedDevice((int) $user['id'], $device['device_hash']);
-        return $twofaEnabled || !$trusted;
+        // Latest business rule: only accounts that explicitly enable 2FA require OTP at login.
+        return (int) ($user['twofa_enabled'] ?? 0) === 1;
     }
 
     public function createOtpChallenge(array $user, string $purpose, array $device, array $meta = [], int $ttlSeconds = 300): array

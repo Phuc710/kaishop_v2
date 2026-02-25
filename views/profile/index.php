@@ -8,7 +8,8 @@
     ]);
     require __DIR__ . '/../../hethong/head2.php';
     ?>
-    <title>Thông Tin Tài Khoản | <?= htmlspecialchars((string) ($chungapi['ten_web'] ?? 'KaiShop'), ENT_QUOTES, 'UTF-8'); ?></title>
+    <title>Thông Tin Tài Khoản |
+        <?= htmlspecialchars((string) ($chungapi['ten_web'] ?? 'KaiShop'), ENT_QUOTES, 'UTF-8'); ?></title>
 </head>
 
 <body>
@@ -19,7 +20,8 @@
             <div class="container user-page-container">
                 <div class="row">
                     <div class="col-lg-3 col-md-4 mb-4">
-                        <?php $activePage = $activePage ?? 'profile'; require __DIR__ . '/../../hethong/user_sidebar.php'; ?>
+                        <?php $activePage = $activePage ?? 'profile';
+                        require __DIR__ . '/../../hethong/user_sidebar.php'; ?>
                     </div>
 
                     <div class="col-lg-9 col-md-8">
@@ -40,14 +42,16 @@
                                     <div class="col-md-4 col-sm-6">
                                         <div class="stat-box neutral">
                                             <div class="user-label">Tổng tiền nạp</div>
-                                            <div class="fw-bold fs-5 text-dark mt-2"><?= tien($user['tong_nap']); ?>đ</div>
+                                            <div class="fw-bold fs-5 text-dark mt-2"><?= tien($user['tong_nap']); ?>đ
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="col-md-4 col-sm-6">
                                         <div class="stat-box neutral">
                                             <div class="user-label">Số dư đã sử dụng</div>
                                             <?php $used = (int) $user['tong_nap'] - (int) $user['money']; ?>
-                                            <div class="fw-bold fs-5 text-dark mt-2"><?= tien($used > 0 ? $used : 0); ?>đ</div>
+                                            <div class="fw-bold fs-5 text-dark mt-2">
+                                                <?= tien($used > 0 ? $used : 0); ?>đ</div>
                                         </div>
                                     </div>
                                 </div>
@@ -57,35 +61,61 @@
                         <div class="profile-card">
                             <div class="profile-card-header mb-3">
                                 <h5 class="text-dark mb-0">Hồ sơ của bạn</h5>
-                                <button type="button" id="btn-edit" class="btn btn-edit-profile">Chỉnh sửa thông tin</button>
+                                <button type="button" id="btn-edit" class="btn btn-edit-profile">Chỉnh sửa thông
+                                    tin</button>
                             </div>
                             <div class="profile-card-body pt-0">
                                 <form id="profile-form" class="row g-4">
                                     <div class="col-md-6">
                                         <label class="form-label user-label">Tên đăng nhập</label>
                                         <div class="custom-input-wrap">
-                                            <input type="text" class="form-control custom-readonly" value="<?= htmlspecialchars((string) $username, ENT_QUOTES, 'UTF-8'); ?>" readonly>
+                                            <input type="text" class="form-control custom-readonly"
+                                                value="<?= htmlspecialchars((string) $username, ENT_QUOTES, 'UTF-8'); ?>"
+                                                readonly>
                                         </div>
                                     </div>
 
                                     <div class="col-md-6">
                                         <label class="form-label user-label">Địa chỉ Email</label>
                                         <div class="custom-input-wrap">
-                                            <input type="email" name="email" id="email_input" class="form-control custom-readonly" value="<?= htmlspecialchars((string) ($user['email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" readonly>
+                                            <input type="email" name="email" id="email_input"
+                                                class="form-control custom-readonly"
+                                                value="<?= htmlspecialchars((string) ($user['email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                                readonly>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label user-label">Xác minh 2 bước (OTP Gmail)</label>
+                                        <div class="custom-input-wrap">
+                                            <div class="form-check form-switch pt-2 ps-0">
+                                                <input class="form-check-input ms-0" type="checkbox" role="switch"
+                                                    id="twofa_enabled_input" <?= !empty($user['twofa_enabled']) ? 'checked' : '' ?> disabled>
+                                                <label class="form-check-label ms-5" for="twofa_enabled_input">
+                                                    Bật OTP 6 số khi đăng nhập
+                                                </label>
+                                            </div>
+                                            <small class="text-muted d-block mt-2">
+                                                Chỉ khi bật mục này, tài khoản mới cần nhập OTP khi đăng nhập.
+                                            </small>
                                         </div>
                                     </div>
 
                                     <div class="col-md-6">
                                         <label class="form-label user-label">Ngày đăng ký</label>
                                         <div class="custom-input-wrap">
-                                            <input type="text" class="form-control custom-readonly" value="<?= htmlspecialchars((string) ($user['time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" readonly>
+                                            <input type="text" class="form-control custom-readonly"
+                                                value="<?= htmlspecialchars((string) ($user['time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                                readonly>
                                         </div>
                                     </div>
 
                                     <div class="col-md-6">
                                         <label class="form-label user-label">Đăng nhập gần nhất</label>
                                         <div class="custom-input-wrap">
-                                            <input type="text" class="form-control custom-readonly" value="<?= htmlspecialchars((string) ($user['ip'] ?? 'Chưa cập nhật'), ENT_QUOTES, 'UTF-8'); ?>" readonly>
+                                            <input type="text" class="form-control custom-readonly"
+                                                value="<?= htmlspecialchars((string) ($user['ip'] ?? 'Chưa cập nhật'), ENT_QUOTES, 'UTF-8'); ?>"
+                                                readonly>
                                         </div>
                                     </div>
                                 </form>
@@ -101,11 +131,12 @@
 
     <?php require __DIR__ . '/../../hethong/foot.php'; ?>
 
-    <script src="<?= asset('assets/js/profile-deposit-bank.js') ?>"></script>
+    <script src="<?= asset('assets/js/deposit-bank.js') ?>"></script>
     <script>
         (function () {
             let editMode = false;
             const emailInput = document.getElementById('email_input');
+            const twofaInput = document.getElementById('twofa_enabled_input');
             const editBtn = document.getElementById('btn-edit');
             const form = document.getElementById('profile-form');
 
@@ -115,6 +146,7 @@
                         editMode = true;
                         emailInput.removeAttribute('readonly');
                         emailInput.classList.remove('custom-readonly');
+                        if (twofaInput) twofaInput.disabled = false;
                         emailInput.focus();
                         editBtn.innerHTML = 'Lưu thay đổi';
                         editBtn.classList.remove('btn-edit-profile');
@@ -125,9 +157,14 @@
                     editBtn.disabled = true;
                     editBtn.innerHTML = 'Đang lưu...';
 
+                    const formData = new FormData(form);
+                    if (twofaInput) {
+                        formData.set('twofa_enabled', twofaInput.checked ? '1' : '0');
+                    }
+
                     fetch('<?= url('profile/update') ?>', {
                         method: 'POST',
-                        body: new FormData(form)
+                        body: formData
                     })
                         .then(function (res) { return res.json(); })
                         .then(function (data) {
@@ -136,6 +173,7 @@
                                 editMode = false;
                                 emailInput.setAttribute('readonly', 'readonly');
                                 emailInput.classList.add('custom-readonly');
+                                if (twofaInput) twofaInput.disabled = true;
                                 editBtn.disabled = false;
                                 editBtn.innerHTML = 'Chỉnh sửa thông tin';
                                 editBtn.classList.remove('btn-save-green');

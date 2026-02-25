@@ -116,91 +116,17 @@ $GLOBALS['pageAssets'] = [
     </section>
 </main>
 
+
 <script>
-    function getTurnstileToken(containerId) {
-        return window.KaiAuthForms ? KaiAuthForms.getTurnstileToken(containerId) : '';
-    }
-
-    async function fetchFormJson(url, params) {
-        if (window.KaiAuthForms) return KaiAuthForms.fetchFormJson(url, params);
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: params.toString()
-        });
-        return { response, data: await response.json() };
-    }
-
-    function resetTurnstileWidget() {
-        if (window.KaiAuthForms) return KaiAuthForms.resetTurnstile();
-        try { if (window.turnstile) window.turnstile.reset(); } catch (e) {}
-    }
-    async function collectFingerprintData() {
-        if (window.KaiAuthForms) return KaiAuthForms.collectFingerprintData();
-        return { fpHash: '', fpComponents: '' };
-    }
-
-    async function registerAccount() {
-        const button1 = document.getElementById('button1');
-        const button2 = document.getElementById('button2');
-        const username = document.getElementById('username').value.trim();
-        const email = document.getElementById('email').value.trim();
-        const password = document.getElementById('password').value.trim();
-
-        if (button2.disabled) return;
-        if (!username || !email || !password) {
-            SwalHelper.error('Vui lòng nhập đầy đủ thông tin.');
-            return;
-        }
-
-        const turnstileToken = getTurnstileToken('register-turnstile');
-        <?php if ($turnstileSiteKey !== ''): ?>
-        if (!turnstileToken) {
-            SwalHelper.error('Vui lòng xác minh bạn là người thật.');
-            return;
-        }
-        <?php endif; ?>
-
-        button1.style.display = 'none';
-        button2.style.display = 'inline-block';
-        button2.disabled = true;
-
-        const { fpHash, fpComponents } = await collectFingerprintData();
-        const params = new URLSearchParams();
-        params.set('username', username);
-        params.set('email', email);
-        params.set('password', password);
-        if (turnstileToken) params.set('turnstile_token', turnstileToken);
-        if (fpHash) {
-            params.set('fingerprint', fpHash);
-            params.set('fp_components', fpComponents);
-        }
-
-        fetchFormJson('<?= BASE_URL ?>/register', params)
-        .then(({ data }) => {
-            button1.style.display = 'inline-block';
-            button2.style.display = 'none';
-            button2.disabled = false;
-            if (data.success) {
-                SwalHelper.successOkRedirect(data.message || 'Đăng ký thành công.', '<?= BASE_URL ?>/');
-            } else {
-                resetTurnstileWidget();
-                SwalHelper.error(data.message || 'Đăng ký thất bại.');
-            }
-        })
-        .catch(() => {
-            button1.style.display = 'inline-block';
-            button2.style.display = 'none';
-            button2.disabled = false;
-            resetTurnstileWidget();
-            SwalHelper.error('Không thể kết nối đến máy chủ.');
-        });
-    }
-
-    document.getElementById('password').addEventListener('keypress', function (event) {
-        if (event.key === 'Enter') registerAccount();
-    });
+    window.KaiAuthRegisterConfig = {
+        registerUrl: '<?= BASE_URL ?>/register',
+        homeUrl: '<?= BASE_URL ?>/',
+        turnstileRequired: <?= $turnstileSiteKey !== '' ? 'true' : 'false' ?>,
+        turnstileContainerId: 'register-turnstile'
+    };
 </script>
+<script src="<?= BASE_URL ?>/assets/js/auth-register.js"></script>
+
 
 <?php if ($googleAuthEnabled): ?>
 <script type="module">

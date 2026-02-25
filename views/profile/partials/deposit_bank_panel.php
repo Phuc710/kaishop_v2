@@ -34,10 +34,11 @@ $qrUrl = $activeDepositExists ? (string) ($activeDepositPayload['qr_url'] ?? $pl
                     ?>
                     <button type="button"
                         class="deposit-method-pill <?= $isActive ? 'is-active' : '' ?> <?= !$enabled ? 'is-disabled' : '' ?>"
-                        <?= $enabled ? '' : 'disabled' ?>
-                        data-method-code="<?= htmlspecialchars($code, ENT_QUOTES, 'UTF-8') ?>">
-                        <span class="deposit-method-pill__label"><?= htmlspecialchars((string) ($method['label'] ?? $code), ENT_QUOTES, 'UTF-8') ?></span>
-                        <span class="deposit-method-pill__badge"><?= htmlspecialchars((string) ($method['badge'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                        <?= $enabled ? '' : 'disabled' ?> data-method-code="<?= htmlspecialchars($code, ENT_QUOTES, 'UTF-8') ?>">
+                        <span
+                            class="deposit-method-pill__label"><?= htmlspecialchars((string) ($method['label'] ?? $code), ENT_QUOTES, 'UTF-8') ?></span>
+                        <span
+                            class="deposit-method-pill__badge"><?= htmlspecialchars((string) ($method['badge'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
                     </button>
                 <?php endforeach; ?>
             </div>
@@ -58,7 +59,8 @@ $qrUrl = $activeDepositExists ? (string) ($activeDepositPayload['qr_url'] ?? $pl
                             continue;
                         }
                         ?>
-                        <button type="button" class="deposit-quick-btn" data-deposit-quick data-amount="<?= $amt ?>" data-bonus="<?= $pct ?>">
+                        <button type="button" class="deposit-quick-btn" data-deposit-quick data-amount="<?= $amt ?>"
+                            data-bonus="<?= $pct ?>">
                             <span class="deposit-amount"><?= number_format($amt, 0, ',', '.') ?>đ</span>
                             <?php if ($pct > 0): ?>
                                 <span class="deposit-bonus">+<?= $pct ?>%</span>
@@ -70,17 +72,21 @@ $qrUrl = $activeDepositExists ? (string) ($activeDepositPayload['qr_url'] ?? $pl
                 <div class="form-group mt-3 mb-2">
                     <label class="user-label" for="depositAmountInput">Nhập số tiền khác</label>
                     <div class="input-group">
-                        <input type="number" id="depositAmountInput" class="form-control" min="10000" step="1000" value="10000" data-deposit-input-amount>
+                        <input type="number" id="depositAmountInput" class="form-control" min="10000" step="1000"
+                            value="10000" data-deposit-input-amount>
                         <span class="input-group-text">VND</span>
                     </div>
                     <small class="text-muted">Tối thiểu 10.000đ, tối đa 50.000.000đ</small>
                 </div>
 
                 <div class="deposit-preview" data-deposit-preview hidden>
-                    <div class="deposit-preview-row"><span>Số tiền nạp</span><strong data-preview-amount>0đ</strong></div>
-                    <div class="deposit-preview-row" data-preview-bonus-row hidden><span>Bonus</span><strong class="text-success" data-preview-bonus>+0đ</strong></div>
+                    <div class="deposit-preview-row"><span>Số tiền nạp</span><strong data-preview-amount>0đ</strong>
+                    </div>
+                    <div class="deposit-preview-row" data-preview-bonus-row hidden><span>Bonus</span><strong
+                            class="text-success" data-preview-bonus>+0đ</strong></div>
                     <div class="deposit-preview-divider"></div>
-                    <div class="deposit-preview-row is-total"><span>Tổng nhận</span><strong data-preview-total>0đ</strong></div>
+                    <div class="deposit-preview-row is-total"><span>Tổng nhận</span><strong
+                            data-preview-total>0đ</strong></div>
                 </div>
 
                 <button type="button" class="btn btn-edit-profile w-100 mt-3" data-deposit-action="create">
@@ -98,12 +104,15 @@ $qrUrl = $activeDepositExists ? (string) ($activeDepositPayload['qr_url'] ?? $pl
                     <div class="col-lg-5">
                         <div class="deposit-qr-card">
                             <div class="deposit-qr-box">
-                                <img data-deposit-qr src="<?= htmlspecialchars($qrUrl, ENT_QUOTES, 'UTF-8') ?>" alt="QR thanh toán">
+                                <img data-deposit-qr src="<?= htmlspecialchars($qrUrl, ENT_QUOTES, 'UTF-8') ?>"
+                                    alt="QR thanh toán">
                                 <div class="deposit-qr-logo">
-                                    <img src="<?= htmlspecialchars((string) ($chungapi['favicon'] ?? ($chungapi['logo'] ?? '')), ENT_QUOTES, 'UTF-8') ?>" alt="Logo">
+                                    <img src="<?= htmlspecialchars((string) ($chungapi['favicon'] ?? ($chungapi['logo'] ?? '')), ENT_QUOTES, 'UTF-8') ?>"
+                                        alt="Logo">
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-search-custom w-100 mt-3" data-deposit-action="download-qr">
+                            <button type="button" class="btn btn-search-custom w-100 mt-3"
+                                data-deposit-action="download-qr">
                                 <i class="fas fa-download mr-1"></i> Tải QR
                             </button>
                         </div>
@@ -112,29 +121,36 @@ $qrUrl = $activeDepositExists ? (string) ($activeDepositPayload['qr_url'] ?? $pl
                         <div class="deposit-info-list">
                             <div class="deposit-info-row">
                                 <span class="deposit-info-label">Ngân hàng</span>
-                                <span class="deposit-info-value" data-tf-bank><?= htmlspecialchars($activeDepositPayload['bank_name'] ?? $bankName, ENT_QUOTES, 'UTF-8') ?></span>
+                                <span class="deposit-info-value"
+                                    data-tf-bank><?= htmlspecialchars($activeDepositPayload['bank_name'] ?? $bankName, ENT_QUOTES, 'UTF-8') ?></span>
                             </div>
                             <div class="deposit-info-row">
                                 <span class="deposit-info-label">Chủ tài khoản</span>
-                                <span class="deposit-info-value is-uppercase" data-tf-owner><?= htmlspecialchars($activeDepositPayload['bank_owner'] ?? $bankOwner, ENT_QUOTES, 'UTF-8') ?></span>
+                                <span class="deposit-info-value is-uppercase"
+                                    data-tf-owner><?= htmlspecialchars($activeDepositPayload['bank_owner'] ?? $bankOwner, ENT_QUOTES, 'UTF-8') ?></span>
                             </div>
                             <div class="deposit-info-row">
                                 <span class="deposit-info-label">Số tài khoản</span>
                                 <div class="deposit-info-actions">
-                                    <span class="deposit-info-value" data-tf-account><?= htmlspecialchars($activeDepositPayload['bank_account'] ?? $bankAccount, ENT_QUOTES, 'UTF-8') ?></span>
-                                    <button type="button" class="btn-copy" data-copy-target="account"><i class="fas fa-copy"></i></button>
+                                    <span class="deposit-info-value"
+                                        data-tf-account><?= htmlspecialchars($activeDepositPayload['bank_account'] ?? $bankAccount, ENT_QUOTES, 'UTF-8') ?></span>
+                                    <button type="button" class="btn-copy" data-copy-target="account"><i
+                                            class="fas fa-copy"></i></button>
                                 </div>
                             </div>
                             <div class="deposit-info-row">
                                 <span class="deposit-info-label text-danger">Nội dung *</span>
                                 <div class="deposit-info-actions">
-                                    <span class="deposit-info-value is-highlight" data-tf-content><?= htmlspecialchars((string) ($activeDepositPayload['deposit_code'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
-                                    <button type="button" class="btn-copy" data-copy-target="content"><i class="fas fa-copy"></i></button>
+                                    <span class="deposit-info-value is-highlight"
+                                        data-tf-content><?= htmlspecialchars((string) ($activeDepositPayload['deposit_code'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                                    <button type="button" class="btn-copy" data-copy-target="content"><i
+                                            class="fas fa-copy"></i></button>
                                 </div>
                             </div>
                             <div class="deposit-info-row">
                                 <span class="deposit-info-label">Số tiền</span>
-                                <span class="deposit-info-value is-amount" data-tf-amount><?= !empty($activeDepositPayload['amount']) ? number_format((int) $activeDepositPayload['amount'], 0, ',', '.') . 'đ' : '' ?></span>
+                                <span class="deposit-info-value is-amount"
+                                    data-tf-amount><?= !empty($activeDepositPayload['amount']) ? number_format((int) $activeDepositPayload['amount'], 0, ',', '.') . 'đ' : '' ?></span>
                             </div>
                         </div>
                     </div>
@@ -143,7 +159,9 @@ $qrUrl = $activeDepositExists ? (string) ($activeDepositPayload['qr_url'] ?? $pl
                 <div class="deposit-countdown-wrap mt-3" data-deposit-countdown-wrap>
                     <div class="deposit-countdown-label">Thời gian còn lại</div>
                     <div class="deposit-countdown" data-deposit-countdown>05:00</div>
-                    <div class="deposit-countdown-bar"><div class="deposit-countdown-fill" data-deposit-countdown-fill style="width:100%"></div></div>
+                    <div class="deposit-countdown-bar">
+                        <div class="deposit-countdown-fill" data-deposit-countdown-fill style="width:100%"></div>
+                    </div>
                 </div>
 
                 <div class="alert alert-warning deposit-warning mt-3 mb-0">
@@ -158,7 +176,7 @@ $qrUrl = $activeDepositExists ? (string) ($activeDepositPayload['qr_url'] ?? $pl
         </div>
     </div>
 
-    <script type="application/json" id="profile-deposit-bank-config"><?=
+    <script type="application/json" id="deposit-bank-config"><?=
         json_encode([
             'baseUrl' => rtrim((string) url(''), '/'),
             'endpoints' => [
@@ -177,5 +195,5 @@ $qrUrl = $activeDepositExists ? (string) ($activeDepositPayload['qr_url'] ?? $pl
             ],
             'activeDeposit' => $activeDepositPayload,
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)
-    ?></script>
+        ?></script>
 </div>
