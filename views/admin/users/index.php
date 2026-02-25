@@ -18,32 +18,47 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
         <!-- Summary Cards -->
         <div class="row mb-3">
             <div class="col-md-4">
-                <div class="info-box shadow-sm mb-3" style="border-radius: 8px;">
-                    <span class="info-box-icon bg-primary elevation-1" style="border-radius: 8px;"><i
-                            class="fas fa-users"></i></span>
+                <div class="info-box mb-3 border-0 shadow-sm"
+                    style="border-radius: 12px; transition: transform 0.3s ease;">
+                    <span class="info-box-icon bg-primary elevation-1"
+                        style="border-radius: 12px; height: 60px; width: 60px; margin: auto 15px;">
+                        <i class="fas fa-users"></i>
+                    </span>
                     <div class="info-box-content">
-                        <span class="info-box-text font-weight-bold text-uppercase">TỔNG THÀNH VIÊN</span>
-                        <span class="info-box-number h4 mb-0"><?= number_format($totalUsers ?? 0) ?></span>
+                        <span class="info-box-text font-weight-bold text-muted small text-uppercase">TỔNG THÀNH
+                            VIÊN</span>
+                        <span
+                            class="info-box-number h3 mb-0 font-weight-bold"><?= number_format($totalUsers ?? 0) ?></span>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="info-box shadow-sm mb-3" style="border-radius: 8px;">
-                    <span class="info-box-icon bg-danger elevation-1" style="border-radius: 8px;"><i
-                            class="fas fa-user-slash"></i></span>
+                <div class="info-box mb-3 border-0 shadow-sm"
+                    style="border-radius: 12px; transition: transform 0.3s ease;">
+                    <span class="info-box-icon bg-danger elevation-1"
+                        style="border-radius: 12px; height: 60px; width: 60px; margin: auto 15px;">
+                        <i class="fas fa-user-slash"></i>
+                    </span>
                     <div class="info-box-content">
-                        <span class="info-box-text font-weight-bold text-uppercase">TÀI KHOẢN BỊ KHÓA</span>
-                        <span class="info-box-number h4 mb-0"><?= number_format($bannedUsers ?? 0) ?></span>
+                        <span class="info-box-text font-weight-bold text-muted small text-uppercase">TÀI KHOẢN BỊ
+                            KHÓA</span>
+                        <span
+                            class="info-box-number h3 mb-0 font-weight-bold"><?= number_format($bannedUsers ?? 0) ?></span>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="info-box shadow-sm mb-3" style="border-radius: 8px;">
-                    <span class="info-box-icon bg-success elevation-1" style="border-radius: 8px;"><i
-                            class="fas fa-user-shield"></i></span>
+                <div class="info-box mb-3 border-0 shadow-sm"
+                    style="border-radius: 12px; transition: transform 0.3s ease;">
+                    <span class="info-box-icon bg-success elevation-1"
+                        style="border-radius: 12px; height: 60px; width: 60px; margin: auto 15px;">
+                        <i class="fas fa-user-shield"></i>
+                    </span>
                     <div class="info-box-content">
-                        <span class="info-box-text font-weight-bold text-uppercase">QUẢN TRỊ VIÊN</span>
-                        <span class="info-box-number h4 mb-0"><?= number_format($adminUsers ?? 0) ?></span>
+                        <span class="info-box-text font-weight-bold text-muted small text-uppercase">QUẢN TRỊ
+                            VIÊN</span>
+                        <span
+                            class="info-box-number h3 mb-0 font-weight-bold"><?= number_format($adminUsers ?? 0) ?></span>
                     </div>
                 </div>
             </div>
@@ -331,7 +346,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             focusConfirm: false,
             preConfirm: () => {
                 const reason = document.getElementById('swal-ban-reason').value.trim();
-                const type   = document.getElementById('swal-ban-type').value;
+                const type = document.getElementById('swal-ban-type').value;
                 if (!reason) {
                     Swal.showValidationMessage('Vui lòng nhập lý do!');
                     return false;

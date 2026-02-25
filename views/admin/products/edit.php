@@ -218,10 +218,13 @@ $productType = $product['product_type'] ?? 'account';
                         </div>
 
                     </div>
-                    <div class="card-footer text-right border-top-0 pt-0 pb-4">
-                        <hr>
-                        <a href="<?= url('admin/products') ?>" class="btn btn-light border mr-2 px-4">Quay lại</a>
-                        <button type="submit" class="btn btn-primary btn-lg px-5 font-weight-bold">LƯU THAY ĐỔI</button>
+                    <div class="card-footer text-right bg-transparent border-top-0 pt-0 pb-4">
+                        <a href="<?= url('admin/products') ?>" class="btn btn-light border mr-2 px-4">
+                            <i class="fas fa-times mr-1"></i> Hủy
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-save mr-1"></i> LƯU THAY ĐỔI
+                        </button>
                     </div>
                 </form>
             </div>

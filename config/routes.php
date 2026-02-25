@@ -13,6 +13,8 @@ return [
     // ========== POLICY & TERMS ROUTES ==========
     ['GET', '/chinh-sach', 'PolicyController@index'],
     ['GET', '/dieu-khoan', 'TermsController@index'],
+    ['GET', '/lien-he', 'ContactController@index'],
+    ['GET', '/lienhe', 'ContactController@index'],
     ['GET', '/bao-tri', 'MaintenanceController@index'],
     ['GET', '/api/system/maintenance-status', 'Api\\MaintenanceStatusController@show'],
 
@@ -40,11 +42,16 @@ return [
     ['POST', '/profile/update', 'ProfileController@update'],
     ['GET', '/password', 'PasswordController@index'],
     ['POST', '/password/update', 'PasswordController@update'],
+    ['POST', '/password/security', 'PasswordController@updateSecurity'],
     ['GET', '/history-code', 'HistoryController@index'],
     ['POST', '/api/history-code', 'HistoryController@data'],
 
     // ========== ADMIN ROUTES ==========
     ['GET', '/admin', 'Admin\\DashboardController@index'],
+
+    // Admin Settings
+    ['GET', '/admin/setting', 'Admin\\SettingController@index'],
+    ['POST', '/admin/setting/update', 'Admin\\SettingController@update'],
 
     // Admin Users
     ['GET', '/admin/users', 'Admin\\UserController@index'],
@@ -95,7 +102,8 @@ return [
     ['POST', '/admin/products/stock/delete', 'Admin\\AdminProductController@stockDelete'],
     ['POST', '/admin/products/stock/update', 'Admin\\AdminProductController@stockUpdate'],
     // ========== DEPOSIT (User) ==========
-    ['GET', '/deposit', 'DepositController@index'],
+    ['GET', '/deposit-bank', 'DepositController@index'],
+    ['GET', '/deposit', 'DepositController@legacyRedirect'],
     ['POST', '/deposit/create', 'DepositController@create'],
     ['GET', '/deposit/status/{code}', 'DepositController@status'],
     ['POST', '/deposit/cancel', 'DepositController@cancel'],

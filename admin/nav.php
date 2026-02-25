@@ -8,6 +8,8 @@ require_once dirname(__DIR__) . '/hethong/AdminMenuRenderer.php';
 
 $_adminUri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 $_adminUri = rtrim((string) $_adminUri, '/') ?: '/';
+$isAdminDashboard = (bool) preg_match('#/admin/?$|/admin/index\.php$#', $_adminUri);
+$isAdminSettings = (bool) preg_match('#/admin/setting$#', $_adminUri);
 $sidebarLogoUrl = trim((string) ($chungapi['logo'] ?? ''));
 $sidebarLogoAlt = trim((string) ($chungapi['ten_web'] ?? 'Logo'));
 ?>
@@ -25,7 +27,7 @@ $sidebarLogoAlt = trim((string) ($chungapi['ten_web'] ?? 'Logo'));
         <li class="sidebar-header">MAIN</li>
         <li>
             <a href="<?= url('admin') ?>" <?php
-              if (preg_match('#/admin/?$|/admin/index\.php$#', $_adminUri))
+              if ($isAdminDashboard)
                   echo ' class="active"';
               ?>>
                 <i class="fas fa-tachometer-alt"></i> Dashboard
@@ -65,7 +67,7 @@ $sidebarLogoAlt = trim((string) ($chungapi['ten_web'] ?? 'Logo'));
 
         <li class="sidebar-header">HỆ THỐNG</li>
         <li>
-            <a href="<?= url('admin/setting.php') ?>">
+            <a href="<?= url('admin/setting') ?>" <?= $isAdminSettings ? ' class="active"' : '' ?>>
                 <i class="bx bx-cog setting-spin"></i> Cài đặt
             </a>
         </li>
@@ -84,6 +86,12 @@ $sidebarLogoAlt = trim((string) ($chungapi['ten_web'] ?? 'Logo'));
             data-bs-toggle="sidebar" href="javascript:void(0);" id="sidebarToggle">
             <span></span>
         </a>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+            <a href="<?= url('admin/setting') ?>" title="Cài đặt" aria-label="Cài đặt"
+                style="display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:10px; border:1px solid #e7e8f0; background:#fff; color:#6d28d9; text-decoration:none; box-shadow:0 2px 8px rgba(17,28,67,.06);">
+                <i class="bx bx-cog<?= $isAdminSettings ? ' bx-spin' : '' ?>"></i>
+            </a>
+        </div>
     </div>
 </header>
 

@@ -66,7 +66,8 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                         <select class="form-control" name="category_id">
                                             <option value="0">— Chọn danh mục —</option>
                                             <?php foreach ($categories as $cat): ?>
-                                                <option value="<?= (int) $cat['id'] ?>"><?= htmlspecialchars($cat['name']) ?>
+                                                <option value="<?= (int) $cat['id'] ?>">
+                                                    <?= htmlspecialchars($cat['name']) ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
@@ -187,11 +188,13 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                         </div>
 
                     </div>
-                    <div class="card-footer text-right border-top-0 pt-0 pb-4">
-                        <hr>
-                        <a href="<?= url('admin/products') ?>" class="btn btn-light border mr-2 px-4">Quay lại</a>
-                        <button type="submit" class="btn btn-primary btn-lg px-5 font-weight-bold">THÊM SẢN
-                            PHẨM</button>
+                    <div class="card-footer text-right bg-transparent border-top-0 pt-0 pb-4">
+                        <a href="<?= url('admin/products') ?>" class="btn btn-light border mr-2 px-4">
+                            <i class="fas fa-times mr-1"></i> Hủy
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-save mr-1"></i> LƯU SẢN PHẨM
+                        </button>
                     </div>
                 </form>
             </div>

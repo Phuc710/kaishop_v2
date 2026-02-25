@@ -10,10 +10,12 @@ $activeDepositPayload = is_array($depositPanel['activeDepositPayload'] ?? null) 
 $activeDepositExists = !empty($activeDepositPayload['deposit_code']);
 $ttlSeconds = (int) ($depositPanel['ttlSeconds'] ?? 300);
 
+$depositPanelCardId = (string) ($depositPanelCardId ?? 'profile-deposit-card');
+$depositReturnUrl = (string) ($depositReturnUrl ?? url('deposit-bank'));
 $placeholderQr = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 $qrUrl = $activeDepositExists ? (string) ($activeDepositPayload['qr_url'] ?? $placeholderQr) : $placeholderQr;
 ?>
-<div id="profile-deposit-card" class="profile-card user-deposit-card" data-deposit-bank-root>
+<div id="<?= htmlspecialchars($depositPanelCardId, ENT_QUOTES, 'UTF-8') ?>" class="profile-card user-deposit-card" data-deposit-bank-root>
     <div class="profile-card-header profile-card-header--with-actions">
         <div>
             <h5 class="text-dark mb-1">Nạp tiền</h5>
@@ -183,7 +185,7 @@ $qrUrl = $activeDepositExists ? (string) ($activeDepositPayload['qr_url'] ?? $pl
                 'create' => (string) url('deposit/create'),
                 'cancel' => (string) url('deposit/cancel'),
                 'statusBase' => (string) url('deposit/status'),
-                'profile' => (string) url('profile?section=deposit#profile-deposit-card'),
+                'profile' => (string) $depositReturnUrl,
             ],
             'ttlSeconds' => $ttlSeconds,
             'bonusTiers' => $bonusTiers,

@@ -80,6 +80,7 @@ class AuthService {
         if ($this->authSecurity) {
             $this->authSecurity->revokeCurrentAuthSessionFromCookies();
         }
+        unset($_SESSION['admin']);
         session_destroy();
     }
 }

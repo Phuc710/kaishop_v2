@@ -3,10 +3,12 @@
 
 <head>
     <?php require_once __DIR__ . '/hethong/config.php'; ?>
-    <?php require HETHONG_PATH . '/head2.php'; ?>
-    <title>404 - Không Tìm Thấy Trang | <?= $chungapi['ten_web'] ?></title>
-    <meta name="description"
-        content="Trang bạn đang tìm kiếm không tồn tại, đã bị xóa hoặc đổi tên. Vui lòng quay lại trang chủ <?= $chungapi['ten_web'] ?>.">
+    <?php
+    $headPath = (defined('HETHONG_PATH') ? HETHONG_PATH . '/head2.php' : __DIR__ . '/hethong/head2.php');
+    require $headPath;
+    ?>
+    <title>404 - Không Tìm Thấy Trang | <?= htmlspecialchars((string) ($chungapi['ten_web'] ?? 'KaiShop')) ?></title>
+    <meta name="description" content="Trang bạn đang tìm kiếm không tồn tại hoặc đã thay đổi. Vui lòng quay lại trang chủ.">
     <meta name="robots" content="noindex, follow">
     <link rel="canonical" href="<?= url('') ?>">
     <link rel="stylesheet" href="<?= asset('assets/css/error-pages.css') ?>">

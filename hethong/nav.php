@@ -173,7 +173,7 @@ header('Content-Type: text/html; charset=UTF-8');
                            data-bs-auto-close="outside" aria-expanded="false">Nạp tiền</a>
                         <ul class="dropdown-menu">
                             <li>
-                                <a href="<?= url('profile?section=deposit#profile-deposit-card') ?>" class="dropdown-item">
+                                <a href="<?= url('deposit-bank') ?>" class="dropdown-item">
                                     <span>Ngân hàng tự động</span>
                                 </a>
                             </li>
@@ -219,7 +219,7 @@ header('Content-Type: text/html; charset=UTF-8');
                                 style="position: absolute; inset: 0px 0px auto auto; margin: 0px; transform: translate3d(0px, 58.4px, 0px);">
                                 <li>
                                     <?php if ($user['level'] == '9') { ?>
-                                        <a class="dashboard-profile-item dropdown-item" href="<?= url('admin') ?>">
+                                        <a class="dashboard-profile-item dropdown-item" href="<?= url('admin/') ?>">
                                             <i class="fa-solid fa-gear"></i> Admin
                                         </a>
                                     <?php } ?>

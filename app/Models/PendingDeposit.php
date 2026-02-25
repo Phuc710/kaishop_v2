@@ -9,6 +9,40 @@ class PendingDeposit extends Model
     protected $table = 'pending_deposits';
     private const PENDING_TTL_SECONDS = 300;
 
+    public function __construct()
+    {
+        parent::__construct();
+        $this->ensureIndexes();
+    }
+
+    private function ensureIndexes(): void
+    {
+        static $ready = false;
+        if ($ready) {
+            return;
+        }
+
+        try {
+            $this->db->exec("ALTER TABLE `{$this->table}` ADD UNIQUE KEY `uniq_pd_deposit_code` (`deposit_code`)");
+        } catch (Throwable $e) {
+            // ignore (already exists / duplicate legacy data)
+        }
+
+        try {
+            $this->db->exec("ALTER TABLE `{$this->table}` ADD UNIQUE KEY `uniq_pd_sepay_transaction_id` (`sepay_transaction_id`)");
+        } catch (Throwable $e) {
+            // ignore (already exists / duplicate legacy data)
+        }
+
+        try {
+            $this->db->exec("ALTER TABLE `{$this->table}` ADD KEY `idx_pd_user_status_created` (`user_id`, `status`, `created_at`)");
+        } catch (Throwable $e) {
+            // ignore
+        }
+
+        $ready = true;
+    }
+
     /**
      * Generate a unique deposit code: "kai" + random alphanumeric.
      */
@@ -98,7 +132,8 @@ class PendingDeposit extends Model
             SET `status` = 'completed', `sepay_transaction_id` = :sid, `completed_at` = NOW()
             WHERE `id` = :id AND `status` = 'pending'
         ");
-        return $stmt->execute(['id' => $id, 'sid' => $sepayTransId]);
+        $stmt->execute(['id' => $id, 'sid' => $sepayTransId]);
+        return $stmt->rowCount() > 0;
     }
 
     /**

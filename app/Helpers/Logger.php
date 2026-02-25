@@ -39,6 +39,11 @@ class Logger
 
             $db = Database::getInstance()->getConnection();
 
+            $module = self::normalizeText($module);
+            $action = self::normalizeText($action);
+            $description = self::normalizeText($description);
+            $payload = self::normalizePayload($payload);
+
             // Extract user info if available
             $userId = null;
             $username = null;
@@ -89,5 +94,47 @@ class Logger
             // Silently fail if log cannot be written (to avoid breaking main application flow)
             error_log("Logger Error: " . $e->getMessage());
         }
+    }
+
+    private static function normalizePayload(array $payload): array
+    {
+        foreach ($payload as $key => $value) {
+            if (is_string($value)) {
+                $payload[$key] = self::normalizeText($value);
+            } elseif (is_array($value)) {
+                $payload[$key] = self::normalizePayload($value);
+            }
+        }
+        return $payload;
+    }
+
+    private static function normalizeText(string $text): string
+    {
+        $text = trim($text);
+        if ($text === '') {
+            return $text;
+        }
+
+        if (!self::looksLikeMojibake($text)) {
+            return $text;
+        }
+
+        $converted = @iconv('Windows-1252', 'UTF-8//IGNORE', $text);
+        if (!is_string($converted) || $converted === '') {
+            return $text;
+        }
+
+        return self::mojibakeScore($converted) < self::mojibakeScore($text) ? $converted : $text;
+    }
+
+    private static function looksLikeMojibake(string $text): bool
+    {
+        return (bool) preg_match('/(?:Ã.|Ä.|áº|á»|Æ.|â€¦|â€™|â€œ|â€|Â.)/u', $text);
+    }
+
+    private static function mojibakeScore(string $text): int
+    {
+        preg_match_all('/(?:Ã.|Ä.|áº|á»|Æ.|â€¦|â€™|â€œ|â€|Â.)/u', $text, $matches);
+        return count($matches[0] ?? []);
     }
 }

@@ -18,10 +18,9 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
         <div class="row justify-content-center">
             <div class="col-12">
                 <div class="card custom-card">
-                    <div class="card-header border-0 d-flex justify-content-between align-items-center">
-                        <h3 class="card-title text-uppercase font-weight-bold mb-0">
-                            HỒ SƠ THÀNH VIÊN: <span
-                                class="text-primary"><?= htmlspecialchars($toz_user['username']) ?></span>
+                    <div class="card-header border-0 pb-0">
+                        <h3 class="card-title text-uppercase font-weight-bold">
+                            HỒ SƠ THÀNH VIÊN: <span class="text-primary"><?= htmlspecialchars($toz_user['username']) ?></span>
                         </h3>
                     </div>
 
@@ -29,17 +28,14 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                         <div class="row">
                             <!-- Cột Trái: Thông tin cơ bản -->
                             <div class="col-xl-7 col-lg-6 mb-4 mb-lg-0">
-                                <form action="<?= url('admin/users/edit/' . $toz_user['username']) ?>" method="post">
-                                    <div class="form-section h-100 mb-0">
+                                <form id="userEditForm" action="<?= url('admin/users/edit/' . $toz_user['username']) ?>" method="post">
+                                    <div class="form-section h-100 mb-0 d-flex flex-column">
                                         <div class="form-section-title">Thông tin tài khoản</div>
 
                                         <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group mb-3">
-                                                    <label class="font-weight-bold form-label-req">Username</label>
-                                                    <input type="text" class="form-control" name="username"
-                                                        value="<?= htmlspecialchars($toz_user['username']) ?>" required>
-                                                </div>
+                                            <div class="col-md-6 text-center mb-3 d-flex flex-column align-items-center justify-content-center">
+                                                <img src="<?= asset('assets/images/avt.png') ?>" class="rounded-circle shadow-sm border mb-2" style="width: 80px; height: 80px; object-fit: cover;" alt="Avatar">
+                                                <div class="badge badge-light-primary text-primary px-3 py-1 font-weight-bold"><?= htmlspecialchars($toz_user['username']) ?></div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group mb-3">
@@ -47,19 +43,24 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                                     <input type="email" class="form-control" name="email"
                                                         value="<?= htmlspecialchars($toz_user['email']) ?>" required>
                                                 </div>
+                                                <div class="form-group mb-3">
+                                                    <label class="font-weight-bold">Trạng thái tài khoản</label>
+                                                    <select class="form-control" name="bannd">
+                                                        <option value="0" <?= $toz_user['bannd'] == 0 ? 'selected' : '' ?>>
+                                                            ✅ Đang hoạt động (Active)</option>
+                                                        <option value="1" <?= $toz_user['bannd'] == 1 ? 'selected' : '' ?>>
+                                                            ❌ Đã bị khóa (Banned)</option>
+                                                    </select>
+                                                </div>
                                             </div>
                                         </div>
 
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="form-group mb-3">
-                                                    <label class="font-weight-bold">Trạng thái (Bannd)</label>
-                                                    <select class="form-control" name="bannd">
-                                                        <option value="0" <?= $toz_user['bannd'] == 0 ? 'selected' : '' ?>>
-                                                            Active (Hoạt động)</option>
-                                                        <option value="1" <?= $toz_user['bannd'] == 1 ? 'selected' : '' ?>>
-                                                            Banned (Bị khóa)</option>
-                                                    </select>
+                                                    <label class="font-weight-bold">Thay đổi Username</label>
+                                                    <input type="text" class="form-control" name="username"
+                                                        value="<?= htmlspecialchars($toz_user['username']) ?>" required>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
@@ -67,18 +68,16 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                                     <label class="font-weight-bold">Cấp bậc (Level)</label>
                                                     <select class="form-control" name="level">
                                                         <option value="0" <?= $toz_user['level'] == 0 ? 'selected' : '' ?>>
-                                                            Thành Viên</option>
+                                                            Member (Thành Viên)</option>
                                                         <option value="9" <?= $toz_user['level'] == 9 ? 'selected' : '' ?>>
-                                                            Quản Trị Viên (Admin)</option>
+                                                            Administrator (Quản Trị Viên)</option>
                                                     </select>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div class="form-group mt-4 mb-0 text-right">
-                                            <button type="submit" class="btn btn-primary px-4">
-                                                <i class="fas fa-save mr-1"></i>Lưu thông tin
-                                            </button>
+                                        <div class="alert alert-info py-2 px-3 mt-auto" style="border-radius: 8px; font-size: 13px;">
+                                            <i class="fas fa-info-circle mr-1"></i> Cập nhật các thông tin định danh và quyền hạn của thành viên.
                                         </div>
                                     </div>
                                 </form>
@@ -142,40 +141,40 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                 letter-spacing: 0.5px;
                             }
                         </style>
-                        <div class="form-section mt-4">
-                            <div class="form-section-title">Tổng quan tài chính</div>
-                            <div class="row">
+                        <div class="form-section mt-4 bg-light-soft border-0 shadow-none" style="background: #fbfbfd; border-radius: 12px; padding: 25px;">
+                            <div class="form-section-title">Thống kê tài chính nâng cao</div>
+                            <div class="row mt-3">
                                 <div class="col-md-4 mb-3">
-                                    <label class="font-weight-bold text-muted mb-1">Số dư hiện tại</label>
-                                    <div class="input-group">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="fas fa-wallet"
-                                                    style="color:#28a745;"></i></span>
+                                    <div class="finance-stat-card p-3 h-100 bg-white shadow-sm" style="border-radius: 10px; border-left: 4px solid #28a745;">
+                                        <label class="font-weight-bold text-muted small text-uppercase mb-2 d-block">Số dư khả dụng</label>
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <span class="h4 font-weight-bold text-success mb-0"><?= number_format($money) ?>đ</span>
+                                            <div class="icon-circle bg-light-success text-success" style="width: 36px; height: 36px; background: #e8f5e9; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fas fa-wallet small"></i>
+                                            </div>
                                         </div>
-                                        <input type="text" class="form-control font-weight-bold text-success"
-                                            value="<?= number_format($money) ?>đ" readonly>
                                     </div>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="font-weight-bold text-muted mb-1">Tổng tiền nạp</label>
-                                    <div class="input-group">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text"><i
-                                                    class="fas fa-coins text-warning"></i></span>
+                                    <div class="finance-stat-card p-3 h-100 bg-white shadow-sm" style="border-radius: 10px; border-left: 4px solid #ffc107;">
+                                        <label class="font-weight-bold text-muted small text-uppercase mb-2 d-block">Tổng tiền đã nạp</label>
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <span class="h4 font-weight-bold mb-0" style="color: #444;"><?= number_format($tongNap) ?>đ</span>
+                                            <div class="icon-circle bg-light-warning text-warning" style="width: 36px; height: 36px; background: #fff8e1; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fas fa-coins small"></i>
+                                            </div>
                                         </div>
-                                        <input type="text" class="form-control font-weight-bold"
-                                            value="<?= number_format($tongNap) ?>đ" readonly>
                                     </div>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="font-weight-bold text-muted mb-1">Tổng tiền đã sử dụng</label>
-                                    <div class="input-group">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text"><i
-                                                    class="fas fa-receipt text-info"></i></span>
+                                    <div class="finance-stat-card p-3 h-100 bg-white shadow-sm" style="border-radius: 10px; border-left: 4px solid #17a2b8;">
+                                        <label class="font-weight-bold text-muted small text-uppercase mb-2 d-block">Tổng chi tiêu</label>
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <span class="h4 font-weight-bold text-info mb-0"><?= number_format($tongSuDung) ?>đ</span>
+                                            <div class="icon-circle bg-light-info text-info" style="width: 36px; height: 36px; background: #e0f7fa; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fas fa-receipt small"></i>
+                                            </div>
                                         </div>
-                                        <input type="text" class="form-control font-weight-bold"
-                                            value="<?= number_format($tongSuDung) ?>đ" readonly>
                                     </div>
                                 </div>
                             </div>
@@ -273,7 +272,14 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                             <?php endif; ?>
                         </div>
 
-
+                    </div>
+                    <div class="card-footer text-right bg-transparent border-top-0 pt-0 pb-4">
+                        <a href="<?= url('admin/users') ?>" class="btn btn-light border mr-2 px-4">
+                            <i class="fas fa-times mr-1"></i> Hủy
+                        </a>
+                        <button type="button" onclick="document.getElementById('userEditForm').submit()" class="btn btn-primary px-4">
+                            <i class="fas fa-save mr-1"></i> LƯU THÔNG TIN
+                        </button>
                     </div>
                 </div>
             </div>

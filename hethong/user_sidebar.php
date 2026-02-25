@@ -13,7 +13,7 @@ $activePage = $activePage ?? '';
     <a href="<?= url('history-code') ?>" class="sidebar-item <?= $activePage === 'history' ? 'active' : '' ?>">
         <i class="fas fa-wallet"></i> Lịch sử sản phẩm
     </a>
-    <a href="<?= url('profile?section=deposit#profile-deposit-card') ?>" class="sidebar-item <?= $activePage === 'deposit' ? 'active' : '' ?>">
+    <a href="<?= url('deposit-bank') ?>" class="sidebar-item <?= $activePage === 'deposit' ? 'active' : '' ?>">
         <i class="fas fa-university"></i> Nạp tiền
     </a>
     <a href="<?= url('password') ?>" class="sidebar-item <?= $activePage === 'password' ? 'active' : '' ?>">

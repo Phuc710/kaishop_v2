@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS `product_stock` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `product_id` int(11) NOT NULL,
   `content` text NOT NULL COMMENT 'Nội dung tài khoản (1 dòng)',
+  `content_hash` char(64) DEFAULT NULL COMMENT 'SHA-256 content plaintext de chong trung',
   `status` enum('available','sold') NOT NULL DEFAULT 'available',
   `order_id` int(11) DEFAULT NULL COMMENT 'ID đơn hàng đã mua (nullable)',
   `buyer_id` int(11) DEFAULT NULL COMMENT 'ID người mua',
@@ -72,7 +73,8 @@ CREATE TABLE IF NOT EXISTS `product_stock` (
   PRIMARY KEY (`id`),
   KEY `idx_stock_product` (`product_id`),
   KEY `idx_stock_status` (`status`),
-  KEY `idx_stock_order` (`order_id`)
+  KEY `idx_stock_order` (`order_id`),
+  UNIQUE KEY `uniq_stock_product_hash` (`product_id`,`content_hash`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
@@ -256,6 +258,19 @@ CREATE TABLE `setting` (
   `pass_mail_auto` varchar(255) DEFAULT NULL,
   `ten_nguoi_gui` varchar(255) DEFAULT NULL,
   `email_cf` varchar(255) DEFAULT NULL,
+  `contact_page_title` varchar(255) DEFAULT NULL,
+  `contact_page_subtitle` text DEFAULT NULL,
+  `contact_email_label` varchar(150) DEFAULT NULL,
+  `contact_phone_label` varchar(150) DEFAULT NULL,
+  `contact_support_note` text DEFAULT NULL,
+  `policy_page_title` varchar(255) DEFAULT NULL,
+  `policy_page_subtitle` text DEFAULT NULL,
+  `policy_content_html` longtext DEFAULT NULL,
+  `policy_notice_text` text DEFAULT NULL,
+  `terms_page_title` varchar(255) DEFAULT NULL,
+  `terms_page_subtitle` text DEFAULT NULL,
+  `terms_content_html` longtext DEFAULT NULL,
+  `terms_notice_text` text DEFAULT NULL,
   `apikey` varchar(100) DEFAULT NULL,
   `thongbao` longtext DEFAULT NULL,
   `popup_template` varchar(10) NOT NULL DEFAULT '1' COMMENT '0=tắt, 1=mặc định, 2=thông báo',
@@ -284,14 +299,17 @@ CREATE TABLE `setting` (
 INSERT INTO `setting` (
   `id`, `ten_web`, `logo`, `logo_footer`, `banner`, `favicon`, `key_words`, `mo_ta`, `fb_admin`, `sdt_admin`, `tele_admin`, `tiktok_admin`, `youtube_admin`,
   `email_auto`, `pass_mail_auto`, `ten_nguoi_gui`,
-  `email_cf`, `apikey`, `thongbao`, `license`,
+  `email_cf`, `contact_page_title`, `contact_page_subtitle`, `contact_email_label`, `contact_phone_label`, `contact_support_note`, `policy_page_title`, `policy_page_subtitle`, `policy_content_html`, `policy_notice_text`, `terms_page_title`, `terms_page_subtitle`, `terms_content_html`, `terms_notice_text`, `apikey`, `thongbao`, `license`,
   `bank_name`, `bank_account`, `bank_owner`, `sepay_api_key`,
   `bonus_1_amount`, `bonus_1_percent`, `bonus_2_amount`, `bonus_2_percent`, `bonus_3_amount`, `bonus_3_percent`,
   `maintenance_enabled`, `maintenance_start_at`, `maintenance_duration_minutes`, `maintenance_notice_minutes`, `maintenance_message`
 ) VALUES (
   1, 'KaiShop', '', '', 'KaiShop', '', 'KaiShop, Shop account', 'Dịch vụ KaiShop uy tín chất lượng', 'https://facebook.com/phamlinh7114', '0812420710', 'https://t.me/yourtelegram', 'https://tiktok.com/@yourtiktok', 'https://youtube.com/@youryoutube',
   NULL, NULL, NULL,
-  NULL, NULL, '<div style="text-align:center;">
+  NULL, 'Liên hệ KaiShop', 'Liên hệ hỗ trợ nhanh qua email, Zalo hoặc các kênh mạng xã hội bên dưới.', 'Email hỗ trợ', 'Số điện thoại / Zalo', 'Hỗ trợ trong giờ làm việc hoặc qua kênh online.',
+  'Chính sách & Quy định', '', NULL, 'Khi tiếp tục sử dụng dịch vụ tại website, bạn xác nhận đã đọc, hiểu và đồng ý với các chính sách/quy định được công bố.',
+  'Điều khoản & Điều kiện', '', NULL, 'Bằng việc sử dụng dịch vụ, bạn xác nhận đã đọc, hiểu và đồng ý với Điều khoản & Điều kiện này.',
+  NULL, '<div style="text-align:center;">
   <b>KaiShop — Hệ thống bán tài khoản tự động</b><br>
   <b>Phiên bản: v1.1</b><br>
   <span>Khi dùng dịch vụ chính hãng, bạn được hỗ trợ tốt hơn và nâng cấp tính năng với chi phí tối ưu.</span>
@@ -349,8 +367,10 @@ CREATE TABLE IF NOT EXISTS `pending_deposits` (
   `completed_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_deposit_code` (`deposit_code`),
+  UNIQUE KEY `uniq_pd_sepay_transaction_id` (`sepay_transaction_id`),
   KEY `idx_pd_user` (`user_id`),
-  KEY `idx_pd_status` (`status`)
+  KEY `idx_pd_status` (`status`),
+  KEY `idx_pd_user_status_created` (`user_id`,`status`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `history_nap_bank` (

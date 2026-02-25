@@ -29,15 +29,16 @@ elseif ($password2 !== $password3) {
 // Kiểm tra mật khẩu hiện tại
 elseif ($user['password'] != sha1(md5($password1))) {
     $response = ['success' => false, 'message' => 'Mật khẩu hiện tại chưa chính xác'];
-}
-else {
+} else {
     // Cập nhật mật khẩu
     $newpass = sha1(md5($password2));
     $stmt = $connection->prepare("UPDATE `users` SET `password` = ? WHERE `username` = ?");
     $stmt->bind_param("ss", $newpass, $username);
     $stmt->execute();
 
-    sendTele("$username đã đổi mật khẩu thành công");
+    if (function_exists('sendTele')) {
+        sendTele("$username đã đổi mật khẩu thành công");
+    }
     $response = ['success' => true, 'message' => 'Cập nhật thành công!'];
 }
 

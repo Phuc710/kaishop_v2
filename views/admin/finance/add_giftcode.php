@@ -38,7 +38,9 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                                 <input type="text" class="form-control" name="giftcode" id="giftcode"
                                                     placeholder="Nhập mã..." required>
                                                 <div class="input-group-append">
-                                                    <button type="button" class="btn btn-search-dt"
+                                                    <button type="button"
+                                                        class="btn btn-outline-primary font-weight-bold"
+                                                        style="border-top-left-radius:0; border-bottom-left-radius:0; border-top-right-radius:8px; border-bottom-right-radius:8px;"
                                                         onclick="generateCode()">
                                                         <i class="fas fa-random mr-1"></i>Ngẫu nhiên
                                                     </button>
@@ -118,11 +120,14 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
 
                         </div>
                         <div class="card-footer text-right bg-transparent border-top-0 pt-0">
-                            <a href="<?= url('admin/finance/giftcodes') ?>" class="btn btn-light border mr-2 px-4">
+                            <a href="<?= url('admin/finance/giftcodes') ?>"
+                                class="btn btn-outline-secondary shadow-sm mr-2 px-4 font-weight-bold"
+                                style="border-radius: 8px;">
                                 <i class="fas fa-times mr-1"></i>Hủy
                             </a>
-                            <button type="submit" class="btn btn-primary px-4">
-                                <i class="fas fa-save mr-1"></i>Lưu mã giảm giá
+                            <button type="submit" class="btn btn-primary shadow-sm px-4 font-weight-bold"
+                                style="border-radius: 8px;">
+                                <i class="fas fa-save mr-1"></i>LƯU MÃ GIẢM GIÁ
                             </button>
                         </div>
                     </form>

@@ -33,7 +33,7 @@
                         <div class="profile-card">
                             <div class="profile-card-header profile-card-header--with-actions">
                                 <h5 class="text-dark">Lịch sử sản phẩm</h5>
-                                <a href="<?= url('profile?section=deposit#profile-deposit-card') ?>"
+                                <a href="<?= url('deposit-bank') ?>"
                                     class="btn btn-edit-profile">
                                     <i class="fas fa-university mr-1"></i> Nạp tiền
                                 </a>

@@ -7,11 +7,16 @@
 class ProductStock extends Model
 {
     protected $table = 'product_stock';
+    private ?CryptoService $crypto = null;
 
     public function __construct()
     {
         parent::__construct();
+        if (class_exists('CryptoService')) {
+            $this->crypto = new CryptoService();
+        }
         $this->ensureTable();
+        $this->ensureSchema();
     }
 
     /**
@@ -23,6 +28,7 @@ class ProductStock extends Model
             `id` int(11) NOT NULL AUTO_INCREMENT,
             `product_id` int(11) NOT NULL,
             `content` text NOT NULL,
+            `content_hash` char(64) DEFAULT NULL,
             `status` enum('available','sold') NOT NULL DEFAULT 'available',
             `order_id` int(11) DEFAULT NULL,
             `buyer_id` int(11) DEFAULT NULL,
@@ -31,8 +37,31 @@ class ProductStock extends Model
             `created_at` datetime DEFAULT current_timestamp(),
             PRIMARY KEY (`id`),
             KEY `idx_stock_product` (`product_id`),
-            KEY `idx_stock_status` (`status`)
+            KEY `idx_stock_status` (`status`),
+            UNIQUE KEY `uniq_stock_product_hash` (`product_id`, `content_hash`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
+    }
+
+    private function ensureSchema(): void
+    {
+        static $ready = false;
+        if ($ready) {
+            return;
+        }
+
+        try {
+            $this->db->exec("ALTER TABLE `{$this->table}` ADD COLUMN `content_hash` char(64) DEFAULT NULL AFTER `content`");
+        } catch (Throwable $e) {
+            // ignore if column exists
+        }
+
+        try {
+            $this->db->exec("ALTER TABLE `{$this->table}` ADD UNIQUE KEY `uniq_stock_product_hash` (`product_id`, `content_hash`)");
+        } catch (Throwable $e) {
+            // ignore if index exists or duplicate legacy data
+        }
+
+        $ready = true;
     }
 
     /**
@@ -47,7 +76,8 @@ class ProductStock extends Model
             $params[] = $statusFilter;
         }
         $sql .= " ORDER BY id DESC";
-        return $this->query($sql, $params)->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $this->query($sql, $params)->fetchAll(PDO::FETCH_ASSOC);
+        return $this->decryptRows($rows);
     }
 
     /**
@@ -61,13 +91,13 @@ class ProductStock extends Model
         $skipped = 0;
 
         $stmt = $this->db->prepare(
-            "INSERT IGNORE INTO {$this->table} (product_id, content) VALUES (?, ?)"
+            "INSERT IGNORE INTO {$this->table} (product_id, content, content_hash) VALUES (?, ?, ?)"
         );
 
         foreach ($lines as $line) {
             if ($line === '')
                 continue;
-            $stmt->execute([$productId, $line]);
+            $stmt->execute([$productId, $this->encryptContent($line), $this->contentHash($line)]);
             if ($stmt->rowCount() > 0) {
                 $added++;
             } else {
@@ -109,7 +139,8 @@ class ProductStock extends Model
             // Return full row
             $stmt2 = $this->db->prepare("SELECT * FROM {$this->table} WHERE id=?");
             $stmt2->execute([$row['id']]);
-            return $stmt2->fetch(PDO::FETCH_ASSOC) ?: null;
+            $fullRow = $stmt2->fetch(PDO::FETCH_ASSOC) ?: null;
+            return $fullRow ? $this->decryptRow($fullRow) : null;
         } catch (\Throwable $e) {
             $this->db->rollBack();
             return null;
@@ -184,9 +215,9 @@ class ProductStock extends Model
     public function updateContent(int $id, string $content): bool
     {
         $stmt = $this->db->prepare(
-            "UPDATE {$this->table} SET content=? WHERE id=? AND status='available'"
+            "UPDATE {$this->table} SET content=?, content_hash=? WHERE id=? AND status='available'"
         );
-        $stmt->execute([$content, $id]);
+        $stmt->execute([$this->encryptContent($content), $this->contentHash($content), $id]);
         return $stmt->rowCount() > 0;
     }
 
@@ -200,5 +231,50 @@ class ProductStock extends Model
         );
         $stmt->execute([$productId]);
         return (int) $stmt->fetchColumn();
+    }
+
+    private function encryptContent(string $content): string
+    {
+        $content = trim($content);
+        if ($content === '') {
+            return $content;
+        }
+        if ($this->crypto instanceof CryptoService && $this->crypto->isEnabled()) {
+            return $this->crypto->encryptString($content);
+        }
+        return $content;
+    }
+
+    private function contentHash(string $content): ?string
+    {
+        $content = trim($content);
+        if ($content === '') {
+            return null;
+        }
+        return hash('sha256', $content);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     * @return array<int, array<string, mixed>>
+     */
+    private function decryptRows(array $rows): array
+    {
+        foreach ($rows as $idx => $row) {
+            $rows[$idx] = $this->decryptRow($row);
+        }
+        return $rows;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
+    private function decryptRow(array $row): array
+    {
+        if (isset($row['content']) && is_string($row['content']) && $this->crypto instanceof CryptoService && $this->crypto->isEnabled()) {
+            $row['content'] = $this->crypto->decryptString($row['content']);
+        }
+        return $row;
     }
 }

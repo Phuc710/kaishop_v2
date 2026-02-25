@@ -134,12 +134,12 @@ $ogType = isset($seoOgType) && trim((string) $seoOgType) !== '' ? trim((string) 
 
 <link rel="stylesheet" href="<?= asset('assets/css/nice_select.css') ?>">
 <link href="<?= asset('assets/css/bootstrap.css') ?>" rel="stylesheet">
-<link href="<?= asset('assets/css/style.css') ?>" rel="stylesheet">
+<link href="<?= asset('assets/css/style.css') ?>?v=<?= time() ?>" rel="stylesheet">
 <link href="<?= asset('assets/css/job_post.css') ?>" rel="stylesheet">
 <link href="<?= asset('assets/css/responsive.css') ?>" rel="stylesheet">
-<link rel="stylesheet" href="<?= asset('assets/css/styles.css') ?>">
-<link rel="stylesheet" href="<?= asset('assets/css/divineshop.css') ?>">
-<link rel="stylesheet" href="<?= asset('assets/css/user-pages.css') ?>">
+<link rel="stylesheet" href="<?= asset('assets/css/styles.css') ?>?v=<?= time() ?>">
+<link rel="stylesheet" href="<?= asset('assets/css/divineshop.css') ?>?v=<?= time() ?>">
+<link rel="stylesheet" href="<?= asset('assets/css/user-pages.css') ?>?v=<?= time() ?>">
 <link rel="stylesheet" href="<?= asset('assets/css/notify.css') ?>">
 
 <?php if (!empty($resolvedAssetFlags['interactive_bundle'])): ?>

@@ -4,14 +4,33 @@
  * Application Configuration
  */
 
-// Start session if not already started
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// require EnvHelper for dynamic base URL
+// Load env helper early for runtime configuration (APP_DIR / APP_DEBUG / APP_KEY...)
 require_once dirname(__DIR__) . '/app/Helpers/EnvHelper.php';
 EnvHelper::load(dirname(__DIR__) . '/.env');
+
+// Start session with safer cookie flags
+if (session_status() === PHP_SESSION_NONE) {
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443);
+
+    if (PHP_VERSION_ID >= 70300) {
+        session_set_cookie_params([
+            'lifetime' => 0,
+            'path' => '/',
+            'domain' => '',
+            'secure' => $isHttps,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    } else {
+        session_set_cookie_params(0, '/; samesite=Lax', '', $isHttps, true);
+    }
+
+    ini_set('session.use_strict_mode', '1');
+    ini_set('session.use_only_cookies', '1');
+    ini_set('session.cookie_httponly', '1');
+    session_start();
+}
 
 // Base URL configuration
 define('BASE_PATH', dirname(__DIR__));
@@ -20,9 +39,18 @@ define('BASE_URL', (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "ht
 // Set timezone
 date_default_timezone_set('Asia/Ho_Chi_Minh');
 
-// Error reporting (disable in production)
+// Error reporting (production-safe by default unless APP_DEBUG=1)
+$appDebug = in_array(strtolower((string) EnvHelper::get('APP_DEBUG', '0')), ['1', 'true', 'yes', 'on'], true);
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', $appDebug ? '1' : '0');
+
+// Baseline security headers (avoid CSP here due legacy inline scripts)
+if (!headers_sent()) {
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: SAMEORIGIN');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
+}
 
 // Autoload core classes
 spl_autoload_register(function ($class) {

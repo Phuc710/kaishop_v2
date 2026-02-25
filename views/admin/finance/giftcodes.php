@@ -28,24 +28,38 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                 <!-- Search Line -->
                 <div class="row g-2 justify-content-center align-items-center mb-3">
                     <div class="col-md-3 mb-2">
-                        <input id="f-code" class="form-control form-control-sm" placeholder="Tìm mã giảm giá...">
+                        <div class="input-group input-group-sm shadow-xs border-radius-sm">
+                            <span class="input-group-text bg-white border-right-0"><i
+                                    class="fas fa-tag text-muted"></i></span>
+                            <input id="f-code" class="form-control border-left-0" placeholder="Tìm mã giảm giá...">
+                        </div>
                     </div>
                     <div class="col-md-3 mb-2">
-                        <input id="f-product" class="form-control form-control-sm"
-                            placeholder="Tìm sản phẩm áp dụng...">
+                        <div class="input-group input-group-sm shadow-xs border-radius-sm">
+                            <span class="input-group-text bg-white border-right-0"><i
+                                    class="fas fa-box text-muted"></i></span>
+                            <input id="f-product" class="form-control border-left-0" placeholder="Tìm sản phẩm...">
+                        </div>
                     </div>
                     <div class="col-md-2 mb-2">
-                        <input id="f-date" class="form-control form-control-sm" placeholder="Thời gian...">
+                        <div class="input-group input-group-sm shadow-xs border-radius-sm">
+                            <span class="input-group-text bg-white border-right-0"><i
+                                    class="fas fa-calendar-alt text-muted"></i></span>
+                            <input id="f-date" class="form-control border-left-0" placeholder="Thời gian...">
+                        </div>
                     </div>
                     <div class="col-md-2 mb-2 text-center">
-                        <button type="button" id="btn-clear" class="btn btn-danger btn-sm shadow-sm w-100">
-                            <i class="fas fa-trash"></i> Xóa Lọc
+                        <button type="button" id="btn-clear"
+                            class="btn btn-outline-danger btn-sm shadow-sm w-100 font-weight-bold"
+                            style="border-radius: 8px; height: 38px;">
+                            <i class="fas fa-trash-alt mr-1"></i> XÓA LỌC
                         </button>
                     </div>
                     <div class="col-md-2 mb-2 text-right">
                         <a href="<?= url('admin/finance/giftcodes/add') ?>"
-                            class="btn btn-primary btn-sm shadow-sm w-100">
-                            <i class="fas fa-plus mr-1"></i> Tạo mã mới
+                            class="btn btn-primary btn-sm shadow-sm w-100 font-weight-bold"
+                            style="border-radius: 8px; height: 38px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-plus-circle mr-1"></i> TẠO MÃ MỚI
                         </a>
                     </div>
                 </div>

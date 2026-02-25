@@ -2,7 +2,7 @@
 
 /**
  * Deposit Controller (User-facing)
- * Bank deposit endpoints (UI page moved into Profile)
+ * Bank deposit endpoints
  */
 class DepositController extends Controller
 {
@@ -29,13 +29,31 @@ class DepositController extends Controller
     }
 
     /**
-     * GET /deposit
-     * Legacy route -> redirect to profile deposit section
+     * GET /deposit-bank
      */
     public function index()
     {
+        $user = $this->requireUser();
+        $siteConfig = Config::getSiteConfig();
+        $depositPanel = $this->depositService->getProfilePanelData($siteConfig, $user);
+
+        $this->view('deposit/bank', [
+            'user' => $user,
+            'username' => (string) ($user['username'] ?? ''),
+            'chungapi' => $siteConfig,
+            'activePage' => 'deposit',
+            'depositPanel' => $depositPanel,
+        ]);
+    }
+
+    /**
+     * GET /deposit
+     * Legacy route -> redirect to new dedicated bank deposit page
+     */
+    public function legacyRedirect()
+    {
         $this->requireUser();
-        return $this->redirect(url('profile?section=deposit#profile-deposit-card'));
+        return $this->redirect(url('deposit-bank'));
     }
 
     /**

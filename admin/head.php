@@ -2,7 +2,9 @@
 <?php
 if (empty($_SESSION['admin'])) {
     $alertIp = $GLOBALS['ip_address'] ?? ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
-    sendTele($alertIp . ' Truy cap trai phep vao Admin');
+    if (function_exists('sendTele')) {
+        sendTele($alertIp . ' Truy cap trai phep vao Admin');
+    }
     header('Location: ' . url('/'));
     exit();
 }

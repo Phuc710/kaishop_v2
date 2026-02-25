@@ -276,6 +276,7 @@ class JournalController extends Controller
     {
         $output = [];
         foreach ($rows as $log) {
+            $log = $this->normalizeSystemLogRow($log);
             $displayUser = trim((string) $log['username']);
 
             // Try extracting from payload if username is empty (e.g for login/register actions)
@@ -324,6 +325,73 @@ class JournalController extends Controller
         }
 
         return $output;
+    }
+
+    /**
+     * @param array<string, mixed> $log
+     * @return array<string, mixed>
+     */
+    private function normalizeSystemLogRow(array $log): array
+    {
+        foreach (['username', 'module', 'action', 'description', 'ip_address'] as $field) {
+            if (isset($log[$field]) && is_string($log[$field])) {
+                $log[$field] = $this->normalizeMojibakeText($log[$field]);
+            }
+        }
+
+        if (!empty($log['payload']) && is_string($log['payload'])) {
+            $payloadRaw = $this->normalizeMojibakeText($log['payload']);
+            $decoded = json_decode($payloadRaw, true);
+            if (is_array($decoded)) {
+                $decoded = $this->normalizeArrayStrings($decoded);
+                $log['payload'] = json_encode($decoded, JSON_UNESCAPED_UNICODE);
+            } else {
+                $log['payload'] = $payloadRaw;
+            }
+        }
+
+        return $log;
+    }
+
+    /**
+     * @param array<mixed> $data
+     * @return array<mixed>
+     */
+    private function normalizeArrayStrings(array $data): array
+    {
+        foreach ($data as $k => $v) {
+            if (is_string($v)) {
+                $data[$k] = $this->normalizeMojibakeText($v);
+            } elseif (is_array($v)) {
+                $data[$k] = $this->normalizeArrayStrings($v);
+            }
+        }
+        return $data;
+    }
+
+    private function normalizeMojibakeText(string $text): string
+    {
+        $text = trim($text);
+        if ($text === '') {
+            return $text;
+        }
+
+        if (!preg_match('/(?:Ã.|Ä.|áº|á»|Æ.|â€¦|â€™|â€œ|â€|Â.)/u', $text)) {
+            return $text;
+        }
+
+        $converted = @iconv('Windows-1252', 'UTF-8//IGNORE', $text);
+        if (!is_string($converted) || $converted === '') {
+            return $text;
+        }
+
+        return $this->mojibakeScore($converted) < $this->mojibakeScore($text) ? $converted : $text;
+    }
+
+    private function mojibakeScore(string $text): int
+    {
+        preg_match_all('/(?:Ã.|Ä.|áº|á»|Æ.|â€¦|â€™|â€œ|â€|Â.)/u', $text, $matches);
+        return count($matches[0] ?? []);
     }
 
     private function formatUsername(string $username): string

@@ -251,6 +251,7 @@ class AuthSecurityService
 
         $_SESSION['session'] = $legacySession;
         $_SESSION['username'] = $user['username'] ?? null;
+        $this->syncLegacyAdminSession($user);
 
         return [
             'legacy_session' => $legacySession,
@@ -272,6 +273,7 @@ class AuthSecurityService
                     return null;
                 }
                 $_SESSION['username'] = $user['username'] ?? null;
+                $this->syncLegacyAdminSession($user);
                 return $user;
             }
             unset($_SESSION['session']);
@@ -435,6 +437,7 @@ class AuthSecurityService
 
         $_SESSION['session'] = $legacySession;
         $_SESSION['username'] = $user['username'] ?? null;
+        $this->syncLegacyAdminSession($user);
 
         // Keep users.session in sync for legacy code paths.
         if (($user['session'] ?? '') !== $legacySession) {
@@ -566,6 +569,15 @@ class AuthSecurityService
         return bin2hex(random_bytes(24));
     }
 
+    private function syncLegacyAdminSession(array $user): void
+    {
+        if ((int) ($user['level'] ?? 0) === 9) {
+            $_SESSION['admin'] = (string) ($user['username'] ?? 'admin');
+            return;
+        }
+        unset($_SESSION['admin']);
+    }
+
     /**
      * Check if a user is banned (account ban or device fingerprint ban)
      */
@@ -597,7 +609,7 @@ class AuthSecurityService
     {
         $banReason = (string) ($user['ban_reason'] ?? 'Tài khoản/thiết bị bị khoá');
         $_SESSION['banned_reason'] = $banReason;
-        unset($_SESSION['session'], $_SESSION['username']);
+        unset($_SESSION['session'], $_SESSION['username'], $_SESSION['admin']);
         $this->clearAuthCookies();
 
         Logger::danger('Auth', 'banned_session_blocked', 'Phiên đăng nhập bị chặn do ban', [

@@ -2,22 +2,30 @@
 
 /**
  * Password Controller
- * Handles password change operations via MVC
+ * Handles password change and login 2FA (OTP Mail) setting.
  */
 class PasswordController extends Controller
 {
-    private $authService;
-    private $validator;
+    private AuthService $authService;
+    private AuthValidator $validator;
+    private User $userModel;
+    private ?AuthSecurityService $authSecurity = null;
 
     public function __construct()
     {
         $this->authService = new AuthService();
         $this->validator = new AuthValidator();
+        $this->userModel = new User();
     }
 
-    /**
-     * Show password change page
-     */
+    private function security(): AuthSecurityService
+    {
+        if ($this->authSecurity === null) {
+            $this->authSecurity = new AuthSecurityService();
+        }
+        return $this->authSecurity;
+    }
+
     public function index()
     {
         $this->authService->requireAuth();
@@ -26,59 +34,102 @@ class PasswordController extends Controller
 
         $this->view('profile/password', [
             'user' => $user,
-            'username' => $user['username'],
+            'username' => (string) ($user['username'] ?? ''),
             'chungapi' => $siteConfig,
-            'activePage' => 'password'
+            'activePage' => 'password',
         ]);
     }
 
-    /**
-     * Update password (AJAX endpoint)
-     */
     public function update()
     {
         if (!$this->authService->isLoggedIn()) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Bạn chưa đăng nhập'
-            ], 401);
+            return $this->json(['success' => false, 'message' => 'Bạn chưa đăng nhập.'], 401);
         }
 
         $user = $this->authService->getCurrentUser();
-        $username = $user['username'];
+        $username = (string) ($user['username'] ?? '');
+        $security = $this->security();
 
-        $password1 = trim($this->post('password1', ''));
-        $password2 = trim($this->post('password2', ''));
-        $password3 = trim($this->post('password3', ''));
+        $rateLimit = $security->checkRateLimit('change_password', $username);
+        if ($rateLimit !== null) {
+            return $this->json(['success' => false, 'message' => (string) ($rateLimit['message'] ?? 'Bạn thao tác quá nhanh.')], 429);
+        }
 
-        // Validation
-        $errors = $this->validator->validateChangePassword($password1, $password2, $password3);
+        $currentPassword = trim((string) $this->post('password1', ''));
+        $newPassword = trim((string) $this->post('password2', ''));
+        $confirmPassword = trim((string) $this->post('password3', ''));
+
+        $errors = $this->validator->validateChangePassword($currentPassword, $newPassword, $confirmPassword);
         if (!empty($errors)) {
-            return $this->json([
-                'success' => false,
-                'message' => $errors[0]
-            ], 400);
+            $security->recordLoginAttempt('change_password', $username, false, 'validation_failed');
+            return $this->json(['success' => false, 'message' => (string) $errors[0]], 400);
         }
 
-        // Verify current password
-        if ($user['password'] !== sha1(md5($password1))) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Mật khẩu hiện tại chưa chính xác'
-            ], 400);
+        if (!$security->verifyPassword($user, $currentPassword)) {
+            $security->recordLoginAttempt('change_password', $username, false, 'wrong_current_password');
+            return $this->json(['success' => false, 'message' => 'Mật khẩu hiện tại chưa chính xác.'], 400);
         }
 
-        // Update password
-        $userModel = new User();
-        $newPass = sha1(md5($password2));
-        $userModel->update($user['id'], ['password' => $newPass]);
+        $updated = $this->userModel->update((int) ($user['id'] ?? 0), [
+            'password' => $security->hashPassword($newPassword),
+            'password_updated_at' => date('Y-m-d H:i:s'),
+        ]);
 
-        // Send Telegram notification
-        sendTele("$username đã đổi mật khẩu thành công");
+        if (!$updated) {
+            $security->recordLoginAttempt('change_password', $username, false, 'update_failed');
+            return $this->json(['success' => false, 'message' => 'Không thể cập nhật mật khẩu. Vui lòng thử lại.'], 500);
+        }
+
+        $security->recordLoginAttempt('change_password', $username, true, 'password_changed');
+
+        try {
+            if (function_exists('sendTele')) {
+                sendTele($username . ' đã đổi mật khẩu thành công');
+            }
+        } catch (Throwable $e) {
+            // non-blocking
+        }
 
         return $this->json([
             'success' => true,
-            'message' => 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại!'
+            'message' => 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại!',
+        ]);
+    }
+
+    public function updateSecurity()
+    {
+        if (!$this->authService->isLoggedIn()) {
+            return $this->json(['success' => false, 'message' => 'Bạn chưa đăng nhập.'], 401);
+        }
+
+        $user = $this->authService->getCurrentUser();
+        $username = (string) ($user['username'] ?? '');
+        $security = $this->security();
+
+        $rateLimit = $security->checkRateLimit('password_security_toggle', $username);
+        if ($rateLimit !== null) {
+            return $this->json(['success' => false, 'message' => (string) ($rateLimit['message'] ?? 'Bạn thao tác quá nhanh.')], 429);
+        }
+
+        $enabled = in_array((string) $this->post('twofa_enabled', '0'), ['1', 'true', 'on'], true);
+
+        $updated = $this->userModel->update((int) ($user['id'] ?? 0), [
+            'twofa_enabled' => $enabled ? 1 : 0,
+        ]);
+
+        if (!$updated) {
+            $security->recordLoginAttempt('password_security_toggle', $username, false, 'update_failed');
+            return $this->json(['success' => false, 'message' => 'Không thể cập nhật cài đặt bảo mật.'], 500);
+        }
+
+        $security->recordLoginAttempt('password_security_toggle', $username, true, $enabled ? 'twofa_enabled' : 'twofa_disabled');
+
+        return $this->json([
+            'success' => true,
+            'message' => $enabled
+                ? 'Đã bật xác minh đăng nhập bằng OTP Mail.'
+                : 'Đã tắt xác minh đăng nhập bằng OTP Mail.',
+            'twofa_enabled' => $enabled ? 1 : 0,
         ]);
     }
 }

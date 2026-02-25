@@ -125,11 +125,14 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
 
                         </div>
                         <div class="card-footer text-right bg-transparent border-top-0 pt-0">
-                            <a href="<?= url('admin/finance/giftcodes') ?>" class="btn btn-light border mr-2 px-4">
+                            <a href="<?= url('admin/finance/giftcodes') ?>"
+                                class="btn btn-outline-secondary shadow-sm mr-2 px-4 font-weight-bold"
+                                style="border-radius: 8px;">
                                 <i class="fas fa-times mr-1"></i>Hủy
                             </a>
-                            <button type="submit" class="btn btn-primary px-4">
-                                <i class="fas fa-save mr-1"></i>Lưu thay đổi
+                            <button type="submit" class="btn btn-primary shadow-sm px-4 font-weight-bold"
+                                style="border-radius: 8px;">
+                                <i class="fas fa-save mr-1"></i>LƯU THAY ĐỔI
                             </button>
                         </div>
                     </form>
