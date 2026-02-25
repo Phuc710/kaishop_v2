@@ -10,7 +10,7 @@
     ]);
     require __DIR__ . '/../../hethong/head2.php';
     ?>
-    <title>Biáº¿n Ä‘á»™ng sá»‘ dÆ° |
+    <title>Biến động số dư |
         <?= $chungapi['ten_web']; ?>
     </title>
 </head>
@@ -33,7 +33,8 @@
                         <div class="profile-card">
                             <div class="profile-card-header profile-card-header--with-actions">
                                 <h5 class="text-dark">Lịch sử sản phẩm</h5>
-                                <a href="<?= url('profile?section=deposit#profile-deposit-card') ?>" class="btn btn-edit-profile">
+                                <a href="<?= url('profile?section=deposit#profile-deposit-card') ?>"
+                                    class="btn btn-edit-profile">
                                     <i class="fas fa-university mr-1"></i> Nạp tiền
                                 </a>
                             </div>
@@ -47,7 +48,7 @@
                                                         class="fas fa-search"></i></span>
                                                 <input type="text" id="filter-reason"
                                                     class="form-control border-start-0 ps-0"
-                                                    placeholder="TÃ¬m nhanh theo lÃ½ do...">
+                                                    placeholder="Tìm nhanh theo lý do...">
                                             </div>
                                         </div>
                                         <div class="col-md-4 mb-2">
@@ -56,13 +57,13 @@
                                                         class="far fa-calendar-alt"></i></span>
                                                 <input type="text" id="filter-date"
                                                     class="form-control border-start-0 ps-0 bg-white"
-                                                    placeholder="Tá»« ngÃ y - Äáº¿n ngÃ y" readonly>
+                                                    placeholder="Từ ngày - Đến ngày" readonly>
                                             </div>
                                         </div>
                                         <div class="col-md-2 mb-2">
                                             <button id="btn-clear" class="btn btn-outline-danger w-100 shadow-sm py-2"
-                                                title="XÃ³a bá»™ lá»c">
-                                                <i class="fas fa-trash me-1"></i> XÃ³a lá»c
+                                                title="Xóa bộ lọc">
+                                                <i class="fas fa-trash me-1"></i> Xóa lọc
                                             </button>
                                         </div>
                                     </div>
@@ -84,10 +85,10 @@
                                                 date:</span>
                                             <select id="f-sort" class="form-select form-select-sm shadow-none"
                                                 style="width: auto;">
-                                                <option value="all">Táº¥t cáº£</option>
-                                                <option value="today">HÃ´m nay</option>
-                                                <option value="7">Tuáº§n</option>
-                                                <option value="30">ThÃ¡ng</option>
+                                                <option value="all">Tất cả</option>
+                                                <option value="today">Hôm nay</option>
+                                                <option value="7">Tuần</option>
+                                                <option value="30">Tháng</option>
                                             </select>
                                         </div>
                                     </div>
@@ -98,11 +99,11 @@
                                     <table id="history-table" class="table table-hover align-middle w-100 mb-0">
                                         <thead class="table-light">
                                             <tr>
-                                                <th class="py-3 text-nowrap text-center">THá»œI GIAN</th>
-                                                <th class="py-3 text-nowrap text-center">Sá» DÆ¯ TRÆ¯á»šC</th>
-                                                <th class="py-3 text-nowrap text-center">BIáº¾N Äá»˜NG</th>
-                                                <th class="py-3 text-nowrap text-center">Sá» DÆ¯ HIá»†N Táº I</th>
-                                                <th class="py-3 text-nowrap text-center">LÃ DO</th>
+                                                <th class="py-3 text-nowrap text-center">THỜI GIAN</th>
+                                                <th class="py-3 text-nowrap text-center">SỐ DƯ TRƯỚC</th>
+                                                <th class="py-3 text-nowrap text-center">BIẾN ĐỘNG</th>
+                                                <th class="py-3 text-nowrap text-center">SỐ DƯ HIỆN TẠI</th>
+                                                <th class="py-3 text-nowrap text-center">LÝ DO</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -120,6 +121,18 @@
 
     <?php require __DIR__ . '/../../hethong/foot.php'; ?>
 
+    <style>
+        .date-badge {
+            color: #1d1d1d !important;
+            background-color: transparent !important;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .date-badge {
+            color: black !important;
+        }
+    </style>
     <script>
         $(document).ready(function () {
             // Init Flatpickr for date range selection
@@ -160,14 +173,14 @@
                 pageLength: 10,
                 dom: 't<"d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3"<"text-muted small"i><"d-flex align-items-center gap-3"p>>',
                 language: {
-                    info: "Hiá»ƒn thá»‹ _START_ - _END_ trong tá»•ng sá»‘ _TOTAL_ giao dá»‹ch",
-                    infoEmpty: "ChÆ°a cÃ³ giao dá»‹ch nÃ o",
-                    emptyTable: "KhÃ´ng cÃ³ dá»¯ liá»‡u biáº¿n Ä‘á»™ng sá»‘ dÆ°",
+                    info: "Hiển thị _START_ - _END_ trong tổng số _TOTAL_ giao dịch",
+                    infoEmpty: "Chưa có giao dịch nào",
+                    emptyTable: "Không có dữ liệu biến động số dư",
                     paginate: {
-                        first: "Äáº§u",
-                        last: "Cuá»‘i",
-                        next: "â€º",
-                        previous: "â€¹"
+                        first: "Đầu",
+                        last: "Cuối",
+                        next: "›",
+                        previous: "‹"
                     }
                 }
             });
@@ -215,4 +228,3 @@
 </body>
 
 </html>
-

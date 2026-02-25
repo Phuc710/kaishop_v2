@@ -117,6 +117,14 @@
 
     <?php require __DIR__ . '/../../hethong/foot.php'; ?>
 
+    <style>
+        .date-badge {
+            color: black !important;
+            background-color: transparent !important;
+            font-size: 14px;
+            font-weight: 500;
+        }
+    </style>
     <script>
         $(document).ready(function () {
             // Init Flatpickr for date range selection
