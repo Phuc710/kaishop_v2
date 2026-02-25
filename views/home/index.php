@@ -5,7 +5,7 @@
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>
     <title> Trang Chủ | <?= $chungapi['ten_web']; ?></title>
     </head> <body> <?php require __DIR__ . '/../../hethong/nav.php'; ?>
-    <main class="bg-light pb-5">
+    <main class="bg-light pb-5" style="padding-top: 60px;">
         <div class="container py-4">
             <!-- Premium Hero Banner -->
             <div class="home-hero-banner mb-5">

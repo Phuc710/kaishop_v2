@@ -7948,9 +7948,9 @@ html.menu-opened body {
     justify-content: center;
 }
 
-.footer-widget {
+/* .footer-widget {
     text-align: center;
-}
+} */
 
 .footer-widget .menu-items li a {
     color: #cdcdcd;
