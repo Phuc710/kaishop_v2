@@ -1,0 +1,830 @@
+/* ============================================================
+   KAISHOP ADMIN — Centralized Admin Stylesheet
+   One file to rule them all. No more inline <style> blocks.
+   ============================================================ */
+
+/* ──────────────────────────────────────────────
+   0. CSS VARIABLES (Design Tokens)
+   ────────────────────────────────────────────── */
+:root {
+    --sidebar-bg: #111c43;
+    --sidebar-width: 15rem;
+    --sidebar-text: #a3aed1;
+    --sidebar-text-hover: #ffffff;
+    --sidebar-hover-bg: rgba(255, 255, 255, 0.06);
+    --sidebar-active-bg: rgba(132, 90, 223, 0.25);
+    --sidebar-active-color: #ffffff;
+    --sidebar-header-color: rgba(163, 174, 209, 0.5);
+    --sidebar-border: rgba(255, 255, 255, 0.05);
+    --sidebar-brand-color: #ffffff;
+
+    --primary: #845adf;
+    --primary-light: rgba(132, 90, 223, 0.15);
+    --accent: #3b82f6;
+    --danger: #dc3545;
+    --success: #22c55e;
+
+    --page-bg: #f1f2f8;
+    --card-bg: #ffffff;
+    --card-border: #e7e8f0;
+    --card-shadow: 0 6px 20px rgba(17, 28, 67, 0.04);
+    --card-radius: 12px;
+
+    --font-main: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-size: 0.875rem;
+    /* ~13px */
+    --transition: all 0.2s ease;
+}
+
+/* ──────────────────────────────────────────────
+   1. GLOBAL OVERRIDES
+   ────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body,
+p,
+a,
+span,
+div,
+li,
+td,
+th,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+button,
+input,
+select,
+textarea,
+.nav-link p,
+.nav-header,
+.brand-text,
+.card-title,
+.page-title {
+    font-family: var(--font-main) !important;
+}
+
+body {
+    font-size: var(--font-size);
+}
+
+/* Hide the old AdminLTE top navbar */
+.main-header.navbar {
+    display: none !important;
+}
+
+/* Shift content for fixed sidebar */
+.content-wrapper {
+    margin-top: 60px !important;
+    margin-left: var(--sidebar-width) !important;
+    min-height: calc(100vh - 60px);
+    background: var(--page-bg);
+    transition: var(--transition);
+}
+
+body.sidebar-collapsed .content-wrapper {
+    margin-left: 0 !important;
+}
+
+/* ──────────────────────────────────────────────
+   1.5. APP HEADER (Top Navbar)
+   ────────────────────────────────────────────── */
+.app-header {
+    position: fixed;
+    top: 0;
+    left: var(--sidebar-width);
+    right: 0;
+    height: 60px;
+    background: #ffffff;
+    border-bottom: 1px solid var(--card-border);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    transition: var(--transition);
+}
+
+body.sidebar-collapsed .app-header {
+    left: 0;
+}
+
+.main-header-container {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+/* Sidebar Toggle Button (Hamburger) */
+.sidemenu-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    color: #333;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.animated-arrow {
+    position: relative;
+    width: 20px;
+    height: 20px;
+}
+
+.animated-arrow span,
+.animated-arrow span::before,
+.animated-arrow span::after {
+    position: absolute;
+    width: 16px;
+    height: 2px;
+    background-color: var(--primary);
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+.animated-arrow span {
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.animated-arrow span::before {
+    content: '';
+    top: -6px;
+    left: 0;
+}
+
+.animated-arrow span::after {
+    content: '';
+    top: 6px;
+    left: 0;
+}
+
+/* When sidebar IS hidden/collapsed */
+body.sidebar-collapsed .animated-arrow span {
+    background-color: transparent;
+}
+
+body.sidebar-collapsed .animated-arrow span::before {
+    transform: rotate(45deg);
+    top: 0;
+}
+
+body.sidebar-collapsed .animated-arrow span::after {
+    transform: rotate(-45deg);
+    top: 0;
+}
+
+/* ──────────────────────────────────────────────
+   2. SIDEBAR NAVIGATION
+   ────────────────────────────────────────────── */
+.admin-sidebar {
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    width: var(--sidebar-width);
+    height: 100%;
+    background: var(--sidebar-bg);
+    border-inline-end: 1px solid var(--sidebar-border);
+    color: var(--sidebar-text);
+    overflow-y: auto;
+    z-index: 103;
+    transition: var(--transition);
+    font-family: var(--font-main);
+}
+
+/* Custom scrollbar for sidebar */
+.admin-sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.admin-sidebar::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 4px;
+}
+
+/* Brand / Logo area */
+.admin-sidebar .sidebar-brand {
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    color: var(--sidebar-brand-color);
+    border-bottom: 1px solid var(--sidebar-border);
+    overflow: hidden;
+}
+
+.admin-sidebar .sidebar-brand img {
+    display: block;
+    width: auto !important;
+    height: auto !important;
+    max-width: 180px;
+    max-height: 52px;
+    object-fit: contain;
+    object-position: center;
+}
+
+.admin-sidebar .sidebar-brand span {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+body.sidebar-collapsed .admin-sidebar {
+    transform: translateX(-100%);
+}
+
+/* Reset list */
+.admin-sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Section headers (MAIN, DANH MỤC, etc.) */
+.admin-sidebar .sidebar-header {
+    padding: 20px 20px 6px;
+    font-size: 10px;
+    font-weight: 800;
+    /* Bolder */
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--sidebar-header-color);
+    cursor: default;
+}
+
+/* Menu items */
+.admin-sidebar>ul>li {
+    margin: 2px 10px;
+}
+
+/* Links & dropdown buttons */
+.admin-sidebar a,
+.admin-sidebar button {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 10px 14px;
+    color: var(--sidebar-text);
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    font-size: 13.5px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: var(--transition);
+    cursor: pointer;
+    outline: none;
+    font-family: var(--font-main);
+    line-height: 1.5;
+}
+
+.admin-sidebar a i,
+.admin-sidebar button i {
+    font-size: 16px;
+    margin-right: 10px;
+    width: 20px;
+    text-align: center;
+    opacity: 0.7;
+    flex-shrink: 0;
+}
+
+/* Hover */
+.admin-sidebar a:hover,
+.admin-sidebar button:hover {
+    color: var(--sidebar-text-hover);
+    background: var(--sidebar-hover-bg);
+}
+
+.admin-sidebar a:hover i,
+.admin-sidebar button:hover i {
+    opacity: 1;
+}
+
+/* Active link */
+.admin-sidebar a.active {
+    color: var(--sidebar-active-color);
+    background: var(--sidebar-active-bg);
+}
+
+.admin-sidebar a.active i {
+    opacity: 1;
+}
+
+/* Dropdown arrow on buttons */
+.admin-sidebar>ul>li>button::after {
+    content: '\f107';
+    /* fa-angle-down */
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    margin-left: auto;
+    font-size: 11px;
+    transition: transform 0.3s ease;
+    opacity: 0.5;
+}
+
+/* Active group (expanded) */
+.admin-sidebar li.active-group>button {
+    color: var(--sidebar-text-hover);
+}
+
+.admin-sidebar li.active-group>button::after {
+    transform: rotate(180deg);
+    opacity: 1;
+}
+
+/* Sub-menus */
+.admin-sidebar li>ul {
+    display: none;
+    padding-left: 12px;
+    margin-top: 2px;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+
+.admin-sidebar li.active-group>ul {
+    display: block;
+}
+
+.admin-sidebar li>ul>li {
+    margin: 1px 0;
+}
+
+.admin-sidebar li>ul a {
+    padding: 8px 14px 8px 18px;
+    font-size: 13px;
+    color: var(--sidebar-text);
+    position: relative;
+}
+
+.admin-sidebar li>ul a::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    border: 1px solid var(--sidebar-text);
+    border-radius: 50%;
+    opacity: 0.6;
+}
+
+.admin-sidebar li>ul a:hover {
+    color: var(--sidebar-text-hover);
+    background: transparent;
+}
+
+.admin-sidebar li>ul a.active {
+    color: var(--primary);
+    background: transparent;
+    box-shadow: none;
+    font-weight: 700;
+    /* Bolder active sub-menu */
+}
+
+.admin-sidebar li>ul a.active::before {
+    content: '';
+    background: var(--primary);
+    border-color: var(--primary);
+    opacity: 1;
+}
+
+/* ──────────────────────────────────────────────
+   3. PAGE HEADER / BREADCRUMB
+   ────────────────────────────────────────────── */
+.page-header-breadcrumb {
+    margin: 20px 0;
+}
+
+.page-header-breadcrumb .page-title {
+    font-size: 18px;
+    font-weight: 800;
+    /* Bolder page title */
+    margin: 0;
+    color: #222;
+    /* Darker for emphasis */
+}
+
+.page-header-breadcrumb .page-title i {
+    margin-right: 8px;
+    color: var(--primary);
+}
+
+/* ──────────────────────────────────────────────
+   4. CARDS (custom-card)
+   ────────────────────────────────────────────── */
+.card.custom-card,
+.card.journal-card {
+    border-radius: var(--card-radius);
+    border: 1px solid var(--card-border);
+    box-shadow: var(--card-shadow);
+    background: var(--card-bg);
+}
+
+.card.custom-card .card-header,
+.card.journal-card .card-header {
+    background: transparent;
+    border-bottom: 1px solid var(--card-border);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.card.custom-card .card-title,
+.card.journal-card .card-title {
+    font-weight: 800;
+    /* Bolder */
+    font-size: 14px;
+    text-transform: uppercase;
+    position: relative;
+    padding-left: 14px;
+    margin: 0;
+    color: #222;
+}
+
+.card.custom-card .card-title::before,
+.card.journal-card .card-title::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 2px;
+    width: 4px;
+    height: 18px;
+    border-radius: 2px;
+    background: var(--primary);
+}
+
+/* ──────────────────────────────────────────────
+   5. SEARCH & FILTER BAR
+   ────────────────────────────────────────────── */
+.top-filter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.filter-show,
+.filter-short {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-show {
+    width: 170px;
+}
+
+.filter-short {
+    width: 250px;
+}
+
+.filter-label {
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    text-transform: uppercase;
+    color: #555;
+}
+
+.filter-select,
+.journal-small-select {
+    height: 36px;
+    background: #fff;
+    border: 1px solid #e7e8f0;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 0 10px;
+    color: #334155;
+    transition: var(--transition);
+}
+
+.filter-select:focus,
+.journal-small-select:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+/* ──────────────────────────────────────────────
+   6. TABLE STYLES
+   ────────────────────────────────────────────── */
+
+/* Scrollable wrapper */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-responsive::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #999;
+    border-radius: 20px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #666;
+}
+
+/* Table wrapper — vertical scroll with sticky header/footer */
+.table-wrapper {
+    max-height: 700px;
+    overflow-y: auto;
+}
+
+.table-wrapper table {
+    width: 100%;
+}
+
+.table-wrapper thead {
+    position: sticky;
+    top: 0;
+    background-color: white;
+    z-index: 2;
+}
+
+.table-wrapper tfoot {
+    position: sticky;
+    bottom: 0;
+    background-color: white;
+    z-index: 2;
+}
+
+/* Clean table head */
+.table thead th {
+    background: #f8f9fc;
+    font-weight: 700;
+    /* Bolder header */
+    font-size: 13px;
+    text-transform: uppercase;
+    color: #444;
+    /* Darker */
+    white-space: nowrap;
+    border-bottom: 2px solid #e9ecf1;
+    padding: 12px 14px;
+    letter-spacing: 0.02em;
+}
+
+.table tbody td {
+    vertical-align: middle;
+    white-space: nowrap;
+    padding: 10px 14px;
+    font-size: 13.5px;
+    font-weight: 500;
+    /* Slightly bolder content */
+    color: #333;
+    border-color: #f0f1f5;
+}
+
+/* Zebra striping — subtle */
+.table-striped tbody tr:nth-of-type(odd) {
+    background: rgba(0, 0, 0, 0.015);
+}
+
+.table-hover tbody tr:hover {
+    background: rgba(132, 90, 223, 0.04);
+}
+
+/* Badges */
+.badge {
+    padding: 0.35em 0.65em;
+    font-weight: 600;
+    border-radius: 4px;
+}
+
+.badge.bg-success {
+    background: var(--success) !important;
+}
+
+.badge.bg-danger {
+    background: var(--danger) !important;
+}
+
+.badge.bg-primary {
+    background: var(--primary) !important;
+}
+
+/* Date & IP Badges (Rich UI) */
+.date-badge {
+    background: #f1f4f9;
+    color: #334155;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: help;
+    border: 1px solid #e2e8f0;
+}
+
+.bg-soft-danger {
+    background: #fff5f5 !important;
+    color: #dc3545 !important;
+    border: 1px solid #feb2b2;
+}
+
+.border-danger-light {
+    border-color: rgba(220, 53, 69, 0.2) !important;
+}
+
+/* Tooltip Customization */
+.tooltip-inner {
+    background-color: #1e293b !important;
+    font-family: var(--font-main);
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.tooltip.bs-tooltip-top .arrow::before {
+    border-top-color: #1e293b !important;
+}
+
+/* ──────────────────────────────────────────────
+   7. PAGINATION
+   ────────────────────────────────────────────── */
+.pagination .page-link {
+    color: var(--primary);
+    border-color: #e7e8f0;
+    font-size: 13px;
+}
+
+.pagination .page-item.active .page-link {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+.dataTables_info,
+.journal-footer-text {
+    color: #555;
+    font-size: 13px;
+}
+
+/* ──────────────────────────────────────────────
+   8. BUTTONS
+   ────────────────────────────────────────────── */
+.btn {
+    font-weight: 400;
+    border-radius: 6px;
+    transition: var(--transition);
+}
+
+.btn-primary {
+    background: var(--primary) !important;
+    border-color: var(--primary) !important;
+}
+
+.btn-primary:hover {
+    background: #7248c8 !important;
+    border-color: #7248c8 !important;
+    transform: translateY(-1px);
+}
+
+.btn-danger {
+    background: var(--danger) !important;
+    border-color: var(--danger) !important;
+}
+
+.btn-danger:hover {
+    background: #c82333 !important;
+    border-color: #bd2130 !important;
+    transform: translateY(-1px);
+}
+
+/* ──────────────────────────────────────────────
+   9. ANIMATIONS
+   ────────────────────────────────────────────── */
+.setting-spin {
+    display: inline-block;
+    animation: setting-spin-360 2s linear infinite;
+}
+
+@keyframes setting-spin-360 {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* ──────────────────────────────────────────────
+   10. JOURNAL PAGE — Specific overrides
+   ────────────────────────────────────────────── */
+.journal-page {
+    background: var(--page-bg);
+}
+
+.journal-small-select {
+    width: 120px;
+    height: 36px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 13px;
+    padding: 0 10px;
+}
+
+.journal-controls {
+    gap: 10px;
+}
+
+/* ──────────────────────────────────────────────
+   11. RESPONSIVE
+   ────────────────────────────────────────────── */
+@media (max-width: 991px) {
+
+    /* 1. MOBILE DEFAULT STATE (CLOSED = no class) */
+    .admin-sidebar {
+        transform: translateX(-100%);
+    }
+
+    .app-header {
+        left: 0 !important;
+    }
+
+    .content-wrapper {
+        margin-left: 0 !important;
+    }
+
+    /* 2. MOBILE OPEN STATE (has .sidebar-collapsed class) */
+    body.sidebar-collapsed .admin-sidebar {
+        transform: translateX(0);
+    }
+
+    body.sidebar-collapsed .app-header {
+        left: var(--sidebar-width) !important;
+    }
+
+    .top-filter {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .filter-show,
+    .filter-short {
+        width: 100%;
+    }
+
+    .dataTables_wrapper .row {
+        flex-direction: column;
+        text-align: center;
+        gap: 15px;
+    }
+
+    .dataTables_wrapper .row>div {
+        width: 100%;
+        display: flex;
+        justify-content: center !important;
+        margin-top: 5px;
+    }
+
+    .dataTables_info {
+        padding-top: 0 !important;
+        margin-bottom: 5px;
+        text-align: center !important;
+    }
+
+    div.dataTables_wrapper div.dataTables_paginate {
+        margin: 0;
+        white-space: wrap;
+        text-align: center !important;
+    }
+}
+
+/* ──────────────────────────────────────────────
+   12. HIDE OLD AdminLTE SIDEBAR (if still rendered)
+   ────────────────────────────────────────────── */
+.main-sidebar:not(.admin-sidebar) {
+    display: none !important;
+}
+
+aside.main-sidebar {
+    display: none !important;
+}
+
+/* Fix: pseudo-elements from external themes */
+a.side-menu__item::before,
+.main-sidebar a.side-menu__item::before {
+    content: none !important;
+    display: none !important;
+}

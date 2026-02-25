@@ -1,0 +1,21 @@
+# Routing Configuration for Apache
+# Place this in public/.htaccess
+
+RewriteEngine On
+
+# =============================================
+# ANTI-HOTLINK: Chặn web khác lấy ảnh của mình
+# =============================================
+# Chỉ chặn khi có Referer (không chặn direct access / các crawler SEO)
+RewriteCond %{HTTP_REFERER} !^$
+# Cho phép nếu Referer khớp với HOST hiện tại (tự động, không hardcode)
+RewriteCond %{HTTP_REFERER} !^https?://%{HTTP_HOST}/ [NC]
+# Cho phép localhost và 127.0.0.1 (để dev local không bị chặn)
+RewriteCond %{HTTP_REFERER} !^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?/ [NC]
+# Áp dụng cho các định dạng ảnh phổ biến
+RewriteRule \.(jpe?g|png|gif|webp|svg|ico|bmp)$ - [F,NC,L]
+
+# Redirect all requests to index_new.php (new router)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]

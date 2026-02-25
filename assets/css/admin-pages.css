@@ -1,0 +1,413 @@
+/**
+ * Admin Pages — Shared Styles
+ * Dùng chung cho tất cả trang admin (products, categories, users, giftcode, ...)
+ * Sửa 1 chỗ → áp dụng toàn bộ
+ */
+
+/* ══════════════════════════════════════
+   CONTENT WRAPPER & GLOBAL
+   ══════════════════════════════════════ */
+body,
+.content-wrapper {
+    background-color: #f4f6f9 !important;
+    /* Soft gray background like screenshot */
+}
+
+.content-wrapper {
+    min-height: calc(100dvh - 56.8px);
+    overflow-y: auto;
+    padding-top: 20px;
+    /* Add some breathing room at string */
+}
+
+/* ══════════════════════════════════════
+   TABLE — Base
+   ══════════════════════════════════════ */
+.admin-table {
+    background: #fff !important;
+}
+
+.admin-table td,
+.admin-table th {
+    text-align: center !important;
+    vertical-align: middle !important;
+    background-color: #fff !important;
+}
+
+table.dataTable {
+    border-collapse: collapse !important;
+    margin-top: 15px !important;
+    margin-bottom: 20px !important;
+}
+
+table.dataTable thead th {
+    text-transform: uppercase;
+    font-size: 13px;
+    font-weight: 700;
+    color: #4b5563;
+    white-space: nowrap;
+    padding: 15px 10px !important;
+    /* More padding */
+    border-bottom: 1px solid #e5e7eb !important;
+    border-top: 1px solid #e5e7eb !important;
+    border-left: none !important;
+    border-right: none !important;
+}
+
+table.dataTable thead .sorting:before,
+table.dataTable thead .sorting:after,
+table.dataTable thead .sorting_asc:before,
+table.dataTable thead .sorting_asc:after,
+table.dataTable thead .sorting_desc:before,
+table.dataTable thead .sorting_desc:after {
+    content: none !important;
+}
+
+table.dataTable tbody td {
+    font-size: 14px;
+    padding: 15px 10px !important;
+    /* Taller rows per screenshot */
+    color: #374151;
+    border-bottom: 1px solid #f3f4f6 !important;
+    border-left: none !important;
+    border-right: none !important;
+}
+
+/* Bắt buộc hiển thị màu trắng cho dòng, loại bỏ xọc dưa (odd/even) của DataTables */
+table.dataTable tbody tr.odd,
+table.dataTable tbody tr.even,
+table.dataTable tbody tr {
+    background-color: #ffffff !important;
+    box-shadow: none !important;
+}
+
+table.dataTable tbody tr.odd td,
+table.dataTable tbody tr.even td,
+table.dataTable tbody tr td {
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+
+/* Khôi phục hiệu ứng hover */
+table.dataTable.table-hover tbody tr:hover,
+table.dataTable.table-hover tbody tr.odd:hover,
+table.dataTable.table-hover tbody tr.even:hover {
+    background-color: #f1f5f9 !important;
+}
+
+/* Remove outer table borders */
+table.dataTable.table-bordered {
+    border: none !important;
+}
+
+/* ══════════════════════════════════════
+   TOGGLE BUTTONS
+   ══════════════════════════════════════ */
+.toggle-btn {
+    transition: all 0.18s ease;
+}
+
+.toggle-btn:hover {
+    transform: scale(1.08);
+}
+
+.toggle-btn.loading {
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+/* ══════════════════════════════════════
+   CATEGORY BADGE
+   ══════════════════════════════════════ */
+.cat-badge {
+    display: inline-block;
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 2px 10px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* ══════════════════════════════════════
+   STATS BOXES
+   ══════════════════════════════════════ */
+.small-box .inner h3 {
+    font-size: 2.1rem;
+    font-weight: 700;
+}
+
+.small-box .inner p {
+    font-size: 0.88rem;
+    font-weight: 500;
+}
+
+/* ══════════════════════════════════════
+   FILTER BAR
+   ══════════════════════════════════════ */
+.dt-filters {
+    background: #fdfdfd;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 16px !important;
+}
+
+.dt-filters .form-control,
+.dt-filters .form-select {
+    border-radius: 6px;
+    font-size: 14px;
+    border: 1px solid #d1d5db;
+    box-shadow: none;
+}
+
+/* ══════════════════════════════════════
+   DATATABLES WRAPPER
+   ══════════════════════════════════════ */
+.dataTables_wrapper .dataTables_length select,
+.dataTables_wrapper .dataTables_filter input {
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    padding: 4px 8px;
+}
+
+.dataTables_wrapper .row {
+    align-items: center;
+}
+
+/* ══════════════════════════════════════
+   LOADING INDICATOR
+   ══════════════════════════════════════ */
+.dt-loading {
+    display: none;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, .06);
+    font-weight: 600;
+    text-align: center;
+    font-size: 13px;
+}
+
+.dt-loading.show {
+    display: block;
+}
+
+/* ══════════════════════════════════════
+   DATE COLUMN
+   ══════════════════════════════════════ */
+.date-col {
+    font-size: 12px;
+    color: #6c757d;
+    white-space: nowrap;
+}
+
+/* ══════════════════════════════════════
+   PAGINATION (Users page legacy)
+   ══════════════════════════════════════ */
+.pagination-container {
+    text-align: right;
+    margin-top: 10px;
+}
+
+/* ══════════════════════════════════════
+   GIFTCODE FILTERS & SELECT2
+   ══════════════════════════════════════ */
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    color: #111 !important;
+    /* Fix chữ trắng chìm */
+    background-color: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+.select2-selection__choice__display {
+    color: #111 !important;
+}
+
+/* Fix padding card body */
+.card-body {
+    padding: 1.25rem !important;
+}
+
+/* UI style cho Filter bar */
+.filter-btn {
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.btn-search-dt {
+    background-color: #8b5cf6;
+    color: #fff;
+    border: none;
+}
+
+.btn-search-dt:hover {
+    background-color: #7c3aed;
+    color: #fff;
+}
+
+/* ══════════════════════════════════════
+   CUSTOM CARD — Chuẩn dùng cho mọi trang
+   ══════════════════════════════════════ */
+.custom-card {
+    border-radius: var(--card-radius, 8px);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+    /* Match subtle shadow */
+    border: none;
+    /* No outer border in screenshot */
+    background: var(--card-bg, #fff);
+    margin-bottom: 20px;
+}
+
+.custom-card .card-header {
+    background: transparent;
+    border-bottom: 1px solid #f0f0f5;
+    padding: 20px 20px 15px;
+}
+
+.custom-card .card-header .card-title {
+    font-size: 1.1rem;
+    /* Slightly larger like screenshot */
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #4b5563;
+    margin: 0;
+    line-height: 1.2;
+    position: relative;
+    padding-left: 16px;
+}
+
+.custom-card .card-header .card-title::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 5px;
+    height: 15px;
+    background-color: #845adf;
+    border-radius: 4px;
+}
+
+/* ══════════════════════════════════════
+   BUTTONS (Filter / Action)
+   ══════════════════════════════════════ */
+.btn-primary,
+.btn-primary:hover {
+    background-color: #845adf !important;
+    /* Purple */
+    border-color: #845adf !important;
+}
+
+.btn-danger,
+.btn-danger:hover {
+    background-color: #ef4444 !important;
+    /* Red */
+    border-color: #ef4444 !important;
+}
+
+/* Pagination specific to match purple */
+.pagination .page-item.active .page-link {
+    background-color: #845adf;
+    border-color: #845adf;
+}
+
+.pagination .page-link {
+    color: #845adf;
+}
+
+/* ══════════════════════════════════════
+   TOP-FILTER BAR (SHOW + SHORT BY DATE)
+   ══════════════════════════════════════ */
+.top-filter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.filter-show,
+.filter-short {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.filter-select {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 13px;
+    background: #fff;
+    color: #374151;
+    min-width: 110px;
+    cursor: pointer;
+    transition: border-color .15s;
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: #845adf;
+    box-shadow: 0 0 0 3px rgba(132, 90, 223, .12);
+}
+
+/* ══════════════════════════════════════
+   DATE BADGE — dùng trong bảng
+   ══════════════════════════════════════ */
+.date-badge {
+    display: inline-flex;
+    align-items: center;
+    background: #ede9fe;
+    color: #5b21b6;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    gap: 4px;
+}
+
+/* ══════════════════════════════════════
+   JOURNAL FOOTER
+   ══════════════════════════════════════ */
+.journal-footer-text {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+/* ══════════════════════════════════════
+   FORM SECTIONS (Add/Edit pages)
+   ══════════════════════════════════════ */
+.form-section {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    background: #fafafa;
+}
+
+.form-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #845adf;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #ede9fe;
+}
+
+.form-label-req::after {
+    content: ' *';
+    color: #ef4444;
+}

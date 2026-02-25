@@ -1,0 +1,225 @@
+.info-card-wrapper {
+    background-color: #ffff;
+    border-radius: 8px;
+}
+
+.info-card-header {
+    padding: 16px 24px;
+    border-radius: 8px 8px 0 0;
+    background-color: rgba(34, 190, 13, 0.2);
+}
+
+.info-card-body {
+    padding: 16px 24px;
+}
+
+.info-card-title {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.info-card-subtitle {
+    font-size: 16px;
+    font-weight: 500;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #edebe7;
+}
+
+.info-card-list {
+    padding: 14px 0;
+}
+
+.info-card-list li {
+    margin-bottom: 10px;
+}
+
+.info-card-list-item p {
+    color: #5b5b5b;
+    font-size: 16px;
+    line-height: 26px;
+}
+
+.info-card-list-item .payment-success {
+    color: #22be0d;
+}
+
+.service-item {
+    color: #06131c;
+    font-size: 16px;
+}
+
+.info-text {
+    color: #06131c;
+}
+
+.seller-avatar {
+    width: 78px;
+    height: 78px;
+    border-radius: 10px;
+}
+
+.card-seller-name {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.card-seller-name span {
+    color: #5b5b5b;
+    font-size: 16px;
+    font-weight: normal;
+}
+
+.seller-location {
+    font-size: 16px;
+    color: #06131c;
+}
+
+.seller-info-list-item {
+    color: #5b5b5b;
+    padding: 16px 0;
+    border-top: 1px solid #edebe7;
+}
+
+.seller-info-list-item p {
+    color: #5b5b5b;
+    font-size: 16px;
+}
+
+.package-header {
+    padding: 16px 30px;
+    background: #edebe7;
+    border-radius: 10px 10px 0 0;
+}
+
+.package-header p {
+    font-size: 18px;
+    color: #06131c;
+}
+
+.payment-options-wrapper {
+    padding: 30px;
+    border-radius: 10px;
+}
+
+.payment-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+@media (max-width: 575.98px) {
+    .payment-options {
+        grid-template-columns: repeat(1, 1fr);
+    }
+}
+
+.single-payment-option {
+    padding: 16px;
+    border: 1px solid #edebe7;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.selected-icon {
+    margin-right: 15px;
+}
+
+.single-payment-option .selected-icon {
+    display: none;
+}
+
+.payment-pending {
+    color: red !important;
+}
+
+.rejected_btn {
+    background: #cb2323 !important;
+}
+
+/* Show the selected-icon when the option is selected */
+
+.single-payment-option.selected .selected-icon {
+    display: block;
+}
+
+.single-payment-option {
+    cursor: pointer;
+    /* Change cursor to pointer to indicate it's clickable */
+}
+
+/* common-modal start  */
+
+.common-modal {
+    width: 350px;
+    padding: 30px;
+    background-color: white;
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    z-index: 11;
+    border: 1px solid #e4e4e4;
+    box-shadow: 2px 3px 4px 0 rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+.common-modal h5 {
+    font-size: 22px;
+    font-weight: 500;
+}
+
+.common-modal p {
+    font-size: 16px;
+    line-height: 27px;
+    margin-top: 10px;
+}
+
+.common-modal a {
+    font-size: 16px;
+    line-height: 27px;
+    font-weight: 600;
+    margin-top: 5px;
+    color: var(--primary-color);
+    padding: 10px 20px;
+    border: 1px solid var(--primary-color);
+    border-radius: 30px;
+}
+
+.common-modal-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.common-modal-btn .thm-btn {
+    color: var(--white-color);
+}
+
+.common-modal .btn-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    opacity: 1;
+}
+
+.common-modal .btn-close:focus {
+    box-shadow: 0 0 0 0.25rem transparent;
+}
+
+.tab-content .job-listing {
+    background-color: transparent !important;
+    padding: 0 !important;
+}
+
+/* common-modal end  */
+
+
+
+.order-file-box .form-container .form-control {
+    border: 1px solid #edebe7;
+    border-radius: 30px;
+    padding: 18px 30px !important;
+    min-height: 52px;
+}

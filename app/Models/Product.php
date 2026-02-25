@@ -1,0 +1,243 @@
+<?php
+
+/**
+ * Product Model
+ * Handles product data operations with clean schema
+ */
+class Product extends Model
+{
+    protected $table = 'products';
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->ensureColumns();
+    }
+
+    /**
+     * Auto-migrate: ensure new columns exist on live DB
+     */
+    private function ensureColumns(): void
+    {
+        $cols = [
+            'product_type' => "ALTER TABLE {$this->table} ADD COLUMN product_type ENUM('account','link') NOT NULL DEFAULT 'account' AFTER slug",
+            'source_link' => "ALTER TABLE {$this->table} ADD COLUMN source_link TEXT DEFAULT NULL AFTER price_vnd",
+        ];
+        foreach ($cols as $col => $sql) {
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND COLUMN_NAME=?");
+            $stmt->execute([$this->table, $col]);
+            if ((int) $stmt->fetchColumn() === 0) {
+                $this->db->exec($sql);
+            }
+        }
+    }
+
+    /**
+     * Find product by ID
+     * @param int $id
+     * @return array|null
+     */
+    public function find($id)
+    {
+        $stmt = $this->db->prepare("SELECT p.*, c.name as category_name
+            FROM {$this->table} p
+            LEFT JOIN categories c ON p.category_id = c.id
+            WHERE p.id = ? LIMIT 1");
+        $stmt->execute([(int) $id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        return $row ? $this->hydrateProductRow($row) : null;
+    }
+
+    /**
+     * Get all active products (for storefront)
+     * Ordered by display_order (asc), then newest
+     * @return array
+     */
+    public function getAvailable()
+    {
+        $sql = "SELECT p.*, c.name as category_name 
+                FROM {$this->table} p
+                LEFT JOIN categories c ON p.category_id = c.id
+                WHERE p.status = 'ON'
+                ORDER BY p.display_order ASC, p.id DESC";
+        $rows = $this->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        return array_map([$this, 'hydrateProductRow'], $rows);
+    }
+
+    /**
+     * Get filtered products for admin panel
+     * @param array $filters
+     * @return array
+     */
+    public function getFiltered(array $filters = [])
+    {
+        $where = [];
+        $params = [];
+
+        if (!empty($filters['search'])) {
+            $search = trim($filters['search']);
+            $where[] = "(p.name LIKE ? OR p.slug LIKE ?)";
+            $params[] = "%{$search}%";
+            $params[] = "%{$search}%";
+        }
+
+        if (!empty($filters['status'])) {
+            $where[] = "p.status = ?";
+            $params[] = $filters['status'];
+        }
+
+        if (!empty($filters['category_id'])) {
+            $where[] = "p.category_id = ?";
+            $params[] = (int) $filters['category_id'];
+        }
+
+        if (!empty($filters['type']) && in_array($filters['type'], ['account', 'link'], true)) {
+            $where[] = "p.product_type = ?";
+            $params[] = $filters['type'];
+        }
+
+        $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+
+        $sql = "SELECT p.*, c.name as category_name 
+                FROM {$this->table} p
+                LEFT JOIN categories c ON p.category_id = c.id
+                {$whereClause} 
+                ORDER BY p.display_order ASC, p.id DESC";
+        $rows = $this->query($sql, $params)->fetchAll(PDO::FETCH_ASSOC);
+        return array_map([$this, 'hydrateProductRow'], $rows);
+    }
+
+    /**
+     * Find product by slug
+     * @param string $slug
+     * @return array|null
+     */
+    public function findBySlug($slug)
+    {
+        $sql = "SELECT p.*, c.name as category_name 
+                FROM {$this->table} p
+                LEFT JOIN categories c ON p.category_id = c.id
+                WHERE p.slug = ? LIMIT 1";
+        $result = $this->query($sql, [$slug])->fetch(PDO::FETCH_ASSOC);
+        return $result ? $this->hydrateProductRow($result) : null;
+    }
+
+    /**
+     * Generate unique slug from name
+     * @param string $name
+     * @param int|null $excludeId
+     * @return string
+     */
+    public function generateSlug($name, $excludeId = null)
+    {
+        $slug = $this->toSlug($name);
+        $baseSlug = $slug;
+        $counter = 1;
+
+        while (true) {
+            $sql = "SELECT id FROM {$this->table} WHERE slug = ?";
+            $params = [$slug];
+
+            if ($excludeId) {
+                $sql .= " AND id != ?";
+                $params[] = $excludeId;
+            }
+
+            $existing = $this->db->prepare($sql);
+            $existing->execute($params);
+            if (!$existing->fetch())
+                break;
+
+            $slug = $baseSlug . '-' . $counter;
+            $counter++;
+        }
+
+        return $slug;
+    }
+
+    /**
+     * Convert string to URL slug
+     */
+    private function toSlug($str)
+    {
+        $map = ['à' => 'a', 'á' => 'a', 'ạ' => 'a', 'ả' => 'a', 'ã' => 'a', 'â' => 'a', 'ầ' => 'a', 'ấ' => 'a', 'ậ' => 'a', 'ẩ' => 'a', 'ẫ' => 'a', 'ă' => 'a', 'ằ' => 'a', 'ắ' => 'a', 'ặ' => 'a', 'ẳ' => 'a', 'ẵ' => 'a', 'è' => 'e', 'é' => 'e', 'ẹ' => 'e', 'ẻ' => 'e', 'ẽ' => 'e', 'ê' => 'e', 'ề' => 'e', 'ế' => 'e', 'ệ' => 'e', 'ể' => 'e', 'ễ' => 'e', 'ì' => 'i', 'í' => 'i', 'ị' => 'i', 'ỉ' => 'i', 'ĩ' => 'i', 'ò' => 'o', 'ó' => 'o', 'ọ' => 'o', 'ỏ' => 'o', 'õ' => 'o', 'ô' => 'o', 'ồ' => 'o', 'ố' => 'o', 'ộ' => 'o', 'ổ' => 'o', 'ỗ' => 'o', 'ơ' => 'o', 'ờ' => 'o', 'ớ' => 'o', 'ợ' => 'o', 'ở' => 'o', 'ỡ' => 'o', 'ù' => 'u', 'ú' => 'u', 'ụ' => 'u', 'ủ' => 'u', 'ũ' => 'u', 'ư' => 'u', 'ừ' => 'u', 'ứ' => 'u', 'ự' => 'u', 'ử' => 'u', 'ữ' => 'u', 'ỳ' => 'y', 'ý' => 'y', 'ỵ' => 'y', 'ỷ' => 'y', 'ỹ' => 'y', 'đ' => 'd', 'À' => 'A', 'Á' => 'A', 'Ạ' => 'A', 'Ả' => 'A', 'Ã' => 'A', 'Â' => 'A', 'Ầ' => 'A', 'Ấ' => 'A', 'Ậ' => 'A', 'Ẩ' => 'A', 'Ẫ' => 'A', 'Ă' => 'A', 'Ằ' => 'A', 'Ắ' => 'A', 'Ặ' => 'A', 'Ẳ' => 'A', 'Ẵ' => 'A', 'È' => 'E', 'É' => 'E', 'Ẹ' => 'E', 'Ẻ' => 'E', 'Ẽ' => 'E', 'Ê' => 'E', 'Ề' => 'E', 'Ế' => 'E', 'Ệ' => 'E', 'Ể' => 'E', 'Ễ' => 'E', 'Ì' => 'I', 'Í' => 'I', 'Ị' => 'I', 'Ỉ' => 'I', 'Ĩ' => 'I', 'Ò' => 'O', 'Ó' => 'O', 'Ọ' => 'O', 'Ỏ' => 'O', 'Õ' => 'O', 'Ô' => 'O', 'Ồ' => 'O', 'Ố' => 'O', 'Ộ' => 'O', 'Ổ' => 'O', 'Ỗ' => 'O', 'Ơ' => 'O', 'Ờ' => 'O', 'Ớ' => 'O', 'Ợ' => 'O', 'Ở' => 'O', 'Ỡ' => 'O', 'Ù' => 'U', 'Ú' => 'U', 'Ụ' => 'U', 'Ủ' => 'U', 'Ũ' => 'U', 'Ư' => 'U', 'Ừ' => 'U', 'Ứ' => 'U', 'Ự' => 'U', 'Ử' => 'U', 'Ữ' => 'U', 'Ỳ' => 'Y', 'Ý' => 'Y', 'Ỵ' => 'Y', 'Ỷ' => 'Y', 'Ỹ' => 'Y', 'Đ' => 'D'];
+        $str = strtr($str, $map);
+        return strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $str), '-'));
+    }
+
+    /**
+     * Toggle product status ON/OFF
+     * @param int $id
+     * @return array
+     */
+    public function toggleStatus($id)
+    {
+        $product = $this->find((int) $id);
+        if (!$product) {
+            return ['success' => false, 'message' => 'Sản phẩm không tồn tại'];
+        }
+
+        $newStatus = ($product['status'] === 'ON') ? 'OFF' : 'ON';
+        $success = $this->update((int) $id, ['status' => $newStatus]);
+
+        return ['success' => $success, 'new_value' => $newStatus];
+    }
+
+    /**
+     * Get categories list
+     * @return array
+     */
+    public function getCategories()
+    {
+        $sql = "SELECT id, name FROM categories WHERE status = 'ON' ORDER BY display_order ASC, name ASC";
+        return $this->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Get product stats
+     * @return array
+     */
+    public function getStats(): array
+    {
+        $sql = "SELECT 
+                    COUNT(*) as total,
+                    SUM(status = 'ON') as active,
+                    SUM(status = 'OFF') as inactive,
+                    SUM(product_type = 'account') as type_account,
+                    SUM(product_type = 'link') as type_link
+                FROM {$this->table}";
+        $row = $this->query($sql)->fetch(PDO::FETCH_ASSOC);
+        return [
+            'total' => (int) ($row['total'] ?? 0),
+            'active' => (int) ($row['active'] ?? 0),
+            'inactive' => (int) ($row['inactive'] ?? 0),
+            'type_account' => (int) ($row['type_account'] ?? 0),
+            'type_link' => (int) ($row['type_link'] ?? 0),
+        ];
+    }
+
+    private function hydrateProductRow(array $row): array
+    {
+        $row['product_type'] = $row['product_type'] ?? 'account';
+        $row['source_link'] = $row['source_link'] ?? null;
+        $row['gallery_arr'] = $this->decodeJsonArray($row['gallery'] ?? null);
+
+        return $row;
+    }
+
+    private function decodeJsonArray($json): array
+    {
+        if (!is_string($json) || trim($json) === '')
+            return [];
+        $decoded = json_decode($json, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    private function decodeJsonFlexible($json)
+    {
+        if (!is_string($json) || trim($json) === '')
+            return [];
+        $decoded = json_decode($json, true);
+        return json_last_error() === JSON_ERROR_NONE ? $decoded : [];
+    }
+}
