@@ -432,15 +432,19 @@ $seoImage = $galleryImages[0] ?? '';
                                 <span class="pd-chip warn"><i class="fas fa-keyboard"></i> Yêu cầu thông tin từ
                                     user</span>
                             <?php endif; ?>
-                            <?php if ($purchaseMinQty > 1): ?>
-                                <span class="pd-chip"><i class="fas fa-arrow-down-1-9"></i> Min
-                                    <?= $purchaseMinQty ?></span>
-                            <?php endif; ?>
-                            <?php if ($displayMaxQty > 0): ?>
-                                <span class="pd-chip info"><i class="fas fa-arrow-up-1-9"></i> Max
-                                    <?= $displayMaxQty ?></span>
-                            <?php elseif ($productType !== 'link'): ?>
-                                <span class="pd-chip info"><i class="fas fa-infinity"></i> Max không giới hạn</span>
+                            <?php if ($productType === 'link'): ?>
+                                <span class="pd-chip info"><i class="fas fa-arrow-up-1-9"></i> Max 1</span>
+                            <?php else: ?>
+                                <?php if ($purchaseMinQty > 1): ?>
+                                    <span class="pd-chip"><i class="fas fa-arrow-down-1-9"></i> Min
+                                        <?= $purchaseMinQty ?></span>
+                                <?php endif; ?>
+                                <?php if ($displayMaxQty > 0): ?>
+                                    <span class="pd-chip info"><i class="fas fa-arrow-up-1-9"></i> Max
+                                        <?= $displayMaxQty ?></span>
+                                <?php elseif ($productType !== 'link'): ?>
+                                    <span class="pd-chip info"><i class="fas fa-infinity"></i> Max không giới hạn</span>
+                                <?php endif; ?>
                             <?php endif; ?>
                         </div>
 
@@ -479,18 +483,7 @@ $seoImage = $galleryImages[0] ?? '';
                                     <?= $productType === 'link' ? 'readonly' : '' ?>>
                                 <button type="button" class="pd-qty-btn" id="qtyPlusBtn" aria-label="Tăng">+</button>
                             </div>
-                            <div class="pd-note mt-1">
-                                <?php if ($productType === 'link'): ?>
-                                    Tối đa 1 sản phẩm mỗi đơn.
-                                <?php else: ?>
-                                    Min: <?= $purchaseMinQty ?>
-                                    <?php if ($displayMaxQty > 0): ?>
-                                        | Max: <?= $displayMaxQty ?>
-                                    <?php else: ?>
-                                        | Max:
-                                    <?php endif; ?>
-                                <?php endif; ?>
-                            </div>
+
                         </div>
 
                         <?php if ($requiresInfo): ?>
@@ -880,7 +873,7 @@ $seoImage = $galleryImages[0] ?? '';
                 gravity: 1.2,
                 decay: 0.94,
                 startVelocity: 45,
-                zIndex: 1000
+                zIndex: 100000
             };
 
             confetti({

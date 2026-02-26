@@ -11,6 +11,7 @@ class JournalController extends Controller
     private $journalModel;
     private $systemLogModel;
     private $orderModel;
+    private $timeService;
 
     public function __construct()
     {
@@ -18,6 +19,7 @@ class JournalController extends Controller
         $this->journalModel = new AdminJournal();
         $this->systemLogModel = new SystemLog();
         $this->orderModel = new Order();
+        $this->timeService = class_exists('TimeService') ? TimeService::instance() : null;
     }
 
     /**
@@ -77,6 +79,9 @@ class JournalController extends Controller
             return $this->json(['success' => false, 'message' => 'Không tìm thấy đơn hàng.'], 404);
         }
 
+        $createdMeta = $this->normalizeTimeMeta($order['created_at'] ?? null);
+        $fulfilledMeta = $this->normalizeTimeMeta($order['fulfilled_at'] ?? null);
+
         return $this->json([
             'success' => true,
             'order' => [
@@ -92,8 +97,16 @@ class JournalController extends Controller
                 'delivery_content' => (string) ($order['stock_content_plain'] ?? ''),
                 'fulfilled_by' => (string) ($order['fulfilled_by'] ?? ''),
                 'fulfilled_at' => (string) ($order['fulfilled_at'] ?? ''),
+                'fulfilled_at_ts' => $fulfilledMeta['ts'],
+                'fulfilled_at_iso' => $fulfilledMeta['iso'],
+                'fulfilled_at_iso_utc' => $fulfilledMeta['iso_utc'],
+                'fulfilled_at_display' => $fulfilledMeta['display'],
                 'cancel_reason' => (string) ($order['cancel_reason'] ?? ''),
                 'created_at' => (string) ($order['created_at'] ?? ''),
+                'created_at_ts' => $createdMeta['ts'],
+                'created_at_iso' => $createdMeta['iso'],
+                'created_at_iso_utc' => $createdMeta['iso_utc'],
+                'created_at_display' => $createdMeta['display'],
             ],
         ]);
     }
@@ -288,7 +301,7 @@ class JournalController extends Controller
             }
 
             $output[] = [
-                'time' => FormatHelper::eventTime($row['event_time'] ?? null, $row['raw_time'] ?? null),
+                'time' => $this->formatTimeCell($row['event_time'] ?? null, $row['raw_time'] ?? null),
                 'username' => '<a href="' . url('admin/users/edit/' . urlencode($username)) . '" class="font-weight-bold text-dark">' . htmlspecialchars($username) . '</a>',
                 'action' => '<span class="font-weight-500 text-dark">' . htmlspecialchars(trim((string) ($row['action_name'] ?? '--'))) . '</span>',
                 'price' => FormatHelper::price($row['gia'] ?? null),
@@ -340,7 +353,7 @@ class JournalController extends Controller
             $actionButtons .= '</div>';
 
             $output[] = [
-                'time' => FormatHelper::eventTime($row['event_time'] ?? null, $row['raw_time'] ?? null),
+                'time' => $this->formatTimeCell($row['event_time'] ?? null, $row['raw_time'] ?? null),
                 'order_code' => '<span class="badge bg-light text-dark border font-weight-bold" style="font-family:monospace;">' . htmlspecialchars($shortOrderCode !== '' ? $shortOrderCode : $rawOrderCode) . '</span>',
                 'username' => '<a href="' . url('admin/users/edit/' . urlencode($username)) . '" class="font-weight-bold text-dark">' . htmlspecialchars($username) . '</a>',
                 'product_name' => '<span class="font-weight-500 text-dark">' . htmlspecialchars(trim((string) ($row['product_name'] ?? '--'))) . '</span>',
@@ -365,7 +378,7 @@ class JournalController extends Controller
             $username = $this->formatUsername($row['username'] ?? '');
 
             $output[] = [
-                'time' => FormatHelper::eventTime($row['event_time'] ?? null, $row['raw_time'] ?? null),
+                'time' => $this->formatTimeCell($row['event_time'] ?? null, $row['raw_time'] ?? null),
                 'username' => '<a href="' . url('admin/users/edit/' . urlencode($username)) . '" class="font-weight-bold text-dark">' . htmlspecialchars($username) . '</a>',
                 'reason' => trim((string) ($row['reason_text'] ?? ($row['reason'] ?? '--'))) ?: '--',
                 'before_balance' => FormatHelper::initialBalance($row['before_balance'] ?? null),
@@ -404,7 +417,7 @@ class JournalController extends Controller
             }
 
             $output[] = [
-                'time' => FormatHelper::eventTime($row['event_time'] ?? null, $row['raw_time'] ?? null),
+                'time' => $this->formatTimeCell($row['event_time'] ?? null, $row['raw_time'] ?? null),
                 'username' => '<a href="' . url('admin/users/edit/' . urlencode($username)) . '" class="font-weight-bold text-dark">' . htmlspecialchars($username) . '</a>',
                 'trans_id' => '<span class="font-weight-500 text-monospace">' . htmlspecialchars($row['trans_id'] ?? '--') . '</span>',
                 'method' => '<span class="badge bg-light text-dark border">' . htmlspecialchars($method) . '</span>',
@@ -463,7 +476,7 @@ class JournalController extends Controller
             }
 
             $output[] = [
-                'time' => FormatHelper::eventTime($log['created_at'], $log['created_at']),
+                'time' => $this->formatTimeCell($log['created_at'], $log['created_at']),
                 'severity' => $severityLabel,
                 'module' => $moduleLabel,
                 'username' => $username,
@@ -548,5 +561,56 @@ class JournalController extends Controller
             return '';
         }
         return strtoupper(substr(hash('sha256', $orderCode), 0, 8));
+    }
+
+    /**
+     * @return array{ts:int|null,iso:string,iso_utc:string,display:string}
+     */
+    private function normalizeTimeMeta($value, $fallback = null): array
+    {
+        $candidate = $value;
+        if ($candidate === null || $candidate === '' || $candidate === '0000-00-00 00:00:00') {
+            $candidate = $fallback;
+        }
+
+        if ($this->timeService && $candidate !== null && $candidate !== '') {
+            return $this->timeService->normalizeApiTime($candidate);
+        }
+
+        $raw = trim((string) ($candidate ?? ''));
+        if ($raw === '') {
+            return ['ts' => null, 'iso' => '', 'iso_utc' => '', 'display' => ''];
+        }
+        $ts = strtotime($raw);
+        if ($ts === false) {
+            return ['ts' => null, 'iso' => '', 'iso_utc' => '', 'display' => $raw];
+        }
+        return [
+            'ts' => $ts,
+            'iso' => date('c', $ts),
+            'iso_utc' => gmdate('c', $ts),
+            'display' => date('Y-m-d H:i:s', $ts),
+        ];
+    }
+
+    private function formatTimeCell($eventTime, $rawTime): string
+    {
+        $html = FormatHelper::eventTime($eventTime, $rawTime);
+        $meta = $this->normalizeTimeMeta($eventTime, $rawTime);
+        $attrs = '';
+        if (!empty($meta['ts'])) {
+            $attrs .= ' data-time-ts="' . (int) $meta['ts'] . '"';
+        }
+        if (!empty($meta['iso'])) {
+            $attrs .= ' data-time-iso="' . htmlspecialchars((string) $meta['iso'], ENT_QUOTES, 'UTF-8') . '"';
+        }
+        if (!empty($meta['iso_utc'])) {
+            $attrs .= ' data-time-iso-utc="' . htmlspecialchars((string) $meta['iso_utc'], ENT_QUOTES, 'UTF-8') . '"';
+        }
+        if (!empty($meta['display'])) {
+            $attrs .= ' data-time-display="' . htmlspecialchars((string) $meta['display'], ENT_QUOTES, 'UTF-8') . '"';
+        }
+
+        return '<span class="js-admin-time-cell"' . $attrs . '>' . $html . '</span>';
     }
 }

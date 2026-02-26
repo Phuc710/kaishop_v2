@@ -8,11 +8,13 @@ class CategoryController extends Controller
 {
     private $authService;
     private $categoryModel;
+    private $timeService;
 
     public function __construct()
     {
         $this->authService = new AuthService();
         $this->categoryModel = new Category();
+        $this->timeService = class_exists('TimeService') ? TimeService::instance() : null;
     }
 
     /**
@@ -51,6 +53,7 @@ class CategoryController extends Controller
         // Add product count per category
         foreach ($categories as $index => $cat) {
             $categories[$index]['product_count'] = $this->categoryModel->countProducts($cat['id']);
+            $categories[$index] = $this->attachListTimeMeta($categories[$index], ['created_at', 'time']);
         }
 
         $this->view('admin/categories/index', [
@@ -217,5 +220,54 @@ class CategoryController extends Controller
         }
 
         return $this->json(['success' => false, 'message' => 'Lỗi máy chủ']);
+    }
+    /**
+     * @param array<string,mixed> $row
+     * @param array<int,string> $candidates
+     * @return array<string,mixed>
+     */
+    private function attachListTimeMeta(array $row, array $candidates): array
+    {
+        $value = null;
+        foreach ($candidates as $field) {
+            $candidate = $row[$field] ?? null;
+            if ($candidate !== null && trim((string) $candidate) !== '' && (string) $candidate !== '0000-00-00 00:00:00') {
+                $value = $candidate;
+                break;
+            }
+        }
+
+        $meta = $this->normalizeTimeMeta($value);
+        $row['list_time_ts'] = $meta['ts'];
+        $row['list_time_iso'] = $meta['iso'];
+        $row['list_time_iso_utc'] = $meta['iso_utc'];
+        $row['list_time_display'] = $meta['display'];
+        return $row;
+    }
+
+    /**
+     * @return array{ts:int|null,iso:string,iso_utc:string,display:string}
+     */
+    private function normalizeTimeMeta($value): array
+    {
+        if ($this->timeService) {
+            return $this->timeService->normalizeApiTime($value);
+        }
+
+        $raw = trim((string) ($value ?? ''));
+        if ($raw === '') {
+            return ['ts' => null, 'iso' => '', 'iso_utc' => '', 'display' => ''];
+        }
+        $ts = strtotime($raw);
+        if ($ts === false) {
+            return ['ts' => null, 'iso' => '', 'iso_utc' => '', 'display' => $raw];
+        }
+
+        return [
+            'ts' => $ts,
+            'iso' => date('c', $ts),
+            'iso_utc' => gmdate('c', $ts),
+            'display' => date('Y-m-d H:i:s', $ts),
+        ];
     }
 }

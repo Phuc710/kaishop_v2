@@ -9,12 +9,14 @@ class AdminProductController extends Controller
     private AuthService $authService;
     private Product $productModel;
     private ProductStock $stockModel;
+    private $timeService;
 
     public function __construct()
     {
         $this->authService = new AuthService();
         $this->productModel = new Product();
         $this->stockModel = new ProductStock();
+        $this->timeService = class_exists('TimeService') ? TimeService::instance() : null;
     }
 
     private function requireAdmin(): void
@@ -41,6 +43,10 @@ class AdminProductController extends Controller
         ];
 
         $products = $this->productModel->getFiltered($filters);
+        foreach ($products as &$productRow) {
+            $productRow = $this->attachTimeMeta($productRow, 'created_at');
+        }
+        unset($productRow);
         $categories = $this->productModel->getCategories();
         $stats = $this->productModel->getStats();
 
@@ -174,6 +180,11 @@ class AdminProductController extends Controller
         $statusFilter = $this->get('status_filter', '');
         $search = $this->get('search', '');
         $items = $this->stockModel->getByProduct($id, $statusFilter, $search);
+        foreach ($items as &$stockItem) {
+            $stockItem = $this->attachTimeMeta($stockItem, 'created_at');
+            $stockItem = $this->attachTimeMeta($stockItem, 'sold_at');
+        }
+        unset($stockItem);
         $stats = $this->stockModel->getStats($id);
 
         if ($this->isAjax()) {
@@ -346,5 +357,46 @@ class AdminProductController extends Controller
             return null;
         }
         return json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    }
+
+    /**
+     * @param array<string,mixed> $row
+     * @return array<string,mixed>
+     */
+    private function attachTimeMeta(array $row, string $field): array
+    {
+        $meta = $this->normalizeTimeMeta($row[$field] ?? null);
+        $row[$field . '_ts'] = $meta['ts'];
+        $row[$field . '_iso'] = $meta['iso'];
+        $row[$field . '_iso_utc'] = $meta['iso_utc'];
+        $row[$field . '_display'] = $meta['display'];
+        return $row;
+    }
+
+    /**
+     * @return array{ts:int|null,iso:string,iso_utc:string,display:string}
+     */
+    private function normalizeTimeMeta($value): array
+    {
+        if ($this->timeService) {
+            return $this->timeService->normalizeApiTime($value);
+        }
+
+        $raw = trim((string) ($value ?? ''));
+        if ($raw === '') {
+            return ['ts' => null, 'iso' => '', 'iso_utc' => '', 'display' => ''];
+        }
+
+        $ts = strtotime($raw);
+        if ($ts === false) {
+            return ['ts' => null, 'iso' => '', 'iso_utc' => '', 'display' => $raw];
+        }
+
+        return [
+            'ts' => $ts,
+            'iso' => date('c', $ts),
+            'iso_utc' => gmdate('c', $ts),
+            'display' => date('Y-m-d H:i:s', $ts),
+        ];
     }
 }

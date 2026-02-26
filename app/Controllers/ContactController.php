@@ -14,8 +14,8 @@ class ContactController extends Controller
             'seoTitle' => 'Liên hệ hỗ trợ | ' . $siteName,
             'seoDescription' => 'Liên hệ hỗ trợ nhanh qua email, Zalo hoặc các kênh mạng xã hội của ' . $siteName . '. Chúng tôi luôn sẵn sàng hỗ trợ bạn.',
             'pageTitle' => 'Liên hệ ' . $siteName,
-            'pageSubtitle' => 'Liên hệ hỗ trợ nhanh qua email, Zalo hoặc các kênh mạng xã hội bên dưới.',
-            'supportNote' => 'Hỗ trợ trong giờ làm việc hoặc qua kênh online.',
+            'pageSubtitle' => 'Liên hệ hỗ trợ nhanh qua các kênh mạng xã hội bên dưới.',
+            'supportNote' => (string) ($chungapi['contact_support_note'] ?? 'Hỗ trợ trong giờ làm việc hoặc qua kênh online.'),
 
             'contactEmail' => (string) ($chungapi['email_cf'] ?? ''),
             'contactEmailLabel' => 'Email hỗ trợ',

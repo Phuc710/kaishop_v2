@@ -158,7 +158,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                                             <span class="text-danger font-weight-bold"><i
                                                                     class="far fa-clock mr-1"></i>Bán lúc:</span>
                                                             <span
-                                                                class="text-muted"><?= date('d/m/Y H:i:s', strtotime($item['sold_at'])) ?></span>
+                                                                class="text-muted"><?= htmlspecialchars((string) (class_exists('TimeService') ? TimeService::instance()->formatDisplay($item['sold_at'], 'd/m/Y H:i:s') : date('d/m/Y H:i:s', strtotime($item['sold_at'])))) ?></span>
                                                         </div>
                                                     <?php endif; ?>
                                                 </td>
@@ -186,9 +186,9 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                                 </td>
                                                 <td class="text-center align-middle">
                                                     <span class="text-muted small">
-                                                        <?= $item['created_at'] ? date('d/m/Y', strtotime($item['created_at'])) : '—' ?><br>
+                                                        <?= $item['created_at'] ? htmlspecialchars((string) (class_exists('TimeService') ? TimeService::instance()->formatDisplay($item['created_at'], 'd/m/Y') : date('d/m/Y', strtotime($item['created_at'])))) : '—' ?><br>
                                                         <span
-                                                            class="font-weight-bold"><?= $item['created_at'] ? date('H:i', strtotime($item['created_at'])) : '' ?></span>
+                                                            class="font-weight-bold"><?= $item['created_at'] ? htmlspecialchars((string) (class_exists('TimeService') ? TimeService::instance()->formatDisplay($item['created_at'], 'H:i') : date('H:i', strtotime($item['created_at'])))) : '' ?></span>
                                                     </span>
                                                 </td>
                                                 <td class="align-middle text-center">
@@ -444,7 +444,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
 
                     let soldAtHtml = '';
                     if (item.status === 'sold' && item.sold_at) {
-                        soldAtHtml = `<div class="mt-1 small text-center"><span class="text-danger font-weight-bold"><i class="far fa-clock mr-1"></i>Bán lúc:</span> <span class="text-muted">${formatDate(item.sold_at)}</span></div>`;
+                        soldAtHtml = `<div class="mt-1 small text-center"><span class="text-danger font-weight-bold"><i class="far fa-clock mr-1"></i>Bán lúc:</span> <span class="text-muted">${formatDate(item.sold_at, item.sold_at_ts, item.sold_at_display)}</span></div>`;
                     }
 
                     const editTitle = item.status === 'available' ? 'Sửa nội dung' : 'Sửa nội dung (Dành cho bảo hành)';
@@ -468,7 +468,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                         </td>
                         <td class="text-center align-middle">${buyerHtml}</td>
                         <td class="text-center align-middle">${statusBadge}</td>
-                        <td class="text-center align-middle"><span class="text-muted small">${formatDateShort(item.created_at)}</span></td>
+                        <td class="text-center align-middle"><span class="text-muted small">${formatDateShort(item.created_at, item.created_at_ts, item.created_at_display)}</span></td>
                         <td class="text-center align-middle">${actionButtons}</td>
                     </tr>`;
                 });
@@ -489,15 +489,38 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             return div.innerHTML;
         }
 
-        function formatDate(dateStr) {
+        function formatDate(dateStr, tsSec, displayText) {
+            if (!isNaN(Number(tsSec)) && Number(tsSec) > 0) {
+                const d = new Date(Number(tsSec) * 1000);
+                return d.getDate().toString().padStart(2, '0') + '/' + (d.getMonth() + 1).toString().padStart(2, '0') + '/' + d.getFullYear() + ' ' + d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0') + ':' + d.getSeconds().toString().padStart(2, '0');
+            }
+            if (displayText && window.KaiTime && typeof window.KaiTime.toTimestamp === 'function') {
+                const tsDisplay = window.KaiTime.toTimestamp(displayText);
+                if (!isNaN(tsDisplay) && tsDisplay > 0) return formatDate(null, tsDisplay, null);
+            }
             if (!dateStr) return '—';
+            if (window.KaiTime && typeof window.KaiTime.toTimestamp === 'function') {
+                const ts = window.KaiTime.toTimestamp(dateStr);
+                if (!isNaN(ts) && ts > 0) return formatDate(null, ts, null);
+            }
             const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return String(dateStr);
             return d.getDate().toString().padStart(2, '0') + '/' + (d.getMonth() + 1).toString().padStart(2, '0') + '/' + d.getFullYear() + ' ' + d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0') + ':' + d.getSeconds().toString().padStart(2, '0');
         }
 
-        function formatDateShort(dateStr) {
-            if (!dateStr) return '—';
-            const d = new Date(dateStr);
+        function formatDateShort(dateStr, tsSec, displayText) {
+            let d = null;
+            if (!isNaN(Number(tsSec)) && Number(tsSec) > 0) {
+                d = new Date(Number(tsSec) * 1000);
+            } else if (displayText && window.KaiTime && typeof window.KaiTime.toTimestamp === 'function') {
+                const tsDisplay = window.KaiTime.toTimestamp(displayText);
+                if (!isNaN(tsDisplay) && tsDisplay > 0) d = new Date(tsDisplay * 1000);
+            } else if (dateStr && window.KaiTime && typeof window.KaiTime.toTimestamp === 'function') {
+                const ts = window.KaiTime.toTimestamp(dateStr);
+                if (!isNaN(ts) && ts > 0) d = new Date(ts * 1000);
+            }
+            if (!d && dateStr) d = new Date(dateStr);
+            if (!d || isNaN(d.getTime())) return dateStr || '—';
             const date = d.getDate().toString().padStart(2, '0') + '/' + (d.getMonth() + 1).toString().padStart(2, '0') + '/' + d.getFullYear();
             const time = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
             return `${date}<br><span class="font-weight-bold">${time}</span>`;

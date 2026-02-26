@@ -85,6 +85,12 @@ $resolvedAssetFlags = [
     'datatables' => array_key_exists('datatables', $pageAssets) ? (bool) $pageAssets['datatables'] : ($requestPath === '/history-code'),
     'flatpickr' => array_key_exists('flatpickr', $pageAssets) ? (bool) $pageAssets['flatpickr'] : ($requestPath === '/history-code'),
     'turnstile' => array_key_exists('turnstile', $pageAssets) ? (bool) $pageAssets['turnstile'] : false,
+    // Split heavy interactive assets so pages can opt out safely without disabling all scripts.
+    'vendor_quill' => array_key_exists('vendor_quill', $pageAssets) ? (bool) $pageAssets['vendor_quill'] : $defaultInteractiveBundle,
+    'vendor_glightbox' => array_key_exists('vendor_glightbox', $pageAssets) ? (bool) $pageAssets['vendor_glightbox'] : $defaultInteractiveBundle,
+    'vendor_swiper' => array_key_exists('vendor_swiper', $pageAssets) ? (bool) $pageAssets['vendor_swiper'] : $defaultInteractiveBundle,
+    'vendor_aos' => array_key_exists('vendor_aos', $pageAssets) ? (bool) $pageAssets['vendor_aos'] : $defaultInteractiveBundle,
+    'vendor_isotope' => array_key_exists('vendor_isotope', $pageAssets) ? (bool) $pageAssets['vendor_isotope'] : $defaultInteractiveBundle,
 ];
 
 if ($isLocalHost) {
@@ -142,11 +148,17 @@ $ogType = isset($seoOgType) && trim((string) $seoOgType) !== '' ? trim((string) 
 <link rel="stylesheet" href="<?= asset('assets/css/user-pages.css') ?>">
 <link rel="stylesheet" href="<?= asset('assets/css/notify.css') ?>">
 
-<?php if (!empty($resolvedAssetFlags['interactive_bundle'])): ?>
+<?php if (!empty($resolvedAssetFlags['interactive_bundle']) && !empty($resolvedAssetFlags['vendor_glightbox'])): ?>
     <link rel="stylesheet" href="<?= asset('assets/css/glightbox.css') ?>">
+<?php endif; ?>
+<?php if (!empty($resolvedAssetFlags['interactive_bundle']) && !empty($resolvedAssetFlags['vendor_aos'])): ?>
     <link rel="stylesheet" href="<?= asset('assets/css/aos.css') ?>">
+<?php endif; ?>
+<?php if (!empty($resolvedAssetFlags['interactive_bundle']) && !empty($resolvedAssetFlags['vendor_quill'])): ?>
     <link href="<?= asset('assets/css/quill_core.css') ?>" rel="stylesheet">
     <link href="<?= asset('assets/css/quill_snow.css') ?>" rel="stylesheet">
+<?php endif; ?>
+<?php if (!empty($resolvedAssetFlags['interactive_bundle']) && !empty($resolvedAssetFlags['vendor_swiper'])): ?>
     <link href="<?= asset('assets/css/swiper.css') ?>" rel="stylesheet">
 <?php endif; ?>
 
@@ -180,7 +192,14 @@ $ogType = isset($seoOgType) && trim((string) $seoOgType) !== '' ? trim((string) 
     const BASE_URL = '<?= url('') ?>';
     const ASSET_URL = '<?= asset('') ?>';
     const AJAX_URL = '<?= ajax_url('') ?>';
+    window.KS_TIME_CONFIG = Object.assign({}, window.KS_TIME_CONFIG || {}, {
+        appTimezone: '<?= htmlspecialchars(function_exists('app_timezone') ? app_timezone() : date_default_timezone_get(), ENT_QUOTES, 'UTF-8') ?>',
+        displayTimezone: '<?= htmlspecialchars(function_exists('app_display_timezone') ? app_display_timezone() : date_default_timezone_get(), ENT_QUOTES, 'UTF-8') ?>',
+        dbTimezone: '<?= htmlspecialchars(function_exists('app_db_timezone') ? app_db_timezone() : date_default_timezone_get(), ENT_QUOTES, 'UTF-8') ?>',
+        locale: 'vi-VN'
+    });
 </script>
+<script src="<?= asset('assets/js/time-utils.js') ?>"></script>
 
 <?php if (isset($user['id'])): ?>
     <script src="<?= asset('assets/js/fingerprint.js') ?>"></script>

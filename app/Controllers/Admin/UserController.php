@@ -9,12 +9,14 @@ class UserController extends Controller
     private $authService;
     private $userModel;
     private $fingerprintModel;
+    private $timeService;
 
     public function __construct()
     {
         $this->authService = new AuthService();
         $this->userModel = new User();
         $this->fingerprintModel = new UserFingerprint();
+        $this->timeService = class_exists('TimeService') ? TimeService::instance() : null;
     }
 
     /**
@@ -40,6 +42,10 @@ class UserController extends Controller
         global $chungapi;
 
         $users = $this->userModel->all();
+        foreach ($users as &$userRow) {
+            $userRow = $this->attachListTimeMeta($userRow, ['created_at', 'time']);
+        }
+        unset($userRow);
 
         $totalUsers = count($users);
         $bannedUsers = 0;
@@ -305,5 +311,54 @@ class UserController extends Controller
         }
 
         return $this->json(['success' => false, 'message' => 'Có lỗi xảy ra.']);
+    }
+    /**
+     * @param array<string,mixed> $row
+     * @param array<int,string> $candidates
+     * @return array<string,mixed>
+     */
+    private function attachListTimeMeta(array $row, array $candidates): array
+    {
+        $value = null;
+        foreach ($candidates as $field) {
+            $candidate = $row[$field] ?? null;
+            if ($candidate !== null && trim((string) $candidate) !== '' && (string) $candidate !== '0000-00-00 00:00:00') {
+                $value = $candidate;
+                break;
+            }
+        }
+
+        $meta = $this->normalizeTimeMeta($value);
+        $row['list_time_ts'] = $meta['ts'];
+        $row['list_time_iso'] = $meta['iso'];
+        $row['list_time_iso_utc'] = $meta['iso_utc'];
+        $row['list_time_display'] = $meta['display'];
+        return $row;
+    }
+
+    /**
+     * @return array{ts:int|null,iso:string,iso_utc:string,display:string}
+     */
+    private function normalizeTimeMeta($value): array
+    {
+        if ($this->timeService) {
+            return $this->timeService->normalizeApiTime($value);
+        }
+
+        $raw = trim((string) ($value ?? ''));
+        if ($raw === '') {
+            return ['ts' => null, 'iso' => '', 'iso_utc' => '', 'display' => ''];
+        }
+        $ts = strtotime($raw);
+        if ($ts === false) {
+            return ['ts' => null, 'iso' => '', 'iso_utc' => '', 'display' => $raw];
+        }
+
+        return [
+            'ts' => $ts,
+            'iso' => date('c', $ts),
+            'iso_utc' => gmdate('c', $ts),
+            'display' => date('Y-m-d H:i:s', $ts),
+        ];
     }
 }

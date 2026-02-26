@@ -321,9 +321,9 @@ $isPurchaseJournal = (($basePath ?? '') === 'admin/logs/buying');
                 if (sortVal !== 'all') {
                     var days = parseInt(sortVal);
                     if (!isNaN(days)) {
-                        var rowTime = new Date(data[TIME_COL_INDEX]).getTime();
+                        var rowTime = getJournalRowTimestamp(settings, dataIndex, data[TIME_COL_INDEX]);
                         var pastTime = new Date().getTime() - (days * 24 * 60 * 60 * 1000);
-                        if (rowTime < pastTime) return false;
+                        if (!isNaN(rowTime) && rowTime < pastTime) return false;
                     }
                 }
 
@@ -337,7 +337,7 @@ $isPurchaseJournal = (($basePath ?? '') === 'admin/logs/buying');
 
                 var min = new Date(range[0] + ' 00:00:00').getTime();
                 var max = new Date(range[1] + ' 23:59:59').getTime();
-                var timeCol = new Date(data[TIME_COL_INDEX]).getTime();
+                var timeCol = getJournalRowTimestamp(settings, dataIndex, data[TIME_COL_INDEX]);
 
                 if (isNaN(min) || isNaN(max) || isNaN(timeCol)) return true;
                 return timeCol >= min && timeCol <= max;
@@ -352,6 +352,41 @@ $isPurchaseJournal = (($basePath ?? '') === 'admin/logs/buying');
         if (IS_PURCHASE_JOURNAL) {
             initPurchaseOrderActions();
         }
+    }
+
+    function getJournalRowTimestamp(settings, dataIndex, cellHtml) {
+        try {
+            var rowMeta = settings && settings.aoData ? settings.aoData[dataIndex] : null;
+            var rowNode = rowMeta ? rowMeta.nTr : null;
+            var timeCell = rowNode && rowNode.cells ? rowNode.cells[TIME_COL_INDEX] : null;
+            if (timeCell) {
+                var timeMetaEl = timeCell.querySelector('[data-time-ts]');
+                if (timeMetaEl) {
+                    var tsAttr = Number(timeMetaEl.getAttribute('data-time-ts') || '');
+                    if (!isNaN(tsAttr) && tsAttr > 0) {
+                        return tsAttr * 1000;
+                    }
+                }
+                var timeIsoEl = timeCell.querySelector('[data-time-iso]');
+                if (timeIsoEl) {
+                    var rawIso = timeIsoEl.getAttribute('data-time-iso') || '';
+                    if (window.KaiTime && typeof window.KaiTime.toTimestamp === 'function') {
+                        var ts = window.KaiTime.toTimestamp(rawIso);
+                        if (!isNaN(ts) && ts > 0) return ts * 1000;
+                    }
+                    var nativeTs = Date.parse(rawIso);
+                    if (!isNaN(nativeTs)) return nativeTs;
+                }
+            }
+        } catch (e) {}
+
+        var text = String(cellHtml || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        if (window.KaiTime && typeof window.KaiTime.toTimestamp === 'function') {
+            var fallbackTs = window.KaiTime.toTimestamp(text);
+            if (!isNaN(fallbackTs) && fallbackTs > 0) return fallbackTs * 1000;
+        }
+        var nativeFallback = Date.parse(text);
+        return isNaN(nativeFallback) ? NaN : nativeFallback;
     }
 
     function initPurchaseOrderActions() {

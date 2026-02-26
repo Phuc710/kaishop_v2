@@ -102,6 +102,24 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         warmFingerprint();
+
+        // Password visibility toggle
+        document.querySelectorAll('.toggle-password, .toggle-password-confirm').forEach(function (toggle) {
+            toggle.addEventListener('click', function () {
+                this.classList.toggle('fa-eye');
+                this.classList.toggle('fa-eye-slash');
+                this.classList.toggle('feather-eye');
+                this.classList.toggle('feather-eye-off');
+
+                const group = this.closest('.pass-group') || this.parentElement.parentElement;
+                if (group) {
+                    const input = group.querySelector('.pass-input, .pass-confirm');
+                    if (input) {
+                        input.type = input.type === 'password' ? 'text' : 'password';
+                    }
+                }
+            });
+        });
     });
 
     window.KaiAuthForms = {

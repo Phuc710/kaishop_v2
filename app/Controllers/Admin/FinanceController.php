@@ -8,11 +8,13 @@ class FinanceController extends Controller
 {
     private $authService;
     private $giftCodeModel;
+    private $timeService;
 
     public function __construct()
     {
         $this->authService = new AuthService();
         $this->giftCodeModel = new GiftCode();
+        $this->timeService = class_exists('TimeService') ? TimeService::instance() : null;
     }
 
     private function requireAdmin()
@@ -46,6 +48,10 @@ class FinanceController extends Controller
         global $chungapi;
 
         $giftcodes = $this->giftCodeModel->getAll();
+        foreach ($giftcodes as &$giftcodeRow) {
+            $giftcodeRow = $this->attachTimeMetaToRow($giftcodeRow, ['time', 'created_at']);
+        }
+        unset($giftcodeRow);
         $summary = [
             'total_codes' => 0,
             'total_quantity' => 0,
@@ -216,11 +222,66 @@ class FinanceController extends Controller
         }
 
         $logs = $this->giftCodeModel->getUsageLog($giftcode['giftcode']);
+        foreach ($logs as &$logRow) {
+            $logRow = $this->attachTimeMetaToRow($logRow, ['created_at', 'time']);
+        }
+        unset($logRow);
 
         $this->view('admin/finance/giftcode_log', [
             'chungapi' => $chungapi,
             'giftcode' => $giftcode,
             'logs' => $logs,
         ]);
+    }
+
+    /**
+     * @param array<string,mixed> $row
+     * @param array<int,string> $candidates
+     * @return array<string,mixed>
+     */
+    private function attachTimeMetaToRow(array $row, array $candidates): array
+    {
+        $value = null;
+        foreach ($candidates as $field) {
+            $candidate = $row[$field] ?? null;
+            if ($candidate !== null && trim((string) $candidate) !== '' && (string) $candidate !== '0000-00-00 00:00:00') {
+                $value = $candidate;
+                break;
+            }
+        }
+
+        $meta = $this->normalizeTimeMeta($value);
+        $row['time_ts'] = $meta['ts'];
+        $row['time_iso'] = $meta['iso'];
+        $row['time_iso_utc'] = $meta['iso_utc'];
+        $row['time_display'] = $meta['display'];
+        return $row;
+    }
+
+    /**
+     * @return array{ts:int|null,iso:string,iso_utc:string,display:string}
+     */
+    private function normalizeTimeMeta($value): array
+    {
+        if ($this->timeService) {
+            return $this->timeService->normalizeApiTime($value);
+        }
+
+        $raw = trim((string) ($value ?? ''));
+        if ($raw === '') {
+            return ['ts' => null, 'iso' => '', 'iso_utc' => '', 'display' => ''];
+        }
+
+        $ts = strtotime($raw);
+        if ($ts === false) {
+            return ['ts' => null, 'iso' => '', 'iso_utc' => '', 'display' => $raw];
+        }
+
+        return [
+            'ts' => $ts,
+            'iso' => date('c', $ts),
+            'iso_utc' => gmdate('c', $ts),
+            'display' => date('Y-m-d H:i:s', $ts),
+        ];
     }
 }

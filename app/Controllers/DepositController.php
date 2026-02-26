@@ -73,10 +73,14 @@ class DepositController extends Controller
      */
     private function buildDepositStatusResponseData(array $deposit, array $user): array
     {
-        $createdAt = strtotime((string) ($deposit['created_at'] ?? ''));
+        $timeService = TimeService::instance();
+        $createdAtRaw = (string) ($deposit['created_at'] ?? '');
+        $createdAt = $timeService->toTimestamp($createdAtRaw);
         $now = time();
         $elapsed = $createdAt ? ($now - $createdAt) : 0;
         $ttlSeconds = $this->depositModel->getPendingTtlSeconds();
+        $serverNowMeta = $timeService->normalizeApiTime($now, 'UTC');
+        $createdMeta = $timeService->normalizeApiTime($createdAtRaw);
 
         if (($deposit['status'] ?? '') === 'pending' && $elapsed >= $ttlSeconds) {
             $this->depositModel->markExpired();
@@ -89,13 +93,19 @@ class DepositController extends Controller
             'remaining' => max(0, $ttlSeconds - $elapsed),
             'ttl_seconds' => $ttlSeconds,
             'server_now_ts' => $now,
+            'server_now_iso' => (string) ($serverNowMeta['iso'] ?? ''),
+            'server_now_iso_utc' => (string) ($serverNowMeta['iso_utc'] ?? ''),
             'created_at_ts' => $createdAt ?: 0,
+            'created_at_iso' => (string) ($createdMeta['iso'] ?? ''),
+            'created_at_iso_utc' => (string) ($createdMeta['iso_utc'] ?? ''),
+            'created_at_display' => (string) ($createdMeta['display'] ?? ''),
             'expires_at_ts' => $createdAt ? ($createdAt + $ttlSeconds) : 0,
         ];
 
         if (($deposit['status'] ?? '') === 'completed') {
             $completedAtRaw = (string) ($deposit['completed_at'] ?? '');
-            $completedAtTs = $completedAtRaw !== '' ? (strtotime($completedAtRaw) ?: 0) : 0;
+            $completedAtTs = $timeService->toTimestamp($completedAtRaw);
+            $completedMeta = $timeService->normalizeApiTime($completedAtRaw);
             $processingSeconds = ($createdAt && $completedAtTs) ? max(0, $completedAtTs - $createdAt) : 0;
 
             $responseData['new_balance'] = $this->getUserBalanceValue((int) ($user['id'] ?? 0));
@@ -105,10 +115,16 @@ class DepositController extends Controller
                 'content' => (string) ($deposit['deposit_code'] ?? ''),
                 'amount' => (int) ($deposit['amount'] ?? 0),
                 'bonus_percent' => (int) ($deposit['bonus_percent'] ?? 0),
-                'created_at' => (string) ($deposit['created_at'] ?? ''),
+                'created_at' => $createdAtRaw,
                 'created_at_ts' => $createdAt ?: 0,
+                'created_at_iso' => (string) ($createdMeta['iso'] ?? ''),
+                'created_at_iso_utc' => (string) ($createdMeta['iso_utc'] ?? ''),
+                'created_at_display' => (string) ($createdMeta['display'] ?? ''),
                 'completed_at' => $completedAtRaw,
                 'completed_at_ts' => $completedAtTs,
+                'completed_at_iso' => (string) ($completedMeta['iso'] ?? ''),
+                'completed_at_iso_utc' => (string) ($completedMeta['iso_utc'] ?? ''),
+                'completed_at_display' => (string) ($completedMeta['display'] ?? ''),
                 'processing_seconds' => $processingSeconds,
             ];
         }

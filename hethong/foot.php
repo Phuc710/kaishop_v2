@@ -273,22 +273,37 @@ $loadInteractiveBundle = !empty($pageAssetFlagsResolved['interactive_bundle']);
     <script src="<?= asset('assets/js/counterup.js') ?>"></script>
     <script src="<?= asset('assets/js/waypoints.js') ?>"></script>
     <script src="<?= asset('assets/js/nice_select.js') ?>"></script>
-    <script src="<?= asset('assets/js/isotope.js') ?>"></script>
-    <script src="<?= asset('assets/js/imagesloaded.js') ?>"></script>
-    <script src="<?= asset('assets/js/aos.js') ?>"></script>
-    <script src="<?= asset('assets/js/quill.js') ?>"></script>
-    <script src="<?= asset('assets/js/glightbox.js') ?>"></script>
+    <?php if (!empty($pageAssetFlagsResolved['vendor_isotope'])): ?>
+        <script src="<?= asset('assets/js/isotope.js') ?>"></script>
+        <script src="<?= asset('assets/js/imagesloaded.js') ?>"></script>
+    <?php endif; ?>
+    <?php if (!empty($pageAssetFlagsResolved['vendor_aos'])): ?>
+        <script src="<?= asset('assets/js/aos.js') ?>"></script>
+    <?php endif; ?>
+    <?php if (!empty($pageAssetFlagsResolved['vendor_quill'])): ?>
+        <script src="<?= asset('assets/js/quill.js') ?>"></script>
+    <?php endif; ?>
+    <?php if (!empty($pageAssetFlagsResolved['vendor_glightbox'])): ?>
+        <script src="<?= asset('assets/js/glightbox.js') ?>"></script>
+    <?php endif; ?>
 <?php endif; ?>
 <!-- Popper -->
 <script src="<?= asset('assets/js/popper.js') ?>"></script>
 <!-- Bootstrap -->
 <script src="<?= asset('assets/js/bootstrap.js') ?>"></script>
 <?php if ($loadInteractiveBundle): ?>
-    <script src="<?= asset('assets/js/swiper.js') ?>"></script>
-    <script src="<?= asset('assets/js/script.js?khangapi=') ?><?= time() ?>"></script>
+    <?php if (!empty($pageAssetFlagsResolved['vendor_swiper'])): ?>
+        <script src="<?= asset('assets/js/swiper.js') ?>"></script>
+    <?php endif; ?>
+    <?php
+    $publicScriptPath = dirname(__DIR__) . '/assets/js/script.js';
+    $publicScriptVer = @filemtime($publicScriptPath) ?: '1';
+    ?>
+    <script src="<?= asset('assets/js/script.js?v=' . $publicScriptVer) ?>"></script>
     <script src="<?= asset('assets/js/main.js') ?>"></script>
 <?php endif; ?>
 <script src="<?= asset('assets/js/clipboard.js') ?>"></script>
+<script src="<?= asset('assets/js/perf-loader.js') ?>"></script>
 
 <script>
     // Global Sticky Menu & Back to top

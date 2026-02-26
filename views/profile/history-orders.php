@@ -96,11 +96,16 @@ require __DIR__ . '/layout/header.php';
                 .replace(/"/g, '&quot;');
         }
 
-        function renderUserTimeCell(rawValue, timeAgo, fallbackText) {
-            const raw = String(rawValue || '').trim();
+        function renderUserTimeCell(rawValue, timeAgo, fallbackText, timeTs) {
+            const ts = Number(timeTs || 0);
+            const raw = (window.KaiTime && ts > 0)
+                ? String(window.KaiTime.formatYmdHms(ts) || '').trim()
+                : String(rawValue || '').trim();
             const display = raw || String(fallbackText || '').trim();
             if (!display) return '--';
-            const ago = String(timeAgo || '').trim();
+            const ago = (window.KaiTime && ts > 0)
+                ? String(window.KaiTime.timeAgo(ts) || '').trim()
+                : String(timeAgo || '').trim();
             return '<span class="user-time-plain" title="' + escapeHtml(ago || display) + '">' + escapeHtml(display) + '</span>';
         }
 
@@ -160,7 +165,7 @@ require __DIR__ . '/layout/header.php';
                     data: null,
                     className: 'text-center',
                     render: function (row) {
-                        return renderUserTimeCell(row.time_raw, row.time_ago, row.time_raw || row.time_display);
+                        return renderUserTimeCell(row.time_raw, row.time_ago, row.time_raw || row.time_display, row.time_ts);
                     }
                 },
                 {
@@ -320,7 +325,7 @@ require __DIR__ . '/layout/header.php';
                 + '<div><div class="user-order-detail__label">Số lượng</div><div class="user-order-detail__value">' + escapeHtml(order.quantity || 0) + '</div></div>'
                 + '<div><div class="user-order-detail__label">Mã đơn hàng</div><div class="user-order-detail__value">' + escapeHtml(order.order_code_short || order.order_code || '') + '</div></div>'
                 + '<div><div class="user-order-detail__label">Trạng thái</div><div class="user-order-detail__value' + (String(order.status || '').toLowerCase() === 'completed' ? ' text-success fw-bold' : '') + '">' + escapeHtml(order.status || '') + '</div></div>'
-                + '<div><div class="user-order-detail__label">Thời gian</div><div class="user-order-detail__value">' + escapeHtml(order.created_at || '') + '</div></div>'
+                + '<div><div class="user-order-detail__label">Thời gian</div><div class="user-order-detail__value">' + escapeHtml(order.created_at_display || order.created_at || '') + '</div></div>'
                 + '<div><div class="user-order-detail__label">Thanh toán</div><div class="user-order-detail__value text-success fw-bold">' + fmtMoney(order.price || 0) + '</div></div>'
                 + '</div>'
                 + (order.customer_input && order.customer_input.trim() !== '' && order.customer_input.trim().toLowerCase() !== 'không có' ?

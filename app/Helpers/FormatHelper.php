@@ -68,6 +68,30 @@ class FormatHelper
      */
     public static function eventTime($eventTime, $rawTime): string
     {
+        if (class_exists('TimeService')) {
+            try {
+                $timeService = TimeService::instance();
+                $meta = $timeService->normalizeApiTime($eventTime);
+                if (($meta['ts'] ?? null) === null) {
+                    $meta = $timeService->normalizeApiTime($rawTime);
+                }
+                if (($meta['ts'] ?? null) !== null) {
+                    $display = (string) ($meta['display'] ?? '');
+                    if ($display === '') {
+                        $display = $timeService->formatDisplay((int) $meta['ts']);
+                    }
+                    $timeAgo = self::timeAgo((int) $meta['ts']);
+                    return sprintf(
+                        '<span class="badge date-badge" data-toggle="tooltip" data-placement="top" title="%s">%s</span>',
+                        htmlspecialchars($timeAgo),
+                        htmlspecialchars($display)
+                    );
+                }
+            } catch (Throwable $e) {
+                // Fallback to legacy normalization below.
+            }
+        }
+
         $normalized = trim((string) $eventTime);
         if ($normalized === '' || $normalized === '0000-00-00 00:00:00') {
             $raw = trim((string) $rawTime);
@@ -108,6 +132,18 @@ class FormatHelper
      */
     public static function timeAgo($datetime, $full = false): string
     {
+        if (!$full && class_exists('TimeService')) {
+            try {
+                $timeService = TimeService::instance();
+                $human = (string) $timeService->diffForHumans($datetime);
+                if ($human !== '') {
+                    return $human;
+                }
+            } catch (Throwable $e) {
+                // Fallback to legacy logic below for compatibility.
+            }
+        }
+
         $now = new DateTime();
         try {
             $ago = new DateTime($datetime);

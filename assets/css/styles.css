@@ -17506,16 +17506,15 @@ html.menu-opened body {
         margin: 0;
         padding-left: 0;
         display: flex;
-        flex-direction: row;
+        flex-direction: column;
         justify-content: center;
         align-items: stretch;
-        flex-wrap: nowrap;
-        gap: 10px;
+        gap: 12px;
     }
 
     .footer .location-list li {
         display: flex;
-        flex: 1 1 0;
+        flex: 1 1 auto;
         min-width: 0;
         margin: 0;
         padding: 12px;

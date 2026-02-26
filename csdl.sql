@@ -1,6 +1,8 @@
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-SET time_zone = "+07:00";
+-- Production recommendation: keep DB/session timezone in UTC.
+-- App/UI will convert by APP_DISPLAY_TIMEZONE (e.g. Asia/Ho_Chi_Minh).
+SET time_zone = "+00:00";
 SET NAMES utf8mb4;
 
 START TRANSACTION;
@@ -59,7 +61,8 @@ CREATE TABLE `products` (
   KEY `idx_products_status` (`status`),
   KEY `idx_products_type` (`product_type`),
   KEY `idx_products_category_id` (`category_id`),
-  KEY `idx_products_order` (`display_order`)
+  KEY `idx_products_order` (`display_order`),
+  KEY `idx_products_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Bảng kho hàng tài khoản (mỗi dòng = 1 tài khoản chờ bán)
@@ -78,6 +81,8 @@ CREATE TABLE IF NOT EXISTS `product_stock` (
   KEY `idx_stock_product` (`product_id`),
   KEY `idx_stock_status` (`status`),
   KEY `idx_stock_order` (`order_id`),
+  KEY `idx_stock_created_at` (`created_at`),
+  KEY `idx_stock_sold_at` (`sold_at`),
   UNIQUE KEY `uniq_stock_product_hash` (`product_id`,`content_hash`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -130,7 +135,9 @@ CREATE TABLE `gift_code` (
   UNIQUE KEY `uniq_giftcode` (`giftcode`),
   KEY `idx_gift_code_status` (`status`),
   KEY `idx_gift_code_type` (`type`),
-  KEY `idx_gift_code_expired` (`expired_at`)
+  KEY `idx_gift_code_expired` (`expired_at`),
+  KEY `idx_gift_code_time` (`time`),
+  KEY `idx_gift_code_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `lich_su_mua_code` (
@@ -155,7 +162,8 @@ CREATE TABLE `lich_su_hoat_dong` (
   `time` varchar(100) DEFAULT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
-  KEY `idx_lshd_username` (`username`)
+  KEY `idx_lshd_username` (`username`),
+  KEY `idx_lshd_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `users` (
@@ -379,7 +387,9 @@ CREATE TABLE IF NOT EXISTS `system_logs` (
   PRIMARY KEY (`id`),
   KEY `idx_username` (`username`),
   KEY `idx_module` (`module`),
-  KEY `idx_severity` (`severity`)
+  KEY `idx_severity` (`severity`),
+  KEY `idx_system_logs_created_at` (`created_at`),
+  KEY `idx_system_logs_severity_created` (`severity`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `user_fingerprints` (
@@ -442,5 +452,7 @@ CREATE TABLE IF NOT EXISTS `history_nap_bank` (
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_hnb_username` (`username`),
-  KEY `idx_hnb_trans` (`trans_id`)
+  KEY `idx_hnb_trans` (`trans_id`),
+  KEY `idx_hnb_created_at` (`created_at`),
+  KEY `idx_hnb_status_created` (`status`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

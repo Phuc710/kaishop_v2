@@ -11,11 +11,22 @@ if (!defined('BASE_URL')) {
     <title>
         <?= htmlspecialchars($seoTitle) ?>
     </title>
-    
+
     <style>
         .contact-section {
             background-color: #f9fafb;
             min-height: 80vh;
+        }
+
+        .contact-card-wrapper {
+            text-decoration: none !important;
+            display: block;
+            height: 100%;
+            transition: transform 0.3s ease;
+        }
+
+        .contact-card-wrapper:hover {
+            transform: translateY(-5px);
         }
 
         .contact-grid {
@@ -29,36 +40,57 @@ if (!defined('BASE_URL')) {
             border: 1px solid #f3f4f6;
         }
 
-        .contact-grid:hover {
-            transform: translateY(-5px);
+        .contact-card-wrapper:hover .contact-grid {
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
 
+
+
         .contact-icon {
-            width: 60px;
-            height: 60px;
-            background: #fffafa;
-            border-radius: 50%;
-            display: flex;
+            width: 48px;
+            height: 48px;
+            display: flex !important;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            border: 1px solid #fff5f5;
+            margin: 0 auto 16px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+        }
+
+        .contact-icon::before,
+        .contact-icon::after {
+            display: none !important;
+            content: none !important;
+        }
+
+        .contact-icon span,
+        .contact-icon i,
+        .contact-icon img {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            position: static !important;
+            margin: 0 !important;
         }
 
         .contact-icon img {
-            width: 28px;
-            height: 28px;
+            width: 38px;
+            height: 38px;
+            object-fit: contain;
         }
-        
+
         .contact-icon i {
-            font-size: 24px;
+            font-size: 32px;
             color: #4b5563;
+            transition: all 0.4s ease;
         }
 
         .contact-details h6 {
-            font-weight: 700;
+            font-weight: 600;
             color: #4b5563;
             margin-bottom: 12px;
             font-size: 1.1rem;
@@ -70,13 +102,13 @@ if (!defined('BASE_URL')) {
             font-weight: 600;
         }
 
-        .contact-details a {
+        .contact-details .contact-link-text {
             color: #1f2937;
             text-decoration: none;
             transition: color 0.2s;
         }
 
-        .contact-details a:hover {
+        .contact-card-wrapper:hover .contact-link-text {
             color: #0683a4;
         }
 
@@ -144,50 +176,41 @@ if (!defined('BASE_URL')) {
                     <div class="row justify-content-center">
                         <?php if ($contactEmail !== ''): ?>
                             <div class="col-lg-4 col-md-6 d-flex mb-4">
-                                <div class="contact-grid w-100">
-                                    <div class="contact-content">
+                                <a href="mailto:<?= htmlspecialchars($contactEmail) ?>" class="contact-card-wrapper w-100">
+                                    <div class="contact-grid">
                                         <div class="contact-icon">
-                                            <span>
-                                                <i class="fa-solid fa-envelope" style="color: #f97316;"></i>
-                                            </span>
+                                            <img src="<?= asset('assets/images/gmail.png') ?>" alt="Gmail">
                                         </div>
                                         <div class="contact-details">
-                                            <h6>
-                                                <?= htmlspecialchars($contactEmailLabel) ?>
-                                            </h6>
+                                            <h6><?= htmlspecialchars($contactEmailLabel) ?></h6>
                                             <p style="word-break: break-all;">
-                                                <a href="mailto:<?= htmlspecialchars($contactEmail) ?>">
-                                                    <?= htmlspecialchars($contactEmail) ?>
-                                                </a>
+                                                <span
+                                                    class="contact-link-text"><?= htmlspecialchars($contactEmail) ?></span>
                                             </p>
                                         </div>
                                     </div>
-                                </div>
+                                </a>
                             </div>
                         <?php endif; ?>
 
                         <?php if ($contactPhone !== ''): ?>
                             <?php $phoneHref = preg_replace('/[^0-9+]/', '', $contactPhone) ?: $contactPhone; ?>
                             <div class="col-lg-4 col-md-6 d-flex mb-4">
-                                <div class="contact-grid w-100">
-                                    <div class="contact-content">
+                                <a href="https://zalo.me/<?= htmlspecialchars($phoneHref) ?>" target="_blank"
+                                    rel="noopener noreferrer" class="contact-card-wrapper w-100">
+                                    <div class="contact-grid">
                                         <div class="contact-icon">
-                                            <span>
-                                                <i class="fa-solid fa-phone" style="color: #f59e0b;"></i>
-                                            </span>
+                                            <img src="<?= asset('assets/images/zalo.webp') ?>" alt="Zalo">
                                         </div>
                                         <div class="contact-details">
-                                            <h6>
-                                                <?= htmlspecialchars($contactPhoneLabel) ?>
-                                            </h6>
+                                            <h6><?= htmlspecialchars($contactPhoneLabel) ?></h6>
                                             <p>
-                                                <a href="tel:<?= htmlspecialchars($phoneHref) ?>">
-                                                    <?= htmlspecialchars($contactPhone) ?>
-                                                </a>
+                                                <span
+                                                    class="contact-link-text"><?= htmlspecialchars($contactPhone) ?></span>
                                             </p>
                                         </div>
                                     </div>
-                                </div>
+                                </a>
                             </div>
                         <?php endif; ?>
 
@@ -198,33 +221,33 @@ if (!defined('BASE_URL')) {
                             <?php
                             $socialHref = preg_match('~^https?://~i', $socialValue) ? $socialValue : ('https://' . ltrim($socialValue, '/'));
                             $iconColor = '#4b5563';
-                            if (stripos($item['label'], 'Facebook') !== false) $iconColor = '#1877f2';
-                            if (stripos($item['label'], 'Telegram') !== false) $iconColor = '#0088cc';
-                            if (stripos($item['label'], 'TikTok') !== false) $iconColor = '#000000';
-                            if (stripos($item['label'], 'YouTube') !== false) $iconColor = '#ff0000';
+                            if (stripos($item['label'], 'Facebook') !== false)
+                                $iconColor = '#1877f2';
+                            if (stripos($item['label'], 'Telegram') !== false)
+                                $iconColor = '#0088cc';
+                            if (stripos($item['label'], 'TikTok') !== false)
+                                $iconColor = '#000000';
+                            if (stripos($item['label'], 'YouTube') !== false)
+                                $iconColor = '#ff0000';
                             ?>
                             <div class="col-lg-4 col-md-6 d-flex mb-4">
-                                <div class="contact-grid w-100">
-                                    <div class="contact-content">
+                                <a href="<?= htmlspecialchars($socialHref) ?>" target="_blank" rel="noopener noreferrer"
+                                    class="contact-card-wrapper w-100">
+                                    <div class="contact-grid">
                                         <div class="contact-icon">
-                                            <span>
-                                                <i class="<?= htmlspecialchars((string) ($item['icon_class'] ?? 'fa-solid fa-link')) ?>"
-                                                    style="color: <?= $iconColor ?>;"></i>
-                                            </span>
+                                            <i class="<?= htmlspecialchars((string) ($item['icon_class'] ?? 'fa-solid fa-link')) ?>"
+                                                style="color: <?= $iconColor ?>;"></i>
                                         </div>
                                         <div class="contact-details">
                                             <h6 style="color: #4b5563;">
                                                 <?= htmlspecialchars((string) $item['label']) ?>
                                             </h6>
                                             <p style="word-break: break-all;">
-                                                <a href="<?= htmlspecialchars($socialHref) ?>" target="_blank"
-                                                    rel="noopener noreferrer">
-                                                    <?= htmlspecialchars($socialValue) ?>
-                                                </a>
+                                                <span class="contact-link-text"><?= htmlspecialchars($socialValue) ?></span>
                                             </p>
                                         </div>
                                     </div>
-                                </div>
+                                </a>
                             </div>
                         <?php endforeach; ?>
                     </div>

@@ -155,11 +155,14 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                             <!-- Hidden full hash for DataTable search -->
                                             <span style="display:none;"><?= htmlspecialchars($fp) ?></span>
                                         </td>
-                                        <td class="text-center align-middle">
-                                            <span class="badge date-badge" data-toggle="tooltip" data-placement="top"
-                                                title="<?= class_exists('FormatHelper') ? FormatHelper::timeAgo($row['time']) : $row['time'] ?>">
-                                                <?= htmlspecialchars((string) ($row['time'] ?? '--')) ?>
-                                            </span>
+                                        <td class="text-center align-middle"
+                                            data-time-ts="<?= (int) ($row['list_time_ts'] ?? 0) ?>"
+                                            data-time-iso="<?= htmlspecialchars((string) ($row['list_time_iso'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                            data-order="<?= (int) ($row['list_time_ts'] ?? 0) ?>">
+                                            <?= FormatHelper::eventTime(
+                                                $row['list_time_display'] ?? ($row['created_at'] ?? ''),
+                                                $row['time'] ?? ($row['created_at'] ?? '')
+                                            ) ?>
                                         </td>
                                         <td class="text-center align-middle">
                                             <div class="btn-group">
@@ -206,6 +209,35 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
 
 <script>
     let dtUser;
+    function getUserRowTimestamp(settings, dataIndex, cellHtml) {
+        try {
+            var rowMeta = settings && settings.aoData ? settings.aoData[dataIndex] : null;
+            var rowNode = rowMeta ? rowMeta.nTr : null;
+            var timeCell = rowNode && rowNode.cells ? rowNode.cells[6] : null;
+            if (timeCell) {
+                var tsAttr = Number(timeCell.getAttribute('data-time-ts') || '');
+                if (!isNaN(tsAttr) && tsAttr > 0) return tsAttr * 1000;
+                var iso = timeCell.getAttribute('data-time-iso') || '';
+                if (iso) {
+                    if (window.KaiTime && typeof window.KaiTime.toTimestamp === 'function') {
+                        var ts = window.KaiTime.toTimestamp(iso);
+                        if (!isNaN(ts) && ts > 0) return ts * 1000;
+                    }
+                    var nativeTs = Date.parse(iso);
+                    if (!isNaN(nativeTs)) return nativeTs;
+                }
+            }
+        } catch (e) {}
+
+        var text = String(cellHtml || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        if (window.KaiTime && typeof window.KaiTime.toTimestamp === 'function') {
+            var fallbackTs = window.KaiTime.toTimestamp(text);
+            if (!isNaN(fallbackTs) && fallbackTs > 0) return fallbackTs * 1000;
+        }
+        var nativeFallback = Date.parse(text);
+        return isNaN(nativeFallback) ? NaN : nativeFallback;
+    }
+
     $(document).ready(function () {
         dtUser = $('#datatable1').DataTable({
             dom: 't<"row align-items-center mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7 d-md-flex justify-content-end"p>>',
@@ -255,17 +287,9 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             if (sortVal !== 'all') {
                 var days = parseInt(sortVal);
                 if (!isNaN(days)) {
-                    var dateStr = data[6].trim();
-                    var rowTime;
-                    var parts = dateStr.split(' ');
-                    if (parts.length === 2 && parts[1].includes('-')) {
-                        var dateParts = parts[1].split('-');
-                        if (dateParts.length === 3 && dateParts[2].length === 4) {
-                            rowTime = new Date(dateParts[2] + '-' + dateParts[1] + '-' + dateParts[0] + 'T' + parts[0] + ':00').getTime();
-                        } else { rowTime = new Date(dateStr).getTime(); }
-                    } else { rowTime = new Date(dateStr).getTime(); }
+                    var rowTime = getUserRowTimestamp(settings, dataIndex, data[6]);
                     var pastTime = new Date().getTime() - (days * 24 * 60 * 60 * 1000);
-                    if (rowTime < pastTime) return false;
+                    if (!isNaN(rowTime) && rowTime < pastTime) return false;
                 }
             }
             return true;

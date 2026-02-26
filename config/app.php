@@ -39,8 +39,40 @@ if (!defined('APP_KEY')) {
     define('APP_KEY', (string) EnvHelper::get('APP_KEY', ''));
 }
 
-// Set timezone
-date_default_timezone_set('Asia/Ho_Chi_Minh');
+// Set timezone (runtime-configurable via .env)
+$appTimezone = trim((string) EnvHelper::get('APP_TIMEZONE', 'Asia/Ho_Chi_Minh'));
+if ($appTimezone === '') {
+    $appTimezone = 'Asia/Ho_Chi_Minh';
+}
+if (!@date_default_timezone_set($appTimezone)) {
+    date_default_timezone_set('Asia/Ho_Chi_Minh');
+}
+
+if (!function_exists('app_timezone')) {
+    function app_timezone(): string
+    {
+        $tz = trim((string) EnvHelper::get('APP_TIMEZONE', date_default_timezone_get()));
+        return $tz !== '' ? $tz : date_default_timezone_get();
+    }
+}
+
+if (!function_exists('app_display_timezone')) {
+    function app_display_timezone(): string
+    {
+        $tz = trim((string) EnvHelper::get('APP_DISPLAY_TIMEZONE', app_timezone()));
+        return $tz !== '' ? $tz : app_timezone();
+    }
+}
+
+if (!function_exists('app_db_timezone')) {
+    function app_db_timezone(): string
+    {
+        // Transitional: allow DB timezone to differ while migrating legacy local DATETIME rows to UTC.
+        $fallback = app_timezone();
+        $tz = trim((string) EnvHelper::get('APP_DB_TIMEZONE', $fallback));
+        return $tz !== '' ? $tz : $fallback;
+    }
+}
 
 // Error reporting (production-safe by default unless APP_DEBUG=1)
 $appDebug = in_array(strtolower((string) EnvHelper::get('APP_DEBUG', '0')), ['1', 'true', 'yes', 'on'], true);

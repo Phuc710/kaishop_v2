@@ -203,9 +203,11 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                                 <?= $p['status'] === 'ON' ? 'ON' : 'OFF' ?>
                                             </button>
                                         </td>
-                                        <td class="text-center align-middle">
+                                        <td class="text-center align-middle"
+                                            data-time-ts="<?= (int) ($p['created_at_ts'] ?? 0) ?>"
+                                            data-time-iso="<?= htmlspecialchars((string) ($p['created_at_iso'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
                                             <span class="badge date-badge">
-                                                <?= $p['created_at'] ? date('Y-m-d H:i:s', strtotime($p['created_at'])) : '—' ?>
+                                                <?= htmlspecialchars((string) ($p['created_at_display'] ?? ($p['created_at'] ? date('Y-m-d H:i:s', strtotime($p['created_at'])) : '—'))) ?>
                                             </span>
                                         </td>
                                         <td class="text-center align-middle">
@@ -242,8 +244,32 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
         return String(html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     }
 
-    function parseProductRowDate(cellHtml) {
+    function getProductRowTimestamp(settings, dataIndex, cellHtml) {
+        try {
+            var rowMeta = settings && settings.aoData ? settings.aoData[dataIndex] : null;
+            var rowNode = rowMeta ? rowMeta.nTr : null;
+            var timeCell = rowNode && rowNode.cells ? rowNode.cells[7] : null;
+            if (timeCell) {
+                var tsAttr = Number(timeCell.getAttribute('data-time-ts') || '');
+                if (!isNaN(tsAttr) && tsAttr > 0) return tsAttr * 1000;
+
+                var iso = timeCell.getAttribute('data-time-iso') || '';
+                if (iso) {
+                    if (window.KaiTime && typeof window.KaiTime.toTimestamp === 'function') {
+                        var kaiTs = window.KaiTime.toTimestamp(iso);
+                        if (!isNaN(kaiTs) && kaiTs > 0) return kaiTs * 1000;
+                    }
+                    var nativeTs = Date.parse(iso);
+                    if (!isNaN(nativeTs)) return nativeTs;
+                }
+            }
+        } catch (e) {}
+
         var raw = stripHtmlToText(cellHtml);
+        if (window.KaiTime && typeof window.KaiTime.toTimestamp === 'function') {
+            var fallbackTs = window.KaiTime.toTimestamp(raw);
+            if (!isNaN(fallbackTs) && fallbackTs > 0) return fallbackTs * 1000;
+        }
         var ts = Date.parse(raw);
         return isNaN(ts) ? null : ts;
     }
@@ -309,7 +335,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                 if (sortVal !== 'all') {
                     var days = parseInt(sortVal);
                     if (!isNaN(days)) {
-                        var rowTime = parseProductRowDate(data[7]);
+                        var rowTime = getProductRowTimestamp(settings, dataIndex, data[7]);
                         var pastTime = new Date().getTime() - (days * 24 * 60 * 60 * 1000);
                         if (rowTime !== null && rowTime < pastTime) return false;
                     }

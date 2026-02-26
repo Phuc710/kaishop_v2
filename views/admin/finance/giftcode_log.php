@@ -128,8 +128,10 @@ function parseActivityLog($text)
                                                     <span
                                                         class="text-muted text-sm"><?= htmlspecialchars($parsed['product_name']) ?></span>
                                                 </td>
-                                                <td class="text-center align-middle">
-                                                    <?= FormatHelper::eventTime($row['time'], $row['time']) ?>
+                                                <td class="text-center align-middle"
+                                                    data-time-ts="<?= (int) ($row['time_ts'] ?? 0) ?>"
+                                                    data-time-iso="<?= htmlspecialchars((string) ($row['time_iso'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                                                    <?= FormatHelper::eventTime($row['time_display'] ?? $row['time'], $row['time'] ?? ($row['time_display'] ?? null)) ?>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -236,9 +238,9 @@ function parseActivityLog($text)
                 if (sortVal !== 'all') {
                     var days = parseInt(sortVal);
                     if (!isNaN(days)) {
-                        var rowTime = new Date(data[3]).getTime();
+                        var rowTime = getGiftcodeLogRowTimestamp(settings, dataIndex, data[3]);
                         var pastTime = new Date().getTime() - (days * 24 * 60 * 60 * 1000);
-                        if (rowTime < pastTime) return false;
+                        if (!isNaN(rowTime) && rowTime < pastTime) return false;
                     }
                 }
 
@@ -252,11 +254,40 @@ function parseActivityLog($text)
 
                 var min = new Date(range[0] + ' 00:00:00').getTime();
                 var max = new Date(range[1] + ' 23:59:59').getTime();
-                var timeCol = new Date(data[3]).getTime(); // using time column string representation
+                var timeCol = getGiftcodeLogRowTimestamp(settings, dataIndex, data[3]);
 
                 if (isNaN(min) || isNaN(max) || isNaN(timeCol)) return true;
                 return timeCol >= min && timeCol <= max;
             }
         );
+    }
+
+    function getGiftcodeLogRowTimestamp(settings, dataIndex, cellHtml) {
+        try {
+            var rowMeta = settings && settings.aoData ? settings.aoData[dataIndex] : null;
+            var rowNode = rowMeta ? rowMeta.nTr : null;
+            var timeCell = rowNode && rowNode.cells ? rowNode.cells[3] : null;
+            if (timeCell) {
+                var tsAttr = Number(timeCell.getAttribute('data-time-ts') || '');
+                if (!isNaN(tsAttr) && tsAttr > 0) return tsAttr * 1000;
+                var iso = timeCell.getAttribute('data-time-iso') || '';
+                if (iso) {
+                    if (window.KaiTime && typeof window.KaiTime.toTimestamp === 'function') {
+                        var ts = window.KaiTime.toTimestamp(iso);
+                        if (!isNaN(ts) && ts > 0) return ts * 1000;
+                    }
+                    var nativeTs = Date.parse(iso);
+                    if (!isNaN(nativeTs)) return nativeTs;
+                }
+            }
+        } catch (e) {}
+
+        var text = String(cellHtml || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        if (window.KaiTime && typeof window.KaiTime.toTimestamp === 'function') {
+            var fallbackTs = window.KaiTime.toTimestamp(text);
+            if (!isNaN(fallbackTs) && fallbackTs > 0) return fallbackTs * 1000;
+        }
+        var nativeFallback = Date.parse(text);
+        return isNaN(nativeFallback) ? NaN : nativeFallback;
     }
 </script>

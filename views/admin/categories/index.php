@@ -113,15 +113,14 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                                 <span class="badge badge-danger">OFF</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td class="text-center align-middle">
-                                            <?php
-                                            $createdRaw = (string) ($row['created_at'] ?? '');
-                                            $createdTooltip = function_exists('timeAgo') ? (string) timeAgo($createdRaw) : $createdRaw;
-                                            ?>
-                                            <span class="badge date-badge" data-toggle="tooltip" data-placement="top"
-                                                title="<?= htmlspecialchars($createdTooltip, ENT_QUOTES, 'UTF-8') ?>">
-                                                <?= htmlspecialchars($row['created_at']) ?>
-                                            </span>
+                                        <td class="text-center align-middle"
+                                            data-time-ts="<?= (int) ($row['list_time_ts'] ?? 0) ?>"
+                                            data-time-iso="<?= htmlspecialchars((string) ($row['list_time_iso'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                            data-order="<?= (int) ($row['list_time_ts'] ?? 0) ?>">
+                                            <?= FormatHelper::eventTime(
+                                                $row['list_time_display'] ?? ($row['created_at'] ?? ''),
+                                                $row['created_at'] ?? ($row['time'] ?? '')
+                                            ) ?>
                                         </td>
                                         <td class="text-center align-middle">
                                             <div class="btn-group">

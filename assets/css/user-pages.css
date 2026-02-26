@@ -453,8 +453,8 @@
 
 .deposit-panel-title {
     margin: 0;
-    color: #000;
-    font-weight: bolder;
+    color: #1e293b;
+    font-weight: 700;
     font-size: 16px;
 }
 
@@ -480,7 +480,7 @@
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     background: #fff;
-    color: #000;
+    color: #334155;
     padding: 10px 4px;
     transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease, background-color .2s ease;
 }
@@ -496,7 +496,7 @@
 
 .deposit-amount {
     font-size: 14px;
-    font-weight: bolder;
+    font-weight: 600;
 }
 
 .deposit-bonus {
@@ -594,7 +594,7 @@
 .deposit-info-list {
     display: flex;
     flex-direction: column;
-    border: 2px solid #000;
+    border: 1px solid #e2e8f0;
     border-radius: 12px;
     overflow: hidden;
     background: #fff;
@@ -606,7 +606,7 @@
     align-items: center;
     gap: 12px;
     padding: 12px 14px;
-    border-bottom: 2px solid #000;
+    border-bottom: 1px dashed #e2e8f0;
 }
 
 .deposit-info-row:last-child {
@@ -615,20 +615,19 @@
 
 .deposit-info-label {
     font-size: 14px;
-    font-weight: bolder;
-    color: #000;
-    text-transform: uppercase;
+    font-weight: 500;
+    color: #64748b;
 }
 
 .deposit-info-label.text-danger {
-    color: #000 !important;
+    color: #ef4444 !important;
 }
 
 
 .deposit-info-value {
     font-size: 15px;
-    color: #000;
-    font-weight: bolder;
+    color: #1e293b;
+    font-weight: 600;
     text-align: right;
     word-break: break-word;
 }
@@ -638,14 +637,15 @@
 }
 
 .deposit-info-value.is-highlight {
-    color: #000;
+    color: #0ea5e9;
     font-size: 16px;
+    font-weight: 700;
 }
 
 .deposit-info-value.is-amount {
-    color: #00ad5c;
+    color: #10b981;
     font-size: 18px;
-    font-weight: bolder;
+    font-weight: 700;
 }
 
 .deposit-info-actions {

@@ -175,12 +175,13 @@ $summary = $summary ?? [
                                                 style="background-color: #8b5cf6;"><?= (int) $row['giamgia'] ?>%</span>
                                         </td>
                                         <td class="text-center align-middle"
-                                            data-raw-datetime="<?= htmlspecialchars($row['time'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                                            data-time-ts="<?= (int) ($row['time_ts'] ?? 0) ?>"
+                                            data-time-iso="<?= htmlspecialchars((string) ($row['time_iso'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                            data-raw-datetime="<?= htmlspecialchars((string) ($row['time_display'] ?? ($row['time'] ?? '')), ENT_QUOTES, 'UTF-8') ?>">
                                             <span class="date-badge">
-                                                <?= FormatHelper::eventTime($row['time'], $row['time']) ?>
+                                                <?= FormatHelper::eventTime($row['time_display'] ?? $row['time'], $row['time'] ?? ($row['time_display'] ?? null)) ?>
                                             </span>
-                                            <!-- Hidden raw time for sorting -->
-                                            <span style="display:none;"><?= (string) ($row['time'] ?? '') ?></span>
+                                            <span style="display:none;"><?= (string) ($row['time_ts'] ?? '') ?></span>
                                         </td>
                                         <td class="text-center align-middle">
                                             <div class="btn-group">
@@ -297,10 +298,28 @@ $summary = $summary ?? [
             const rowNode = rowMeta ? rowMeta.nTr : null;
             if (!rowNode || !rowNode.cells || !rowNode.cells[5]) return NaN;
 
-            const rawTime = rowNode.cells[5].getAttribute('data-raw-datetime');
-            if (!rawTime) return NaN;
+            const cell = rowNode.cells[5];
+            const tsAttr = Number(cell.getAttribute('data-time-ts') || '');
+            if (!isNaN(tsAttr) && tsAttr > 0) return tsAttr * 1000;
 
-            return new Date(rawTime.replace(' ', 'T')).getTime();
+            const iso = cell.getAttribute('data-time-iso') || '';
+            if (iso) {
+                if (window.KaiTime && typeof window.KaiTime.toTimestamp === 'function') {
+                    const ts = window.KaiTime.toTimestamp(iso);
+                    if (!isNaN(ts) && ts > 0) return ts * 1000;
+                }
+                const nativeTs = Date.parse(iso);
+                if (!isNaN(nativeTs)) return nativeTs;
+            }
+
+            const rawTime = cell.getAttribute('data-raw-datetime') || '';
+            if (!rawTime) return NaN;
+            if (window.KaiTime && typeof window.KaiTime.toTimestamp === 'function') {
+                const ts = window.KaiTime.toTimestamp(rawTime);
+                if (!isNaN(ts) && ts > 0) return ts * 1000;
+            }
+            const nativeTs = Date.parse(rawTime.replace(' ', 'T'));
+            return isNaN(nativeTs) ? NaN : nativeTs;
         }
 
         $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {

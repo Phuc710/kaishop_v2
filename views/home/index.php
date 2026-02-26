@@ -2,6 +2,15 @@
 <html lang="en">
 
 <head>
+    <?php
+    $GLOBALS['pageAssets'] = array_merge($GLOBALS['pageAssets'] ?? [], [
+        'vendor_quill' => false,
+        'vendor_isotope' => false,
+        'vendor_glightbox' => false,
+        'vendor_swiper' => false,
+        'vendor_aos' => false,
+    ]);
+    ?>
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>
     <title> Trang Chủ | <?= $chungapi['ten_web']; ?></title>
 </head>

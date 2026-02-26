@@ -73,6 +73,7 @@ class HistoryController extends Controller
 
         // Format data for DataTables
         $formattedData = [];
+        $timeService = TimeService::instance();
         foreach ($data as $row) {
             $change = (int) ($row['change_amount'] ?? 0);
             $beforeBalance = (int) ($row['before_balance'] ?? 0);
@@ -91,11 +92,19 @@ class HistoryController extends Controller
                     }
                 }
             }
-            $timeAgo = $normalizedTime !== '' ? FormatHelper::timeAgo($normalizedTime) : '';
+            $timeMeta = $timeService->normalizeApiTime($normalizedTime !== '' ? $normalizedTime : $rawTime);
+            $timeDisplay = (string) ($timeMeta['display'] ?? '');
+            if ($timeDisplay === '' && $normalizedTime !== '') {
+                $timeDisplay = $normalizedTime;
+            }
+            $timeAgo = $timeMeta['ts'] ? $timeService->diffForHumans($timeMeta['ts']) : ($normalizedTime !== '' ? FormatHelper::timeAgo($normalizedTime) : '');
 
             $formattedData[] = [
                 'time' => FormatHelper::eventTime($row['event_time'] ?? null, $rawTime),
-                'time_raw' => $normalizedTime,
+                'time_raw' => $timeDisplay,
+                'time_ts' => $timeMeta['ts'],
+                'time_iso' => (string) ($timeMeta['iso'] ?? ''),
+                'time_iso_utc' => (string) ($timeMeta['iso_utc'] ?? ''),
                 'time_ago' => $timeAgo,
                 'before' => FormatHelper::initialBalance($beforeBalance),
                 'before_amount' => $beforeBalance,

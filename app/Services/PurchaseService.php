@@ -44,7 +44,7 @@ class PurchaseService
         $customerInput = trim((string) ($options['customer_input'] ?? ''));
         $giftcodeInput = strtoupper(trim((string) ($options['giftcode'] ?? '')));
         if ($userId <= 0 || $username === '') {
-            return ['success' => false, 'message' => 'Ban chua dang nhap.'];
+            return ['success' => false, 'message' => 'Bạn chưa đăng nhập.'];
         }
 
         try {
@@ -57,14 +57,14 @@ class PurchaseService
                 throw new RuntimeException('User not found');
             }
             if ((int) ($user['bannd'] ?? 0) === 1) {
-                throw new RuntimeException('Tai khoan dang bi khoa.');
+                throw new RuntimeException('Tài khoản đang bị khóa.');
             }
 
             $productStmt = $this->db->prepare("SELECT * FROM `products` WHERE `id` = ? LIMIT 1 FOR UPDATE");
             $productStmt->execute([$productId]);
             $product = $productStmt->fetch(PDO::FETCH_ASSOC) ?: null;
             if (!$product || (string) ($product['status'] ?? '') !== 'ON') {
-                throw new RuntimeException('San pham khong kha dung.');
+                throw new RuntimeException('Sản phẩm không khả dụng.');
             }
 
             $productType = (string) ($product['product_type'] ?? 'account');
@@ -72,17 +72,17 @@ class PurchaseService
 
             $price = (int) ($product['price_vnd'] ?? 0);
             if ($price <= 0) {
-                throw new RuntimeException('Gia san pham khong hop le.');
+                throw new RuntimeException('Giá sản phẩm không hợp lệ.');
             }
 
             $minQty = max(1, (int) ($product['min_purchase_qty'] ?? 1));
             $maxQtyConfig = max(0, (int) ($product['max_purchase_qty'] ?? 0));
             if ($requestedQty < $minQty) {
-                throw new RuntimeException('So luong mua nho hon muc toi thieu.');
+                throw new RuntimeException('Số lượng mua nhỏ hơn mức tối thiểu.');
             }
 
             if ($requiresInfo && $customerInput === '') {
-                throw new RuntimeException('Vui long nhap thong tin yeu cau truoc khi mua.');
+                throw new RuntimeException('Vui lòng nhập thông tin yêu cầu trước khi mua.');
             }
 
             $availableStock = null;
@@ -92,13 +92,13 @@ class PurchaseService
                 $availableStock = (int) $stockCountStmt->fetchColumn();
                 $dynamicMax = $maxQtyConfig > 0 ? min($maxQtyConfig, $availableStock) : $availableStock;
                 if ($dynamicMax <= 0) {
-                    throw new RuntimeException('San pham tam het hang.');
+                    throw new RuntimeException('Sản phẩm tạm hết hàng.');
                 }
                 if ($requestedQty > $dynamicMax) {
-                    throw new RuntimeException('So luong mua vuot qua ton kho hoac gioi han toi da.');
+                    throw new RuntimeException('Số lượng mua vượt quá tồn kho hoặc giới hạn tối đa.');
                 }
             } elseif ($maxQtyConfig > 0 && $requestedQty > $maxQtyConfig) {
-                throw new RuntimeException('So luong mua vuot qua gioi han toi da.');
+                throw new RuntimeException('Số lượng mua vượt quá giới hạn tối đa.');
             }
 
             $subtotalPrice = $price * $requestedQty;
@@ -120,7 +120,7 @@ class PurchaseService
 
             $totalPrice = max(0, $subtotalPrice - $discountAmount);
             if ((int) ($user['money'] ?? 0) < $totalPrice) {
-                throw new RuntimeException('So du khong du de thanh toan.');
+                throw new RuntimeException('Số dư không đủ để thanh toán.');
             }
 
             $orderCode = $this->orderModel->generateOrderCode();
@@ -148,7 +148,7 @@ class PurchaseService
                 $debitStmt = $this->db->prepare("UPDATE `users` SET `money` = `money` - ? WHERE `id` = ? AND `money` >= ?");
                 $debitStmt->execute([$totalPrice, $userId, $totalPrice]);
                 if ($debitStmt->rowCount() < 1) {
-                    throw new RuntimeException('So du khong du de thanh toan.');
+                    throw new RuntimeException('Số dư không đủ để thanh toán.');
                 }
             }
 
@@ -164,7 +164,7 @@ class PurchaseService
                 for ($i = 0; $i < $requestedQty; $i++) {
                     $stock = $this->stockModel->claimOneInCurrentTransaction($productId, $userId, $orderId);
                     if (!$stock) {
-                        throw new RuntimeException('San pham tam het hang.');
+                        throw new RuntimeException('Sản phẩm tạm hết hàng.');
                     }
                     if ($firstStockId === 0) {
                         $firstStockId = (int) ($stock['id'] ?? 0);
@@ -176,11 +176,11 @@ class PurchaseService
                 $this->completeOrderDelivery($orderId, $firstStockId, $deliveredPlain);
             } elseif (!$requiresInfo && $productType === 'link') {
                 if ($requestedQty > 1) {
-                    throw new RuntimeException('Loai san pham nay chi duoc mua toi da 1 cai moi don hang.');
+                    throw new RuntimeException('Loại sản phẩm này chỉ được mua tối đa 1 cái mỗi đơn hàng.');
                 }
                 $sourceLink = trim((string) ($product['source_link'] ?? ''));
                 if ($sourceLink === '') {
-                    throw new RuntimeException('San pham Source Link chua duoc cau hinh link giao.');
+                    throw new RuntimeException('Sản phẩm Source Link chưa được cấu hình link giao.');
                 }
                 $deliveredPlain = $sourceLink;
                 $this->completeOrderDelivery($orderId, null, $deliveredPlain);
@@ -193,7 +193,7 @@ class PurchaseService
             $activityStmt->execute([
                 $username,
                 'Mua san pham: ' . (string) ($product['name'] ?? ('#' . $productId))
-                    . ($giftcodeMeta ? (' | Ma giam gia: ' . $giftcodeInput) : ''),
+                . ($giftcodeMeta ? (' | Ma giam gia: ' . $giftcodeInput) : ''),
                 -$totalPrice,
                 (string) time(),
             ]);
@@ -220,7 +220,7 @@ class PurchaseService
                 return [
                     'success' => true,
                     'pending' => true,
-                    'message' => 'Don hang da tao o trang thai pending. Vui long cho admin xu ly va giao noi dung.',
+                    'message' => 'Đơn hàng đã tạo ở trạng thái chờ. Vui lòng chờ admin xử lý và giao nội dung.',
                     'order' => [
                         'id' => $orderId,
                         'order_code' => $orderCode,
@@ -242,20 +242,20 @@ class PurchaseService
 
             return [
                 'success' => true,
-                'message' => 'Thanh toan thanh cong!',
-                    'order' => [
-                        'id' => $orderId,
-                        'order_code' => $orderCode,
-                        'order_code_short' => $orderShortCode,
-                        'product_name' => (string) ($product['name'] ?? ''),
-                        'price' => $totalPrice,
-                        'subtotal_price' => $subtotalPrice,
-                        'discount_amount' => $discountAmount,
-                        'giftcode' => $giftcodeMeta ? $giftcodeInput : null,
-                        'giftcode_percent' => $giftcodeMeta ? (int) ($giftcodeMeta['giamgia'] ?? 0) : 0,
-                        'unit_price' => $price,
-                        'quantity' => $requestedQty,
-                        'content' => $deliveredPlain,
+                'message' => 'Thanh toán thành công!',
+                'order' => [
+                    'id' => $orderId,
+                    'order_code' => $orderCode,
+                    'order_code_short' => $orderShortCode,
+                    'product_name' => (string) ($product['name'] ?? ''),
+                    'price' => $totalPrice,
+                    'subtotal_price' => $subtotalPrice,
+                    'discount_amount' => $discountAmount,
+                    'giftcode' => $giftcodeMeta ? $giftcodeInput : null,
+                    'giftcode_percent' => $giftcodeMeta ? (int) ($giftcodeMeta['giamgia'] ?? 0) : 0,
+                    'unit_price' => $price,
+                    'quantity' => $requestedQty,
+                    'content' => $deliveredPlain,
                     'stock_id' => $firstStockId,
                 ],
             ];
@@ -275,7 +275,7 @@ class PurchaseService
                 return ['success' => false, 'message' => $e->getMessage()];
             }
 
-            return ['success' => false, 'message' => 'Khong the xu ly don hang luc nay. Vui long thu lai sau.'];
+            return ['success' => false, 'message' => 'Không thể xử lý đơn hàng lúc này. Vui lòng thử lại sau.'];
         }
     }
 
@@ -401,7 +401,7 @@ class PurchaseService
     private function validateGiftCodeGeneric(string $giftcode, int $productId, int $subtotalPrice, bool $forUpdate): array
     {
         if (!($this->giftCodeModel instanceof GiftCode)) {
-            throw new RuntimeException('He thong ma giam gia chua san sang.');
+            throw new RuntimeException('Hệ thống mã giảm giá chưa sẵn sàng.');
         }
 
         $sql = "SELECT * FROM `gift_code` WHERE `giftcode` = ? LIMIT 1" . ($forUpdate ? " FOR UPDATE" : "");
@@ -410,38 +410,38 @@ class PurchaseService
         $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
 
         if (!$row) {
-            throw new RuntimeException('Ma giam gia khong ton tai.');
+            throw new RuntimeException('Mã giảm giá không tồn tại.');
         }
         if ((string) ($row['status'] ?? '') !== 'ON') {
-            throw new RuntimeException('Ma giam gia da bi tat.');
+            throw new RuntimeException('Mã giảm giá đã bị tắt.');
         }
 
         $soluong = (int) ($row['soluong'] ?? 0);
         $dadung = (int) ($row['dadung'] ?? 0);
         if ($soluong > 0 && $dadung >= $soluong) {
-            throw new RuntimeException('Ma giam gia da het luot su dung.');
+            throw new RuntimeException('Mã giảm giá đã hết lượt sử dụng.');
         }
 
         $expiredAt = trim((string) ($row['expired_at'] ?? ''));
         if ($expiredAt !== '' && strtotime($expiredAt) !== false && strtotime($expiredAt) < time()) {
-            throw new RuntimeException('Ma giam gia da het han.');
+            throw new RuntimeException('Mã giảm giá đã hết hạn.');
         }
 
         $type = trim((string) ($row['type'] ?? 'all'));
         if ($type === 'product') {
             $productIds = array_filter(array_map('intval', explode(',', (string) ($row['product_ids'] ?? ''))));
             if (!in_array($productId, $productIds, true)) {
-                throw new RuntimeException('Ma giam gia khong ap dung cho san pham nay.');
+                throw new RuntimeException('Mã giảm giá không áp dụng cho sản phẩm này.');
             }
         }
 
         $minOrder = max(0, (int) ($row['min_order'] ?? 0));
         $maxOrder = max(0, (int) ($row['max_order'] ?? 0));
         if ($minOrder > 0 && $subtotalPrice < $minOrder) {
-            throw new RuntimeException('Don hang chua dat muc toi thieu de dung ma giam gia.');
+            throw new RuntimeException('Đơn hàng chưa đạt mức tối thiểu để dùng mã giảm giá.');
         }
         if ($maxOrder > 0 && $subtotalPrice > $maxOrder) {
-            throw new RuntimeException('Don hang vuot qua gia tri ap dung cua ma giam gia.');
+            throw new RuntimeException('Đơn hàng vượt quá giá trị áp dụng của mã giảm giá.');
         }
 
         return $row;
@@ -458,7 +458,7 @@ class PurchaseService
         ");
         $upd->execute([$giftCodeId]);
         if ($upd->rowCount() < 1) {
-            throw new RuntimeException('Ma giam gia vua het luot. Vui long thu lai.');
+            throw new RuntimeException('Mã giảm giá vừa hết lượt. Vui lòng thử lại.');
         }
 
         try {

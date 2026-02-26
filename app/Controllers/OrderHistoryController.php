@@ -64,6 +64,7 @@ class OrderHistoryController extends Controller
         }
 
         $data = [];
+        $timeService = TimeService::instance();
         foreach ($rows as $row) {
             $status = (string) ($row['status'] ?? '');
             $statusLabel = match ($status) {
@@ -73,6 +74,10 @@ class OrderHistoryController extends Controller
                 'cancelled' => 'Đã hủy',
                 default => $status !== '' ? ucfirst($status) : 'Không rõ',
             };
+
+            $timeMeta = $timeService->normalizeApiTime($row['created_at'] ?? null);
+            $timeDisplay = (string) ($timeMeta['display'] ?? ((string) ($row['created_at'] ?? '')));
+            $timeAgo = $timeMeta['ts'] ? $timeService->diffForHumans($timeMeta['ts']) : (!empty($row['created_at']) ? FormatHelper::timeAgo((string) $row['created_at']) : '');
 
             $data[] = [
                 'id' => (int) ($row['id'] ?? 0),
@@ -84,8 +89,11 @@ class OrderHistoryController extends Controller
                 'status' => $status,
                 'status_label' => $statusLabel,
                 'time_display' => FormatHelper::eventTime($row['created_at'] ?? null, $row['created_at'] ?? null),
-                'time_raw' => (string) ($row['created_at'] ?? ''),
-                'time_ago' => !empty($row['created_at']) ? FormatHelper::timeAgo((string) $row['created_at']) : '',
+                'time_raw' => $timeDisplay,
+                'time_ts' => $timeMeta['ts'],
+                'time_iso' => (string) ($timeMeta['iso'] ?? ''),
+                'time_iso_utc' => (string) ($timeMeta['iso_utc'] ?? ''),
+                'time_ago' => $timeAgo,
             ];
         }
 
@@ -122,6 +130,10 @@ class OrderHistoryController extends Controller
                 'price' => (int) ($order['price'] ?? 0),
                 'status' => (string) ($order['status'] ?? ''),
                 'created_at' => (string) ($order['created_at'] ?? ''),
+                'created_at_ts' => TimeService::instance()->toTimestamp($order['created_at'] ?? null),
+                'created_at_iso' => TimeService::instance()->toIso8601($order['created_at'] ?? null),
+                'created_at_iso_utc' => TimeService::instance()->toIso8601Utc($order['created_at'] ?? null),
+                'created_at_display' => TimeService::instance()->formatDisplay($order['created_at'] ?? null),
                 'customer_input' => (string) ($order['customer_input'] ?? ''),
                 'delivery_content' => (string) ($order['stock_content_plain'] ?? ''),
                 'cancel_reason' => (string) ($order['cancel_reason'] ?? ''),

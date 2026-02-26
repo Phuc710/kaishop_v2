@@ -22,6 +22,9 @@
     }
 
     function formatDurationVi(totalSeconds) {
+        if (window.KaiTime && typeof window.KaiTime.formatDurationVi === 'function') {
+            return window.KaiTime.formatDurationVi(totalSeconds);
+        }
         var s = Math.max(0, Math.floor(Number(totalSeconds || 0)));
         var h = Math.floor(s / 3600);
         var m = Math.floor((s % 3600) / 60);
@@ -62,7 +65,7 @@
             gravity: 1.2,
             decay: 0.94,
             startVelocity: 45,
-            zIndex: 1000
+            zIndex: 100000
         };
 
         confetti(Object.assign({}, defaults, {
@@ -92,18 +95,21 @@
         var style = document.createElement('style');
         style.id = styleId;
         style.innerHTML = [
-            '.deposit-success-checkmark{width:84px;height:84px;border-radius:50%;display:block;stroke-width:2;stroke:#00ad5c;stroke-miterlimit:10;margin:10px auto 16px;box-shadow:inset 0 0 0 #00ad5c;animation:depositSuccessFill .4s ease-in-out .4s forwards,depositSuccessScale .3s ease-in-out .9s both;}',
-            '@keyframes depositSuccessFill{100%{box-shadow:inset 0 0 0 42px #00ad5c;}}',
-            '@keyframes depositSuccessScale{0%,100%{transform:none;}50%{transform:scale3d(1.06,1.06,1);}}',
-            '.deposit-success-card{margin-top:12px;text-align:left;padding:14px;background:linear-gradient(180deg,#f8fafc 0%,#ffffff 100%);border:1px solid #e2e8f0;border-radius:12px;}',
-            '.deposit-success-row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed #e2e8f0;font-size:14px;}',
-            '.deposit-success-row:last-child{border-bottom:none;}',
-            '.deposit-success-row span{color:#475569;}',
-            '.deposit-success-row strong{color:#0f172a;text-align:right;word-break:break-word;}',
-            '.deposit-success-row strong.amount{color:#00ad5c;}',
-            '.deposit-success-balance{margin-top:12px;padding-top:12px;border-top:1px dashed #cbd5e1;text-align:center;}',
-            '.deposit-success-balance__label{font-size:13px;color:#64748b;}',
-            '.deposit-success-balance__value{font-size:26px;font-weight:800;color:#00ad5c;line-height:1.2;}'
+            '.kai-swal-success-popup{width:680px !important;max-width:92vw !important;border-radius:16px !important;padding:22px 22px 20px !important;}',
+            '.kai-swal-success-title{font-size:26px !important;font-weight:800 !important;color:#333 !important;line-height:1.2 !important;margin-top:4px !important;}',
+            '.kai-swal-success-html{margin:0 !important;padding:0 !important;}',
+            '.kai-swal-success-actions{margin-top:14px !important;}',
+            '.kai-swal-success-confirm{background:#ff6900 !important;color:#fff !important;border-radius:10px !important;padding:10px 22px !important;font-weight:700 !important;box-shadow:none !important;}',
+            '.kai-balance-success-wrap{text-align:left;}',
+            '.kai-balance-success-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin-bottom:10px;}',
+            '.kai-balance-success-row{display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-size:14px;}',
+            '.kai-balance-success-row span{color:#475569;}',
+            '.kai-balance-success-row strong{color:#111827;text-align:right;word-break:break-word;}',
+            '.kai-balance-success-row.is-green, .kai-balance-success-row.is-green span, .kai-balance-success-row.is-green strong{color:#16a34a;}',
+            '.kai-balance-success-balance{margin-top:10px;padding:10px 12px;border:1px solid #e2e8f0;background:#ffffff;border-radius:12px;text-align:center;}',
+            '.kai-balance-success-balance__label{font-size:13px;color:#64748b;margin-bottom:4px;}',
+            '.kai-balance-success-balance__value{font-size:28px;font-weight:800;color:#00ad5c;line-height:1.15;}',
+            '@media (max-width:575.98px){.kai-swal-success-title{font-size:22px !important;}.kai-balance-success-row{font-size:13px;}.kai-balance-success-row strong{max-width:58%;}}'
         ].join('');
         document.head.appendChild(style);
     };
@@ -123,33 +129,25 @@
         var code = String(info.content || info.deposit_code || '');
         var amount = Number(info.amount || 0);
         var bonusPercent = Number(info.bonus_percent || 0);
-        var createdAt = formatDateTimeText(info.created_at);
-        var completedAt = formatDateTimeText(info.completed_at);
+        var createdAt = formatDateTimeText(info.created_at_display || info.created_at);
+        var completedAt = formatDateTimeText(info.completed_at_display || info.completed_at);
         var processingText = formatDurationVi(info.processing_seconds || 0);
         var rows = '';
 
-        rows += '<div class="deposit-success-row"><span>Số tiền nạp</span><strong class="amount">' + escapeHtml(formatVnd(amount) + 'đ') + '</strong></div>';
-        rows += '<div class="deposit-success-row"><span>Nội dung chuyển khoản</span><strong>' + escapeHtml(code || '--') + '</strong></div>';
-        if (bonusPercent > 0) {
-            rows += '<div class="deposit-success-row"><span>Khuyến mãi</span><strong>+' + escapeHtml(String(bonusPercent)) + '%</strong></div>';
-        }
-        rows += '<div class="deposit-success-row"><span>Thời gian tạo</span><strong>' + escapeHtml(createdAt) + '</strong></div>';
-        rows += '<div class="deposit-success-row"><span>Hoàn tất giao dịch</span><strong>' + escapeHtml(completedAt) + '</strong></div>';
-        rows += '<div class="deposit-success-row"><span>Thời gian xử lý</span><strong>' + escapeHtml(processingText) + '</strong></div>';
-
-        var checkmarkSvg = ''
-            + '<svg class="deposit-success-checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">'
-            + '<circle cx="26" cy="26" r="25" fill="none"></circle>'
-            + '<path fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" stroke="#fff" stroke-width="4"></path>'
-            + '</svg>';
+        rows += '<div class="kai-balance-success-row is-green"><span>Số tiền nạp</span><strong>' + escapeHtml(formatVnd(amount) + 'đ') + '</strong></div>';
+        rows += '<div class="kai-balance-success-row"><span>Nội dung chuyển khoản</span><strong>' + escapeHtml(code || '--') + '</strong></div>';
+        rows += '<div class="kai-balance-success-row"><span>Thời gian tạo</span><strong>' + escapeHtml(createdAt) + '</strong></div>';
+        rows += '<div class="kai-balance-success-row"><span>Hoàn tất giao dịch</span><strong>' + escapeHtml(completedAt) + '</strong></div>';
+        rows += '<div class="kai-balance-success-row"><span>Thời gian xử lý</span><strong>' + escapeHtml(processingText) + '</strong></div>';
 
         return ''
-            + checkmarkSvg
-            + '<div class="deposit-success-card">'
+            + '<div class="kai-balance-success-wrap">'
+            + '<div class="kai-balance-success-card">'
             + rows
-            + '<div class="deposit-success-balance">'
-            + '<div class="deposit-success-balance__label">Số dư hiện tại</div>'
-            + '<div class="deposit-success-balance__value">' + escapeHtml(formatVnd(Number((res && res.new_balance) || 0)) + 'đ') + '</div>'
+            + '</div>'
+            + '<div class="kai-balance-success-balance">'
+            + '<div class="kai-balance-success-balance__label">Số dư hiện tại</div>'
+            + '<div class="kai-balance-success-balance__value">' + escapeHtml(formatVnd(Number((res && res.new_balance) || 0)) + 'đ') + '</div>'
             + '</div>'
             + '</div>';
     };
@@ -166,11 +164,20 @@
         this.ensureStyles();
         var self = this;
         window.Swal.fire({
+            icon: 'success',
             title: 'Nạp tiền thành công',
             html: self.buildHtml(res),
+            width: 680,
             confirmButtonText: 'OK',
             confirmButtonColor: '#ff6900',
             allowOutsideClick: false,
+            customClass: {
+                popup: 'kai-swal-success-popup',
+                title: 'kai-swal-success-title',
+                htmlContainer: 'kai-swal-success-html',
+                actions: 'kai-swal-success-actions',
+                confirmButton: 'kai-swal-success-confirm'
+            },
             didOpen: function () {
                 ensureConfettiReady().then(function () {
                     self.fireDoubleSideConfetti();

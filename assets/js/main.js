@@ -46,6 +46,9 @@
     function QuillExist() {
         const editorOne = document.querySelector("#editor");
         const editorTwo = document.querySelector("#editor-seo");
+        if (typeof Quill !== "function") {
+            return false;
+        }
 
         // Editor
         var toolbarOptions = [
@@ -79,7 +82,13 @@
     // Nice Select
     $(".select-dropdown").niceSelect();
 
-    var featureCategory = new Swiper(".featureCategory", {
+    function createSwiperIfExists(selector, options) {
+        if (typeof Swiper !== "function") return null;
+        if (!document.querySelector(selector)) return null;
+        return new Swiper(selector, options);
+    }
+
+    createSwiperIfExists(".featureCategory", {
         loop: true,
         slidesPerView: 1,
         autoplay: {
@@ -111,7 +120,7 @@
         },
     });
 
-    var serviceSlider = new Swiper(".serviceSlider", {
+    createSwiperIfExists(".serviceSlider", {
         loop: true,
         slidesPerView: 1,
         spaceBetween: 10,
@@ -144,7 +153,7 @@
         },
     });
 
-    var recentJob = new Swiper(".recentJob", {
+    createSwiperIfExists(".recentJob", {
         slidesPerView: 1,
         spaceBetween: 10,
         autoplay: {
@@ -176,7 +185,7 @@
     });
 
     // Testimonial Slider Top
-    let testimonialsSlider = new Swiper(".testimonialsSlider", {
+    createSwiperIfExists(".testimonialsSlider", {
         spaceBetween: 30,
         centeredSlides: true,
         freeMode: true,
@@ -213,7 +222,7 @@
         },
     });
     // Testimonial Slider Bottom
-    let testimonialsSliderBottom = new Swiper(".testimonialsSliderBottom", {
+    createSwiperIfExists(".testimonialsSliderBottom", {
         spaceBetween: 30,
         centeredSlides: true,
         freeMode: true,
@@ -253,7 +262,7 @@
     });
 
     // Services Details
-    var swiper2 = new Swiper(".mySwiper2", {
+    createSwiperIfExists(".mySwiper2", {
         loop: true,
         spaceBetween: 25,
         navigation: {
@@ -263,33 +272,43 @@
     });
 
     // AOS
-    AOS.init({
-        offset: 250,
-    });
+    if (typeof AOS !== "undefined" && AOS && typeof AOS.init === "function") {
+        AOS.init({
+            offset: 250,
+        });
+    }
 
     //Counter up
-    $(".counter").counterUp({
-        delay: 10,
-        time: 1000,
-    });
+    if ($.fn && typeof $.fn.counterUp === "function" && $(".counter").length) {
+        $(".counter").counterUp({
+            delay: 10,
+            time: 1000,
+        });
+    }
 
     // Lightbox Gallery
-    var lightboxGallery = GLightbox({
-        selector: ".gallery",
-        touchNavigation: true,
-        loop: true,
-    });
+    if (typeof GLightbox === "function") {
+        if (document.querySelector(".gallery")) {
+            GLightbox({
+                selector: ".gallery",
+                touchNavigation: true,
+                loop: true,
+            });
+        }
 
-    var lightbox = GLightbox({
-        selector: ".video-popup",
-        touchNavigation: true,
-        loop: false,
-    });
+        if (document.querySelector(".video-popup")) {
+            GLightbox({
+                selector: ".video-popup",
+                touchNavigation: true,
+                loop: false,
+            });
+        }
+    }
 
     document.addEventListener("DOMContentLoaded", function () {
         var grid = document.querySelector(".grid");
 
-        if (grid) {
+        if (grid && typeof imagesLoaded === "function" && typeof Isotope === "function") {
             imagesLoaded(grid, function () {
                 var iso = new Isotope(grid, {
                     itemSelector: ".grid-item",
@@ -298,6 +317,7 @@
                 });
 
                 var filters = document.querySelector(".filters-btns");
+                if (!filters) return;
                 filters.addEventListener("click", function (event) {
                     if (!event.target.matches("button")) return;
                     var filterValue = event.target.getAttribute("data-filter");
@@ -305,6 +325,7 @@
                 });
 
                 var filterButtons = document.querySelector(".filters-btns");
+                if (!filterButtons) return;
                 var buttons = filterButtons.querySelectorAll("button");
 
                 buttons.forEach(function (button) {

@@ -95,12 +95,17 @@ require __DIR__ . '/layout/header.php';
                 .replace(/"/g, '&quot;');
         }
 
-        function renderUserTimeCell(rawValue, timeAgo, fallbackHtml) {
-            const raw = String(rawValue || '').trim();
+        function renderUserTimeCell(rawValue, timeAgo, fallbackHtml, timeTs) {
+            const ts = Number(timeTs || 0);
+            const raw = (window.KaiTime && ts > 0)
+                ? String(window.KaiTime.formatYmdHms(ts) || '').trim()
+                : String(rawValue || '').trim();
             if (!raw) {
                 return fallbackHtml || '--';
             }
-            const ago = String(timeAgo || '').trim();
+            const ago = (window.KaiTime && ts > 0)
+                ? String(window.KaiTime.timeAgo(ts) || '').trim()
+                : String(timeAgo || '').trim();
             return '<span class="user-time-plain" title="' + escapeHtml(ago || raw) + '">' + escapeHtml(raw) + '</span>';
         }
 
@@ -163,7 +168,7 @@ require __DIR__ . '/layout/header.php';
                     width: '15%',
                     className: 'text-center',
                     render: function (row) {
-                        return renderUserTimeCell(row.time_raw, row.time_ago, row.time);
+                        return renderUserTimeCell(row.time_raw, row.time_ago, row.time, row.time_ts);
                     }
                 },
                 {
