@@ -152,7 +152,7 @@ class NavConfig
                 'mobile_icon' => 'fa-solid fa-wallet',
                 'children' => [
                     [
-                        'href' => self::buildUrl('deposit-bank'),
+                        'href' => self::buildUrl('balance/bank'),
                         'label' => 'Ngân hàng tự động',
                     ],
                 ],
@@ -246,7 +246,7 @@ class NavConfig
             [
                 'type' => 'link',
                 'active_key' => 'deposit',
-                'href' => self::buildUrl('deposit-bank'),
+                'href' => self::buildUrl('balance/bank'),
                 'icon' => 'fas fa-university',
                 'label' => 'Nạp tiền',
             ],
@@ -266,4 +266,3 @@ class NavConfig
         ];
     }
 }
-

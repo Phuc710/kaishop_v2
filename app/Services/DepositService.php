@@ -24,7 +24,7 @@ class DepositService
      * @param array<string,mixed> $user
      * @return array<string,mixed>
      */
-    public function getProfilePanelData(array $siteConfig, array $user): array
+    public function getProfilePanelData(array $siteConfig, array $user, ?string $requestedMethod = null): array
     {
         $activeDeposit = $this->pendingDepositModel->getActiveByUser((int) ($user['id'] ?? 0));
         $bankName = (string) ($siteConfig['bank_name'] ?? 'MB Bank');
@@ -34,7 +34,13 @@ class DepositService
         $ttlSeconds = $this->pendingDepositModel->getPendingTtlSeconds();
 
         $methods = $this->getAvailableMethods($siteConfig);
-        $activeMethod = self::METHOD_BANK_SEPAY;
+        $availableCodes = [];
+        foreach ($methods as $method) {
+            $availableCodes[] = (string) ($method['code'] ?? '');
+        }
+        $activeMethod = in_array((string) $requestedMethod, $availableCodes, true)
+            ? (string) $requestedMethod
+            : self::METHOD_BANK_SEPAY;
 
         $activeDepositPayload = null;
         if (is_array($activeDeposit)) {

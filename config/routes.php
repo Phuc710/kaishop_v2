@@ -57,6 +57,8 @@ return [
     ['GET', '/api/history-orders/detail/{id}', 'OrderHistoryController@detail'],
     ['GET', '/history-orders/download/{id}', 'OrderHistoryController@download'],
     ['POST', '/api/history-orders/delete', 'OrderHistoryController@delete'],
+    ['GET', '/balance', 'DepositController@balance'],
+    ['GET', '/balance/{method}', 'DepositController@balanceMethod'],
 
     // ========== ADMIN ROUTES ==========
     ['GET', '/admin', 'Admin\\DashboardController@index'],

@@ -287,7 +287,7 @@ main.bg-light section.py-5 {
 
 .deposit-method-pill.is-disabled {
     opacity: .6;
-    cursor: not-allowed;
+    cursor: pointer;
 }
 
 .deposit-method-pill__badge {
@@ -300,6 +300,33 @@ main.bg-light section.py-5 {
 
 .deposit-panel-shell {
     padding: 0 24px 24px;
+}
+
+.deposit-method-coming-soon {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    background: #f8fafc;
+    padding: 16px;
+}
+
+.deposit-method-coming-soon__icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    color: #c2410c;
+    flex: 0 0 42px;
+}
+
+.deposit-method-coming-soon__content {
+    min-width: 0;
 }
 
 .deposit-panel-step[hidden] {
@@ -1548,7 +1575,7 @@ main.bg-light section.py-5 {
     min-height: 60vh;
 }
 
-.user-page-section {
+main.bg-light section.user-page-section.py-5 {
     padding-top: 56px !important;
     padding-bottom: 56px !important;
 }
@@ -1767,7 +1794,7 @@ main.bg-light section.py-5 {
 }
 
 @media (max-width: 767px) {
-    .user-page-section {
+    main.bg-light section.user-page-section.py-5 {
         padding-top: 1rem !important;
         padding-bottom: 1rem !important;
     }

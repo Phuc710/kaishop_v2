@@ -34,7 +34,11 @@ class ProfileController extends Controller
             $profileSection = 'profile';
         }
 
-        $depositPanel = $this->depositService->getProfilePanelData($siteConfig, $user);
+        $requestedDepositMethod = trim((string) $this->get('method', ''));
+        $depositPanel = $this->depositService->getProfilePanelData($siteConfig, $user, $requestedDepositMethod !== '' ? $requestedDepositMethod : null);
+
+        $depositMethodCode = (string) ($depositPanel['active_method'] ?? DepositService::METHOD_BANK_SEPAY);
+        $depositRouteMethod = $depositMethodCode === DepositService::METHOD_BANK_SEPAY ? 'bank' : $depositMethodCode;
 
         $this->view('profile/index', [
             'user' => $user,
@@ -43,6 +47,7 @@ class ProfileController extends Controller
             'activePage' => $profileSection === 'deposit' ? 'deposit' : 'profile',
             'profileSection' => $profileSection,
             'depositPanel' => $depositPanel,
+            'depositRouteMethod' => $depositRouteMethod,
         ]);
     }
 

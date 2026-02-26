@@ -6,6 +6,13 @@
  */
 class DepositController extends Controller
 {
+    private const ROUTE_METHOD_MAP = [
+        'bank' => DepositService::METHOD_BANK_SEPAY,
+        'bank_sepay' => DepositService::METHOD_BANK_SEPAY,
+        'binance' => 'binance',
+        'momo' => 'momo',
+    ];
+
     private AuthService $authService;
     private PendingDeposit $depositModel;
     private DepositService $depositService;
@@ -28,14 +35,67 @@ class DepositController extends Controller
         return $this->authService->getCurrentUser();
     }
 
+    private function methodCodeToRouteSegment(string $methodCode): string
+    {
+        return $methodCode === DepositService::METHOD_BANK_SEPAY ? 'bank' : $methodCode;
+    }
+
+    private function routeSegmentToMethodCode(?string $segment): string
+    {
+        $key = strtolower(trim((string) $segment));
+        return self::ROUTE_METHOD_MAP[$key] ?? DepositService::METHOD_BANK_SEPAY;
+    }
+
+    private function renderBalancePage(string $routeMethod = 'bank')
+    {
+        $user = $this->requireUser();
+        $siteConfig = Config::getSiteConfig();
+        $methodCode = $this->routeSegmentToMethodCode($routeMethod);
+        $routeSegment = $this->methodCodeToRouteSegment($methodCode);
+
+        $depositPanel = $this->depositService->getProfilePanelData($siteConfig, $user, $methodCode);
+
+        return $this->view('profile/index', [
+            'user' => $user,
+            'username' => (string) ($user['username'] ?? ''),
+            'chungapi' => $siteConfig,
+            'activePage' => 'deposit',
+            'profileSection' => 'deposit',
+            'depositPanel' => $depositPanel,
+            'depositRouteMethod' => $routeSegment,
+        ]);
+    }
+
     /**
-     * GET /deposit
-     * Legacy route -> redirect to profile deposit section
+     * GET /deposit-bank (legacy)
+     * Redirect to new pretty route
      */
     public function index()
     {
         $this->requireUser();
-        return $this->redirect(url('profile?section=deposit#profile-deposit-card'));
+        return $this->redirect(url('balance/bank'));
+    }
+
+    /**
+     * GET /balance
+     */
+    public function balance()
+    {
+        return $this->redirect(url('balance/bank'));
+    }
+
+    /**
+     * GET /balance/{method}
+     */
+    public function balanceMethod($method)
+    {
+        $input = strtolower(trim((string) $method));
+        $methodCode = $this->routeSegmentToMethodCode($input);
+        $canonical = $this->methodCodeToRouteSegment($methodCode);
+        if ($input !== $canonical) {
+            return $this->redirect(url('balance/' . $canonical));
+        }
+        return $this->renderBalancePage($canonical);
     }
 
     /**

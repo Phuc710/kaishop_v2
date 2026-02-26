@@ -27,7 +27,7 @@ require __DIR__ . '/layout/header.php';
                 <div class="user-card-subtitle">Tổng quan số dư và lịch sử nạp của tài khoản.</div>
             </div>
             <div class="profile-card-header-actions">
-                <a href="<?= url('deposit-bank') ?>" class="btn btn-edit-profile">
+                <a href="<?= url('balance/bank') ?>" class="btn btn-edit-profile">
                     <i class="fas fa-university me-1"></i> Nạp tiền
                 </a>
             </div>

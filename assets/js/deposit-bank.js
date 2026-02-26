@@ -100,6 +100,7 @@
         var ttlSeconds = Number(config.ttlSeconds || 300);
         var bankConfig = config.bank || {};
         var activeDeposit = config.activeDeposit || null;
+        var methodRoutes = config.methodRoutes || {};
 
         var elements = {
             stepAmount: root.querySelector('[data-deposit-step="amount"]'),
@@ -122,7 +123,8 @@
             tfAmount: root.querySelector('[data-tf-amount]'),
             countdownWrap: root.querySelector('[data-deposit-countdown-wrap]'),
             countdown: root.querySelector('[data-deposit-countdown]'),
-            countdownFill: root.querySelector('[data-deposit-countdown-fill]')
+            countdownFill: root.querySelector('[data-deposit-countdown-fill]'),
+            methodButtons: Array.prototype.slice.call(root.querySelectorAll('[data-method-code]'))
         };
 
         var state = {
@@ -497,6 +499,16 @@
                     if (target === 'account' && elements.tfAccount) text = elements.tfAccount.textContent.trim();
                     if (target === 'content' && elements.tfContent) text = elements.tfContent.textContent.trim();
                     copyText(text);
+                });
+            });
+
+            elements.methodButtons.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var methodCode = String(btn.getAttribute('data-method-code') || '');
+                    var targetUrl = methodRoutes[methodCode];
+                    if (!targetUrl) return;
+                    if (window.location.href === targetUrl) return;
+                    window.location.href = targetUrl;
                 });
             });
         }

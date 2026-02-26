@@ -15,7 +15,7 @@ require __DIR__ . '/layout/header.php';
             <h5 class="text-dark mb-1">Biến động số dư</h5>
             <div class="user-card-subtitle">Bao gồm mua hàng, nạp tiền và điều chỉnh số dư.</div>
         </div>
-        <a href="<?= url('deposit-bank') ?>" class="btn btn-edit-profile">
+        <a href="<?= url('balance/bank') ?>" class="btn btn-edit-profile">
             <i class="fas fa-university me-1"></i> Nạp tiền
         </a>
     </div>

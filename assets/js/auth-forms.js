@@ -54,8 +54,18 @@
         try {
             data = safeParseJson(raw);
         } catch (err) {
-            console.error('[KaiAuthForms] Invalid JSON response', { url, status: response.status, raw });
-            throw err;
+            const preview = String(raw || '').replace(/\s+/g, ' ').trim().slice(0, 240);
+            console.error('[KaiAuthForms] Invalid JSON response', {
+                url,
+                status: response.status,
+                contentType: response.headers.get('content-type') || '',
+                preview
+            });
+            const wrapped = new Error('Invalid JSON response from server');
+            wrapped.cause = err;
+            wrapped.response = response;
+            wrapped.raw = raw;
+            throw wrapped;
         }
 
         return { response, data, raw };
