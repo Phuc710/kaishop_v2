@@ -166,17 +166,17 @@ class JournalController extends Controller
 
         $this->renderJournal([
             'basePath' => 'admin/logs/balance-changes',
-            'pageTitle' => 'Biáº¿n Ä‘á»™ng sá»‘ dÆ°',
+            'pageTitle' => 'Biến động số dư',
             'pageIcon' => 'fas fa-money-check-alt',
-            'cardTitle' => 'NHáº¬T KÃ THAY Äá»”I Sá» DÆ¯',
+            'cardTitle' => 'NHẬT KÝ THAY ĐỔI SỐ DƯ',
             'tableId' => 'balanceChangeTable',
             'columns' => [
-                ['key' => 'time', 'label' => 'Thá»i gian', 'align' => 'center'],
-                ['key' => 'username', 'label' => 'KhÃ¡ch HÃ ng', 'align' => 'center'],
-                ['key' => 'reason', 'label' => 'LÃ½ do', 'align' => 'center'],
-                ['key' => 'before_balance', 'label' => 'Sá»‘ dÆ° trÆ°á»›c', 'align' => 'center'],
-                ['key' => 'change_balance', 'label' => 'Biáº¿n Ä‘á»™ng', 'align' => 'center'],
-                ['key' => 'after_balance', 'label' => 'Sá»‘ dÆ° hiá»‡n táº¡i', 'align' => 'center'],
+                ['key' => 'time', 'label' => 'Thời gian', 'align' => 'center'],
+                ['key' => 'username', 'label' => 'Khách Hàng', 'align' => 'center'],
+                ['key' => 'reason', 'label' => 'Lý do', 'align' => 'center'],
+                ['key' => 'before_balance', 'label' => 'Số dư trước', 'align' => 'center'],
+                ['key' => 'change_balance', 'label' => 'Biến động', 'align' => 'center'],
+                ['key' => 'after_balance', 'label' => 'Số dư hiện tại', 'align' => 'center'],
             ],
             'rows' => $this->mapBalanceRows($rawRows),
             'query' => $query,
@@ -195,18 +195,18 @@ class JournalController extends Controller
 
         $this->renderJournal([
             'basePath' => 'admin/logs/deposits',
-            'pageTitle' => 'Lá»‹ch sá»­ náº¡p tiá»n',
+            'pageTitle' => 'Lịch sử nạp tiền',
             'pageIcon' => 'fas fa-hand-holding-usd',
-            'cardTitle' => 'Lá»ŠCH Sá»¬ Náº P TIá»€N',
+            'cardTitle' => 'LỊCH SỬ NẠP TIỀN',
             'tableId' => 'depositJournalTable',
             'columns' => [
-                ['key' => 'time', 'label' => 'Thá»i gian', 'align' => 'center'],
-                ['key' => 'username', 'label' => 'KhÃ¡ch HÃ ng', 'align' => 'center'],
-                ['key' => 'trans_id', 'label' => 'MÃ£ GD', 'align' => 'center'],
-                ['key' => 'method', 'label' => 'PhÆ°Æ¡ng Thá»©c', 'align' => 'center'],
-                ['key' => 'amount', 'label' => 'Thá»±c Nháº­n', 'align' => 'center'],
-                ['key' => 'reason', 'label' => 'Ná»™i dung CK', 'align' => 'center'],
-                ['key' => 'status', 'label' => 'Tráº¡ng ThÃ¡i', 'align' => 'center'],
+                ['key' => 'time', 'label' => 'Thời gian', 'align' => 'center'],
+                ['key' => 'username', 'label' => 'Khách Hàng', 'align' => 'center'],
+                ['key' => 'trans_id', 'label' => 'Mã GD', 'align' => 'center'],
+                ['key' => 'method', 'label' => 'Phương Thức', 'align' => 'center'],
+                ['key' => 'amount', 'label' => 'Thực Nhận', 'align' => 'center'],
+                ['key' => 'reason', 'label' => 'Nội dung CK', 'align' => 'center'],
+                ['key' => 'status', 'label' => 'Trạng Thái', 'align' => 'center'],
             ],
             'rows' => $this->mapDepositRows($rawRows),
             'query' => $query,
@@ -225,18 +225,18 @@ class JournalController extends Controller
 
         $this->renderJournal([
             'basePath' => 'admin/logs/system',
-            'pageTitle' => 'Nháº­t kÃ½ há»‡ thá»‘ng',
+            'pageTitle' => 'Nhật ký hệ thống',
             'pageIcon' => 'fas fa-shield-alt',
-            'cardTitle' => 'NHáº¬T KÃ Há»† THá»NG',
+            'cardTitle' => 'NHẬT KÝ HỆ THỐNG',
             'tableId' => 'systemLogTable',
             'showSeverityFilter' => true,
             'columns' => [
-                ['key' => 'username', 'label' => 'TÃŠN USER', 'align' => 'center'],
-                ['key' => 'severity', 'label' => 'Má»©c Ä‘á»™', 'align' => 'center'],
-                ['key' => 'time', 'label' => 'Thá»i gian', 'align' => 'center'],
+                ['key' => 'username', 'label' => 'TÊN USER', 'align' => 'center'],
+                ['key' => 'severity', 'label' => 'Mức độ', 'align' => 'center'],
+                ['key' => 'time', 'label' => 'Thời gian', 'align' => 'center'],
                 ['key' => 'module', 'label' => 'Module', 'align' => 'center'],
-                ['key' => 'action', 'label' => 'HÃ nh Ä‘á»™ng', 'align' => 'center'],
-                ['key' => 'description', 'label' => 'MÃ´ táº£ chi tiáº¿t', 'align' => 'center'],
+                ['key' => 'action', 'label' => 'Hành động', 'align' => 'center'],
+                ['key' => 'description', 'label' => 'Mô tả chi tiết', 'align' => 'center'],
                 ['key' => 'payload', 'label' => 'Payload', 'align' => 'center'],
             ],
             'rows' => $this->mapSystemLogRows($rawRows),
@@ -311,13 +311,13 @@ class JournalController extends Controller
 
             $status = trim((string) ($row['status'] ?? 'processing'));
             if ($status === 'completed') {
-                $statusLabel = '<span class="badge bg-success">Hoan tat</span>';
+                $statusLabel = '<span class="badge bg-success">Hoàn tất</span>';
             } elseif ($status === 'cancelled') {
-                $statusLabel = '<span class="badge bg-secondary">Da huy</span>';
+                $statusLabel = '<span class="badge bg-secondary">Đã hủy</span>';
             } elseif ($status === 'pending') {
                 $statusLabel = '<span class="badge bg-danger">Pending</span>';
             } elseif ($status === 'processing') {
-                $statusLabel = '<span class="badge bg-warning text-dark">Dang xu ly</span>';
+                $statusLabel = '<span class="badge bg-warning text-dark">Đang xử lý</span>';
             } else {
                 $statusLabel = '<span class="badge bg-secondary">' . htmlspecialchars($status) . '</span>';
             }
@@ -330,12 +330,12 @@ class JournalController extends Controller
             $shortOrderCode = $this->shortOrderCode($rawOrderCode);
 
             $actionButtons = '<div class="btn-group btn-group-sm" role="group">'
-                . '<button type="button" class="btn btn-info js-order-view" data-order-id="' . $orderId . '" title="Xem chi tiet"><i class="fas fa-eye"></i></button>';
+                . '<button type="button" class="btn btn-info js-order-view" data-order-id="' . $orderId . '" title="Xem chi tiết"><i class="fas fa-eye"></i></button>';
             if (in_array($status, ['pending', 'processing'], true)) {
-                $actionButtons .= '<button type="button" class="btn btn-success js-order-fulfill" data-order-id="' . $orderId . '" title="Giao hang"><i class="fas fa-paper-plane"></i></button>';
+                $actionButtons .= '<button type="button" class="btn btn-success js-order-fulfill" data-order-id="' . $orderId . '" title="Giao hàng"><i class="fas fa-paper-plane"></i></button>';
             }
             if ($status === 'pending') {
-                $actionButtons .= '<button type="button" class="btn btn-danger js-order-cancel" data-order-id="' . $orderId . '" title="Huy don + hoan tien"><i class="fas fa-times"></i></button>';
+                $actionButtons .= '<button type="button" class="btn btn-danger js-order-cancel" data-order-id="' . $orderId . '" title="Hủy đơn + hoàn tiền"><i class="fas fa-times"></i></button>';
             }
             $actionButtons .= '</div>';
 
@@ -388,11 +388,11 @@ class JournalController extends Controller
             $username = $this->formatUsername($row['username'] ?? '');
 
             $status = trim((string) ($row['status'] ?? 'pending'));
-            $statusLabel = '<span class="badge bg-warning text-dark">Chá» Xá»­ LÃ½</span>';
+            $statusLabel = '<span class="badge bg-warning text-dark">Chờ Xử Lý</span>';
             if ($status === 'hoantat' || $status === 'success') {
-                $statusLabel = '<span class="badge bg-success">HoÃ n Táº¥t</span>';
+                $statusLabel = '<span class="badge bg-success">Hoàn Tất</span>';
             } elseif ($status === 'thatbai' || $status === 'error' || $status === 'cancel') {
-                $statusLabel = '<span class="badge bg-danger">Tháº¥t Báº¡i</span>';
+                $statusLabel = '<span class="badge bg-danger">Thất Bại</span>';
             }
 
             $method = trim((string) ($row['type'] ?? 'Unknown'));
@@ -520,27 +520,7 @@ class JournalController extends Controller
 
     private function normalizeMojibakeText(string $text): string
     {
-        $text = trim($text);
-        if ($text === '') {
-            return $text;
-        }
-
-        if (!preg_match('/(?:Ãƒ.|Ã„.|Ã¡Âº|Ã¡Â»|Ã†.|Ã¢â‚¬Â¦|Ã¢â‚¬â„¢|Ã¢â‚¬Å“|Ã¢â‚¬|Ã‚.)/u', $text)) {
-            return $text;
-        }
-
-        $converted = @iconv('Windows-1252', 'UTF-8//IGNORE', $text);
-        if (!is_string($converted) || $converted === '') {
-            return $text;
-        }
-
-        return $this->mojibakeScore($converted) < $this->mojibakeScore($text) ? $converted : $text;
-    }
-
-    private function mojibakeScore(string $text): int
-    {
-        preg_match_all('/(?:Ãƒ.|Ã„.|Ã¡Âº|Ã¡Â»|Ã†.|Ã¢â‚¬Â¦|Ã¢â‚¬â„¢|Ã¢â‚¬Å“|Ã¢â‚¬|Ã‚.)/u', $text, $matches);
-        return count($matches[0] ?? []);
+        return trim($text);
     }
 
     private function formatUsername(string $username): string

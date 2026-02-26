@@ -11,6 +11,7 @@ $breadcrumbs = [
     ['label' => 'Nhật ký', 'url' => url('admin/logs/activities')],
     ['label' => $pageTitle ?? 'Nhật ký'],
 ];
+$adminNeedsFlatpickr = true;
 require_once __DIR__ . '/../layout/head.php';
 require_once __DIR__ . '/../layout/breadcrumb.php';
 
@@ -20,8 +21,6 @@ $isPurchaseJournal = (($basePath ?? '') === 'admin/logs/buying');
 ?>
 
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
-<link rel="stylesheet"
-    href="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/plugins/daterangepicker/daterangepicker.css">
 
 <section class="content pb-4 mt-3">
     <div class="container-fluid">

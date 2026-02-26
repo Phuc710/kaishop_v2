@@ -9,6 +9,7 @@ $breadcrumbs = [
     ['label' => 'Sản phẩm', 'url' => url('admin/products')],
     ['label' => 'Thêm sản phẩm'],
 ];
+$adminNeedsSummernote = true;
 require_once __DIR__ . '/../layout/head.php';
 require_once __DIR__ . '/../layout/breadcrumb.php';
 ?>

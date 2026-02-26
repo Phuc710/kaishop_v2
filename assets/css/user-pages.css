@@ -65,22 +65,25 @@
 .profile-card {
     background: #fff;
     border-radius: 8px;
-    border: 1px solid #b5beca;
+    border: 1px solid #e2e8f0;
     overflow: hidden;
-    margin-bottom: 12px;
+    margin-bottom: 24px;
 }
 
 .profile-card-header {
-    padding: 24px 24px 0 24px;
+    padding: 20px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-bottom: 1px solid #f1f5f9;
 }
 
+.profile-card-header h4,
 .profile-card-header h5 {
-    color: #334155;
-    font-weight: 900;
-    margin-bottom: 15px;
+    color: #1e293b;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 0;
 }
 
 .profile-card-body {
@@ -92,11 +95,23 @@
     padding: 20px;
     border-radius: 8px;
     height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
 }
 
 .stat-box.neutral {
-    background: #f8fafc;
-    border: 2px solid #cbd5e1;
+    background: #ffffff;
+}
+
+.stat-box.primary {
+    border-color: #e2e8f0;
+}
+
+.stat-box.success {
+    border-color: #e2e8f0;
 }
 
 /* ── CUSTOM INPUTS ───────────────────────────────────── */
@@ -135,7 +150,7 @@
 
 /* ── GLOBAL LAYOUT ───────────────────────────────────── */
 main.bg-light section.py-5 {
-    padding-top: 7rem !important;
+    padding-top: 5rem !important;
 }
 
 /* Fix for top-right toast overlap with header */
@@ -1525,5 +1540,249 @@ main.bg-light section.py-5 {
 
     .maintenance-notice-banner__text {
         font-size: 11px;
+    }
+}
+
+/* ===== User Page Shell (profile/password/history/order-history) ===== */
+.user-page-main {
+    min-height: 60vh;
+}
+
+.user-page-section {
+    padding-top: 56px !important;
+    padding-bottom: 56px !important;
+}
+
+.user-page-grid {
+    align-items: flex-start;
+}
+
+.user-page-sidebar-col,
+.user-page-content-col {
+    margin-bottom: 0 !important;
+}
+
+.user-label--sm {
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.user-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 30px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid #dbeafe;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.user-status-badge.is-on {
+    background: #ecfdf5;
+    border-color: #bbf7d0;
+    color: #166534;
+}
+
+.user-status-badge.is-off {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    color: #475569;
+}
+
+.user-status-badge.is-loading {
+    background: #fff7ed;
+    border-color: #fed7aa;
+    color: #c2410c;
+}
+
+/* ===== Shared history filters / tables ===== */
+.user-history-filters .input-group .form-control,
+.user-history-filters .input-group .input-group-text {
+    border-color: #dbe3ee;
+}
+
+.user-filter-input .input-group-text {
+    min-width: 42px;
+    justify-content: center;
+}
+
+.user-history-toolbar {
+    gap: 10px;
+}
+
+.user-toolbar-label {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    margin-right: 8px;
+    white-space: nowrap;
+}
+
+.user-toolbar-select {
+    min-width: 128px;
+    border-color: #dbe3ee;
+}
+
+.user-toolbar-select--narrow {
+    min-width: 70px;
+    width: 70px;
+}
+
+.user-history-table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.user-history-table thead th {
+    background: #f8fafc !important;
+    color: #0f172a;
+    border-bottom: 1px solid #e2e8f0 !important;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+}
+
+.user-history-table tbody td {
+    border-bottom-color: #edf2f7;
+}
+
+.user-date-cell {
+    color: #1d1d1d;
+    font-weight: 500;
+}
+
+/* ===== Order history actions + modal ===== */
+.order-code-copy {
+    border: 1px solid #dbe3ee;
+    background: #f8fafc;
+    color: #0f172a;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-weight: 700;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: border-color .2s ease, background-color .2s ease;
+}
+
+.order-code-copy:hover {
+    border-color: #cbd5e1;
+    background: #eef2f7;
+}
+
+.order-action-btn {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #64748b;
+    margin: 0 2px;
+    text-decoration: none;
+    transition: all .2s ease;
+}
+
+.order-action-btn:hover {
+    background: #f1f5f9;
+    color: #334155;
+    border-color: #cbd5e1;
+    text-decoration: none;
+}
+
+.user-order-detail {
+    text-align: left;
+}
+
+.user-order-detail__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.user-order-detail__block {
+    margin-top: 12px;
+}
+
+.user-order-detail__label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    margin-bottom: 6px;
+}
+
+.user-order-detail__value {
+    color: #0f172a;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.user-order-detail__textarea {
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: #0f172a;
+    line-height: 1.5;
+    max-height: 220px;
+    overflow: auto;
+    word-break: break-word;
+}
+
+/* ===== Password / security switch ===== */
+.user-security-switch .form-check {
+    min-height: auto;
+    padding-left: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-security-switch .form-check-input {
+    margin: 0;
+    width: 2.3rem;
+    height: 1.25rem;
+    cursor: pointer;
+}
+
+.user-security-switch .form-check-label {
+    margin: 0;
+    cursor: pointer;
+    font-size: 14.5px;
+    color: #334155;
+    font-weight: 600;
+}
+
+@media (max-width: 767px) {
+    .user-page-section {
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+    }
+
+    .user-history-toolbar {
+        align-items: stretch !important;
+    }
+
+    .user-toolbar-select,
+    .user-toolbar-select--narrow {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .user-order-detail__grid {
+        grid-template-columns: 1fr;
     }
 }

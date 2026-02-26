@@ -6,11 +6,68 @@
  */
 class AuthService {
     private $userModel;
-    private $authSecurity;
+    private $authSecurity = null;
+    private static bool $userCacheLoaded = false;
+    private static ?array $cachedUser = null;
+    private static ?string $cachedSessionToken = null;
     
     public function __construct() {
         $this->userModel = new User();
-        $this->authSecurity = class_exists('AuthSecurityService') ? new AuthSecurityService() : null;
+    }
+
+    private function authSecurity(): ?AuthSecurityService
+    {
+        if ($this->authSecurity !== null) {
+            return $this->authSecurity;
+        }
+
+        if (!class_exists('AuthSecurityService')) {
+            return null;
+        }
+
+        $this->authSecurity = new AuthSecurityService();
+        return $this->authSecurity;
+    }
+
+    private function currentSessionToken(): string
+    {
+        return (string) ($_SESSION['session'] ?? '');
+    }
+
+    private function loadUserFromSessionCache(): ?array
+    {
+        $session = $this->currentSessionToken();
+        if ($session === '') {
+            self::$userCacheLoaded = true;
+            self::$cachedSessionToken = '';
+            self::$cachedUser = null;
+            return null;
+        }
+
+        if (self::$userCacheLoaded && self::$cachedSessionToken === $session) {
+            return self::$cachedUser;
+        }
+
+        $user = $this->userModel->findBySession($session);
+        self::$userCacheLoaded = true;
+        self::$cachedSessionToken = $session;
+        self::$cachedUser = $user ?: null;
+
+        return self::$cachedUser;
+    }
+
+    private function storeUserCache(?array $user): void
+    {
+        self::$userCacheLoaded = true;
+        self::$cachedSessionToken = $this->currentSessionToken();
+        self::$cachedUser = $user;
+    }
+
+    private function clearUserCache(): void
+    {
+        self::$userCacheLoaded = true;
+        self::$cachedSessionToken = '';
+        self::$cachedUser = null;
     }
     
     /**
@@ -18,16 +75,19 @@ class AuthService {
      * @return bool
      */
     public function isLoggedIn() {
-        if (isset($_SESSION['session']) && !empty($_SESSION['session'])) {
-            $user = $this->userModel->findBySession($_SESSION['session']);
+        if ($this->currentSessionToken() !== '') {
+            $user = $this->loadUserFromSessionCache();
             if ($user) {
                 return true;
             }
             unset($_SESSION['session']);
+            $this->clearUserCache();
         }
 
-        if ($this->authSecurity) {
-            $user = $this->authSecurity->bootstrapFromCookies();
+        $authSecurity = $this->authSecurity();
+        if ($authSecurity) {
+            $user = $authSecurity->bootstrapFromCookies();
+            $this->storeUserCache($user ?: null);
             return $user !== null;
         }
 
@@ -39,18 +99,22 @@ class AuthService {
      * @return array|null
      */
     public function getCurrentUser() {
-        if (!$this->isLoggedIn()) {
-            return null;
-        }
-        
-        $session = $_SESSION['session'];
-        $user = $this->userModel->findBySession($session);
+        $user = $this->loadUserFromSessionCache();
         if ($user) {
             return $user;
         }
 
-        if ($this->authSecurity) {
-            return $this->authSecurity->bootstrapFromCookies();
+        // If a session token exists but no user found, clear invalid legacy session.
+        if ($this->currentSessionToken() !== '') {
+            unset($_SESSION['session']);
+            $this->clearUserCache();
+        }
+
+        $authSecurity = $this->authSecurity();
+        if ($authSecurity) {
+            $user = $authSecurity->bootstrapFromCookies();
+            $this->storeUserCache($user ?: null);
+            return $user;
         }
 
         return null;
@@ -69,7 +133,7 @@ class AuthService {
      * Require authentication (redirect if not logged in)
      */
     public function requireAuth() {
-        if (!$this->isLoggedIn()) {
+        if ($this->getCurrentUser() === null) {
             header('Location: ' . BASE_URL . '/login');
             exit;
         }
@@ -77,9 +141,11 @@ class AuthService {
 
     public function logout(): void
     {
-        if ($this->authSecurity) {
-            $this->authSecurity->revokeCurrentAuthSessionFromCookies();
+        $authSecurity = $this->authSecurity();
+        if ($authSecurity) {
+            $authSecurity->revokeCurrentAuthSessionFromCookies();
         }
+        $this->clearUserCache();
         session_destroy();
     }
 }

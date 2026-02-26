@@ -32,6 +32,52 @@ class AdminMenuRenderer
     }
 
     /**
+     * Support richer active checks for nested admin routes.
+     *
+     * Supported keys:
+     * - href (exact)
+     * - active_prefixes: ['admin/users', ...]
+     * - active_patterns: ['#^/admin(?:/index\.php)?/?$#', ...]
+     */
+    private static function isItemActive(array $item): bool
+    {
+        if (!empty($item['href']) && self::isCurrent((string) $item['href'])) {
+            return true;
+        }
+
+        $current = self::normalizePath($_SERVER['REQUEST_URI'] ?? '/');
+
+        $prefixes = $item['active_prefixes'] ?? [];
+        if (is_array($prefixes)) {
+            foreach ($prefixes as $prefix) {
+                $normalizedPrefix = self::normalizePath((string) $prefix);
+                if ($normalizedPrefix === '/') {
+                    continue;
+                }
+                if ($current === $normalizedPrefix || str_starts_with($current, $normalizedPrefix . '/')) {
+                    return true;
+                }
+            }
+        }
+
+        $patterns = $item['active_patterns'] ?? [];
+        if (is_array($patterns)) {
+            foreach ($patterns as $pattern) {
+                $pattern = (string) $pattern;
+                if ($pattern === '') {
+                    continue;
+                }
+                $matched = @preg_match($pattern, $current);
+                if ($matched === 1) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Cau hinh menu San pham dung chung.
      *
      * @param string $categoryHref Link trang chuyen muc
@@ -103,7 +149,7 @@ class AdminMenuRenderer
             $icon = htmlspecialchars((string) ($item['icon'] ?? ''), ENT_QUOTES, 'UTF-8');
             $label = htmlspecialchars((string) ($item['label'] ?? ''), ENT_QUOTES, 'UTF-8');
 
-            $activeClass = self::isCurrent($href) ? ' class="active"' : '';
+            $activeClass = self::isItemActive((array) $item) ? ' class="active"' : '';
 
             echo '<li>';
             echo '<a href="' . $href . '"' . $activeClass . '>';
@@ -133,7 +179,7 @@ class AdminMenuRenderer
         $isGroupActive = false;
 
         foreach ($children as $child) {
-            if (self::isCurrent((string) ($child['href'] ?? '#'))) {
+            if (self::isItemActive((array) $child)) {
                 $isGroupActive = true;
                 break;
             }
@@ -152,7 +198,7 @@ class AdminMenuRenderer
         foreach ($children as $child) {
             $href = htmlspecialchars((string) ($child['href'] ?? '#'), ENT_QUOTES, 'UTF-8');
             $childLabel = htmlspecialchars((string) ($child['label'] ?? ''), ENT_QUOTES, 'UTF-8');
-            $childClass = self::isCurrent((string) ($child['href'] ?? '#')) ? ' class="active"' : '';
+            $childClass = self::isItemActive((array) $child) ? ' class="active"' : '';
 
             echo '<li>';
             echo '<a href="' . $href . '"' . $childClass . '>' . $childLabel . '</a>';

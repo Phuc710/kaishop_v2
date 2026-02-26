@@ -1,5 +1,5 @@
 ﻿<?php
-$productName = (string) ($product['name'] ?? 'Sáº£n pháº©m');
+$productName = (string) ($product['name'] ?? 'Sản phẩm');
 $productId = (int) ($product['id'] ?? 0);
 $priceVnd = max(0, (int) ($product['price_vnd'] ?? 0));
 $purchaseMinQty = max(1, (int) ($product['min_purchase_qty'] ?? 1));
@@ -39,7 +39,7 @@ if ($productType === 'link') {
 $canPurchase = true;
 $stockLabel = 'Unlimited';
 if ($requiresInfo) {
-    $stockLabel = 'Theo yÃªu cáº§u';
+    $stockLabel = 'Theo yêu cầu';
 } elseif ($productType === 'link') {
     $stockLabel = 'Unlimited';
 } elseif (is_int($availableStock)) {
@@ -367,7 +367,7 @@ $seoImage = $galleryImages[0] ?? '';
                                 <?php foreach ($galleryImages as $idx => $img): ?>
                                     <button type="button" class="pd-thumb-btn <?= $idx === 0 ? 'is-active' : '' ?>"
                                         data-img="<?= htmlspecialchars($img, ENT_QUOTES, 'UTF-8') ?>"
-                                        aria-label="áº¢nh sáº£n pháº©m <?= $idx + 1 ?>">
+                                        aria-label="Ảnh sản phẩm <?= $idx + 1 ?>">
                                         <img src="<?= htmlspecialchars($img, ENT_QUOTES, 'UTF-8') ?>"
                                             alt="<?= htmlspecialchars($productName, ENT_QUOTES, 'UTF-8') ?>">
                                     </button>
@@ -383,8 +383,8 @@ $seoImage = $galleryImages[0] ?? '';
 
                         <div class="pd-meta-line">
                             <div>
-                                <div class="pd-note">GiÃ¡ bÃ¡n</div>
-                                <div class="pd-price" id="pdUnitPriceText"><?= number_format($priceVnd) ?>Ä‘</div>
+                                <div class="pd-note">Giá bán</div>
+                                <div class="pd-price" id="pdUnitPriceText"><?= number_format($priceVnd) ?>đ</div>
                             </div>
                             <div class="pd-stock">
                                 <div class="pd-note">Stock</div>
@@ -396,13 +396,13 @@ $seoImage = $galleryImages[0] ?? '';
 
                         <div class="pd-chips">
                             <?php if ($productType === 'account'): ?>
-                                <span class="pd-chip success"><i class="fas fa-user-shield"></i> TÃ i khoáº£n tá»«
+                                <span class="pd-chip success"><i class="fas fa-user-shield"></i> Tài khoản từ
                                     kho</span>
                             <?php else: ?>
                                 <span class="pd-chip info"><i class="fas fa-link"></i> Source / Link</span>
                             <?php endif; ?>
                             <?php if ($requiresInfo): ?>
-                                <span class="pd-chip warn"><i class="fas fa-keyboard"></i> YÃªu cáº§u thÃ´ng tin tá»«
+                                <span class="pd-chip warn"><i class="fas fa-keyboard"></i> Yêu cầu thông tin từ
                                     user</span>
                             <?php endif; ?>
                             <?php if ($purchaseMinQty > 1): ?>
@@ -412,41 +412,40 @@ $seoImage = $galleryImages[0] ?? '';
                             <?php if ($displayMaxQty > 0): ?>
                                 <span class="pd-chip"><i class="fas fa-arrow-up-1-9"></i> Max <?= $displayMaxQty ?></span>
                             <?php elseif ($productType !== 'link'): ?>
-                                <span class="pd-chip"><i class="fas fa-infinity"></i> Max khÃ´ng giá»›i háº¡n</span>
+                                <span class="pd-chip"><i class="fas fa-infinity"></i> Max không giới hạn</span>
                             <?php endif; ?>
                         </div>
 
                         <?php if (!$canPurchase): ?>
                             <div class="pd-alert mb-3">
-                                Sáº£n pháº©m hiá»‡n chÆ°a thá»ƒ mua ngay. Vui lÃ²ng quay láº¡i sau hoáº·c liÃªn há»‡ quáº£n
-                                trá»‹ viÃªn.
+                                Sản phẩm hiện chưa thể mua ngay. Vui lòng quay lại sau hoặc liên hệ quản trị viên.
                             </div>
                         <?php endif; ?>
 
                         <div class="mb-3">
-                            <div class="pd-label">MÃ£ giáº£m giÃ¡</div>
+                            <div class="pd-label">Mã giảm giá</div>
                             <div class="input-group">
                                 <input type="text" class="form-control" id="giftcodeInput" maxlength="100"
-                                    placeholder="Nháº­p mÃ£ giáº£m giÃ¡">
-                                <button type="button" class="btn pd-gift-apply-btn" id="applyGiftcodeBtn">Ãp
-                                    dá»¥ng</button>
+                                    placeholder="Nhập mã giảm giá">
+                                <button type="button" class="btn pd-gift-apply-btn" id="applyGiftcodeBtn">Áp
+                                    dụng</button>
                             </div>
                             <div id="giftcodeFeedback" class="pd-gift-feedback"></div>
                         </div>
 
                         <div class="mb-3">
-                            <div class="pd-label">Sá»‘ lÆ°á»£ng:</div>
+                            <div class="pd-label">Số lượng:</div>
                             <div class="pd-qty">
-                                <button type="button" class="pd-qty-btn" id="qtyMinusBtn" aria-label="Giáº£m">-</button>
+                                <button type="button" class="pd-qty-btn" id="qtyMinusBtn" aria-label="Giảm">-</button>
                                 <input type="number" id="purchaseQty" class="pd-qty-input"
                                     min="<?= (int) $purchaseMinQty ?>" value="<?= (int) $purchaseMinQty ?>" step="1"
                                     <?= $displayMaxQty > 0 ? 'max="' . (int) $displayMaxQty . '"' : '' ?>
                                     <?= $productType === 'link' ? 'readonly' : '' ?>>
-                                <button type="button" class="pd-qty-btn" id="qtyPlusBtn" aria-label="TÄƒng">+</button>
+                                <button type="button" class="pd-qty-btn" id="qtyPlusBtn" aria-label="Tăng">+</button>
                             </div>
                             <div class="pd-note mt-1">
                                 <?php if ($productType === 'link'): ?>
-                                    Tá»‘i Ä‘a 1 sáº£n pháº©m má»—i Ä‘Æ¡n.
+                                    Tối đa 1 sản phẩm mỗi đơn.
                                 <?php else: ?>
                                     Min: <?= $purchaseMinQty ?>
                                     <?php if ($displayMaxQty > 0): ?>
@@ -460,9 +459,9 @@ $seoImage = $galleryImages[0] ?? '';
 
                         <?php if ($requiresInfo): ?>
                             <div class="mb-3">
-                                <div class="pd-label">ThÃ´ng tin khÃ¡ch cáº§n nháº­p</div>
+                                <div class="pd-label">Thông tin khách cần nhập</div>
                                 <textarea id="customerInput" class="form-control" rows="4"
-                                    placeholder="Nháº­p thÃ´ng tin theo yÃªu cáº§u sáº£n pháº©m..."></textarea>
+                                    placeholder="Nhập thông tin theo yêu cầu sản phẩm..."></textarea>
                                 <?php if ($infoInstructions !== ''): ?>
                                     <div class="pd-note mt-1">
                                         <?= nl2br(htmlspecialchars($infoInstructions, ENT_QUOTES, 'UTF-8')) ?>
@@ -473,14 +472,14 @@ $seoImage = $galleryImages[0] ?? '';
 
                         <div class="pd-summary mb-3">
                             <div class="pd-summary-row total">
-                                <span>Tá»•ng tiá»n: </span>
-                                <strong id="sumTotal"><?= number_format($priceVnd * $purchaseMinQty) ?>Ä‘</strong>
+                                <span>Tổng tiền: </span>
+                                <strong id="sumTotal"><?= number_format($priceVnd * $purchaseMinQty) ?>đ</strong>
                             </div>
                         </div>
 
                         <button type="button" class="btn btn-primary w-100 pd-buy-btn" id="buyNowBtn"
                             onclick="buyProduct(<?= $productId ?>)" <?= $canPurchase ? '' : 'disabled' ?>>
-                            <i class="fas fa-shopping-cart me-1"></i> Mua hÃ ng ngay
+                            <i class="fas fa-shopping-cart me-1"></i> Mua hàng ngay
                         </button>
                     </div>
                 </div>
@@ -489,9 +488,9 @@ $seoImage = $galleryImages[0] ?? '';
             <div class="row mt-4">
                 <div class="col-12">
                     <div class="pd-card p-3 p-md-4">
-                        <h3 class="mb-3" style="font-weight:700; color:#151a2d;">Chi tiáº¿t sáº£n pháº©m</h3>
+                        <h3 class="mb-3" style="font-weight:700; color:#151a2d;">Chi tiết sản phẩm</h3>
                         <div class="pd-desc">
-                            <?= nl2br(htmlspecialchars((string) ($product['description'] ?? 'ChÆ°a cÃ³ mÃ´ táº£ cho sáº£n pháº©m nÃ y.'), ENT_QUOTES, 'UTF-8')) ?>
+                            <?= nl2br(htmlspecialchars((string) ($product['description'] ?? 'Chưa có mô tả cho sản phẩm này.'), ENT_QUOTES, 'UTF-8')) ?>
                         </div>
                     </div>
                 </div>
@@ -519,7 +518,7 @@ $seoImage = $galleryImages[0] ?? '';
         let APPLY_GIFTCODE_LOADING = false;
 
         function fmtMoney(value) {
-            return new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + 'Ä‘';
+            return new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + 'đ';
         }
 
         function escapeHtml(value) {
@@ -588,8 +587,8 @@ $seoImage = $galleryImages[0] ?? '';
             if (!btn) return;
             btn.disabled = APPLY_GIFTCODE_LOADING;
             btn.innerHTML = APPLY_GIFTCODE_LOADING
-                ? '<i class="fas fa-spinner fa-spin me-1"></i> Äang Ã¡p dá»¥ng'
-                : 'Ãp dá»¥ng';
+                ? '<i class="fas fa-spinner fa-spin me-1"></i> Đang áp dụng'
+                : 'Áp dụng';
         }
 
         function clearAppliedGiftcodePreview(options = {}) {
@@ -634,7 +633,7 @@ $seoImage = $galleryImages[0] ?? '';
 
             if (!giftcode) {
                 clearAppliedGiftcodePreview();
-                setGiftcodeFeedback('error', 'Vui lÃ²ng nháº­p mÃ£ giáº£m giÃ¡ trÆ°á»›c khi Ã¡p dá»¥ng.');
+                setGiftcodeFeedback('error', 'Vui lòng nhập mã giảm giá trước khi áp dụng.');
                 updateSummaryPreview();
                 return;
             }
@@ -660,7 +659,7 @@ $seoImage = $galleryImages[0] ?? '';
                     let data = {};
                     try { data = await res.json(); } catch (e) { }
                     if (!res.ok || !data.success) {
-                        throw new Error((data && data.message) ? data.message : 'KhÃ´ng thá»ƒ Ã¡p dá»¥ng mÃ£ giáº£m giÃ¡.');
+                        throw new Error((data && data.message) ? data.message : 'Không thể áp dụng mã giảm giá.');
                     }
                     return data;
                 })
@@ -676,16 +675,16 @@ $seoImage = $galleryImages[0] ?? '';
                     if (pricing.giftcode) {
                         const pct = Number(pricing.giftcode_percent || 0);
                         setGiftcodeFeedback('success', pct > 0
-                            ? ('Ãp dá»¥ng mÃ£ thÃ nh cÃ´ng: giáº£m ' + pct + '%.')
-                            : 'MÃ£ há»£p lá»‡ nhÆ°ng khÃ´ng cÃ³ giáº£m giÃ¡.');
+                            ? ('Áp dụng mã thành công: giảm ' + pct + '%.')
+                            : 'Mã hợp lệ nhưng không có giảm giá.');
                     } else {
-                        setGiftcodeFeedback('success', data.message || 'ÄÃ£ cáº­p nháº­t thÃ nh tiá»n.');
+                        setGiftcodeFeedback('success', data.message || 'Đã cập nhật thành tiền.');
                     }
                 })
                 .catch((err) => {
                     clearAppliedGiftcodePreview({ silent: true });
                     updateSummaryPreview();
-                    setGiftcodeFeedback('error', (err && err.message) ? err.message : 'KhÃ´ng thá»ƒ Ã¡p dá»¥ng mÃ£ giáº£m giÃ¡.');
+                    setGiftcodeFeedback('error', (err && err.message) ? err.message : 'Không thể áp dụng mã giảm giá.');
                 })
                 .finally(() => {
                     setApplyGiftcodeLoading(false);
@@ -697,8 +696,8 @@ $seoImage = $galleryImages[0] ?? '';
             if (!btn) return;
             btn.disabled = !!isLoading || !PRODUCT_DETAIL.canPurchase;
             btn.innerHTML = isLoading
-                ? '<i class="fas fa-spinner fa-spin me-1"></i> Äang xá»­ lÃ½...'
-                : '<i class="fas fa-shopping-cart me-1"></i> Mua hÃ ng ngay';
+                ? '<i class="fas fa-spinner fa-spin me-1"></i> Đang xử lý...'
+                : '<i class="fas fa-shopping-cart me-1"></i> Mua hàng ngay';
         }
 
         let __ksConfettiLoader = null;
@@ -779,7 +778,7 @@ $seoImage = $galleryImages[0] ?? '';
                     const url = buildOrderDownloadUrl(order);
                     if (!url) {
                         if (window.SwalHelper && SwalHelper.toast) {
-                            SwalHelper.toast('KhÃ´ng thá»ƒ táº£i Ä‘Æ¡n hÃ ng nÃ y.', 'error');
+                            SwalHelper.toast('Không thể tải đơn hàng này.', 'error');
                         }
                         return;
                     }
@@ -799,33 +798,33 @@ $seoImage = $galleryImages[0] ?? '';
             let html = '';
             html += '<div style="text-align:left">';
             html += '<div style="display:flex;justify-content:center;margin-bottom:10px;">';
-            html += '<span style="display:inline-flex;align-items:center;gap:8px;border:1px solid #bbf7d0;background:#f0fdf4;color:#065f46;padding:7px 12px;border-radius:999px;font-weight:700;font-size:14px;cursor:pointer;" title="Báº¥m Ä‘á»ƒ sao chÃ©p mÃ£ Ä‘Æ¡n" class="js-copy-success-order" data-copy="' + escapeHtml(orderCodeDisplay) + '">';
-            html += 'MÃ£ Ä‘Æ¡n #' + escapeHtml(orderCodeDisplay) + '</span></div>';
+            html += '<span style="display:inline-flex;align-items:center;gap:8px;border:1px solid #bbf7d0;background:#f0fdf4;color:#065f46;padding:7px 12px;border-radius:999px;font-weight:700;font-size:14px;cursor:pointer;" title="Bấm để sao chép mã đơn" class="js-copy-success-order" data-copy="' + escapeHtml(orderCodeDisplay) + '">';
+            html += 'Mã đơn #' + escapeHtml(orderCodeDisplay) + '</span></div>';
             html += '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin-bottom:10px;">';
-            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;"><span>Sáº£n pháº©m</span><strong>' + escapeHtml(order.product_name || '-') + '</strong></div>';
-            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;"><span>Sá»‘ lÆ°á»£ng</span><strong>' + escapeHtml(order.quantity || 1) + '</strong></div>';
-            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;"><span>ThÃ nh tiá»n</span><strong>' + fmtMoney(subtotal) + '</strong></div>';
-            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;color:#16a34a;"><span>Giáº£m giÃ¡</span><strong>-' + fmtMoney(discount) + '</strong></div>';
-            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px dashed #cbd5e1;margin-top:4px;"><span><b>Tá»•ng thanh toÃ¡n</b></span><strong>' + fmtMoney(total) + '</strong></div>';
+            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;"><span>Sản phẩm</span><strong>' + escapeHtml(order.product_name || '-') + '</strong></div>';
+            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;"><span>Số lượng</span><strong>' + escapeHtml(order.quantity || 1) + '</strong></div>';
+            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;"><span>Thành tiền</span><strong>' + fmtMoney(subtotal) + '</strong></div>';
+            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;color:#16a34a;"><span>Giảm giá</span><strong>-' + fmtMoney(discount) + '</strong></div>';
+            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px dashed #cbd5e1;margin-top:4px;"><span><b>Tổng thanh toán</b></span><strong>' + fmtMoney(total) + '</strong></div>';
             if (order.giftcode) {
-                html += '<div style="margin-top:4px;font-size:12px;color:#0f766e;">ÄÃ£ Ã¡p dá»¥ng mÃ£: <b>' + escapeHtml(order.giftcode) + '</b></div>';
+                html += '<div style="margin-top:4px;font-size:12px;color:#0f766e;">Đã áp dụng mã: <b>' + escapeHtml(order.giftcode) + '</b></div>';
             }
             html += '</div>';
 
             if (isPending) {
-                html += '<p style="margin:0 0 6px;font-size:14px;"><b>ÄÆ¡n hÃ ng Ä‘ang á»Ÿ tráº¡ng thÃ¡i chá» xá»­ lÃ½.</b> Admin sáº½ xá»­ lÃ½ vÃ  tráº£ káº¿t quáº£ sau.</p>';
+                html += '<p style="margin:0 0 6px;font-size:14px;"><b>Đơn hàng đang ở trạng thái chờ xử lý.</b> Admin sẽ xử lý và trả kết quả sau.</p>';
                 if (order.customer_input) {
-                    html += '<p style="margin:0 0 5px;font-size:14px;"><b>ThÃ´ng tin báº¡n Ä‘Ã£ gá»­i:</b></p>';
+                    html += '<p style="margin:0 0 5px;font-size:14px;"><b>Thông tin bạn đã gửi:</b></p>';
                     html += '<textarea readonly style="width:100%;min-height:90px;border:1px solid #ddd;border-radius:10px;padding:10px;font-size:13px;">' + escapeHtml(order.customer_input) + '</textarea>';
                 }
             } else {
-                html += '<p style="margin:0 0 5px;font-size:14px;"><b>Dá»¯ liá»‡u bÃ n giao:</b></p>';
+                html += '<p style="margin:0 0 5px;font-size:14px;"><b>Dữ liệu bàn giao:</b></p>';
                 html += '<textarea readonly style="width:100%;min-height:110px;border:1px solid #ddd;border-radius:10px;padding:10px;font-size:13px;">' + escapeHtml(order.content || '') + '</textarea>';
             }
 
             html += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px;">';
-            html += '<button type="button" class="js-order-modal-history" style="border:1px solid #0ea5e9;background:#f0f9ff;color:#0369a1;border-radius:10px;padding:10px 8px;font-weight:700;">Xem Ä‘Æ¡n hÃ ng</button>';
-            html += '<button type="button" class="js-order-modal-buy-more" style="border:1px solid #d1d5db;background:#f9fafb;color:#111827;border-radius:10px;padding:10px 8px;font-weight:700;">Mua thÃªm</button>';
+            html += '<button type="button" class="js-order-modal-history" style="border:1px solid #0ea5e9;background:#f0f9ff;color:#0369a1;border-radius:10px;padding:10px 8px;font-weight:700;">Xem đơn hàng</button>';
+            html += '<button type="button" class="js-order-modal-buy-more" style="border:1px solid #d1d5db;background:#f9fafb;color:#111827;border-radius:10px;padding:10px 8px;font-weight:700;">Mua thêm</button>';
             html += '<button type="button" class="js-order-modal-download" style="border:1px solid #16a34a;background:#f0fdf4;color:#166534;border-radius:10px;padding:10px 8px;font-weight:700;">Down</button>';
             html += '</div>';
             html += '</div>';
@@ -834,7 +833,7 @@ $seoImage = $galleryImages[0] ?? '';
 
         function showPurchaseSuccess(data) {
             const isPending = !!data.pending;
-            const title = isPending ? 'Táº¡o Ä‘Æ¡n hÃ ng thÃ nh cÃ´ng' : 'Thanh toÃ¡n thÃ nh cÃ´ng!';
+            const title = isPending ? 'Tạo đơn hàng thành công' : 'Thanh toán thành công!';
 
             if (window.Swal && Swal.fire) {
                 Swal.fire({
@@ -842,7 +841,7 @@ $seoImage = $galleryImages[0] ?? '';
                     title: title,
                     html: buildSuccessHtml(data),
                     width: 680,
-                    confirmButtonText: 'ÄÃ³ng',
+                    confirmButtonText: 'Đóng',
                     didOpen: function () {
                         fireDoubleSideConfetti();
                         attachSuccessModalActions(data);
@@ -864,7 +863,7 @@ $seoImage = $galleryImages[0] ?? '';
                                         ta.remove();
                                     }
                                     if (window.SwalHelper && SwalHelper.toast) {
-                                        SwalHelper.toast('ÄÃ£ sao chÃ©p mÃ£ Ä‘Æ¡n', 'success');
+                                        SwalHelper.toast('Đã sao chép mã đơn', 'success');
                                     }
                                 } catch (e) { }
                             });
@@ -874,7 +873,7 @@ $seoImage = $galleryImages[0] ?? '';
                 return;
             }
 
-            alert(data.message || 'ThÃ nh cÃ´ng');
+            alert(data.message || 'Thành công');
         }
 
         // Override popup builder to keep labels/buttons aligned with latest UX requirements.
@@ -891,35 +890,35 @@ $seoImage = $galleryImages[0] ?? '';
             let html = '';
             html += '<div style="text-align:left">';
             html += '<div style="display:flex;justify-content:center;margin-bottom:10px;">';
-            html += '<span style="display:inline-flex;align-items:center;gap:8px;border:1px solid #bbf7d0;background:#f0fdf4;color:#065f46;padding:7px 12px;border-radius:999px;font-weight:700;font-size:14px;cursor:pointer;" title="Báº¥m Ä‘á»ƒ sao chÃ©p mÃ£ Ä‘Æ¡n" class="js-copy-success-order" data-copy="' + escapeHtml(orderCodeDisplay) + '">';
-            html += 'MÃ£ Ä‘Æ¡n #' + escapeHtml(orderCodeDisplay) + '</span></div>';
+            html += '<span style="display:inline-flex;align-items:center;gap:8px;border:1px solid #bbf7d0;background:#f0fdf4;color:#065f46;padding:7px 12px;border-radius:999px;font-weight:700;font-size:14px;cursor:pointer;" title="Bấm để sao chép mã đơn" class="js-copy-success-order" data-copy="' + escapeHtml(orderCodeDisplay) + '">';
+            html += 'Mã đơn #' + escapeHtml(orderCodeDisplay) + '</span></div>';
 
             html += '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin-bottom:10px;">';
-            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;"><span>Sáº£n pháº©m</span><strong>' + escapeHtml(order.product_name || '-') + '</strong></div>';
-            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;"><span>GiÃ¡</span><strong>' + fmtMoney(unitPrice) + '</strong></div>';
-            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;"><span>Sá»‘ lÆ°á»£ng</span><strong>' + escapeHtml(quantity) + '</strong></div>';
-            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;color:#16a34a;"><span>Giáº£m giÃ¡</span><strong>-' + fmtMoney(discount) + '</strong></div>';
-            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px dashed #cbd5e1;margin-top:4px;"><span><b>Tá»•ng thanh toÃ¡n</b></span><strong>' + fmtMoney(total) + '</strong></div>';
+            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;"><span>Sản phẩm</span><strong>' + escapeHtml(order.product_name || '-') + '</strong></div>';
+            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;"><span>Giá</span><strong>' + fmtMoney(unitPrice) + '</strong></div>';
+            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;"><span>Số lượng</span><strong>' + escapeHtml(quantity) + '</strong></div>';
+            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;color:#16a34a;"><span>Giảm giá</span><strong>-' + fmtMoney(discount) + '</strong></div>';
+            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px dashed #cbd5e1;margin-top:4px;"><span><b>Tổng thanh toán</b></span><strong>' + fmtMoney(total) + '</strong></div>';
             if (order.giftcode) {
-                html += '<div style="margin-top:4px;font-size:12px;color:#0f766e;">ÄÃ£ Ã¡p dá»¥ng mÃ£: <b>' + escapeHtml(order.giftcode) + '</b></div>';
+                html += '<div style="margin-top:4px;font-size:12px;color:#0f766e;">Đã áp dụng mã: <b>' + escapeHtml(order.giftcode) + '</b></div>';
             }
             html += '</div>';
 
             if (isPending) {
-                html += '<p style="margin:0 0 6px;font-size:14px;"><b>ÄÆ¡n hÃ ng Ä‘ang á»Ÿ tráº¡ng thÃ¡i chá» xá»­ lÃ½.</b> Admin sáº½ xá»­ lÃ½ vÃ  tráº£ káº¿t quáº£ sau.</p>';
+                html += '<p style="margin:0 0 6px;font-size:14px;"><b>Đơn hàng đang ở trạng thái chờ xử lý.</b> Admin sẽ xử lý và trả kết quả sau.</p>';
                 if (order.customer_input) {
-                    html += '<p style="margin:0 0 5px;font-size:14px;"><b>ThÃ´ng tin báº¡n Ä‘Ã£ gá»­i:</b></p>';
+                    html += '<p style="margin:0 0 5px;font-size:14px;"><b>Thông tin bạn đã gửi:</b></p>';
                     html += '<textarea readonly style="width:100%;min-height:80px;max-height:140px;border:1px solid #ddd;border-radius:10px;padding:10px;font-size:13px;">' + escapeHtml(order.customer_input) + '</textarea>';
                 }
             } else {
-                html += '<p style="margin:0 0 5px;font-size:14px;"><b>ÄÆ¡n hÃ ng:</b></p>';
+                html += '<p style="margin:0 0 5px;font-size:14px;"><b>Đơn hàng:</b></p>';
                 html += '<textarea readonly style="width:100%;min-height:80px;max-height:150px;border:1px solid #ddd;border-radius:10px;padding:10px;font-size:13px;">' + escapeHtml(order.content || '') + '</textarea>';
             }
 
             html += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px;">';
-            html += '<button type="button" class="js-order-modal-history" style="border:1px solid #0ea5e9;background:#f0f9ff;color:#0369a1;border-radius:10px;padding:10px 8px;font-weight:700;">Chi tiáº¿t</button>';
+            html += '<button type="button" class="js-order-modal-history" style="border:1px solid #0ea5e9;background:#f0f9ff;color:#0369a1;border-radius:10px;padding:10px 8px;font-weight:700;">Chi tiết</button>';
             html += '<button type="button" class="js-order-modal-download" style="border:1px solid #16a34a;background:#f0fdf4;color:#166534;border-radius:10px;padding:10px 8px;font-weight:700;">DOWNLOAD</button>';
-            html += '<button type="button" class="js-order-modal-buy-more" style="border:1px solid #d1d5db;background:#f9fafb;color:#111827;border-radius:10px;padding:10px 8px;font-weight:700;">Mua thÃªm</button>';
+            html += '<button type="button" class="js-order-modal-buy-more" style="border:1px solid #d1d5db;background:#f9fafb;color:#111827;border-radius:10px;padding:10px 8px;font-weight:700;">Mua thêm</button>';
             html += '</div>';
             html += '</div>';
             return html;
@@ -927,7 +926,7 @@ $seoImage = $galleryImages[0] ?? '';
 
         function showPurchaseSuccess(data) {
             const isPending = !!data.pending;
-            const title = isPending ? 'Táº¡o Ä‘Æ¡n hÃ ng thÃ nh cÃ´ng' : 'Thanh toÃ¡n thÃ nh cÃ´ng!';
+            const title = isPending ? 'Tạo đơn hàng thành công' : 'Thanh toán thành công!';
 
             if (window.Swal && Swal.fire) {
                 Swal.fire({
@@ -960,7 +959,7 @@ $seoImage = $galleryImages[0] ?? '';
                                         ta.remove();
                                     }
                                     if (window.SwalHelper && SwalHelper.toast) {
-                                        SwalHelper.toast('ÄÃ£ sao chÃ©p mÃ£ Ä‘Æ¡n', 'success');
+                                        SwalHelper.toast('Đã sao chép mã đơn', 'success');
                                     }
                                 } catch (e) { }
                             });
@@ -970,7 +969,7 @@ $seoImage = $galleryImages[0] ?? '';
                 return;
             }
 
-            alert(data.message || 'ThÃ nh cÃ´ng');
+            alert(data.message || 'Thành công');
         }
 
         function buyProduct(id) {
@@ -986,11 +985,11 @@ $seoImage = $galleryImages[0] ?? '';
                 if (window.Swal && Swal.fire) {
                     Swal.fire({
                         icon: 'warning',
-                        title: 'Thiáº¿u thÃ´ng tin',
-                        text: 'Vui lÃ²ng nháº­p thÃ´ng tin theo yÃªu cáº§u sáº£n pháº©m trÆ°á»›c khi mua.'
+                        title: 'Thiếu thông tin',
+                        text: 'Vui lòng nhập thông tin theo yêu cầu sản phẩm trước khi mua.'
                     });
                 } else {
-                    alert('Vui lÃ²ng nháº­p thÃ´ng tin theo yÃªu cáº§u sáº£n pháº©m trÆ°á»›c khi mua.');
+                    alert('Vui lòng nhập thông tin theo yêu cầu sản phẩm trước khi mua.');
                 }
                 return;
             }
@@ -1016,7 +1015,7 @@ $seoImage = $galleryImages[0] ?? '';
                         data = await res.json();
                     } catch (e) { }
                     if (!res.ok || !data.success) {
-                        throw new Error((data && data.message) ? data.message : 'KhÃ´ng thá»ƒ mua sáº£n pháº©m lÃºc nÃ y.');
+                        throw new Error((data && data.message) ? data.message : 'Không thể mua sản phẩm lúc này.');
                     }
                     return data;
                 })
@@ -1033,13 +1032,13 @@ $seoImage = $galleryImages[0] ?? '';
                     showPurchaseSuccess(data);
                 })
                 .catch((err) => {
-                    const msg = (err && err.message) ? err.message : 'KhÃ´ng thá»ƒ mua sáº£n pháº©m lÃºc nÃ y.';
-                    if (/dang nhap|Ä‘Äƒng nháº­p/i.test(msg)) {
+                    const msg = (err && err.message) ? err.message : 'Không thể mua sản phẩm lúc này.';
+                    if (/dang nhap|đăng nhập/i.test(msg)) {
                         window.location.href = PRODUCT_DETAIL.loginUrl;
                         return;
                     }
                     if (window.Swal && Swal.fire) {
-                        Swal.fire({ icon: 'error', title: 'Mua hÃ ng tháº¥t báº¡i', text: msg });
+                        Swal.fire({ icon: 'error', title: 'Mua hàng thất bại', text: msg });
                     } else {
                         alert(msg);
                     }

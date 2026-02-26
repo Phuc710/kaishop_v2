@@ -82,9 +82,11 @@ body {
 
 /* Shift content for fixed sidebar */
 .content-wrapper {
-    margin-top: 60px !important;
-    margin-left: var(--sidebar-width) !important;
-    min-height: calc(100vh - 60px);
+    margin-top: 35px !important;
+    padding-top: 0px !important;
+    margin-left: calc(var(--sidebar-width) + 10px) !important;
+    margin-right: 10px !important;
+    min-height: 100vh;
     background: var(--page-bg);
     transition: var(--transition);
 }

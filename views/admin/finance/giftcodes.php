@@ -7,6 +7,7 @@ $breadcrumbs = [
     ['label' => 'Mã giảm giá', 'url' => url('admin/finance/giftcodes')],
     ['label' => 'Danh sách'],
 ];
+$adminNeedsFlatpickr = true;
 require_once __DIR__ . '/../layout/head.php';
 require_once __DIR__ . '/../layout/breadcrumb.php';
 
@@ -19,105 +20,86 @@ $summary = $summary ?? [
 ?>
 
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
-<link rel="stylesheet"
-    href="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/plugins/daterangepicker/daterangepicker.css">
 
-<section class="content pb-4 mt-3">
+<section class="content pb-4 mt-1">
     <div class="container-fluid">
+        <!-- Summary Cards -->
+        <div class="row mb-3">
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="info-box mb-3 border-0 shadow-sm" style="border-radius: 8px;">
+                    <span class="info-box-icon bg-primary elevation-1" style="border-radius: 8px;">
+                        <i class="fas fa-tags"></i>
+                    </span>
+                    <div class="info-box-content">
+                        <span class="info-box-text font-weight-bold text-uppercase small">TỔNG MÃ</span>
+                        <span class="info-box-number h4 mb-0"><?= (int) ($summary['total_codes'] ?? 0) ?></span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="info-box mb-3 border-0 shadow-sm" style="border-radius: 8px;">
+                    <span class="info-box-icon bg-info elevation-1" style="border-radius: 8px;">
+                        <i class="fas fa-layer-group"></i>
+                    </span>
+                    <div class="info-box-content">
+                        <span class="info-box-text font-weight-bold text-uppercase small">TỔNG SỐ LƯỢNG</span>
+                        <span class="info-box-number h4 mb-0"><?= (int) ($summary['total_quantity'] ?? 0) ?></span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="info-box mb-3 border-0 shadow-sm" style="border-radius: 8px;">
+                    <span class="info-box-icon bg-danger elevation-1" style="border-radius: 8px;">
+                        <i class="fas fa-check-circle"></i>
+                    </span>
+                    <div class="info-box-content">
+                        <span class="info-box-text font-weight-bold text-uppercase small">ĐÃ SỬ DỤNG</span>
+                        <span class="info-box-number h4 mb-0"><?= (int) ($summary['total_used'] ?? 0) ?></span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="info-box mb-3 border-0 shadow-sm" style="border-radius: 8px;">
+                    <span class="info-box-icon bg-success elevation-1" style="border-radius: 8px;">
+                        <i class="fas fa-hourglass-half"></i>
+                    </span>
+                    <div class="info-box-content">
+                        <span class="info-box-text font-weight-bold text-uppercase small">CÒN LẠI</span>
+                        <span
+                            class="info-box-number h4 mb-0 text-success"><?= (int) ($summary['total_remaining'] ?? 0) ?></span>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="card custom-card">
             <div class="card-header border-0 pb-0">
                 <h3 class="card-title text-uppercase font-weight-bold">QUẢN LÝ MÃ GIẢM GIÁ</h3>
             </div>
 
-            <div class="card-body pb-0">
-                <div class="row">
-                    <div class="col-md-3 col-sm-6 mb-3">
-                        <div class="info-box mb-3 border-0 shadow-sm" style="border-radius: 12px;">
-                            <span class="info-box-icon bg-primary elevation-1"
-                                style="border-radius: 12px; height: 60px; width: 60px; margin: auto 15px;">
-                                <i class="fas fa-tags"></i>
-                            </span>
-                            <div class="info-box-content">
-                                <span class="info-box-text font-weight-bold text-muted small text-uppercase">Tổng
-                                    mã</span>
-                                <span
-                                    class="info-box-number h3 mb-0 font-weight-bold"><?= (int) ($summary['total_codes'] ?? 0) ?></span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3 col-sm-6 mb-3">
-                        <div class="info-box mb-3 border-0 shadow-sm" style="border-radius: 12px;">
-                            <span class="info-box-icon bg-info elevation-1"
-                                style="border-radius: 12px; height: 60px; width: 60px; margin: auto 15px;">
-                                <i class="fas fa-layer-group"></i>
-                            </span>
-                            <div class="info-box-content">
-                                <span class="info-box-text font-weight-bold text-muted small text-uppercase">Tổng số
-                                    lượng</span>
-                                <span
-                                    class="info-box-number h3 mb-0 font-weight-bold"><?= (int) ($summary['total_quantity'] ?? 0) ?></span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3 col-sm-6 mb-3">
-                        <div class="info-box mb-3 border-0 shadow-sm" style="border-radius: 12px;">
-                            <span class="info-box-icon bg-danger elevation-1"
-                                style="border-radius: 12px; height: 60px; width: 60px; margin: auto 15px;">
-                                <i class="fas fa-check-circle"></i>
-                            </span>
-                            <div class="info-box-content">
-                                <span class="info-box-text font-weight-bold text-muted small text-uppercase">Tổng số
-                                    lượng đã sử dụng</span>
-                                <span
-                                    class="info-box-number h3 mb-0 font-weight-bold"><?= (int) ($summary['total_used'] ?? 0) ?></span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3 col-sm-6 mb-3">
-                        <div class="info-box mb-3 border-0 shadow-sm" style="border-radius: 12px;">
-                            <span class="info-box-icon bg-success elevation-1"
-                                style="border-radius: 12px; height: 60px; width: 60px; margin: auto 15px;">
-                                <i class="fas fa-hourglass-half"></i>
-                            </span>
-                            <div class="info-box-content">
-                                <span class="info-box-text font-weight-bold text-muted small text-uppercase">Còn lại
-                                    chưa sử dụng</span>
-                                <span
-                                    class="info-box-number h3 mb-0 font-weight-bold"><?= (int) ($summary['total_remaining'] ?? 0) ?></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
 
             <div class="dt-filters">
-                <div class="row g-2 justify-content-center align-items-center mb-3">
+                <div class="row g-2 mb-3 align-items-center">
                     <div class="col-md-3 mb-2">
-                        <div class="input-group input-group-sm shadow-xs border-radius-sm">
-                            <input id="f-code" class="form-control border-left-0" placeholder="Tìm mã giảm giá...">
-                        </div>
+                        <input id="f-code" class="form-control form-control-sm" placeholder="Tìm mã giảm giá...">
                     </div>
                     <div class="col-md-3 mb-2">
-                        <div class="input-group input-group-sm shadow-xs border-radius-sm">
-                            <input id="f-product" class="form-control border-left-0" placeholder="Tìm sản phẩm...">
-                        </div>
+                        <input id="f-product" class="form-control form-control-sm"
+                            placeholder="Tìm sản phẩm áp dụng...">
                     </div>
                     <div class="col-md-2 mb-2">
-                        <div class="input-group input-group-sm shadow-xs border-radius-sm">
-                            <input id="f-date" class="form-control border-left-0" placeholder="Thời gian...">
-                        </div>
+                        <input id="f-date" class="form-control form-control-sm" placeholder="Chọn thời gian...">
                     </div>
-                    <div class="col-md-2 mb-2 text-center">
+                    <div class="col-md-2 mb-2">
                         <button type="button" id="btn-clear"
-                            class="btn btn-outline-danger btn-sm shadow-sm w-100 font-weight-bold"
-                            style="border-radius: 8px; height: 38px;">
+                            class="btn btn-danger btn-sm shadow-sm w-100 font-weight-bold">
                             <i class="fas fa-trash-alt mr-1"></i> XÓA LỌC
                         </button>
                     </div>
-                    <div class="col-md-2 mb-2 text-right">
+                    <div class="col-md-2 mb-2">
                         <a href="<?= url('admin/finance/giftcodes/add') ?>"
                             class="btn btn-primary btn-sm shadow-sm w-100 font-weight-bold"
-                            style="border-radius: 8px; height: 38px; display: flex; align-items: center; justify-content: center;">
+                            style="display: flex; align-items: center; justify-content: center; height: 31px;">
                             <i class="fas fa-plus-circle mr-1"></i> TẠO MÃ MỚI
                         </a>
                     </div>
@@ -126,7 +108,7 @@ $summary = $summary ?? [
                 <div class="top-filter mb-2">
                     <div class="filter-show">
                         <span class="filter-label">HIỂN THỊ:</span>
-                        <select id="f-length" class="filter-select flex-grow-1">
+                        <select id="f-length" class="filter-select">
                             <option value="10">10</option>
                             <option value="20">20</option>
                             <option value="50">50</option>
@@ -136,7 +118,7 @@ $summary = $summary ?? [
 
                     <div class="filter-short justify-content-end">
                         <span class="filter-label">LỌC THEO NGÀY:</span>
-                        <select id="f-sort" class="filter-select flex-grow-1">
+                        <select id="f-sort" class="filter-select">
                             <option value="all">Tất cả</option>
                             <option value="7">7 ngày</option>
                             <option value="15">15 ngày</option>
@@ -166,48 +148,45 @@ $summary = $summary ?? [
                                 <?php foreach ($giftcodes as $row): ?>
                                     <tr>
                                         <td class="text-center font-weight-bold align-middle">
-                                            <?= htmlspecialchars($row['giftcode']) ?><br>
+                                            <span class="text-primary"><?= htmlspecialchars($row['giftcode']) ?></span><br>
                                             <small
                                                 class="font-weight-bold <?= $row['remaining'] > 0 && $row['status'] == 'ON' ? 'text-success' : 'text-danger' ?>">
-                                                (Còn <?= (int) $row['remaining'] ?> lượt sử dụng)
+                                                (Còn <?= (int) $row['remaining'] ?> lượt)
                                             </small>
                                         </td>
                                         <td class="text-center align-middle">
                                             <?php if ($row['type'] == 'all' || empty($row['product_names'])): ?>
-                                                <span class="badge badge-info"
-                                                    style="background:#e0f2fe; color:#0369a1; border:0; padding:5px 8px;">
-                                                    Áp dụng cho toàn bộ sản phẩm
-                                                </span>
+                                                <span class="cat-badge">Toàn bộ sản phẩm</span>
                                             <?php else: ?>
-                                                <?php foreach ($row['product_names'] as $p): ?>
-                                                    <span class="badge badge-secondary mb-1"
-                                                        style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:4px 8px;"><?= htmlspecialchars($p['name']) ?></span><br>
-                                                <?php endforeach; ?>
+                                                <div class="d-flex flex-wrap justify-content-center gap-1">
+                                                    <?php foreach ($row['product_names'] as $p): ?>
+                                                        <span class="cat-badge"
+                                                            style="background: #f1f5f9;"><?= htmlspecialchars($p['name']) ?></span>
+                                                    <?php endforeach; ?>
+                                                </div>
                                             <?php endif; ?>
                                         </td>
-                                        <td class="text-center align-middle">
-                                            <span class="badge badge-primary px-2 py-1"><?= (int) $row['soluong'] ?></span>
-                                        </td>
-                                        <td class="text-center align-middle">
-                                            <span class="badge badge-danger px-2 py-1"><?= (int) $row['dadung'] ?></span>
+                                        <td class="text-center align-middle font-weight-bold"><?= (int) $row['soluong'] ?></td>
+                                        <td class="text-center align-middle font-weight-bold text-danger">
+                                            <?= (int) $row['dadung'] ?>
                                         </td>
                                         <td class="text-center align-middle">
                                             <span class="badge badge-success px-2 py-1"
                                                 style="background-color: #8b5cf6;"><?= (int) $row['giamgia'] ?>%</span>
                                         </td>
-                                        <?php
-                                        $rawTime = !empty($row['time']) ? date('Y-m-d H:i:s', strtotime($row['time'])) : '';
-                                        $rawTimeTs = !empty($row['time']) ? (int) strtotime($row['time']) : 0;
-                                        ?>
-                                        <td class="text-center align-middle" data-order="<?= $rawTimeTs ?>"
-                                            data-raw-datetime="<?= htmlspecialchars($rawTime, ENT_QUOTES, 'UTF-8') ?>">
-                                            <?= FormatHelper::eventTime($row['time'], $row['time']) ?>
+                                        <td class="text-center align-middle"
+                                            data-raw-datetime="<?= htmlspecialchars($row['time'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                                            <span class="date-badge">
+                                                <?= FormatHelper::eventTime($row['time'], $row['time']) ?>
+                                            </span>
+                                            <!-- Hidden raw time for sorting -->
+                                            <span style="display:none;"><?= (string) ($row['time'] ?? '') ?></span>
                                         </td>
                                         <td class="text-center align-middle">
                                             <div class="btn-group">
                                                 <a href="<?= url('admin/finance/giftcodes/log/' . $row['id']) ?>"
-                                                    class="btn btn-info btn-sm text-white"
-                                                    style="background-color:#38bdf8; border:none;" title="Nhật ký sử dụng">
+                                                    class="btn btn-info btn-sm" title="Nhật ký sử dụng"
+                                                    style="background: #38bdf8; border:none;">
                                                     <i class="fas fa-history"></i>
                                                 </a>
                                                 <a href="<?= url('admin/finance/giftcodes/edit/' . $row['id']) ?>"

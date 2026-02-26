@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * View: Danh sách thành viên
  * Route: GET /admin/users
@@ -13,7 +13,7 @@ require_once __DIR__ . '/../layout/head.php';
 require_once __DIR__ . '/../layout/breadcrumb.php';
 ?>
 
-<section class="content pb-4 mt-3">
+<section class="content pb-4 mt-1">
     <div class="container-fluid">
         <!-- Summary Cards -->
         <div class="row mb-3">
@@ -92,7 +92,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                         </select>
                     </div>
                     <div class="filter-short justify-content-end">
-                        <span class="filter-label">SHORT BY DATE:</span>
+                        <span class="filter-label">SORT BY DATE:</span>
                         <select id="f-sort" class="filter-select flex-grow-1">
                             <option value="all">Tất cả</option>
                             <option value="7">7 days</option>
@@ -157,7 +157,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                         </td>
                                         <td class="text-center align-middle">
                                             <span class="badge date-badge" data-toggle="tooltip" data-placement="top"
-                                                title="<?= timeAgo($row['time']) ?>">
+                                                title="<?= class_exists('FormatHelper') ? FormatHelper::timeAgo($row['time']) : $row['time'] ?>">
                                                 <?= htmlspecialchars((string) ($row['time'] ?? '--')) ?>
                                             </span>
                                         </td>
@@ -301,7 +301,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
 
     /**
      * banUser(username, fingerprint)
-     * fingerprint: trực tiếp từ data row â€” nếu rỗng thì ᡉn option khóa thiết bị.
+     * fingerprint: trực tiếp từ data row - nếu rỗng thì ẩn option khóa thiết bị.
      */
     function banUser(username, fp) {
         const hasFp = fp && fp.trim() !== '';
@@ -331,7 +331,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             focusConfirm: false,
             preConfirm: () => {
                 const reason = document.getElementById('swal-ban-reason').value.trim();
-                const type   = document.getElementById('swal-ban-type').value;
+                const type = document.getElementById('swal-ban-type').value;
                 if (!reason) {
                     Swal.showValidationMessage('Vui lòng nhập lý do!');
                     return false;

@@ -7,6 +7,7 @@ $breadcrumbs = [
     ['label' => 'Mã giảm giá', 'url' => url('admin/finance/giftcodes')],
     ['label' => 'Nhật ký sử dụng'],
 ];
+$adminNeedsFlatpickr = true;
 require_once __DIR__ . '/../layout/head.php';
 require_once __DIR__ . '/../layout/breadcrumb.php';
 ?>
@@ -40,8 +41,6 @@ function parseActivityLog($text)
 ?>
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
 <!-- Daterange picker -->
-<link rel="stylesheet"
-    href="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/plugins/daterangepicker/daterangepicker.css">
 
 <section class="content pb-4 mt-3">
     <div class="container-fluid">

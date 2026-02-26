@@ -16,8 +16,6 @@ body,
 .content-wrapper {
     min-height: calc(100dvh - 56.8px);
     overflow-y: auto;
-    padding-top: 20px;
-    /* Add some breathing room at string */
 }
 
 /* ══════════════════════════════════════
@@ -224,10 +222,6 @@ table.dataTable.table-bordered {
     color: #111 !important;
 }
 
-/* Fix padding card body */
-.card-body {
-    padding: 1.25rem !important;
-}
 
 /* UI style cho Filter bar */
 .filter-btn {
@@ -410,4 +404,14 @@ table.dataTable.table-bordered {
 .form-label-req::after {
     content: ' *';
     color: #ef4444;
+}
+
+.container-fluid {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+.content {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
 }

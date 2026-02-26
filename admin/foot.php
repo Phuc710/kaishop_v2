@@ -1,5 +1,9 @@
 <footer class="main-footer" style="display: none;">
 </footer>
+<?php
+$adminNeedsFlatpickr = !empty($adminNeedsFlatpickr);
+$adminNeedsSummernote = !empty($adminNeedsSummernote);
+?>
 <!-- jQuery -->
 <script src="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/plugins/jquery/jquery.min.js"
     crossorigin="anonymous"></script>
@@ -14,22 +18,14 @@
 <script src="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/plugins/bootstrap/js/bootstrap.bundle.min.js"
     crossorigin="anonymous">
     </script>
-<!-- daterangepicker -->
-<script src="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/plugins/moment/moment.min.js"
-    crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/plugins/daterangepicker/daterangepicker.js"
-    crossorigin="anonymous">
-    </script>
-<script src="<?= asset('assets/js/flatpickr.js') ?>"></script>
-<!-- Tempusdominus Bootstrap 4 -->
-<script
-    src="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js"
-    crossorigin="anonymous">
-    </script>
-<!-- Summernote -->
-<script src="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/plugins/summernote/summernote-bs4.min.js"
-    crossorigin="anonymous">
-    </script>
+<?php if ($adminNeedsFlatpickr): ?>
+    <script src="<?= asset('assets/js/flatpickr.js') ?>"></script>
+<?php endif; ?>
+<?php if ($adminNeedsSummernote): ?>
+    <script src="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/plugins/summernote/summernote-bs4.min.js"
+        crossorigin="anonymous">
+        </script>
+<?php endif; ?>
 <!-- AdminLTE App -->
 <script src="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/dist/js/adminlte.js"
     crossorigin="anonymous"></script>

@@ -60,7 +60,10 @@ class ProfileController extends Controller
 
         $user = $this->authService->getCurrentUser();
         $newEmail = trim((string) $this->post('email', ''));
-        $twofaEnabled = in_array((string) $this->post('twofa_enabled', '0'), ['1', 'true', 'on'], true);
+        $twofaFieldProvided = array_key_exists('twofa_enabled', $_POST);
+        $twofaEnabled = $twofaFieldProvided
+            ? in_array((string) $this->post('twofa_enabled', '0'), ['1', 'true', 'on'], true)
+            : ((int) ($user['twofa_enabled'] ?? 0) === 1);
 
         $errors = $this->validator->validateEmail($newEmail);
         if (!empty($errors)) {

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh Toán Thành Công</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f2f5;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+        }
+
+        #payment-section {
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        #success-section {
+            position: absolute;
+            display: none;
+            opacity: 0;
+            text-align: center;
+            transition: opacity 0.6s ease;
+        }
+
+        .card {
+            background: white;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            border: 1px solid #e1e4e8;
+            z-index: 10;
+        }
+
+        #celebrate-btn {
+            padding: 18px 50px;
+            font-size: 20px;
+            font-weight: 800;
+            cursor: pointer;
+            background: linear-gradient(135deg, #28a745, #218838);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #celebrate-btn:active { transform: scale(0.95); }
+
+        .checkmark {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: block;
+            stroke-width: 2;
+            stroke: #4caf50;
+            stroke-miterlimit: 10;
+            margin: 0 auto 20px;
+            box-shadow: inset 0px 0px 0px #4caf50;
+            animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;
+        }
+
+        @keyframes fill { 100% { box-shadow: inset 0px 0px 0px 50px #4caf50; } }
+        @keyframes scale { 0%, 100% { transform: none; } 50% { transform: scale3d(1.1, 1.1, 1); } }
+    </style>
+</head>
+<body>
+
+    <div id="payment-section">
+        <button id="celebrate-btn">XÁC NHẬN THANH TOÁN 🚀</button>
+    </div>
+
+    <div id="success-section">
+        <div class="card">
+            <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                <circle cx="26" cy="26" r="25" fill="none"/>
+                <path fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" stroke="#fff" stroke-width="5"/>
+            </svg>
+            <h1 style="color: #222; margin-bottom: 8px;">Giao dịch hoàn tất!</h1>
+            <p style="color: #666; font-size: 18px;">Cảm ơn bạn đã mua hàng.</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        const btn = document.querySelector('#celebrate-btn');
+        const paySection = document.querySelector('#payment-section');
+        const successSection = document.querySelector('#success-section');
+
+        btn.addEventListener('click', () => {
+            paySection.style.opacity = '0';
+            paySection.style.transform = 'translateY(-20px)';
+
+            setTimeout(() => {
+                paySection.style.display = 'none';
+                successSection.style.display = 'block';
+                
+                setTimeout(() => {
+                    successSection.style.opacity = '1';
+                    fireDoubleSideConfetti();
+                }, 50);
+            }, 400);
+        });
+
+        function fireDoubleSideConfetti() {
+            const count = 250; 
+            const defaults = {
+                origin: { y: 0.7 },
+                spread: 90,
+                ticks: 300, // Kéo dài thời gian hạt rơi
+                gravity: 1.2,
+                decay: 0.94,
+                startVelocity: 45,
+                zIndex: 1000
+            };
+
+            // Bắn đợt 1
+            confetti({
+                ...defaults,
+                particleCount: count,
+                angle: 60,
+                origin: { x: 0, y: 0.7 }
+            });
+            confetti({
+                ...defaults,
+                particleCount: count,
+                angle: 120,
+                origin: { x: 1, y: 0.7 }
+            });
+
+        }
+    </script>
+</body>
+</html>

@@ -128,7 +128,7 @@ class AuthController extends Controller
         $this->completeAuthenticatedSession($user, $fingerprintHash, $fpComponents, $rememberMe);
         $this->authSecurity->recordLoginAttempt('login', $username, true, 'login_success');
 
-        Logger::info('Auth', 'login_success', 'ÄÄƒng nháº­p thÃ nh cÃ´ng', [
+        Logger::info('Auth', 'login_success', 'Đăng nhập thành công', [
             'username' => $username,
             'ip' => $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0',
             'fingerprint' => $fingerprintHash ?: 'none'
@@ -176,12 +176,12 @@ class AuthController extends Controller
 
         // Check if username exists
         if ($this->userModel->findByUsername($username)) {
-            return $this->json(['success' => false, 'message' => 'TÃªn Ä‘Äƒng nháº­p Ä‘Ã£ tá»“n táº¡i.'], 400);
+            return $this->json(['success' => false, 'message' => 'Tên đăng nhập đã tồn tại.'], 400);
         }
 
         // Check if email exists
         if ($this->userModel->emailExists($email)) {
-            return $this->json(['success' => false, 'message' => 'Email Ä‘Ã£ Ä‘Æ°á»£c sá»­ dá»¥ng.'], 400);
+            return $this->json(['success' => false, 'message' => 'Email đã được sử dụng.'], 400);
         }
 
         // Create user
@@ -222,13 +222,13 @@ class AuthController extends Controller
                 }
             }
 
-            Logger::info('Auth', 'register_success', 'ÄÄƒng kÃ½ tÃ i khoáº£n thÃ nh cÃ´ng', [
+            Logger::info('Auth', 'register_success', 'Đăng ký tài khoản thành công', [
                 'username' => $username,
                 'email' => $email,
                 'fingerprint' => $fingerprintHash ?: 'none'
             ]);
 
-            return $this->json(['success' => true, 'message' => 'ÄÄƒng kÃ½ thÃ nh cÃ´ng.']);
+            return $this->json(['success' => true, 'message' => 'Đăng ký thành công.']);
         }
 
         return $this->json(['success' => false, 'message' => 'Có lỗi xảy ra, vui lòng thử lại.'], 500);
@@ -275,7 +275,7 @@ class AuthController extends Controller
         }
 
         if (empty($username)) {
-            return $this->json(['success' => false, 'message' => 'Vui lÃ²ng nháº­p Ä‘áº§y Ä‘á»§ thÃ´ng tin'], 400);
+            return $this->json(['success' => false, 'message' => 'Vui lòng nhập đầy đủ thông tin'], 400);
         }
 
         $user = $this->userModel->findByUsernameOrEmail($username);
@@ -301,22 +301,22 @@ class AuthController extends Controller
                 }
             }
 
-            $otpcode = bin2hex(random_bytes(16)); // MÃ£ reset
+            $otpcode = bin2hex(random_bytes(16)); // Mã reset
             $send_status = $this->authSecurity->sendPasswordResetMail($user, $otpcode);
 
             if ($send_status) {
                 $this->userModel->update($user['id'], ['otpcode' => $otpcode]);
                 $this->authSecurity->recordLoginAttempt('forgot_password', $username, true, 'mail_sent');
-                Logger::warning('Auth', 'forgot_password_request', 'YÃªu cáº§u quÃªn máº­t kháº©u', ['username' => $user['username'], 'email' => ($user['email'] ?? '')]);
-                return $this->json(['success' => true, 'message' => 'Email Ä‘áº·t láº¡i máº­t kháº©u Ä‘Ã£ Ä‘Æ°á»£c gá»­i']);
+                Logger::warning('Auth', 'forgot_password_request', 'Yêu cầu quên mật khẩu', ['username' => $user['username'], 'email' => ($user['email'] ?? '')]);
+                return $this->json(['success' => true, 'message' => 'Email đặt lại mật khẩu đã được gửi']);
             } else {
                 $this->authSecurity->recordLoginAttempt('forgot_password', $username, false, 'mail_send_failed');
-                return $this->json(['success' => false, 'message' => 'KhÃ´ng thá»ƒ gá»­i email, vui lÃ²ng thá»­ láº¡i']);
+                return $this->json(['success' => false, 'message' => 'Không thể gửi email, vui lòng thử lại']);
             }
         }
 
         $this->authSecurity->recordLoginAttempt('forgot_password', $username, false, 'user_not_found');
-        return $this->json(['success' => false, 'message' => 'TÃ i khoáº£n khÃ´ng tá»“n táº¡i'], 404);
+        return $this->json(['success' => false, 'message' => 'Tài khoản không tồn tại'], 404);
     }
 
     /**
@@ -343,17 +343,17 @@ class AuthController extends Controller
         $otpcode = $id;
 
         if (empty($otpcode) || empty($password)) {
-            return $this->json(['success' => false, 'message' => 'Vui lÃ²ng nháº­p Ä‘áº§y Ä‘á»§ thÃ´ng tin']);
+            return $this->json(['success' => false, 'message' => 'Vui lòng nhập đầy đủ thông tin']);
         }
 
         if (strlen($password) < 6) {
-            return $this->json(['success' => false, 'message' => 'Máº­t kháº©u pháº£i tá»« 6']);
+            return $this->json(['success' => false, 'message' => 'Mật khẩu phải từ 6 ký tự']);
         }
 
         $user = $this->userModel->findByOtpcode($otpcode);
 
         if (!$user) {
-            return $this->json(['success' => false, 'message' => 'MÃ£ khÃ´i phá»¥c khÃ´ng há»£p lá»‡ hoáº·c Ä‘Ã£ háº¿t háº¡n (OTP Code khÃ´ng Ä‘Ãºng)']);
+            return $this->json(['success' => false, 'message' => 'Mã khôi phục không hợp lệ hoặc đã hết hạn (OTP Code không đúng)']);
         }
 
         $new_pass = $this->authSecurity->hashPassword($password);
@@ -363,9 +363,9 @@ class AuthController extends Controller
             'otpcode' => ''
         ]);
 
-        Logger::info('Auth', 'reset_password_success', 'Äáº·t láº¡i máº­t kháº©u thÃ nh cÃ´ng', ['username' => $user['username']]);
+        Logger::info('Auth', 'reset_password_success', 'Đặt lại mật khẩu thành công', ['username' => $user['username']]);
 
-        return $this->json(['success' => true, 'message' => 'Máº­t kháº©u Ä‘Ã£ Ä‘Æ°á»£c cáº­p nháº­t thÃ nh cÃ´ng']);
+        return $this->json(['success' => true, 'message' => 'Mật khẩu đã được cập nhật thành công']);
     }
 
     /**

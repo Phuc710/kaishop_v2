@@ -4,27 +4,30 @@
  * Dùng chung cho toàn bộ trang user.
  * Required variable: $activePage
  */
+if (!class_exists('NavConfig')) {
+    require_once dirname(__DIR__) . '/app/Helpers/NavConfig.php';
+}
 $activePage = $activePage ?? '';
+$userSidebarItems = NavConfig::userSidebarItems();
 ?>
 <div class="user-sidebar">
-    <a href="<?= url('profile') ?>" class="sidebar-item <?= $activePage === 'profile' ? 'active' : '' ?>">
-        <i class="fas fa-user"></i> Thông tin cá nhân
-    </a>
-    <a href="<?= url('history-balance') ?>" class="sidebar-item <?= $activePage === 'history' ? 'active' : '' ?>">
-        <i class="fas fa-wallet"></i> Biến động số dư
-    </a>
-    <a href="<?= url('history-orders') ?>" class="sidebar-item <?= $activePage === 'order-history' ? 'active' : '' ?>">
-        <i class="fas fa-receipt"></i> Lịch sử đơn hàng
-    </a>
-    
-    <a href="<?= url('deposit-bank') ?>" class="sidebar-item <?= $activePage === 'deposit' ? 'active' : '' ?>">
-        <i class="fas fa-university"></i> Nạp tiền
-    </a>
-    <a href="<?= url('password') ?>" class="sidebar-item <?= $activePage === 'password' ? 'active' : '' ?>">
-        <i class="fas fa-key"></i> Thay đổi mật khẩu
-    </a>
-    <a href="javascript:void(0)" onclick="SwalHelper.confirmLogout('<?= url('logout') ?>')" class="sidebar-item"
-        style="cursor:pointer;">
-        <i class="fas fa-sign-out-alt"></i> Đăng xuất
-    </a>
+    <?php foreach ($userSidebarItems as $item): ?>
+        <?php
+        $type = (string) ($item['type'] ?? 'link');
+        $icon = htmlspecialchars((string) ($item['icon'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $label = htmlspecialchars((string) ($item['label'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $isActive = ($type === 'link') && ($activePage === (string) ($item['active_key'] ?? ''));
+        $activeClass = $isActive ? ' active' : '';
+        ?>
+        <?php if ($type === 'logout'): ?>
+            <a href="javascript:void(0)" onclick="SwalHelper.confirmLogout('<?= htmlspecialchars((string) ($item['href'] ?? '#'), ENT_QUOTES, 'UTF-8') ?>')"
+                class="sidebar-item" style="cursor:pointer;">
+                <i class="<?= $icon ?>"></i> <?= $label ?>
+            </a>
+        <?php else: ?>
+            <a href="<?= htmlspecialchars((string) ($item['href'] ?? '#'), ENT_QUOTES, 'UTF-8') ?>" class="sidebar-item<?= $activeClass ?>">
+                <i class="<?= $icon ?>"></i> <?= $label ?>
+            </a>
+        <?php endif; ?>
+    <?php endforeach; ?>
 </div>
