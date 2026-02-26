@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 $userPageTitle = 'Biến động số dư';
 $userPageAssetFlags = [
     'datatables' => true,
@@ -12,8 +12,7 @@ require __DIR__ . '/layout/header.php';
 <div class="profile-card">
     <div class="profile-card-header profile-card-header--with-actions">
         <div>
-            <h5 class="text-dark mb-1">Biến động số dư</h5>
-            <div class="user-card-subtitle">Bao gồm mua hàng, nạp tiền và điều chỉnh số dư.</div>
+            <h5 class="text-dark mb-1">BIẾN ĐỘNG SỐ DƯ</h5>
         </div>
         <a href="<?= url('balance/bank') ?>" class="btn btn-edit-profile">
             <i class="fas fa-university me-1"></i> Nạp tiền
@@ -39,7 +38,7 @@ require __DIR__ . '/layout/header.php';
                     </div>
                 </div>
                 <div class="col-md-2 mb-2">
-                    <button id="btn-clear" class="btn btn-outline-danger w-100 py-2" title="Xóa bộ lọc">
+                    <button id="btn-clear" class="btn w-100 py-2" title="Xóa bộ lọc">
                         <i class="fas fa-trash me-1"></i> Xóa lọc
                     </button>
                 </div>
@@ -69,7 +68,7 @@ require __DIR__ . '/layout/header.php';
             </div>
         </div>
 
-        <div class="table-responsive">
+        <div class="table-responsive user-history-table-wrap">
             <table id="history-table" class="table table-hover align-middle w-100 mb-0 user-history-table">
                 <thead class="table-light">
                     <tr>
@@ -88,6 +87,61 @@ require __DIR__ . '/layout/header.php';
 
 <script>
     $(document).ready(function () {
+        function escapeHtml(v) {
+            return String(v == null ? '' : v)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function renderUserTimeCell(rawValue, timeAgo, fallbackHtml) {
+            const raw = String(rawValue || '').trim();
+            if (!raw) {
+                return fallbackHtml || '--';
+            }
+            const ago = String(timeAgo || '').trim();
+            return '<span class="user-time-plain" title="' + escapeHtml(ago || raw) + '">' + escapeHtml(raw) + '</span>';
+        }
+
+        function fmtMoneyVnd(value) {
+            const n = Number(value || 0);
+            return new Intl.NumberFormat('vi-VN').format(Math.abs(n)) + 'đ';
+        }
+
+        function debounce(fn, wait) {
+            let t = null;
+            return function () {
+                const ctx = this;
+                const args = arguments;
+                clearTimeout(t);
+                t = setTimeout(function () { fn.apply(ctx, args); }, wait || 250);
+            };
+        }
+
+        function renderBalanceMoney(value, kind) {
+            const n = Number(value || 0);
+            if (!Number.isFinite(n)) return '--';
+
+            if (kind === 'change') {
+                if (n > 0) {
+                    return '<span class="user-money-change user-money-change--plus">+' + fmtMoneyVnd(n) + '</span>';
+                }
+                if (n < 0) {
+                    return '<span class="user-money-change user-money-change--minus">-' + fmtMoneyVnd(n) + '</span>';
+                }
+                return '<span class="user-money-before">0đ</span>';
+            }
+
+            if (kind === 'after') {
+                const sign = n < 0 ? '-' : '';
+                return '<span class="user-money-after">' + sign + fmtMoneyVnd(n) + '</span>';
+            }
+
+            const sign = n < 0 ? '-' : '';
+            return '<span class="user-money-before">' + sign + fmtMoneyVnd(n) + '</span>';
+        }
+
         let datePicker = {
             clear: function () { $('#filter-date').val(''); }
         };
@@ -105,16 +159,31 @@ require __DIR__ . '/layout/header.php';
             },
             columns: [
                 {
-                    data: 'time',
+                    data: null,
                     width: '15%',
-                    className: 'text-nowrap small text-center',
-                    render: function (data) {
-                        return '<span class="user-date-cell">' + data + '</span>';
+                    className: 'text-center',
+                    render: function (row) {
+                        return renderUserTimeCell(row.time_raw, row.time_ago, row.time);
                     }
                 },
-                { data: 'before', width: '15%', className: 'text-center text-nowrap' },
-                { data: 'change', width: '15%', className: 'text-center text-nowrap' },
-                { data: 'after', width: '15%', className: 'text-center text-nowrap' },
+                {
+                    data: null,
+                    width: '15%',
+                    className: 'text-center text-nowrap',
+                    render: function (row) { return renderBalanceMoney(row.before_amount, 'before'); }
+                },
+                {
+                    data: null,
+                    width: '15%',
+                    className: 'text-center text-nowrap',
+                    render: function (row) { return renderBalanceMoney(row.change_amount, 'change'); }
+                },
+                {
+                    data: null,
+                    width: '15%',
+                    className: 'text-center text-nowrap',
+                    render: function (row) { return renderBalanceMoney(row.after_amount, 'after'); }
+                },
                 { data: 'reason', width: '40%', className: 'text-start text-wrap' }
             ],
             order: [],
@@ -151,9 +220,17 @@ require __DIR__ . '/layout/header.php';
             });
         }
 
+        const debouncedSearchDraw = debounce(function () { table.draw(); }, 280);
+
         $('#f-length').on('change', function () { table.page.len($(this).val()).draw(); });
         $('#f-sort').on('change', function () { table.draw(); });
-        $('#filter-reason').on('input', function () { table.draw(); });
+        $('#filter-reason').on('input', debouncedSearchDraw);
+        $('#filter-reason').on('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                table.draw();
+            }
+        });
         $('#btn-clear').on('click', function () {
             $('#filter-reason').val('');
             $('#f-sort').val('all');

@@ -176,6 +176,14 @@ class AdminProductController extends Controller
         $items = $this->stockModel->getByProduct($id, $statusFilter, $search);
         $stats = $this->stockModel->getStats($id);
 
+        if ($this->isAjax()) {
+            return $this->json([
+                'success' => true,
+                'items' => $items,
+                'stats' => $stats
+            ]);
+        }
+
         $this->view('admin/products/stock', [
             'chungapi' => $chungapi,
             'product' => $product,

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 $userPageTitle = 'Lịch sử đơn hàng';
 $userPageAssetFlags = [
     'datatables' => true,
@@ -12,12 +12,8 @@ require __DIR__ . '/layout/header.php';
 <div class="profile-card">
     <div class="profile-card-header profile-card-header--with-actions">
         <div>
-            <h5 class="text-dark mb-1">Lịch sử đơn hàng</h5>
-            <div class="user-card-subtitle">Tra cứu đơn đã mua, xem chi tiết và tải nội dung bàn giao.</div>
+            <h5 class="text-dark mb-1">LỊCH SỬ ĐƠN HÀNG</h5>
         </div>
-        <a href="<?= url('history-balance') ?>" class="btn btn-edit-profile">
-            <i class="fas fa-wallet me-1"></i> Biến động số dư
-        </a>
     </div>
 
     <div class="profile-card-body p-4">
@@ -42,7 +38,7 @@ require __DIR__ . '/layout/header.php';
                     </div>
                 </div>
                 <div class="col-md-2 mb-2">
-                    <button id="btn-clear" class="btn btn-outline-danger w-100 py-2" title="Xóa bộ lọc">
+                    <button id="btn-clear" class="btn w-100 py-2" title="Xóa bộ lọc">
                         <i class="fas fa-trash me-1"></i> Xóa lọc
                     </button>
                 </div>
@@ -72,7 +68,7 @@ require __DIR__ . '/layout/header.php';
             </div>
         </div>
 
-        <div class="table-responsive">
+        <div class="table-responsive user-history-table-wrap">
             <table id="order-history-table" class="table table-hover align-middle w-100 mb-0 user-history-table">
                 <thead class="table-light">
                     <tr>
@@ -92,6 +88,32 @@ require __DIR__ . '/layout/header.php';
 
 <script>
     $(document).ready(function () {
+        function escapeHtml(v) {
+            return String(v == null ? '' : v)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function renderUserTimeCell(rawValue, timeAgo, fallbackText) {
+            const raw = String(rawValue || '').trim();
+            const display = raw || String(fallbackText || '').trim();
+            if (!display) return '--';
+            const ago = String(timeAgo || '').trim();
+            return '<span class="user-time-plain" title="' + escapeHtml(ago || display) + '">' + escapeHtml(display) + '</span>';
+        }
+
+        function debounce(fn, wait) {
+            let t = null;
+            return function () {
+                const ctx = this;
+                const args = arguments;
+                clearTimeout(t);
+                t = setTimeout(function () { fn.apply(ctx, args); }, wait || 250);
+            };
+        }
+
         let datePicker = { clear: function () { $('#filter-date').val(''); } };
 
         const table = $('#order-history-table').DataTable({
@@ -118,8 +140,12 @@ require __DIR__ . '/layout/header.php';
                 {
                     data: 'product_name',
                     render: function (data, type, row) {
+                        const isCompleted = String(row.status || '').toLowerCase() === 'completed';
+                        const statusColor = isCompleted ? '#00ad5c' : '';
+                        const statusWeight = isCompleted ? '700' : 'normal';
+
                         return '<div class="fw-semibold">' + escapeHtml(data || '') + '</div>'
-                            + '<div class="small text-muted">' + escapeHtml(row.status_label || '') + '</div>';
+                            + '<div class="small" style="color: ' + statusColor + '; font-weight: ' + statusWeight + ';">' + escapeHtml(row.status_label || '') + '</div>';
                     }
                 },
                 { data: 'quantity', className: 'text-center fw-semibold' },
@@ -127,10 +153,16 @@ require __DIR__ . '/layout/header.php';
                     data: 'payment',
                     className: 'text-center',
                     render: function (data) {
-                        return '<span>' + fmtMoney(data) + '</span>';
+                        return '<span class="fw-bold" style="color: #00ad5c;">' + fmtMoney(data) + '</span>';
                     }
                 },
-                { data: 'time_display', className: 'text-center small' },
+                {
+                    data: null,
+                    className: 'text-center',
+                    render: function (row) {
+                        return renderUserTimeCell(row.time_raw, row.time_ago, row.time_raw || row.time_display);
+                    }
+                },
                 {
                     data: null,
                     className: 'text-center',
@@ -138,9 +170,9 @@ require __DIR__ . '/layout/header.php';
                         const id = Number(row.id || 0);
                         const downloadUrl = BASE_URL + '/history-orders/download/' + encodeURIComponent(id);
                         return ''
-                            + '<button type="button" class="order-action-btn js-view-order" data-id="' + id + '" title="Xem chi tiết"><i class="fas fa-eye"></i></button>'
-                            + '<a class="order-action-btn" href="' + downloadUrl + '" title="Tải nội dung"><i class="fas fa-download"></i></a>'
-                            + '<button type="button" class="order-action-btn js-delete-order" data-id="' + id + '" title="Ẩn lịch sử"><i class="fas fa-trash"></i></button>';
+                            + '<button type="button" class="order-action-btn js-view-order" data-id="' + id + '" title="Xem chi tiết" style="color: #007bff; background: #ebf5ff; border-color: #cce5ff;"><i class="fas fa-eye"></i></button>'
+                            + '<a class="order-action-btn text-success mx-1" href="' + downloadUrl + '" title="Tải nội dung" style="background: #ecfdf5; border-color: #a7f3d0;"><i class="fas fa-download"></i></a>'
+                            + '<button type="button" class="order-action-btn js-delete-order text-danger" data-id="' + id + '" title="Ẩn lịch sử" style="background: #fef2f2; border-color: #fecaca;"><i class="fas fa-trash"></i></button>';
                     }
                 }
             ],
@@ -149,10 +181,10 @@ require __DIR__ . '/layout/header.php';
             pageLength: 10,
             dom: 't<"d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3"<"text-muted small"i><"d-flex align-items-center gap-3"p>>',
             language: {
-                info: "Hiển thị _START_ - _END_ trong tổng số _TOTAL_ đơn hàng",
-                infoEmpty: "Chưa có đơn hàng nào",
-                emptyTable: "Không có dữ liệu đơn hàng",
-                paginate: { next: "›", previous: "‹" }
+                info: 'Hiển thị _START_ - _END_ trong tổng số _TOTAL_ đơn hàng',
+                infoEmpty: 'Chưa có đơn hàng nào',
+                emptyTable: 'Không có dữ liệu đơn hàng',
+                paginate: { next: '&rsaquo;', previous: '&lsaquo;' }
             }
         });
 
@@ -175,8 +207,16 @@ require __DIR__ . '/layout/header.php';
         $('#f-length').on('change', function () {
             table.page.len($(this).val()).draw();
         });
+        const debouncedSearchDraw = debounce(function () { table.draw(); }, 280);
+
         $('#f-sort').on('change', function () { table.draw(); });
-        $('#filter-keyword').on('input', function () { table.draw(); });
+        $('#filter-keyword').on('input', debouncedSearchDraw);
+        $('#filter-keyword').on('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                table.draw();
+            }
+        });
         $('#btn-clear').on('click', function () {
             $('#filter-keyword').val('');
             $('#f-sort').val('all');
@@ -276,14 +316,16 @@ require __DIR__ . '/layout/header.php';
             const detailHtml = ''
                 + '<div class="user-order-detail">'
                 + '<div class="user-order-detail__grid">'
-                + '<div><div class="user-order-detail__label">Mã đơn hàng</div><div class="user-order-detail__value">' + escapeHtml(order.order_code_short || order.order_code || '') + '</div></div>'
-                + '<div><div class="user-order-detail__label">Trạng thái</div><div class="user-order-detail__value">' + escapeHtml(order.status || '') + '</div></div>'
                 + '<div><div class="user-order-detail__label">Sản phẩm</div><div class="user-order-detail__value">' + escapeHtml(order.product_name || '') + '</div></div>'
                 + '<div><div class="user-order-detail__label">Số lượng</div><div class="user-order-detail__value">' + escapeHtml(order.quantity || 0) + '</div></div>'
-                + '<div><div class="user-order-detail__label">Thanh toán</div><div class="user-order-detail__value">' + fmtMoney(order.price || 0) + '</div></div>'
+                + '<div><div class="user-order-detail__label">Mã đơn hàng</div><div class="user-order-detail__value">' + escapeHtml(order.order_code_short || order.order_code || '') + '</div></div>'
+                + '<div><div class="user-order-detail__label">Trạng thái</div><div class="user-order-detail__value' + (String(order.status || '').toLowerCase() === 'completed' ? ' text-success fw-bold' : '') + '">' + escapeHtml(order.status || '') + '</div></div>'
                 + '<div><div class="user-order-detail__label">Thời gian</div><div class="user-order-detail__value">' + escapeHtml(order.created_at || '') + '</div></div>'
+                + '<div><div class="user-order-detail__label">Thanh toán</div><div class="user-order-detail__value text-success fw-bold">' + fmtMoney(order.price || 0) + '</div></div>'
                 + '</div>'
-                + '<div class="user-order-detail__block"><div class="user-order-detail__label">Thông tin bạn gửi</div><div class="user-order-detail__textarea">' + nl2brSafe(order.customer_input || 'Không có') + '</div></div>'
+                + (order.customer_input && order.customer_input.trim() !== '' && order.customer_input.trim().toLowerCase() !== 'không có' ?
+                    '<div class="user-order-detail__block"><div class="user-order-detail__label">Thông tin bạn gửi</div><div class="user-order-detail__textarea">' + nl2brSafe(order.customer_input) + '</div></div>'
+                    : '')
                 + '<div class="user-order-detail__block"><div class="user-order-detail__label">Nội dung bàn giao</div><div class="user-order-detail__textarea">' + nl2brSafe(order.delivery_content || 'Chưa có nội dung bàn giao') + '</div></div>'
                 + (order.cancel_reason ? '<div class="user-order-detail__block"><div class="user-order-detail__label">Lý do hủy / phản hồi</div><div class="user-order-detail__textarea">' + nl2brSafe(order.cancel_reason) + '</div></div>' : '')
                 + '</div>';

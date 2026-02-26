@@ -16,9 +16,14 @@ class HomeController extends Controller
 
         $categoryModel = new Category();
         $productModel = new Product();
+        $stockModel = new ProductStock();
 
         $categories = $categoryModel->getActive();
         $allProducts = $productModel->getAvailable();
+
+        // Fetch stock stats for all products
+        $productIds = array_map(fn($p) => (int) $p['id'], $allProducts);
+        $stockStats = $stockModel->getStatsForProducts($productIds);
 
         // Group products by category ID
         $productsByCategory = [];
@@ -29,6 +34,7 @@ class HomeController extends Controller
         $this->view('home/index', [
             'categories' => $categories,
             'productsByCategory' => $productsByCategory,
+            'stockStats' => $stockStats,
             'user' => $user, // Pass user data to view
             'chungapi' => $chungapi
         ]);

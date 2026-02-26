@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 $userPageTitle = 'Đổi mật khẩu';
 $userPageAssetFlags = [
     'interactive_bundle' => false,
@@ -10,8 +10,7 @@ require __DIR__ . '/layout/header.php';
 <div class="profile-card">
     <div class="profile-card-header profile-card-header--with-actions">
         <div>
-            <h5 class="text-dark mb-1">Thay đổi mật khẩu</h5>
-            <div class="user-card-subtitle">Thay đổi mật khẩu đăng nhập để tăng bảo mật cho tài khoản của bạn.</div>
+            <h5 class="text-dark mb-1">THAY ĐỔI MẬT KHẨU</h5>
         </div>
     </div>
     <div class="profile-card-body">
@@ -48,7 +47,7 @@ require __DIR__ . '/layout/header.php';
 
 <div class="profile-card mt-4">
     <div class="profile-card-header d-flex align-items-center justify-content-between gap-3">
-        <h5 class="text-dark mb-0">Xác minh 2 bước (OTP Gmail)</h5>
+        <h5 class="text-dark mb-0">XÁC MINH 2 BƯỚC (OTP GMAIL)</h5>
         <span class="user-status-badge <?= ((int) ($user['twofa_enabled'] ?? 0) === 1) ? 'is-on' : 'is-off' ?>"
             id="twofa-status-badge">
             <?= ((int) ($user['twofa_enabled'] ?? 0) === 1) ? 'Đang bật' : 'Đang tắt' ?>

@@ -28,8 +28,8 @@ $activePage = (string) ($activePage ?? 'profile');
 <body>
     <?php require __DIR__ . '/../../../hethong/nav.php'; ?>
 
-    <main class="bg-light user-page-main">
-        <section class="user-page-section py-5">
+    <main class="user-page-main">
+        <section class="user-page-section">
             <div class="container user-page-container">
                 <div class="row g-4 user-page-grid">
                     <div class="col-lg-3 col-md-4 user-page-sidebar-col">

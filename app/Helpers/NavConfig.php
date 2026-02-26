@@ -153,7 +153,15 @@ class NavConfig
                 'children' => [
                     [
                         'href' => self::buildUrl('balance/bank'),
-                        'label' => 'Ngân hàng tự động',
+                        'label' => 'Bank',
+                    ],
+                    [
+                        'href' => self::buildUrl('balance/binance'),
+                        'label' => 'Binance',
+                    ],
+                    [
+                        'href' => self::buildUrl('balance/momo'),
+                        'label' => 'Momo',
                     ],
                 ],
             ],
@@ -164,7 +172,11 @@ class NavConfig
                 'children' => [
                     [
                         'href' => self::buildUrl('history-balance'),
-                        'label' => 'Biến động số dư',
+                        'label' => 'Lịch sử nạp tiền',
+                    ],
+                    [
+                        'href' => self::buildUrl('history-orders'),
+                        'label' => 'Lịch sử mua hàng',
                     ],
                 ],
             ],
@@ -234,7 +246,7 @@ class NavConfig
                 'active_key' => 'history',
                 'href' => self::buildUrl('history-balance'),
                 'icon' => 'fas fa-wallet',
-                'label' => 'Biến động số dư',
+                'label' => 'Lịch sử nạp tiền',
             ],
             [
                 'type' => 'link',
@@ -245,7 +257,7 @@ class NavConfig
             ],
             [
                 'type' => 'link',
-                'active_key' => 'deposit',
+                'active_key' => 'balance',
                 'href' => self::buildUrl('balance/bank'),
                 'icon' => 'fas fa-university',
                 'label' => 'Nạp tiền',

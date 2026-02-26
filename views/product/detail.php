@@ -8,6 +8,24 @@ $requiresInfo = (int) ($product['requires_info'] ?? 0) === 1;
 $productType = (string) ($product['product_type'] ?? 'account');
 $infoInstructions = trim((string) ($product['info_instructions'] ?? ''));
 $availableStock = isset($product['available_stock']) ? (int) $product['available_stock'] : null;
+$teleAdminRaw = trim((string) ($chungapi['tele_admin'] ?? ''));
+$teleAdminUrl = '';
+$teleAdminLabel = '';
+if ($teleAdminRaw !== '') {
+    if (preg_match('~^https?://~i', $teleAdminRaw) === 1) {
+        $teleAdminUrl = $teleAdminRaw;
+        $teleAdminLabel = $teleAdminRaw;
+        if (preg_match('~t\\.me/([A-Za-z0-9_]+)~i', $teleAdminRaw, $m) === 1) {
+            $teleAdminLabel = '@' . $m[1];
+        }
+    } else {
+        $teleAdminHandle = ltrim($teleAdminRaw, "@/ \t\n\r\0\x0B");
+        if ($teleAdminHandle !== '') {
+            $teleAdminUrl = 'https://t.me/' . $teleAdminHandle;
+            $teleAdminLabel = '@' . $teleAdminHandle;
+        }
+    }
+}
 $categoryName = trim((string) ($product['category_name'] ?? ''));
 $categorySlug = trim((string) ($product['category_slug'] ?? ''));
 $publicPath = (string) ($product['public_path'] ?? ('product/' . $productId));
@@ -38,6 +56,7 @@ if ($productType === 'link') {
 
 $canPurchase = true;
 $stockLabel = 'Unlimited';
+$isOutOfStock = false;
 if ($requiresInfo) {
     $stockLabel = 'Theo yêu cầu';
 } elseif ($productType === 'link') {
@@ -46,6 +65,7 @@ if ($requiresInfo) {
     $stockLabel = max(0, $availableStock) . ' Stock';
     if ($availableStock <= 0) {
         $canPurchase = false;
+        $isOutOfStock = true;
     }
 }
 
@@ -148,7 +168,7 @@ $seoImage = $galleryImages[0] ?? '';
         }
 
         .pd-price {
-            color: #ff6900;
+            color: #00ad5c;
             font-weight: 800;
             font-size: 25px;
         }
@@ -254,12 +274,12 @@ $seoImage = $galleryImages[0] ?? '';
 
         .pd-summary-row.total {
             font-weight: 800;
-            color: #078631ff;
+            color: #00ad5c;
             font-size: 25px;
         }
 
         .pd-summary-row.total span {
-            color: #000;
+            color: #151a2d;
         }
 
         .pd-summary-row.discount {
@@ -269,11 +289,18 @@ $seoImage = $galleryImages[0] ?? '';
 
         .pd-alert {
             border-radius: 12px;
-            padding: 10px 12px;
+            padding: 12px 16px;
             border: 1px solid #fde68a;
             background: #fffbeb;
             color: #92400e;
-            font-size: .9rem;
+            font-size: .92rem;
+            font-weight: 600;
+        }
+
+        .pd-alert a {
+            color: #0b63c8;
+            font-weight: 700;
+            text-decoration: underline;
         }
 
         .pd-desc {
@@ -388,7 +415,7 @@ $seoImage = $galleryImages[0] ?? '';
                             </div>
                             <div class="pd-stock">
                                 <div class="pd-note">Stock</div>
-                                <div>
+                                <div id="pdStockLabel">
                                     <?= htmlspecialchars($stockLabel, ENT_QUOTES, 'UTF-8') ?>
                                 </div>
                             </div>
@@ -410,15 +437,24 @@ $seoImage = $galleryImages[0] ?? '';
                                     <?= $purchaseMinQty ?></span>
                             <?php endif; ?>
                             <?php if ($displayMaxQty > 0): ?>
-                                <span class="pd-chip"><i class="fas fa-arrow-up-1-9"></i> Max <?= $displayMaxQty ?></span>
+                                <span class="pd-chip info"><i class="fas fa-arrow-up-1-9"></i> Max
+                                    <?= $displayMaxQty ?></span>
                             <?php elseif ($productType !== 'link'): ?>
-                                <span class="pd-chip"><i class="fas fa-infinity"></i> Max không giới hạn</span>
+                                <span class="pd-chip info"><i class="fas fa-infinity"></i> Max không giới hạn</span>
                             <?php endif; ?>
                         </div>
 
                         <?php if (!$canPurchase): ?>
                             <div class="pd-alert mb-3">
-                                Sản phẩm hiện chưa thể mua ngay. Vui lòng quay lại sau hoặc liên hệ quản trị viên.
+                                <?php if ($isOutOfStock): ?>
+                                    Sản phẩm hiện ĐANG HẾT. Vui lòng quay lại sau hoặc liên hệ
+                                    <?php if ($teleAdminUrl !== ''): ?>
+                                        <a href="<?= htmlspecialchars($teleAdminUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank"
+                                            rel="noopener noreferrer">Quản trị viên</a>
+                                    <?php else: ?>
+                                        Quản trị viên
+                                    <?php endif; ?>.
+                                <?php endif; ?>
                             </div>
                         <?php endif; ?>
 
@@ -506,6 +542,9 @@ $seoImage = $galleryImages[0] ?? '';
             price: <?= $priceVnd ?>,
             minQty: <?= (int) $purchaseMinQty ?>,
             maxQty: <?= (int) $displayMaxQty ?>,
+            maxQtyConfig: <?= (int) $purchaseMaxQty ?>,
+            availableStock: <?= is_int($availableStock) ? (int) $availableStock : 'null' ?>,
+            stockManaged: <?= ($productType === 'account' && !$requiresInfo && is_int($availableStock)) ? 'true' : 'false' ?>,
             requiresInfo: <?= $requiresInfo ? 'true' : 'false' ?>,
             productType: <?= json_encode($productType, JSON_UNESCAPED_UNICODE) ?>,
             canPurchase: <?= $canPurchase ? 'true' : 'false' ?>,
@@ -534,7 +573,110 @@ $seoImage = $galleryImages[0] ?? '';
             return document.getElementById('purchaseQty');
         }
 
+        function getStockLabelEl() {
+            return document.getElementById('pdStockLabel');
+        }
+
+        function computeDisplayMaxFromState() {
+            if (PRODUCT_DETAIL.productType === 'link') {
+                return 1;
+            }
+
+            if (PRODUCT_DETAIL.stockManaged) {
+                const available = Math.max(0, Number(PRODUCT_DETAIL.availableStock || 0));
+                const maxCfg = Math.max(0, Number(PRODUCT_DETAIL.maxQtyConfig || 0));
+                return maxCfg > 0 ? Math.min(maxCfg, available) : available;
+            }
+
+            return Math.max(0, Number(PRODUCT_DETAIL.maxQty || 0));
+        }
+
+        function renderStockRealtimeState() {
+            if (!PRODUCT_DETAIL.stockManaged) return;
+
+            const stock = Math.max(0, Number(PRODUCT_DETAIL.availableStock || 0));
+            const stockEl = getStockLabelEl();
+            if (stockEl) {
+                stockEl.textContent = stock + ' Stock';
+                stockEl.style.color = stock > 0 ? '#0f7a2f' : '#dc2626';
+                stockEl.style.fontWeight = '700';
+            }
+
+            PRODUCT_DETAIL.maxQty = computeDisplayMaxFromState();
+
+            const qtyInput = getQtyInput();
+            if (qtyInput) {
+                if (PRODUCT_DETAIL.maxQty > 0) {
+                    qtyInput.setAttribute('max', String(PRODUCT_DETAIL.maxQty));
+                } else {
+                    qtyInput.removeAttribute('max');
+                }
+            }
+
+            PRODUCT_DETAIL.canPurchase = PRODUCT_DETAIL.maxQty > 0;
+            const buyBtn = document.getElementById('buyNowBtn');
+            if (buyBtn && !PRODUCT_DETAIL.canPurchase) {
+                buyBtn.innerHTML = '<i class="fas fa-box-open me-1"></i> Hết hàng';
+            }
+
+            setPurchaseControlsAvailability();
+        }
+
+        function setPurchaseControlsAvailability() {
+            const canBuy = !!PRODUCT_DETAIL.canPurchase;
+            const qtyInput = getQtyInput();
+            const minusBtn = document.getElementById('qtyMinusBtn');
+            const plusBtn = document.getElementById('qtyPlusBtn');
+            const giftInput = document.getElementById('giftcodeInput');
+            const giftBtn = document.getElementById('applyGiftcodeBtn');
+
+            if (qtyInput) {
+                qtyInput.disabled = !canBuy;
+                if (!canBuy) {
+                    qtyInput.value = String(Math.max(1, Number(PRODUCT_DETAIL.minQty || 1)));
+                }
+            }
+            if (minusBtn) minusBtn.disabled = !canBuy;
+            if (plusBtn) plusBtn.disabled = !canBuy;
+            if (giftInput) giftInput.disabled = false;
+            if (giftBtn && !APPLY_GIFTCODE_LOADING) giftBtn.disabled = false;
+        }
+
+        function applyPurchaseSuccessRealtimeState(data, requestedQty) {
+            if (!PRODUCT_DETAIL.stockManaged) return;
+            if (data && data.pending) return;
+
+            const order = (data && data.order) ? data.order : {};
+            const qtyBought = Math.max(1, Number(order.quantity || requestedQty || 1));
+
+            PRODUCT_DETAIL.availableStock = Math.max(0, Number(PRODUCT_DETAIL.availableStock || 0) - qtyBought);
+            renderStockRealtimeState();
+
+            const qtyInput = getQtyInput();
+            if (qtyInput) {
+                const nextMax = Number(PRODUCT_DETAIL.maxQty || 0);
+                if (nextMax <= 0) {
+                    qtyInput.value = String(PRODUCT_DETAIL.minQty);
+                    clearAppliedGiftcodePreview({ silent: true });
+                } else if (Number(qtyInput.value || 0) > nextMax) {
+                    qtyInput.value = String(nextMax);
+                    clearAppliedGiftcodePreview({ silent: true });
+                }
+            }
+
+            updateSummaryPreview();
+
+            const giftcode = getGiftCode();
+            if (giftcode && PRODUCT_DETAIL.canPurchase) {
+                applyGiftcode();
+            }
+        }
+
         function normalizeQty(nextQty) {
+            if (!PRODUCT_DETAIL.canPurchase) {
+                return Math.max(1, Number(PRODUCT_DETAIL.minQty || 1));
+            }
+
             let qty = Number(nextQty);
             if (!Number.isFinite(qty)) qty = PRODUCT_DETAIL.minQty;
             qty = Math.floor(qty);
@@ -628,6 +770,8 @@ $seoImage = $galleryImages[0] ?? '';
         }
 
         function applyGiftcode() {
+            if (!PRODUCT_DETAIL.canPurchase) return;
+
             const giftcode = getGiftCode();
             const qty = getRequestedQuantity();
 
@@ -695,9 +839,14 @@ $seoImage = $galleryImages[0] ?? '';
             const btn = document.getElementById('buyNowBtn');
             if (!btn) return;
             btn.disabled = !!isLoading || !PRODUCT_DETAIL.canPurchase;
-            btn.innerHTML = isLoading
-                ? '<i class="fas fa-spinner fa-spin me-1"></i> Đang xử lý...'
-                : '<i class="fas fa-shopping-cart me-1"></i> Mua hàng ngay';
+            if (isLoading) {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Đang xử lý...';
+                return;
+            }
+            btn.innerHTML = PRODUCT_DETAIL.canPurchase
+                ? '<i class="fas fa-shopping-cart me-1"></i> Mua hàng ngay'
+                : '<i class="fas fa-box-open me-1"></i> Hết hàng';
+            setPurchaseControlsAvailability();
         }
 
         let __ksConfettiLoader = null;
@@ -731,7 +880,7 @@ $seoImage = $galleryImages[0] ?? '';
                 gravity: 1.2,
                 decay: 0.94,
                 startVelocity: 45,
-                zIndex: 2000
+                zIndex: 1000
             };
 
             confetti({
@@ -1029,6 +1178,7 @@ $seoImage = $galleryImages[0] ?? '';
                     if (subEl) subEl.textContent = fmtMoney(order.subtotal_price || (qty * PRODUCT_DETAIL.price));
                     if (disEl) disEl.textContent = fmtMoney(order.discount_amount || 0);
                     if (totalEl) totalEl.textContent = fmtMoney(order.price || (qty * PRODUCT_DETAIL.price));
+                    applyPurchaseSuccessRealtimeState(data, qty);
                     showPurchaseSuccess(data);
                 })
                 .catch((err) => {
@@ -1117,6 +1267,7 @@ $seoImage = $galleryImages[0] ?? '';
             }
 
             updateSummaryPreview();
+            renderStockRealtimeState();
             setBuyButtonLoading(false);
         });
     </script>

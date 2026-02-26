@@ -118,9 +118,32 @@
 <script>
     var selectedImages = [];
     var allImages = []; // Store api data for filtering
+    var imageManagerTargetInput = '#image';
     var imageManagerAjaxUrl = '<?= APP_DIR ?>/admin/ajax-image.php';
+    var IMAGE_CSRF_TOKEN = '<?= function_exists('csrf_token') ? csrf_token() : '' ?>';
 
-    function openImageManager() {
+    // Gửi CSRF token trong header cho mọi AJAX request
+    $.ajaxSetup({
+        beforeSend: function (xhr) {
+            if (IMAGE_CSRF_TOKEN) {
+                xhr.setRequestHeader('X-CSRF-TOKEN', IMAGE_CSRF_TOKEN);
+            }
+        }
+    });
+
+    function resolveImageManagerTarget(targetInput) {
+        if (!targetInput) return '#image';
+        if (typeof targetInput === 'string') {
+            var raw = targetInput.trim();
+            if (!raw) return '#image';
+            if (raw.charAt(0) === '#' || raw.charAt(0) === '.' || raw.charAt(0) === '[') return raw;
+            return '#' + raw;
+        }
+        return '#image';
+    }
+
+    function openImageManager(targetInput) {
+        imageManagerTargetInput = resolveImageManagerTarget(targetInput);
         $('#imageManagerModal').modal('show');
         loadImages();
         selectedImages = [];
@@ -218,7 +241,16 @@
     }
 
     function selectImage(url) {
-        $(imageManagerTargetInput).val(url).trigger('change');
+        var $target = $(imageManagerTargetInput);
+        if ($target.length === 0) {
+            $target = $('#image');
+            imageManagerTargetInput = '#image';
+        }
+        if ($target.length === 0) {
+            Swal.fire('Lỗi', 'Không tìm thấy ô nhận ảnh để chèn.', 'error');
+            return;
+        }
+        $target.val(url).trigger('change');
         $('#imageManagerModal').modal('hide');
     }
 
@@ -264,6 +296,9 @@
             form_data.append('files[]', files[i]);
         }
         form_data.append('action', 'upload');
+        if (IMAGE_CSRF_TOKEN) {
+            form_data.append('csrf_token', IMAGE_CSRF_TOKEN);
+        }
 
         Swal.fire({
             title: 'Đang upload...',

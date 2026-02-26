@@ -85,12 +85,9 @@ class History extends Model
     {
         $rows = $this->getUnifiedRows($username);
 
-        $search = mb_strtolower(trim((string) ($filters['search'] ?? '')), 'UTF-8');
+        $search = trim((string) ($filters['search'] ?? ''));
         if ($search !== '') {
-            $rows = array_values(array_filter($rows, function ($row) use ($search) {
-                $reason = mb_strtolower((string) ($row['reason_text'] ?? ''), 'UTF-8');
-                return mb_strpos($reason, $search, 0, 'UTF-8') !== false;
-            }));
+            $rows = $this->applySmartSearchFilter($rows, $search);
         }
 
         $rows = $this->applyTimeRangeFilter($rows, (string) ($filters['time_range'] ?? ''));
@@ -365,6 +362,105 @@ class History extends Model
         $digits = preg_replace('/[^0-9]/', '', $str);
         $num = (int) ($digits !== '' ? $digits : 0);
         return $negative ? -$num : $num;
+    }
+
+    /**
+     * @param array<int,array<string,mixed>> $rows
+     * @return array<int,array<string,mixed>>
+     */
+    private function applySmartSearchFilter(array $rows, string $search): array
+    {
+        $tokens = $this->tokenizeSmartSearch($search);
+        if ($tokens === []) {
+            return $rows;
+        }
+
+        return array_values(array_filter($rows, function (array $row) use ($tokens): bool {
+            $change = (int) ($row['change_amount'] ?? 0);
+            $amountAbs = abs($change);
+            $amountPlain = (string) $amountAbs;
+            $amountFormatted = number_format($amountAbs, 0, ',', '.');
+            $source = (string) ($row['source'] ?? '');
+            $sourceLabel = match ($source) {
+                'deposit' => 'nap tien deposit bank chuyen khoan',
+                'activity' => 'mua hang don hang giao dich',
+                default => $source,
+            };
+
+            $haystack = implode(' ', array_filter([
+                (string) ($row['reason_text'] ?? ''),
+                (string) ($row['event_time'] ?? ''),
+                (string) ($row['raw_time'] ?? ''),
+                (string) ($row['source_id'] ?? ''),
+                $source,
+                $sourceLabel,
+                $change > 0 ? 'cong plus +' : ($change < 0 ? 'tru minus -' : 'khong doi'),
+                $amountPlain,
+                $amountFormatted,
+                $amountFormatted . 'd',
+                $amountPlain . 'd',
+            ], static fn($v) => (string) $v !== ''));
+
+            $normalized = $this->normalizeSmartSearchText($haystack);
+            $digits = preg_replace('/\D+/', '', $haystack) ?? '';
+
+            foreach ($tokens as $token) {
+                if ($token === '') {
+                    continue;
+                }
+                if (preg_match('/^\d+$/', $token) === 1) {
+                    if ($digits === '' || strpos($digits, $token) === false) {
+                        return false;
+                    }
+                    continue;
+                }
+                if (strpos($normalized, $token) === false) {
+                    return false;
+                }
+            }
+
+            return true;
+        }));
+    }
+
+    /**
+     * @return array<int,string>
+     */
+    private function tokenizeSmartSearch(string $search): array
+    {
+        $normalized = $this->normalizeSmartSearchText($search);
+        if ($normalized === '') {
+            return [];
+        }
+        $parts = preg_split('/\s+/u', $normalized) ?: [];
+        return array_values(array_filter($parts, static fn($p) => $p !== ''));
+    }
+
+    private function normalizeSmartSearchText(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+        $value = mb_strtolower($value, 'UTF-8');
+        $value = strtr($value, [
+            'à' => 'a', 'á' => 'a', 'ạ' => 'a', 'ả' => 'a', 'ã' => 'a',
+            'â' => 'a', 'ầ' => 'a', 'ấ' => 'a', 'ậ' => 'a', 'ẩ' => 'a', 'ẫ' => 'a',
+            'ă' => 'a', 'ằ' => 'a', 'ắ' => 'a', 'ặ' => 'a', 'ẳ' => 'a', 'ẵ' => 'a',
+            'è' => 'e', 'é' => 'e', 'ẹ' => 'e', 'ẻ' => 'e', 'ẽ' => 'e',
+            'ê' => 'e', 'ề' => 'e', 'ế' => 'e', 'ệ' => 'e', 'ể' => 'e', 'ễ' => 'e',
+            'ì' => 'i', 'í' => 'i', 'ị' => 'i', 'ỉ' => 'i', 'ĩ' => 'i',
+            'ò' => 'o', 'ó' => 'o', 'ọ' => 'o', 'ỏ' => 'o', 'õ' => 'o',
+            'ô' => 'o', 'ồ' => 'o', 'ố' => 'o', 'ộ' => 'o', 'ổ' => 'o', 'ỗ' => 'o',
+            'ơ' => 'o', 'ờ' => 'o', 'ớ' => 'o', 'ợ' => 'o', 'ở' => 'o', 'ỡ' => 'o',
+            'ù' => 'u', 'ú' => 'u', 'ụ' => 'u', 'ủ' => 'u', 'ũ' => 'u',
+            'ư' => 'u', 'ừ' => 'u', 'ứ' => 'u', 'ự' => 'u', 'ử' => 'u', 'ữ' => 'u',
+            'ỳ' => 'y', 'ý' => 'y', 'ỵ' => 'y', 'ỷ' => 'y', 'ỹ' => 'y',
+            'đ' => 'd',
+        ]);
+        $value = preg_replace('/[^\p{L}\p{N}\s\-\+]/u', ' ', $value) ?? $value;
+        $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+        return trim($value);
     }
 
     private function tableExists(string $table): bool

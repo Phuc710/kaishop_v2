@@ -14,34 +14,34 @@ require_once __DIR__ . '/../layout/head.php';
 require_once __DIR__ . '/../layout/breadcrumb.php';
 ?>
 
-<section class="content pb-4 mt-3">
+<section class="content pb-4 mt-3 admin-stock-page">
     <div class="container-fluid">
 
         <!-- STATS -->
-        <div class="row mb-3">
-            <div class="col-md-4">
-                <div class="info-box">
-                    <span class="info-box-icon bg-info"><i class="fas fa-boxes"></i></span>
+        <div class="row mb-3 admin-stock-stats">
+            <div class="col-lg-4 mb-3 mb-lg-0">
+                <div class="info-box stock-stat-box shadow-sm border-0">
+                    <span class="info-box-icon bg-info elevation-1"><i class="fas fa-boxes"></i></span>
                     <div class="info-box-content">
-                        <span class="info-box-text text-uppercase font-weight-bold">Tổng kho</span>
+                        <span class="info-box-text text-uppercase font-weight-bold text-muted">Tổng kho</span>
                         <span class="info-box-number h4 mb-0" id="stat-total"><?= $stats['total'] ?></span>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="info-box border-success border-left">
-                    <span class="info-box-icon bg-success"><i class="fas fa-check-circle"></i></span>
+            <div class="col-lg-4 mb-3 mb-lg-0">
+                <div class="info-box stock-stat-box shadow-sm border-0">
+                    <span class="info-box-icon bg-success elevation-1"><i class="fas fa-check-circle"></i></span>
                     <div class="info-box-content">
-                        <span class="info-box-text text-uppercase font-weight-bold">Còn lại</span>
+                        <span class="info-box-text text-uppercase font-weight-bold text-muted">Còn lại</span>
                         <span class="info-box-number h4 mb-0" id="stat-available"><?= $stats['available'] ?></span>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="info-box">
-                    <span class="info-box-icon bg-danger"><i class="fas fa-shopping-bag"></i></span>
+            <div class="col-lg-4">
+                <div class="info-box stock-stat-box shadow-sm border-0">
+                    <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-shopping-bag"></i></span>
                     <div class="info-box-content">
-                        <span class="info-box-text text-uppercase font-weight-bold">Đã bán</span>
+                        <span class="info-box-text text-uppercase font-weight-bold text-muted">Đã bán</span>
                         <span class="info-box-number h4 mb-0" id="stat-sold"><?= $stats['sold'] ?></span>
                     </div>
                 </div>
@@ -49,134 +49,164 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
         </div>
 
         <div class="row">
-            <!-- IMPORT PANEL -->
-            <div class="col-md-4">
-                <div class="card custom-card">
-                    <div class="card-header border-0 d-flex justify-content-between align-items-center">
-                        <h4 class="card-title font-weight-bold mb-0"><i class="fas fa-upload mr-1"></i> NHẬP HÀNG MỚI
+            <div class="col-lg-12">
+                <div class="card custom-card stock-panel-card shadow-sm border-0">
+                    <div
+                        class="card-header bg-white border-bottom d-flex justify-content-between align-items-center flex-wrap py-3">
+                        <h4 class="card-title font-weight-bold mb-0 text-dark">
+                            DANH SÁCH TRONG KHO
                         </h4>
-                        <div class="d-flex gap-1">
-                            <button type="button" class="btn btn-xs btn-outline-info"
-                                onclick="$('#addSingleModal').modal('show')">
-                                <i class="fas fa-plus mr-1"></i>Thêm 1
-                            </button>
-                            <button type="button" class="btn btn-xs btn-outline-primary"
-                                onclick="$('#stockFile').click()">
-                                <i class="fas fa-file-import mr-1"></i>Chọn file .txt
-                            </button>
-                        </div>
-                        <input type="file" id="stockFile" style="display:none;" accept=".txt"
-                            onchange="handleStockFile(this)">
-                    </div>
-                    <div class="card-body">
-                        <div class="form-group">
-                            <label class="font-weight-bold">Danh sách tài khoản</label>
-                            <textarea id="importContent" class="form-control" rows="15"
-                                style="font-family:Consolas,monospace;font-size:13px; background: #fdfdfd;"
-                                placeholder="user1:pass1&#10;user2:pass2&#10;..."></textarea>
-                            <small class="text-muted"><i class="fas fa-info-circle mr-1"></i> Mỗi dòng là 1 tài
-                                khoản.</small>
-                        </div>
-                        <button id="btnImport" class="btn btn-primary btn-block btn-lg font-weight-bold">
-                            <i class="fas fa-plus-circle mr-1"></i>NHẬP KHO NGAY
-                        </button>
-                        <div id="importResult" class="mt-3" style="display:none;"></div>
-                    </div>
-                </div>
-            </div>
+                        <div class="stock-toolbar d-flex align-items-center flex-wrap gap-2 mt-2 mt-md-0">
+                            <!-- Uniform height for all items -->
+                            <style>
+                                .stock-toolbar .form-control,
+                                .stock-toolbar .btn,
+                                .stock-toolbar .input-group-text,
+                                .stock-toolbar .input-group {
+                                    height: 38px !important;
+                                    display: flex;
+                                    align-items: center;
+                                }
 
-            <!-- STOCK LIST -->
-            <div class="col-md-8">
-                <div class="card custom-card">
-                    <div class="card-header border-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <h4 class="card-title font-weight-bold mb-0"><i class="fas fa-list mr-1"></i> DANH SÁCH TRONG
-                            KHO</h4>
-                        <div class="d-flex gap-2 align-items-center">
-                            <div class="input-group input-group-sm" style="width: 200px;">
+                                .stock-toolbar .input-group .form-control {
+                                    height: 100% !important;
+                                }
+
+                                .stock-toolbar .input-group-append .btn {
+                                    height: 100% !important;
+                                }
+
+                                .stock-toolbar .btn-group .btn {
+                                    height: 100% !important;
+                                }
+                            </style>
+
+                            <div class="input-group mr-2" style="width: 280px;">
                                 <input type="text" id="searchTerm" class="form-control" placeholder="Tìm nội dung..."
                                     value="<?= htmlspecialchars($search ?? '') ?>">
-                                <div class="input-group-append">
-                                    <button class="btn btn-primary" type="button" id="btnSearch">
-                                        <i class="fas fa-search"></i>
-                                    </button>
-                                </div>
                             </div>
-                            <select id="filterStatus" class="form-control form-control-sm" style="width:140px;">
+
+                            <select id="filterStatus" class="form-control mr-2 shadow-sm" style="width: 160px;">
                                 <option value="" <?= $statusFilter === '' ? 'selected' : '' ?>>Tất cả trạng thái</option>
                                 <option value="available" <?= $statusFilter === 'available' ? 'selected' : '' ?>>Còn lại
-                                    (Sẵn sàng)</option>
-                                <option value="sold" <?= $statusFilter === 'sold' ? 'selected' : '' ?>>Đã bán (Sold)
                                 </option>
+                                <option value="sold" <?= $statusFilter === 'sold' ? 'selected' : '' ?>>Đã bán</option>
                             </select>
-                            <button id="btnClean" class="btn btn-sm btn-outline-danger"
-                                title="Xóa toàn bộ hàng chưa bán">
-                                <i class="fas fa-eraser mr-1"></i>Dọn kho
+
+                            <div class="btn-group mr-2">
+                                <button id="btnClean" class="btn btn-outline-danger" title="Xóa toàn bộ hàng chưa bán">
+                                    <i class="fas fa-eraser mr-1"></i>Dọn kho
+                                </button>
+                            </div>
+
+                            <button type="button" class="btn btn-primary font-weight-bold px-3 shadow-sm"
+                                onclick="$('#importModal').modal('show')">
+                                <i class="fas fa-plus-circle mr-1"></i> Thêm vào kho
                             </button>
-                            <a href="<?= url('admin/products/edit/' . $product['id']) ?>"
-                                class="btn btn-sm btn-outline-secondary">
-                                <i class="fas fa-edit mr-1"></i>Quay lại Sửa SP
-                            </a>
                         </div>
                     </div>
                     <div class="card-body p-0">
-                        <div class="table-responsive" style="max-height:650px; overflow-y:auto;">
-                            <table class="table table-hover mb-0" id="stockTable">
-                                <thead style="background: #f4f6f9; position: sticky; top: 0; z-index: 10;">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped mb-0" id="stockTable">
+                                <thead class="bg-light">
                                     <tr>
-                                        <th style="width:60px;">ID</th>
-                                        <th>NỘI DUNG TÀI KHOẢN</th>
-                                        <th style="width:110px;">TRẠNG THÁI</th>
-                                        <th style="width:110px;">NGÀY NHẬP</th>
-                                        <th style="width:110px;">HÀNH ĐỘNG</th>
+                                        <th style="width:70px;"
+                                            class="text-center font-weight-bold text-dark text-uppercase small">ID</th>
+                                        <th class="text-center font-weight-bold text-dark text-uppercase small">Nội dung
+                                            tài khoản</th>
+                                        <th style="width:150px;"
+                                            class="text-center font-weight-bold text-dark text-uppercase small">Người
+                                            mua / Buyer</th>
+                                        <th style="width:120px;"
+                                            class="text-center font-weight-bold text-dark text-uppercase small">Trạng
+                                            thái</th>
+                                        <th style="width:120px;"
+                                            class="text-center font-weight-bold text-dark text-uppercase small">Ngày
+                                            nhập</th>
+                                        <th style="width:120px;"
+                                            class="text-center font-weight-bold text-dark text-uppercase small">Hành
+                                            động</th>
                                     </tr>
                                 </thead>
                                 <tbody id="stockBody">
                                     <?php if (empty($items)): ?>
                                         <tr>
-                                            <td colspan="5" class="text-center py-5 text-muted">Kho hiện đang trống</td>
+                                            <td colspan="6" class="text-center py-5 text-muted">
+                                                <i class="fas fa-box-open fa-3x mb-3 d-block opacity-50"></i>
+                                                Kho hiện đang trống
+                                            </td>
                                         </tr>
                                     <?php else: ?>
                                         <?php foreach ($items as $item): ?>
-                                            <tr id="stock-row-<?= $item['id'] ?>">
-                                                <td class="text-muted small align-middle">#<?= $item['id'] ?></td>
-                                                <td class="align-middle">
-                                                    <?php if ($item['status'] === 'sold'): ?>
-                                                        <div class="text-muted italic"
-                                                            style="font-size:13px; text-decoration: line-through;">•••••••••••• (Đã
-                                                            bán)</div>
-                                                        <?php if ($item['sold_at']): ?>
-                                                            <small class="text-danger d-block">Bán lúc:
-                                                                <?= date('d/m/Y H:i', strtotime($item['sold_at'])) ?></small>
-                                                        <?php endif; ?>
+                                            <tr id="stock-row-<?= $item['id'] ?>"
+                                                class="<?= $item['status'] === 'sold' ? 'table-light' : '' ?>">
+                                                <td class="text-center align-middle">
+                                                    <span class="text-muted font-weight-bold">#<?= $item['id'] ?></span>
+                                                </td>
+                                                <td class="text-center align-middle">
+                                                    <div class="d-flex align-items-center justify-content-center">
+                                                        <code class="p-1 px-2 border rounded bg-white text-dark mr-2"
+                                                            style="font-size: 14px;"><?= htmlspecialchars($item['content']) ?></code>
+                                                        <button class="btn btn-xs btn-outline-info copy-content-btn"
+                                                            data-content="<?= htmlspecialchars($item['content']) ?>"
+                                                            title="Copy">
+                                                            <i class="far fa-copy"></i>
+                                                        </button>
+                                                    </div>
+                                                    <?php if ($item['status'] === 'sold' && $item['sold_at']): ?>
+                                                        <div class="mt-1 small text-center">
+                                                            <span class="text-danger font-weight-bold"><i
+                                                                    class="far fa-clock mr-1"></i>Bán lúc:</span>
+                                                            <span
+                                                                class="text-muted"><?= date('d/m/Y H:i:s', strtotime($item['sold_at'])) ?></span>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td class="text-center align-middle">
+                                                    <?php if (!empty($item['buyer_username'])): ?>
+                                                        <a href="<?= url('admin/users/edit/' . $item['buyer_username']) ?>"
+                                                            class="d-inline-flex align-items-center text-primary font-weight-bold">
+                                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mr-2"
+                                                                style="width:24px; height:24px; font-size:10px;">
+                                                                <i class="fas fa-user"></i>
+                                                            </div>
+                                                            <?= htmlspecialchars($item['buyer_username']) ?>
+                                                        </a>
                                                     <?php else: ?>
-                                                        <code style="font-size:14px; color: #d63384;" class="account-content"
-                                                            data-id="<?= $item['id'] ?>"><?= htmlspecialchars($item['content']) ?></code>
+                                                        <span class="text-muted small"><i class="fas fa-minus mr-1"></i>Chưa
+                                                            bán</span>
                                                     <?php endif; ?>
                                                 </td>
                                                 <td class="align-middle text-center">
                                                     <?php if ($item['status'] === 'available'): ?>
-                                                        <span class="badge badge-success px-2 py-1">CÒN HÀNG</span>
+                                                        <span class="badge badge-success shadow-sm px-3 py-1">CÒN HÀNG</span>
                                                     <?php else: ?>
-                                                        <span class="badge badge-secondary px-2 py-1">ĐÃ BÁN</span>
+                                                        <span class="badge badge-secondary shadow-sm px-3 py-1">ĐÃ BÁN</span>
                                                     <?php endif; ?>
                                                 </td>
-                                                <td class="small text-muted align-middle">
-                                                    <?= $item['created_at'] ? date('d/m H:i', strtotime($item['created_at'])) : '—' ?>
+                                                <td class="text-center align-middle">
+                                                    <span class="text-muted small">
+                                                        <?= $item['created_at'] ? date('d/m/Y', strtotime($item['created_at'])) : '—' ?><br>
+                                                        <span
+                                                            class="font-weight-bold"><?= $item['created_at'] ? date('H:i', strtotime($item['created_at'])) : '' ?></span>
+                                                    </span>
                                                 </td>
-                                                <td class="align-middle">
-                                                    <?php if ($item['status'] === 'available'): ?>
-                                                        <button class="btn btn-xs btn-warning edit-stock-btn mr-1"
+                                                <td class="align-middle text-center">
+                                                    <div class="btn-group btn-group-sm">
+                                                        <button
+                                                            class="btn <?= $item['status'] === 'available' ? 'btn-warning' : 'btn-light border' ?> edit-stock-btn"
                                                             data-id="<?= $item['id'] ?>"
-                                                            data-content="<?= htmlspecialchars($item['content']) ?>" title="Sửa">
+                                                            data-content="<?= htmlspecialchars($item['content']) ?>"
+                                                            title="<?= $item['status'] === 'available' ? 'Sửa nội dung' : 'Sửa nội dung (Dành cho bảo hành)' ?>">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
-                                                        <button class="btn btn-xs btn-danger delete-stock-btn"
-                                                            data-id="<?= $item['id'] ?>" title="Xóa">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
-                                                    <?php else: ?>
-                                                        —
-                                                    <?php endif; ?>
+                                                        <?php if ($item['status'] === 'available'): ?>
+                                                            <button class="btn btn-danger delete-stock-btn"
+                                                                data-id="<?= $item['id'] ?>" title="Xóa">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        <?php endif; ?>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -185,8 +215,13 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                             </table>
                         </div>
                     </div>
-                    <div class="card-footer text-muted small py-2 bg-light">
-                        Tổng cộng: <?= count($items) ?> tài khoản
+                    <div class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center">
+                        <span class="text-muted small">
+                            Đang hiển thị <b><?= count($items) ?></b> tài khoản.
+                        </span>
+                        <nav id="paginationWrap">
+                            <!-- Pagination can be added here if needed -->
+                        </nav>
                     </div>
                 </div>
             </div>
@@ -194,48 +229,67 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
     </div>
 </section>
 
-<!-- MODAL ADD SINGLE STOCK -->
-<div class="modal fade" id="addSingleModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content border-0">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title font-weight-bold">THÊM 1 TÀI KHOẢN MỚI</h5>
-                <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+<!-- MODAL IMPORT (POPUP) -->
+<div class="modal fade" id="importModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white p-3">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-upload mr-2"></i> NHẬP HÀNG MỚI</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
-            <div class="modal-body">
-                <div class="form-group mb-0">
-                    <label class="font-weight-bold">Nội dung tài khoản</label>
-                    <input type="text" id="singleContent" class="form-control" placeholder="Ví dụ: user|pass|extra...">
-                    <small class="text-muted">Nhập nội dung 1 dòng duy nhất.</small>
+            <div class="modal-body p-4">
+                <div class="form-group mb-4">
+                    <div class="d-flex justify-content-between align-items-end mb-2">
+                        <label class="font-weight-bold text-dark mb-0">2. Danh sách tài khoản</label>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="$('#stockFile').click()">
+                            <i class="fas fa-file-import mr-1"></i>Chọn từ file (.txt)
+                        </button>
+                        <input type="file" id="stockFile" style="display:none;" accept=".txt"
+                            onchange="handleStockFile(this)">
+                    </div>
+                    <textarea id="importContent" class="form-control border-primary" rows="12"
+                        placeholder="user1:pass1&#10;user2:pass2&#10;user3:pass3|extra_info..."
+                        style="font-family: 'Courier New', Courier, monospace; font-size: 14px; border-width: 2px;"></textarea>
                 </div>
-            </div>
-            <div class="modal-footer pb-3 border-0">
-                <button type="button" class="btn btn-light border" data-dismiss="modal">Hủy</button>
-                <button type="button" id="btnSaveSingle" class="btn btn-info font-weight-bold px-4">THÊM NGAY</button>
+
+                <div id="importResult" class="mb-4" style="display:none;"></div>
+
+                <div class="bg-light p-3 rounded d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-link text-muted" data-dismiss="modal">Hủy bỏ</button>
+                    <button id="btnImport" class="btn btn-primary btn-lg px-5 font-weight-bold shadow">
+                        <i class="fas fa-plus-circle mr-2"></i> BẮT ĐẦU NHẬP KHO
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <!-- MODAL EDIT STOCK -->
-<div class="modal fade" id="editStockModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content border-0">
-            <div class="modal-header bg-warning">
+<div class="modal fade" id="editStockModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog border-0" role="document">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-warning py-2">
                 <h5 class="modal-title font-weight-bold">SỬA NỘI DUNG TÀI KHOẢN</h5>
                 <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <input type="hidden" id="editId">
                 <div class="form-group mb-0">
-                    <label class="font-weight-bold">Nội dung (1 dòng)</label>
-                    <input type="text" id="editContent" class="form-control" placeholder="user:pass...">
+                    <label class="font-weight-bold text-dark mb-2">Nội dung (1 dòng duy nhất)</label>
+                    <textarea id="editContent" class="form-control" rows="3" placeholder="user:pass..."></textarea>
+                    <small class="text-muted d-block mt-2">
+                        <i class="fas fa-exclamation-triangle mr-1 text-warning"></i>
+                        Chỉ chỉnh sửa khi cần thiết (Ví dụ: khách báo sai mật khẩu, bảo hành).
+                    </small>
                 </div>
             </div>
-            <div class="modal-footer pb-3 border-0">
-                <button type="button" class="btn btn-light border" data-dismiss="modal">Hủy</button>
-                <button type="button" id="btnSaveEdit" class="btn btn-warning font-weight-bold px-4">LƯU THAY
-                    ĐỔI</button>
+            <div class="modal-footer border-0 pt-0 pb-4 justify-content-center">
+                <button type="button" class="btn btn-light border px-4" data-dismiss="modal">Hủy</button>
+                <button type="button" id="btnSaveEdit" class="btn btn-warning font-weight-bold px-5 shadow-sm">LƯU CẬP
+                    NHẬT</button>
             </div>
         </div>
     </div>
@@ -264,6 +318,17 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             input.value = '';
         };
 
+        // Copy content
+        $(document).on('click', '.copy-content-btn', function () {
+            const content = $(this).data('content');
+            const temp = $("<input>");
+            $("body").append(temp);
+            temp.val(content).select();
+            document.execCommand("copy");
+            temp.remove();
+            Toast.fire({ icon: 'success', title: 'Đã copy nội dung' });
+        });
+
         // Import
         $('#btnImport').on('click', function () {
             const content = $('#importContent').val().trim();
@@ -273,17 +338,17 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Đang xử lý...');
 
             $.post(importUrl, { content: content }, function (res) {
-                btn.prop('disabled', false).html('<i class="fas fa-plus-circle mr-1"></i>NHẬP KHO NGAY');
+                btn.prop('disabled', false).html('<i class="fas fa-plus-circle mr-2"></i> BẮT ĐẦU NHẬP KHO');
                 if (res.success) {
-                    Toast.fire({ icon: 'success', title: res.message });
                     $('#importContent').val('');
-                    $('#importResult').html(`<div class="alert alert-success border-left">✅ Đã nhập <b>${res.added}</b> item mới. Bỏ qua <b>${res.skipped}</b> dòng trùng.</div>`).show();
-                    setTimeout(() => location.reload(), 1500);
+                    $('#importResult').html(`<div class="alert alert-success border-left">✅ <b>Thành công!</b> Đã nhập <b>${res.added}</b> item mới. Bỏ qua <b>${res.skipped}</b> dòng trùng.</div>`).show();
+                    Toast.fire({ icon: 'success', title: 'Đã nhập thành công ' + res.added + ' items' });
+                    setTimeout(() => location.reload(), 2000);
                 } else {
                     Toast.fire({ icon: 'error', title: res.message || 'Lỗi!' });
                 }
             }, 'json').fail(() => {
-                btn.prop('disabled', false).html('<i class="fas fa-plus-circle mr-1"></i>NHẬP KHO NGAY');
+                btn.prop('disabled', false).html('<i class="fas fa-plus-circle mr-2"></i> BẮT ĐẦU NHẬP KHO');
                 Toast.fire({ icon: 'error', title: 'Lỗi server!' });
             });
         });
@@ -291,12 +356,12 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
         // Delete
         $(document).on('click', '.delete-stock-btn', function () {
             const id = $(this).data('id');
-            Swal.fire({ title: 'Xóa tài khoản này?', text: 'Hành động này không thể hoàn tác.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonText: 'Hủy', confirmButtonText: 'Xác nhận xóa' })
+            Swal.fire({ title: 'Xác nhận xóa?', text: 'Mục này sẽ bị xóa vĩnh viễn khỏi kho!', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonText: 'Hủy', confirmButtonText: 'Xác nhận xóa' })
                 .then(r => {
                     if (!r.isConfirmed) return;
                     $.post(deleteUrl, { id: id }, function (res) {
                         if (res.success) {
-                            $('#stock-row-' + id).fadeOut(200, function () { $(this).remove(); });
+                            $('#stock-row-' + id).fadeOut(300, function () { $(this).remove(); });
                             Toast.fire({ icon: 'success', title: 'Đã xóa' });
                         } else {
                             Toast.fire({ icon: 'error', title: res.message });
@@ -318,12 +383,14 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             const content = $('#editContent').val().trim();
             if (!content) return;
 
-            $('#btnSaveEdit').prop('disabled', true).text('Đang lưu...');
+            const btn = $(this);
+            btn.prop('disabled', true).text('Đang lưu...');
             $.post(updateUrl, { id: id, content: content }, function (res) {
-                $('#btnSaveEdit').prop('disabled', false).text('LƯU THAY ĐỔI');
+                btn.prop('disabled', false).text('LƯU CẬP NHẬT');
                 if (res.success) {
                     $('#editStockModal').modal('hide');
                     $(`#stock-row-${id} code`).text(content);
+                    $(`#stock-row-${id} .copy-content-btn`).data('content', content);
                     $(`.edit-stock-btn[data-id="${id}"]`).data('content', content);
                     Toast.fire({ icon: 'success', title: 'Đã cập nhật' });
                 } else {
@@ -332,27 +399,120 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             }, 'json');
         });
 
-        // Filter
-        $('#filterStatus').on('change', applyFilters);
+        // Debounce search function
+        let searchTimer;
+        function smartSearch() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                const status = $('#filterStatus').val();
+                const search = $('#searchTerm').val().trim();
 
-        // Search
-        $('#btnSearch').on('click', applyFilters);
-        $('#searchTerm').on('keypress', function (e) { if (e.which == 13) applyFilters(); });
+                // Show loading state in table
+                $('#stockBody').css('opacity', '0.5');
 
-        function applyFilters() {
-            const status = $('#filterStatus').val();
-            const search = $('#searchTerm').val().trim();
-            let url = baseUrl + '?';
-            if (status) url += 'status_filter=' + status + '&';
-            if (search) url += 'search=' + encodeURIComponent(search);
-            window.location.href = url;
+                $.get(window.location.href, {
+                    status_filter: status,
+                    search: search
+                }, function (res) {
+                    $('#stockBody').css('opacity', '1');
+                    if (res.success) {
+                        renderStockTable(res.items);
+                        renderStats(res.stats);
+                    }
+                }, 'json');
+            }, 300);
         }
+
+        function renderStockTable(items) {
+            let html = '';
+            if (!items || items.length === 0) {
+                html = `<tr><td colspan="6" class="text-center py-5 text-muted"> <i class="fas fa-box-open fa-3x mb-3 d-block opacity-50"></i> Kho hiện đang trống</td></tr>`;
+            } else {
+                items.forEach(item => {
+                    const rowClass = item.status === 'sold' ? 'table-light' : '';
+                    const statusBadge = item.status === 'available'
+                        ? '<span class="badge badge-success shadow-sm px-3 py-1">CÒN HÀNG</span>'
+                        : '<span class="badge badge-secondary shadow-sm px-3 py-1">ĐÃ BÁN</span>';
+
+                    let buyerHtml = '<span class="text-muted small"><i class="fas fa-minus mr-1"></i>Chưa bán</span>';
+                    if (item.buyer_username) {
+                        buyerHtml = `<a href="<?= url('admin/users/edit/') ?>${item.buyer_username}" class="d-inline-flex align-items-center text-primary font-weight-bold">
+                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mr-2" style="width:24px; height:24px; font-size:10px;"><i class="fas fa-user"></i></div>
+                                        ${escapeHtml(item.buyer_username)}
+                                    </a>`;
+                    }
+
+                    let soldAtHtml = '';
+                    if (item.status === 'sold' && item.sold_at) {
+                        soldAtHtml = `<div class="mt-1 small text-center"><span class="text-danger font-weight-bold"><i class="far fa-clock mr-1"></i>Bán lúc:</span> <span class="text-muted">${formatDate(item.sold_at)}</span></div>`;
+                    }
+
+                    const editTitle = item.status === 'available' ? 'Sửa nội dung' : 'Sửa nội dung (Dành cho bảo hành)';
+                    const actionButtons = `
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn ${item.status === 'available' ? 'btn-warning' : 'btn-light border'} edit-stock-btn"
+                                data-id="${item.id}" data-content="${escapeHtml(item.content)}" title="${editTitle}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            ${item.status === 'available' ? `<button class="btn btn-danger delete-stock-btn" data-id="${item.id}" title="Xóa"><i class="fas fa-trash"></i></button>` : ''}
+                        </div>`;
+
+                    html += `<tr id="stock-row-${item.id}" class="${rowClass}">
+                        <td class="text-center align-middle"><span class="text-muted font-weight-bold">#${item.id}</span></td>
+                        <td class="text-center align-middle">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <code class="p-1 px-2 border rounded bg-white text-dark mr-2" style="font-size: 14px;">${escapeHtml(item.content)}</code>
+                                <button class="btn btn-xs btn-outline-info copy-content-btn" data-content="${escapeHtml(item.content)}" title="Copy"><i class="far fa-copy"></i></button>
+                            </div>
+                            ${soldAtHtml}
+                        </td>
+                        <td class="text-center align-middle">${buyerHtml}</td>
+                        <td class="text-center align-middle">${statusBadge}</td>
+                        <td class="text-center align-middle"><span class="text-muted small">${formatDateShort(item.created_at)}</span></td>
+                        <td class="text-center align-middle">${actionButtons}</td>
+                    </tr>`;
+                });
+            }
+            $('#stockBody').html(html);
+            $('.card-footer b').text(items.length);
+        }
+
+        function renderStats(stats) {
+            $('#stat-total').text(stats.total);
+            $('#stat-available').text(stats.available);
+            $('#stat-sold').text(stats.sold);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '—';
+            const d = new Date(dateStr);
+            return d.getDate().toString().padStart(2, '0') + '/' + (d.getMonth() + 1).toString().padStart(2, '0') + '/' + d.getFullYear() + ' ' + d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0') + ':' + d.getSeconds().toString().padStart(2, '0');
+        }
+
+        function formatDateShort(dateStr) {
+            if (!dateStr) return '—';
+            const d = new Date(dateStr);
+            const date = d.getDate().toString().padStart(2, '0') + '/' + (d.getMonth() + 1).toString().padStart(2, '0') + '/' + d.getFullYear();
+            const time = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+            return `${date}<br><span class="font-weight-bold">${time}</span>`;
+        }
+
+        // Apply filters (AJAX)
+        $('#filterStatus').on('change', smartSearch);
+        $('#searchTerm').on('input', smartSearch);
+        $('#btnSearch').on('click', smartSearch);
 
         // Clean
         $('#btnClean').on('click', function () {
             Swal.fire({
                 title: 'Dọn sạch kho?',
-                text: 'Toàn bộ nội dung CHƯA BÁN sẽ bị xóa vĩnh viễn!',
+                text: 'Toàn bộ mục CHƯA BÁN sẽ bị xóa vĩnh viễn!',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
@@ -372,26 +532,6 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                     }
                 }, 'json');
             });
-        });
-
-        // Add Single
-        $('#btnSaveSingle').on('click', function () {
-            const content = $('#singleContent').val().trim();
-            if (!content) return;
-
-            const btn = $(this);
-            btn.prop('disabled', true).text('Đang thêm...');
-            $.post(importUrl, { content: content }, function (res) {
-                btn.prop('disabled', false).text('THÊM NGAY');
-                if (res.success) {
-                    Toast.fire({ icon: 'success', title: 'Đã thêm thành công' });
-                    $('#addSingleModal').modal('hide');
-                    $('#singleContent').val('');
-                    setTimeout(() => location.reload(), 800);
-                } else {
-                    Toast.fire({ icon: 'error', title: res.message });
-                }
-            }, 'json');
         });
     });
 </script>

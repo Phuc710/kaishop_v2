@@ -26,7 +26,7 @@ class HistoryController extends Controller
         $user = $this->authService->getCurrentUser();
         $siteConfig = Config::getSiteConfig();
 
-        $this->view('profile/history', [
+        $this->view('profile/history-balance', [
             'user' => $user,
             'username' => $user['username'],
             'chungapi' => $siteConfig,
@@ -78,12 +78,31 @@ class HistoryController extends Controller
             $beforeBalance = (int) ($row['before_balance'] ?? 0);
             $afterBalance = (int) ($row['after_balance'] ?? 0);
             $reasonText = (string) ($row['reason_text'] ?? '');
+            $eventTime = trim((string) ($row['event_time'] ?? ''));
+            $rawTime = $row['raw_time'] ?? null;
+            $normalizedTime = $eventTime;
+            if ($normalizedTime === '' || $normalizedTime === '0000-00-00 00:00:00') {
+                $raw = trim((string) $rawTime);
+                if ($raw !== '') {
+                    if (ctype_digit($raw)) {
+                        $normalizedTime = date('Y-m-d H:i:s', (int) $raw);
+                    } else {
+                        $normalizedTime = $raw;
+                    }
+                }
+            }
+            $timeAgo = $normalizedTime !== '' ? FormatHelper::timeAgo($normalizedTime) : '';
 
             $formattedData[] = [
-                'time' => FormatHelper::eventTime($row['event_time'] ?? null, $row['raw_time'] ?? null),
+                'time' => FormatHelper::eventTime($row['event_time'] ?? null, $rawTime),
+                'time_raw' => $normalizedTime,
+                'time_ago' => $timeAgo,
                 'before' => FormatHelper::initialBalance($beforeBalance),
+                'before_amount' => $beforeBalance,
                 'change' => FormatHelper::balanceChange($change),
+                'change_amount' => $change,
                 'after' => FormatHelper::currentBalance($afterBalance),
+                'after_amount' => $afterBalance,
                 'reason' => htmlspecialchars($reasonText, ENT_QUOTES, 'UTF-8')
             ];
         }

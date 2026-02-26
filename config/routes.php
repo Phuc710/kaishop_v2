@@ -122,6 +122,7 @@ return [
     ['GET', '/deposit-bank', 'DepositController@index'],
     ['GET', '/deposit', 'DepositController@legacyRedirect'],
     ['POST', '/deposit/create', 'DepositController@create'],
+    ['GET', '/deposit/status-wait/{code}', 'DepositController@statusWait'],
     ['GET', '/deposit/status/{code}', 'DepositController@status'],
     ['POST', '/deposit/cancel', 'DepositController@cancel'],
 

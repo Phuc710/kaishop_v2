@@ -14,12 +14,86 @@ $maintenanceJson = json_encode(
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bảo trì hệ thống | <?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?></title>
-    <meta name="description" content="Hệ thống <?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?> đang bảo trì. Vui lòng quay lại sau.">
+    <meta name="description"
+        content="Hệ thống <?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?> đang bảo trì. Vui lòng quay lại sau.">
     <meta name="robots" content="noindex, nofollow">
     <link rel="canonical" href="<?= htmlspecialchars(url(''), ENT_QUOTES, 'UTF-8') ?>">
     <link rel="shortcut icon" href="<?= htmlspecialchars($siteFavicon, ENT_QUOTES, 'UTF-8') ?>">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="<?= asset('assets/css/error-pages.css') ?>">
+    <style>
+        /* Digit block countdown */
+        .mnt-clock {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin: 16px 0 8px;
+        }
+
+        .mnt-clock__block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .mnt-clock__digits {
+            display: flex;
+            gap: 3px;
+        }
+
+        .mnt-clock__digit {
+            width: 44px;
+            height: 56px;
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            color: #f8fafc;
+            border-radius: 8px;
+            font-size: 1.75rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            letter-spacing: 0;
+        }
+
+        .mnt-clock__label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            margin-top: 5px;
+        }
+
+        .mnt-clock__sep {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #334155;
+            padding-bottom: 14px;
+            line-height: 56px;
+        }
+
+        .mnt-clock__end {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        @media (max-width: 480px) {
+            .mnt-clock__digit {
+                width: 36px;
+                height: 46px;
+                font-size: 1.35rem;
+                border-radius: 6px;
+            }
+
+            .mnt-clock__sep {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
 </head>
 
 <body class="error-page-wrapper maintenance-page">
@@ -30,9 +104,34 @@ $maintenanceJson = json_encode(
         <h1 class="error-title">HỆ THỐNG ĐANG BẢO TRÌ</h1>
         <p class="error-message">Chúng tôi đang nâng cấp hệ thống để dịch vụ ổn định hơn. Vui lòng quay lại sau.</p>
 
+        <!-- Countdown clock (hidden until JS confirms active+scheduled) -->
         <div id="maintenanceCountdownWrap" class="maintenance-countdown-wrap" hidden>
-            <div class="maintenance-countdown-label">Thời gian bảo trì dự kiến còn lại</div>
-            <div id="maintenanceCountdownTimer" class="maintenance-countdown-timer">00:00:00</div>
+            <div class="maintenance-countdown-label" id="countdownLabel">Thời gian bảo trì dự kiến còn lại</div>
+            <div class="mnt-clock" id="mntClock">
+                <div class="mnt-clock__block">
+                    <div class="mnt-clock__digits">
+                        <span class="mnt-clock__digit" id="dH0">0</span>
+                        <span class="mnt-clock__digit" id="dH1">0</span>
+                    </div>
+                    <div class="mnt-clock__label">Giờ</div>
+                </div>
+                <div class="mnt-clock__sep">:</div>
+                <div class="mnt-clock__block">
+                    <div class="mnt-clock__digits">
+                        <span class="mnt-clock__digit" id="dM0">0</span>
+                        <span class="mnt-clock__digit" id="dM1">0</span>
+                    </div>
+                    <div class="mnt-clock__label">Phút</div>
+                </div>
+                <div class="mnt-clock__sep">:</div>
+                <div class="mnt-clock__block">
+                    <div class="mnt-clock__digits">
+                        <span class="mnt-clock__digit" id="dS0">0</span>
+                        <span class="mnt-clock__digit" id="dS1">0</span>
+                    </div>
+                    <div class="mnt-clock__label">Giây</div>
+                </div>
+            </div>
             <div id="maintenanceCountdownMeta" class="maintenance-countdown-meta"></div>
         </div>
 
@@ -55,75 +154,98 @@ $maintenanceJson = json_encode(
             const statusUrl = '<?= url('api/system/maintenance-status') ?>';
             const homeUrl = '<?= url('') ?>';
             const countdownWrap = document.getElementById('maintenanceCountdownWrap');
-            const countdownTimer = document.getElementById('maintenanceCountdownTimer');
             const countdownMeta = document.getElementById('maintenanceCountdownMeta');
-            let currentState = <?= $maintenanceJson ?: '{}' ?>;
-            let localSecondsLeft = Number((currentState && currentState.seconds_until_end) || 0);
 
-            function formatHms(totalSeconds) {
-                const sec = Math.max(0, Number(totalSeconds || 0));
+            // Digit elements
+            const dH0 = document.getElementById('dH0');
+            const dH1 = document.getElementById('dH1');
+            const dM0 = document.getElementById('dM0');
+            const dM1 = document.getElementById('dM1');
+            const dS0 = document.getElementById('dS0');
+            const dS1 = document.getElementById('dS1');
+
+            let currentState = <?= $maintenanceJson ?: '{}' ?>;
+            let localSecondsLeft = Math.max(0, Number((currentState && currentState.seconds_until_end) || 0));
+            let tickId = null;
+            let pollId = null;
+
+            function pad2(n) { return String(Math.max(0, n)).padStart(2, '0'); }
+
+            function setDigits(elA, elB, val) {
+                const s = pad2(val);
+                elA.textContent = s[0];
+                elB.textContent = s[1];
+            }
+
+            function renderClock(sec) {
+                sec = Math.max(0, sec);
                 const h = Math.floor(sec / 3600);
                 const m = Math.floor((sec % 3600) / 60);
                 const s = sec % 60;
-                return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+                setDigits(dH0, dH1, h);
+                setDigits(dM0, dM1, m);
+                setDigits(dS0, dS1, s);
             }
 
-            function updateCountdownUi() {
-                if (!countdownWrap || !countdownTimer || !countdownMeta) {
+            function updateUI() {
+                if (!currentState || !currentState.active) {
+                    if (countdownWrap) countdownWrap.hidden = true;
                     return;
                 }
 
-                const active = !!(currentState && currentState.active);
-                const showCountdown = !!(currentState && currentState.show_end_countdown);
-                const manualOverdue = !!(currentState && currentState.manual_overdue);
+                const showCountdown = !!(currentState.show_end_countdown);
+                const manualOverdue = !!(currentState.manual_overdue);
 
-                if (!active) {
-                    countdownWrap.hidden = true;
-                    return;
-                }
+                if (countdownWrap) countdownWrap.hidden = false;
 
                 if (showCountdown && localSecondsLeft > 0) {
-                    countdownWrap.hidden = false;
-                    countdownTimer.textContent = formatHms(localSecondsLeft);
-                    countdownMeta.textContent = currentState && currentState.end_at ? ('Dự kiến kết thúc: ' + currentState.end_at) : '';
-                    return;
-                }
-
-                countdownWrap.hidden = false;
-                countdownTimer.textContent = '--:--:--';
-                if (manualOverdue) {
-                    countdownMeta.textContent = 'Đã quá thời gian dự kiến nhưng admin vẫn đang giữ bảo trì thủ công.';
+                    renderClock(localSecondsLeft);
+                    if (countdownMeta) {
+                        countdownMeta.textContent = currentState.end_at
+                            ? 'Dự kiến kết thúc: ' + currentState.end_at
+                            : '';
+                    }
                 } else {
-                    countdownMeta.textContent = 'Admin sẽ mở lại hệ thống sau khi hoàn tất bảo trì.';
+                    renderClock(0);
+                    if (countdownMeta) {
+                        countdownMeta.textContent = manualOverdue
+                            ? 'Đã quá thời gian dự kiến, admin vẫn đang giữ bảo trì thủ công.'
+                            : 'Admin sẽ mở lại hệ thống sau khi hoàn tất bảo trì.';
+                    }
                 }
             }
 
-            setInterval(function () {
-                if (currentState && currentState.active && currentState.show_end_countdown && localSecondsLeft > 0) {
-                    localSecondsLeft -= 1;
-                    updateCountdownUi();
-                }
-            }, 1000);
+            function startTick() {
+                if (tickId) return;
+                tickId = window.setInterval(function () {
+                    if (!currentState || !currentState.active || !currentState.show_end_countdown) return;
+                    if (localSecondsLeft > 0) { localSecondsLeft--; }
+                    updateUI();
+                }, 1000);
+            }
 
             function pollStatus() {
                 fetch(statusUrl, { credentials: 'same-origin', cache: 'no-store' })
-                    .then(r => r.json())
-                    .then(data => {
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
                         const m = data && data.maintenance ? data.maintenance : null;
                         if (!m || !m.active) {
+                            // Maintenance ended – go home
                             window.location.href = homeUrl;
                             return;
                         }
                         currentState = m;
-                        localSecondsLeft = Number(m.seconds_until_end || 0);
-                        updateCountdownUi();
+                        localSecondsLeft = Math.max(0, Number(m.seconds_until_end || 0));
+                        updateUI();
                     })
-                    .catch(() => { });
+                    .catch(function () { /* keep ticking */ });
             }
 
-            updateCountdownUi();
-            pollStatus();
-            setInterval(pollStatus, 10000);
+            // Boot
+            updateUI();
+            startTick();
+            pollStatus(); // immediate first check
+            pollId = window.setInterval(pollStatus, 10000); // poll every 10s
         })();
     </script>
 </body>

@@ -26,8 +26,7 @@ foreach ($authNavPaths as $p) {
 ?>
 <style>
     * {
-        font-family: 'Signika', sans-serif;
-        letter-spacing: 0.5px;
+        font-family: 'Roboto', sans-serif;
     }
 
     .pagination {
@@ -108,10 +107,6 @@ foreach ($authNavPaths as $p) {
         border-color: #007bff;
     }
 
-    body {
-        font-family: 'Roboto', sans-serif !important;
-    }
-
     .gigs-img {
         position: relative;
         overflow: hidden;
@@ -128,32 +123,6 @@ foreach ($authNavPaths as $p) {
     .gigs-img .user-thumb img {
         transition: none;
         transform: none;
-    }
-
-    .gigs-img:hover {
-        background-image: url('https://i.imgur.com/7FUvCBL.png');
-        background-size: contain;
-        background-position: center;
-        background-repeat: no-repeat;
-    }
-
-    .gigs-img::after {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) scale(1);
-        width: 70px;
-        height: 70px;
-        background-image: url('https://i.imgur.com/7FUvCBL.png');
-        background-size: cover;
-        background-position: center;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    }
-
-    .gigs-img:hover::after {
-        opacity: 1;
     }
 </style>
 
@@ -246,8 +215,12 @@ foreach ($authNavPaths as $p) {
                                 <img src="<?= htmlspecialchars($userAvatar, ENT_QUOTES, 'UTF-8') ?>"
                                     class="rounded-circle w-40 me-1" alt="">
                                 <span>
-                                    <p class="text-uppercase"><?= $username; ?></p>
-                                    <p style="color:red;"><?= tien($user['money']); ?>đ</p>
+                                    <p class="text-uppercase"
+                                        style="font-weight: bold; color: #333; line-height: 1; border-radius: 6px; display: inline-block; font-size: 13px;">
+                                        <?= $username; ?>
+                                    </p>
+                                    <p style=" color: red; font-weight: 800; font-size: 14px; line-height: 1;
+                                    margin-top: 2px;"><?= tien($user['money']); ?>đ</p>
                                 </span>
                             </button>
 
@@ -263,7 +236,7 @@ foreach ($authNavPaths as $p) {
                                     ?>
                                     <li>
                                         <?php if ($dropdownType === 'logout'): ?>
-                                            <a class="dashboard-profile-item dropdown-item" href="javascript:void(0)"
+                                            <a class="dashboard-profile-item dropdown-item logout-item" href="javascript:void(0)"
                                                 onclick="SwalHelper.confirmLogout('<?= $dropdownHref ?>')">
                                                 <i class="<?= $dropdownIcon ?>"></i><?= $dropdownLabel ?>
                                             </a>

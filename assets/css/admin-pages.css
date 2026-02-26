@@ -415,3 +415,301 @@ table.dataTable.table-bordered {
     padding-left: 0 !important;
     padding-right: 0 !important;
 }
+
+/* Bootstrap 4 fallback gap utilities (used across admin views) */
+.gap-1 {
+    gap: 0.25rem !important;
+}
+
+.gap-2 {
+    gap: 0.5rem !important;
+}
+
+/* Admin Product Stock page (shared admin shell styling) */
+.admin-stock-page {
+    --stock-card-radius: 14px;
+    --stock-border: #e5e7eb;
+    --stock-bg-soft: #f8fafc;
+}
+
+.admin-stock-page .container-fluid {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+}
+
+.admin-stock-page .custom-card.stock-panel-card {
+    border: 1px solid var(--stock-border);
+    border-radius: var(--stock-card-radius);
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+    margin-bottom: 0;
+    overflow: hidden;
+}
+
+.admin-stock-page .stock-panel-header {
+    gap: 12px;
+    padding: 16px 18px 14px;
+}
+
+.admin-stock-page .stock-panel-header .card-title {
+    font-size: 1.1rem;
+    margin-right: auto;
+}
+
+.admin-stock-page .stock-panel-actions,
+.admin-stock-page .stock-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.admin-stock-page .stock-panel-actions {
+    justify-content: flex-end;
+}
+
+.admin-stock-page .stock-inline-btn {
+    border-radius: 10px;
+    min-height: 38px;
+    padding: 0.45rem 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.admin-stock-page .stock-inline-btn i {
+    margin-right: 0 !important;
+}
+
+.admin-stock-page .stock-panel-body {
+    padding: 18px !important;
+}
+
+.admin-stock-page .stock-label {
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.admin-stock-page .stock-help {
+    display: inline-block;
+    margin-top: 8px;
+}
+
+.admin-stock-page .stock-import-textarea {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 13px;
+    background: var(--stock-bg-soft);
+    border: 1px solid #d6dbe3;
+    border-radius: 10px;
+    min-height: 230px;
+    resize: vertical;
+    line-height: 1.55;
+    padding: 12px 14px;
+}
+
+.admin-stock-page .stock-import-textarea:focus {
+    background: #fff;
+    border-color: #845adf;
+    box-shadow: 0 0 0 0.2rem rgba(132, 90, 223, 0.12);
+}
+
+.admin-stock-page .stock-submit-btn {
+    border-radius: 12px;
+    min-height: 46px;
+    letter-spacing: 0.2px;
+}
+
+.admin-stock-page .stock-import-result .alert {
+    border-radius: 10px;
+    margin-bottom: 0;
+}
+
+.admin-stock-page .stock-search-group {
+    width: min(100%, 260px);
+}
+
+.admin-stock-page .stock-search-group .form-control,
+.admin-stock-page .stock-search-group .btn,
+.admin-stock-page .stock-filter-select {
+    min-height: 38px;
+    border-radius: 10px;
+}
+
+.admin-stock-page .stock-search-group .btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    min-width: 42px;
+}
+
+.admin-stock-page .stock-filter-select {
+    min-width: 180px;
+    padding-left: 10px;
+    padding-right: 26px;
+}
+
+.admin-stock-page .stock-table-wrap {
+    max-height: 650px;
+    overflow: auto;
+    border-top: 1px solid #edf0f5;
+}
+
+.admin-stock-page .stock-table {
+    margin-bottom: 0;
+}
+
+.admin-stock-page .stock-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: #f4f6f9;
+    border-bottom: 1px solid #e6eaf0;
+    font-weight: 700;
+    color: #374151;
+    white-space: nowrap;
+}
+
+.admin-stock-page .stock-table tbody td {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    border-top-color: #eef1f5;
+    vertical-align: middle;
+}
+
+.admin-stock-page .stock-content-cell {
+    min-width: 280px;
+}
+
+.admin-stock-page .stock-content-sold {
+    font-size: 13px !important;
+    text-decoration: line-through !important;
+}
+
+.admin-stock-page .stock-account-code {
+    display: block;
+    max-width: 100%;
+    padding: 8px 10px;
+    background: #fff1f7;
+    border: 1px solid #ffd5e7;
+    border-radius: 10px;
+    color: #be185d !important;
+    font-size: 13px !important;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.admin-stock-page .stock-action-cell {
+    white-space: nowrap;
+    width: 120px;
+    text-align: center;
+}
+
+.admin-stock-page .stock-row-action-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 9px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.admin-stock-page .stock-card-footer {
+    border-top: 1px solid #edf0f5;
+    background: #fbfcfe !important;
+    padding-left: 18px;
+    padding-right: 18px;
+}
+
+.admin-stock-page .stock-stat-box {
+    border-radius: var(--stock-card-radius);
+    border: 1px solid var(--stock-border);
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+    min-height: 100px;
+    overflow: hidden;
+}
+
+.admin-stock-page .stock-stat-box .info-box-icon {
+    width: 86px;
+    min-width: 86px;
+    height: 78px;
+    margin: 10px;
+    border-radius: 10px;
+    font-size: 30px;
+}
+
+.admin-stock-page .stock-stat-box .info-box-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 12px 12px 12px 2px;
+}
+
+.admin-stock-page .stock-stat-box .info-box-text {
+    color: #111827;
+    font-size: 12px;
+    letter-spacing: 0.4px;
+}
+
+.admin-stock-page .stock-stat-box .info-box-number {
+    color: #0f172a;
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.admin-stock-page .stock-stat-box--available {
+    border-color: #c8efd3;
+}
+
+.admin-stock-page .stock-stat-box--sold {
+    border-color: #ffd1d1;
+}
+
+@media (max-width: 991.98px) {
+    .admin-stock-page .stock-panel-header {
+        align-items: flex-start !important;
+    }
+
+    .admin-stock-page .stock-panel-actions,
+    .admin-stock-page .stock-toolbar {
+        width: 100%;
+    }
+
+    .admin-stock-page .stock-search-group,
+    .admin-stock-page .stock-filter-select {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .admin-stock-page .stock-inline-btn {
+        flex: 1 1 auto;
+    }
+
+    .admin-stock-page .stock-toolbar .stock-inline-btn {
+        flex: 0 0 auto;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .admin-stock-page .container-fluid {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+
+    .admin-stock-page .stock-table thead th:nth-child(4),
+    .admin-stock-page .stock-table tbody td:nth-child(4) {
+        white-space: nowrap;
+    }
+
+    .admin-stock-page .stock-action-cell {
+        width: 92px;
+    }
+
+    .admin-stock-page .stock-row-action-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+    }
+}

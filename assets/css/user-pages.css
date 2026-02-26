@@ -1,10 +1,17 @@
 /* Shared hook for user/profile page container. */
 .user-page-container {
-    --user-btn-bg: #198754;
-    --user-btn-bg-hover: #157347;
-    --user-btn-border: #198754;
-    --user-btn-border-hover: #146c43;
+    --user-btn-bg: #157347;
+    --user-btn-bg-hover: #12613a;
+    --user-btn-border: #157347;
+    --user-btn-border-hover: #12613a;
     --user-btn-text: #ffffff;
+    --user-btn-font-family: 'Roboto', sans-serif;
+    --user-btn-font-size: 16px;
+    --user-btn-font-weight: 600;
+    --user-btn-radius: 8px;
+    --user-btn-pad-y: 8px;
+    --user-btn-pad-x: 16px;
+    --user-btn-min-height: 40px;
 
     --user-btn-blue: #0ea5e9;
     --user-btn-blue-hover: #0284c7;
@@ -15,12 +22,44 @@
     margin: 0 auto;
 }
 
+/* ── PAGE SHELL ──────────────────────────────────────── */
+.user-page-main {
+    min-height: 60vh;
+    background: #f5f7fa;
+    font-family: 'Roboto', sans-serif;
+}
+
+/* Mobile: nhỏ gọn */
+.user-page-section {
+    padding-top: 24px;
+    padding-bottom: 32px;
+}
+
+/* PC only: padding lớn hơn */
+@media (min-width: 768px) {
+    .user-page-section {
+        padding-top: 80px;
+        padding-bottom: 64px;
+    }
+}
+
+
 /* ========================================================
    USER PAGES — Shared Stylesheet
    Dùng cho TẤT CẢ trang user-facing: Profile, Password, History...
    ======================================================== */
 
 /* ── SIDEBAR ─────────────────────────────────────────── */
+.user-sidebar {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    height: 100%;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+}
+
 .user-sidebar .sidebar-item {
     display: flex;
     align-items: center;
@@ -30,9 +69,9 @@
     color: #4b5563;
     font-weight: 600;
     font-size: 14px;
-    background: #fff;
+    background: transparent;
     transition: all 0.2s ease;
-    border: 1px solid #f1f5f9;
+    border: 1px solid transparent;
     text-decoration: none;
 }
 
@@ -45,9 +84,9 @@
 }
 
 .user-sidebar .sidebar-item:hover {
-    background: #f8f9fa;
+    background: #f8fafc;
     color: #4b5563;
-    border-color: #e2e8f0;
+    border-color: #f1f5f9;
     text-decoration: none;
 }
 
@@ -71,11 +110,12 @@
 }
 
 .profile-card-header {
-    padding: 20px 24px;
+    padding: 18px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #f1f5f9;
+    background: #fff;
+    gap: 12px;
 }
 
 .profile-card-header h4,
@@ -125,8 +165,9 @@
 }
 
 .custom-input-wrap .form-control.custom-bg-input {
-    background-color: #f8f9fa;
-    border: 1px solid #f1f5f9;
+    background-color: #fff;
+    /* white, not gray */
+    border: 1px solid #dee2e6;
 }
 
 .custom-input-wrap .form-control:focus {
@@ -149,9 +190,23 @@
 }
 
 /* ── GLOBAL LAYOUT ───────────────────────────────────── */
-main.bg-light section.py-5 {
-    padding-top: 5rem !important;
+.user-page-grid {
+    align-items: flex-start;
 }
+
+.user-page-sidebar-col,
+.user-page-content-col {
+    align-self: flex-start;
+}
+
+/* PC-only sticky sidebar */
+@media (min-width: 768px) {
+    .user-page-sidebar-col {
+        position: sticky;
+        top: 80px;
+    }
+}
+
 
 /* Fix for top-right toast overlap with header */
 .swal2-toast-custom-margin {
@@ -170,14 +225,46 @@ main.bg-light section.py-5 {
 }
 
 /* ── BUTTONS ─────────────────────────────────────────── */
+.user-page-container .btn-edit-profile,
+.user-page-container .btn-save-green,
+.user-page-container .btn-search-custom,
+.user-page-container .btn-clear-custom,
+.user-page-container #btn-clear.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: var(--user-btn-min-height);
+    padding: var(--user-btn-pad-y) var(--user-btn-pad-x);
+    border-width: 1px;
+    border-style: solid;
+    border-radius: var(--user-btn-radius);
+    font-family: var(--user-btn-font-family);
+    font-size: var(--user-btn-font-size);
+    font-weight: var(--user-btn-font-weight);
+    line-height: 1.2;
+    text-decoration: none;
+    white-space: nowrap;
+    box-shadow: none;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.user-page-container .btn-edit-profile:focus,
+.user-page-container .btn-save-green:focus,
+.user-page-container .btn-search-custom:focus,
+.user-page-container .btn-clear-custom:focus,
+.user-page-container #btn-clear.btn:focus {
+    box-shadow: 0 0 0 0.18rem rgba(21, 115, 71, 0.18) !important;
+}
+
 .btn-edit-profile {
     color: var(--user-btn-text) !important;
     background-color: var(--user-btn-bg) !important;
     border: 1px solid var(--user-btn-border) !important;
-    border-radius: 6px;
-    font-weight: 600;
-    padding: 8px 16px;
-    font-size: 14px;
+    border-radius: var(--user-btn-radius);
+    font-weight: var(--user-btn-font-weight);
+    padding: var(--user-btn-pad-y) var(--user-btn-pad-x);
+    font-size: var(--user-btn-font-size);
     transition: all 0.2s;
 }
 
@@ -191,17 +278,40 @@ main.bg-light section.py-5 {
     color: var(--user-btn-text) !important;
     background-color: var(--user-btn-bg) !important;
     border-color: var(--user-btn-border) !important;
-    border-radius: 8px;
-    font-weight: 600;
-    padding: 10px 20px;
+    border-radius: var(--user-btn-radius);
+    font-weight: var(--user-btn-font-weight);
+    padding: var(--user-btn-pad-y) var(--user-btn-pad-x);
     border-style: solid;
     border-width: 1px;
+    font-size: var(--user-btn-font-size);
     transition: all 0.2s;
 }
 
 .btn-save-green:hover {
     background-color: var(--user-btn-bg-hover) !important;
     border-color: var(--user-btn-border-hover) !important;
+}
+
+#btn-clear.btn {
+    background-color: var(--user-btn-red) !important;
+    border-color: var(--user-btn-red) !important;
+    color: white !important;
+}
+
+#btn-clear.btn:hover {
+    background-color: var(--user-btn-red-hover) !important;
+    border-color: var(--user-btn-red-hover) !important;
+}
+
+.btn-clear-custom {
+    background-color: var(--user-btn-red) !important;
+    border-color: var(--user-btn-red) !important;
+    color: white !important;
+}
+
+.btn-clear-custom:hover {
+    background-color: var(--user-btn-red-hover) !important;
+    border-color: var(--user-btn-red-hover) !important;
 }
 
 /* ── BALANCE DISPLAY ─────────────────────────────────── */
@@ -413,7 +523,7 @@ main.bg-light section.py-5 {
 .deposit-preview-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: baseline;
     gap: 12px;
     color: #475569;
     font-size: 14px;
@@ -421,11 +531,13 @@ main.bg-light section.py-5 {
 
 .deposit-preview-row strong {
     color: #0f172a;
+    text-align: right;
+    white-space: nowrap;
 }
 
 .deposit-preview-row.is-total strong {
     color: #f97316;
-    font-size: 25px;
+    font-size: 22px;
 }
 
 .deposit-preview-divider {
@@ -508,6 +620,11 @@ main.bg-light section.py-5 {
     text-transform: uppercase;
 }
 
+.deposit-info-label.text-danger {
+    color: #000 !important;
+}
+
+
 .deposit-info-value {
     font-size: 15px;
     color: #000;
@@ -521,12 +638,12 @@ main.bg-light section.py-5 {
 }
 
 .deposit-info-value.is-highlight {
-    color: #b45309;
+    color: #000;
     font-size: 16px;
 }
 
 .deposit-info-value.is-amount {
-    color: #10b981;
+    color: #00ad5c;
     font-size: 18px;
     font-weight: bolder;
 }
@@ -557,15 +674,15 @@ main.bg-light section.py-5 {
 }
 
 .deposit-countdown-wrap {
-    border: 1px solid #fee2e2;
-    background: #fff7f7;
+    border: 1px solid #bfdbfe;
+    background: linear-gradient(135deg, #eff6ff 0%, #ecfdf5 100%);
     border-radius: 12px;
     padding: 12px 14px;
     text-align: center;
 }
 
 .deposit-countdown-label {
-    color: #64748b;
+    color: #1e3a8a;
     font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
@@ -573,9 +690,9 @@ main.bg-light section.py-5 {
 }
 
 .deposit-countdown {
-    color: #dc2626;
+    color: #0f172a;
     font-weight: 800;
-    font-size: 34px;
+    font-size: 25px;
     line-height: 1.1;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace;
     letter-spacing: 1px;
@@ -583,9 +700,9 @@ main.bg-light section.py-5 {
 
 .deposit-countdown-bar {
     width: 100%;
-    height: 6px;
+    height: 7px;
     margin-top: 8px;
-    background: #fecaca;
+    background: linear-gradient(90deg, #dbeafe 0%, #dcfce7 100%);
     border-radius: 999px;
     overflow: hidden;
 }
@@ -594,8 +711,9 @@ main.bg-light section.py-5 {
     height: 100%;
     width: 100%;
     border-radius: 999px;
-    background: linear-gradient(90deg, #ef4444, #f97316);
-    transition: width 1s linear;
+    background: linear-gradient(90deg, #003ce5 0%, #00ad5c 100%);
+    transition: width .25s linear;
+    will-change: width;
 }
 
 .deposit-warning {
@@ -606,6 +724,10 @@ main.bg-light section.py-5 {
 
 /* ── RESPONSIVE ──────────────────────────────────────── */
 @media (max-width: 767px) {
+    .user-page-grid {
+        display: block;
+    }
+
     .user-sidebar {
         margin-bottom: 20px;
     }
@@ -718,36 +840,39 @@ main.bg-light section.py-5 {
 }
 
 .btn-search-custom {
-    background: var(--user-btn-blue);
+    background: var(--user-btn-bg);
     color: var(--user-btn-text);
-    border: 1px solid var(--user-btn-blue);
-    border-radius: 6px;
-    padding: 10px 20px;
-    font-weight: 500;
+    border: 1px solid var(--user-btn-border);
+    border-radius: var(--user-btn-radius);
+    padding: var(--user-btn-pad-y) var(--user-btn-pad-x);
+    font-weight: var(--user-btn-font-weight);
+    font-size: var(--user-btn-font-size);
     transition: all 0.2s;
 }
 
 .btn-search-custom:hover {
-    background: var(--user-btn-blue-hover);
-    border-color: var(--user-btn-blue-hover);
+    background: var(--user-btn-bg-hover);
+    border-color: var(--user-btn-border-hover);
     color: var(--user-btn-text);
 }
 
 .btn-clear-custom {
-    background: var(--user-btn-red);
+    background: var(--user-btn-bg);
     color: var(--user-btn-text);
-    border: 1px solid var(--user-btn-red);
-    border-radius: 6px;
-    padding: 10px 20px;
-    font-weight: 500;
+    border: 1px solid var(--user-btn-border);
+    border-radius: var(--user-btn-radius);
+    padding: var(--user-btn-pad-y) var(--user-btn-pad-x);
+    font-weight: var(--user-btn-font-weight);
+    font-size: var(--user-btn-font-size);
     transition: all 0.2s;
 }
 
 .btn-clear-custom:hover {
-    background: var(--user-btn-red-hover);
-    border-color: var(--user-btn-red-hover);
+    background: var(--user-btn-bg-hover);
+    border-color: var(--user-btn-border-hover);
     color: var(--user-btn-text);
 }
+
 
 .dataTables_length select {
     border: 1px solid #e2e8f0;
@@ -1570,24 +1695,7 @@ main.bg-light section.py-5 {
     }
 }
 
-/* ===== User Page Shell (profile/password/history/order-history) ===== */
-.user-page-main {
-    min-height: 60vh;
-}
 
-main.bg-light section.user-page-section.py-5 {
-    padding-top: 56px !important;
-    padding-bottom: 56px !important;
-}
-
-.user-page-grid {
-    align-items: flex-start;
-}
-
-.user-page-sidebar-col,
-.user-page-content-col {
-    margin-bottom: 0 !important;
-}
 
 .user-label--sm {
     font-size: 14px;
@@ -1665,6 +1773,14 @@ main.bg-light section.user-page-section.py-5 {
 .user-history-table {
     border-collapse: separate;
     border-spacing: 0;
+    margin: 0;
+}
+
+.user-history-table-wrap {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
 }
 
 .user-history-table thead th {
@@ -1679,6 +1795,13 @@ main.bg-light section.user-page-section.py-5 {
 
 .user-history-table tbody td {
     border-bottom-color: #edf2f7;
+    color: #0f172a;
+    background: #fff;
+    vertical-align: middle;
+}
+
+.user-history-table tbody tr:hover td {
+    background: #f8fbff;
 }
 
 .user-date-cell {
@@ -1686,23 +1809,50 @@ main.bg-light section.user-page-section.py-5 {
     font-weight: 500;
 }
 
+.user-time-plain {
+    color: #0f172a;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: help;
+}
+
+.user-money-before {
+    color: #111827;
+    font-weight: 700;
+}
+
+.user-money-after {
+    color: #003ce5;
+    font-weight: 700;
+}
+
+.user-money-change {
+    font-weight: 700;
+}
+
+.user-money-change--plus {
+    color: #00ad5c;
+}
+
+.user-money-change--minus {
+    color: #ff0000;
+}
+
 /* ===== Order history actions + modal ===== */
 .order-code-copy {
-    border: 1px solid #dbe3ee;
-    background: #f8fafc;
-    color: #0f172a;
-    border-radius: 6px;
-    padding: 4px 8px;
+    border: none;
+    background: transparent;
+    color: #475569;
+    padding: 0;
     font-weight: 700;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    font-size: 12px;
+    font-size: 13px;
     cursor: pointer;
-    transition: border-color .2s ease, background-color .2s ease;
 }
 
 .order-code-copy:hover {
-    border-color: #cbd5e1;
-    background: #eef2f7;
+    color: #0f172a;
 }
 
 .order-action-btn {
@@ -1794,9 +1944,13 @@ main.bg-light section.user-page-section.py-5 {
 }
 
 @media (max-width: 767px) {
-    main.bg-light section.user-page-section.py-5 {
-        padding-top: 1rem !important;
-        padding-bottom: 1rem !important;
+    .user-page-section {
+        padding-top: 24px;
+        padding-bottom: 32px;
+    }
+
+    .user-page-sidebar-col {
+        position: static;
     }
 
     .user-history-toolbar {
@@ -1811,5 +1965,28 @@ main.bg-light section.user-page-section.py-5 {
 
     .user-order-detail__grid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* Maintenance banner urgent state (≤60s before maintenance) */
+.maintenance-notice-banner.is-urgent {
+    border-color: rgba(239, 68, 68, 0.5);
+    animation: mnt-urgent-pulse 1s ease-in-out infinite;
+}
+
+.maintenance-notice-banner.is-urgent .maintenance-notice-banner__icon {
+    background: rgba(239, 68, 68, 0.18);
+    color: #f87171;
+}
+
+@keyframes mnt-urgent-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 20px 45px rgba(15, 23, 42, 0.28), 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+
+    50% {
+        box-shadow: 0 20px 45px rgba(15, 23, 42, 0.28), 0 0 0 6px rgba(239, 68, 68, 0.15);
     }
 }

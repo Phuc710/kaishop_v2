@@ -354,7 +354,6 @@ try {
     $isAdminPath = strpos($requestPath, '/admin') === 0;
     $maintenanceWhitelist = [
         '/bao-tri',
-        '/bao-tri.php',
         '/api/system/maintenance-status',
         '/api/sepay/webhook',
     ];

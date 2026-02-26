@@ -1,8 +1,6 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap");
-
 :root {
-    --main-font-family: "IBM Plex Sans", sans-serif;
-    --body-font-family: "Roboto", sans-serif;
+    --main-font-family: 'Roboto', sans-serif;
+    --body-font-family: 'Roboto', sans-serif;
     /* Dark */
     --dark-50: #edebe7;
     --dark-100: #d9d9d9;
@@ -795,23 +793,26 @@ body {
 }
 
 .navbar .navbar-nav .nav-link {
-    font-size: 18px;
-    letter-spacing: -0.2px;
-    line-height: initial;
-    color: var(--dark-300);
+    font-family: 'Roboto', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #000;
     padding: 15px 0;
     margin: 0 26px;
     position: relative;
+    transition: color 0.3s ease;
 }
 
 .navbar .dropdown-menu .dropdown-item {
+    font-family: 'Roboto', sans-serif;
     font-size: 14px;
+    font-weight: 400;
     padding: 0 15px;
-    letter-spacing: 0px;
+    letter-spacing: 0;
     text-transform: capitalize;
     line-height: 32px;
     margin-bottom: 5px;
-    color: var(--dark-300);
+    color: black;
     background: transparent;
     display: inline-block;
     position: relative;
@@ -902,7 +903,7 @@ body {
 
     .header-primary.header-transparent.sticky .navbar .navbar-nav .nav-link,
     .header-primary .navbar .navbar-nav .nav-link {
-        color: var(--dark-300);
+        color: #333;
     }
 
     .header-primary.header-transparent .navbar .navbar-nav .nav-link {
@@ -911,7 +912,7 @@ body {
 
     .header-primary.header-transparent.sticky .navbar .navbar-nav .nav-link::after,
     .header-primary .navbar .navbar-nav .nav-link::after {
-        color: var(--dark-300);
+        color: #333;
     }
 
     .header-primary.header-transparent .navbar .navbar-nav .nav-link::after {
@@ -919,11 +920,11 @@ body {
     }
 
     .navbar .navbar-nav .nav-link {
-        font-size: 16px;
+        font-size: 1rem;
         letter-spacing: -0.2px;
         line-height: initial;
-        color: var(--dark-300);
-        font-weight: 400;
+        color: #333;
+        font-weight: 600;
         padding: 5px 0;
         margin: 0 25px;
         position: relative;
@@ -3671,13 +3672,62 @@ Dashboard CSS Start
     top: 0;
 }
 
+.dashboard-profile {
+    border: none;
+    padding: 8px;
+    min-width: 180px;
+    margin-top: 10px !important;
+}
+
 .dashboard-profile .dashboard-profile-item.dropdown-item {
-    color: var(--dark-200);
-    padding: 10px;
+    color: #4b5563;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+}
+
+.dashboard-profile .dashboard-profile-item.dropdown-item i {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+    color: #64748b;
+    transition: color 0.2s ease;
 }
 
 .dashboard-profile .dashboard-profile-item.dropdown-item:hover {
-    background-color: var(--off-white);
+    background-color: #f8fafc;
+    color: var(--lime-300);
+    transform: translateX(4px);
+}
+
+.dashboard-profile .dashboard-profile-item.dropdown-item:hover i {
+    color: var(--lime-300);
+}
+
+/* Logout Highlight */
+.dashboard-profile .dashboard-profile-item.dropdown-item.logout-item {
+    color: #ef4444;
+    margin-top: 4px;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 12px;
+}
+
+.dashboard-profile .dashboard-profile-item.dropdown-item.logout-item i {
+    color: #ef4444;
+}
+
+.dashboard-profile .dashboard-profile-item.dropdown-item.logout-item:hover {
+    background-color: #fef2f2;
+    color: #dc2626;
+}
+
+.dashboard-profile .dashboard-profile-item.dropdown-item.logout-item:hover i {
+    color: #dc2626;
 }
 
 .dashboard-header-btn.dropdown-toggle::after {

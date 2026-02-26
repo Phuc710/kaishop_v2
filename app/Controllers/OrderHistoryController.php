@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 /**
  * User Order History Controller
@@ -21,7 +21,7 @@ class OrderHistoryController extends Controller
         $user = $this->authService->getCurrentUser();
         $siteConfig = Config::getSiteConfig();
 
-        $this->view('profile/order_history', [
+        $this->view('profile/history-orders', [
             'user' => $user,
             'username' => $user['username'] ?? '',
             'chungapi' => $siteConfig,
@@ -52,8 +52,16 @@ class OrderHistoryController extends Controller
         ];
 
         $recordsTotal = $this->orderModel->countUserVisibleOrders($userId, []);
-        $recordsFiltered = $this->orderModel->countUserVisibleOrders($userId, $filters);
-        $rows = $this->orderModel->getUserVisibleOrders($userId, $filters, $start, $length);
+        $searchKeyword = trim((string) ($filters['search'] ?? ''));
+        if ($searchKeyword !== '') {
+            $allRows = $this->orderModel->getAllUserVisibleOrders($userId, $filters);
+            $filteredRows = $this->orderModel->smartFilterUserVisibleOrders($allRows, $searchKeyword);
+            $recordsFiltered = count($filteredRows);
+            $rows = array_slice($filteredRows, $start, $length);
+        } else {
+            $recordsFiltered = $this->orderModel->countUserVisibleOrders($userId, $filters);
+            $rows = $this->orderModel->getUserVisibleOrders($userId, $filters, $start, $length);
+        }
 
         $data = [];
         foreach ($rows as $row) {
@@ -77,6 +85,7 @@ class OrderHistoryController extends Controller
                 'status_label' => $statusLabel,
                 'time_display' => FormatHelper::eventTime($row['created_at'] ?? null, $row['created_at'] ?? null),
                 'time_raw' => (string) ($row['created_at'] ?? ''),
+                'time_ago' => !empty($row['created_at']) ? FormatHelper::timeAgo((string) $row['created_at']) : '',
             ];
         }
 

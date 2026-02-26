@@ -340,34 +340,64 @@ $loadInteractiveBundle = !empty($pageAssetFlagsResolved['interactive_bundle']);
             const statusUrl = '<?= url('api/system/maintenance-status') ?>';
             const maintenanceUrl = '<?= url('bao-tri') ?>';
 
-            if (!banner || !noticeText) {
-                return;
-            }
+            if (!banner || !noticeText) return;
 
-            let nextPollDelay = 15000;
-            let timerId = null;
+            let pollTimerId = null;
+            let tickTimerId = null;
+            let localSecondsLeft = 0;
+            let noticeActive = false;
 
             function normalizedPath(value) {
                 const raw = String(value || '/').replace(/\/+$/, '');
                 return raw === '' ? '/' : raw;
             }
 
-            function formatSeconds(totalSeconds) {
-                const sec = Math.max(0, Number(totalSeconds || 0));
-                const minutes = Math.floor(sec / 60);
-                const seconds = sec % 60;
-                return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+            function pad2(n) { return String(Math.max(0, n)).padStart(2, '0'); }
+
+            function formatCountdown(sec) {
+                sec = Math.max(0, sec);
+                const h = Math.floor(sec / 3600);
+                const m = Math.floor((sec % 3600) / 60);
+                const s = sec % 60;
+                return h > 0
+                    ? pad2(h) + ':' + pad2(m) + ':' + pad2(s)
+                    : pad2(m) + ':' + pad2(s);
             }
 
             function hideBanner() {
                 banner.hidden = true;
-                banner.classList.remove('is-visible');
+                banner.classList.remove('is-visible', 'is-urgent');
+                noticeActive = false;
+                window.clearInterval(tickTimerId);
+                tickTimerId = null;
+            }
+
+            function updateBannerText() {
+                if (!noticeActive) return;
+                const isUrgent = localSecondsLeft <= 60;
+                noticeText.textContent = 'Hệ thống sẽ bảo trì sau ' + formatCountdown(localSecondsLeft) + '. Vui lòng hoàn tất thao tác đang thực hiện.';
+                banner.classList.toggle('is-urgent', isUrgent);
+                if (localSecondsLeft <= 0) {
+                    redirectMaintenance();
+                }
+            }
+
+            function startTick() {
+                if (tickTimerId !== null) return;
+                tickTimerId = window.setInterval(function () {
+                    if (!noticeActive) { window.clearInterval(tickTimerId); tickTimerId = null; return; }
+                    if (localSecondsLeft > 0) { localSecondsLeft--; }
+                    updateBannerText();
+                }, 1000);
             }
 
             function showBanner(secondsLeft) {
-                noticeText.textContent = 'Hệ thống sẽ bảo trì sau ' + formatSeconds(secondsLeft) + '. Vui lòng hoàn tất thao tác đang thực hiện.';
+                localSecondsLeft = Math.max(0, Math.round(secondsLeft));
+                noticeActive = true;
                 banner.hidden = false;
                 banner.classList.add('is-visible');
+                updateBannerText();
+                startTick();
             }
 
             function redirectMaintenance() {
@@ -378,44 +408,30 @@ $loadInteractiveBundle = !empty($pageAssetFlagsResolved['interactive_bundle']);
                 }
             }
 
-            function scheduleNext() {
-                window.clearTimeout(timerId);
-                timerId = window.setTimeout(pollStatus, nextPollDelay);
+            function schedulePoll(delay) {
+                window.clearTimeout(pollTimerId);
+                pollTimerId = window.setTimeout(pollStatus, delay);
             }
 
             function pollStatus() {
                 fetch(statusUrl, { credentials: 'same-origin', cache: 'no-store' })
-                    .then(function (response) { return response.json(); })
+                    .then(function (r) { return r.json(); })
                     .then(function (data) {
                         const m = data && data.maintenance ? data.maintenance : null;
+                        if (!m) { hideBanner(); schedulePoll(20000); return; }
 
-                        if (!m) {
-                            hideBanner();
-                            nextPollDelay = 15000;
-                            scheduleNext();
-                            return;
-                        }
-
-                        if (m.active) {
-                            hideBanner();
-                            redirectMaintenance();
-                            return;
-                        }
+                        if (m.active) { hideBanner(); redirectMaintenance(); return; }
 
                         if (m.notice_active) {
+                            // Sync from server every poll; local tick fills the gap between polls
                             showBanner(m.notice_seconds_left || 0);
-                            nextPollDelay = 3000;
+                            schedulePoll(10000);
                         } else {
                             hideBanner();
-                            nextPollDelay = 15000;
+                            schedulePoll(20000);
                         }
-
-                        scheduleNext();
                     })
-                    .catch(function () {
-                        nextPollDelay = 15000;
-                        scheduleNext();
-                    });
+                    .catch(function () { schedulePoll(20000); });
             }
 
             pollStatus();

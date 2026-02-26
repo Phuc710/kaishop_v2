@@ -74,12 +74,11 @@ class SepayWebhookController extends Controller
             return $this->json(['success' => true, 'message' => 'Already processed']);
         }
 
-        // 5. Extract deposit code from content (pattern: "kai" + alphanumeric)
+        // 5. Extract deposit code from content (pattern: "kai" + generated suffix)
         $depositCode = null;
-        if (preg_match('/\b(kai[A-Z0-9]{10,20})\b/i', $content, $matches)) {
-            $depositCode = strtolower($matches[1]) !== strtolower($matches[1])
-                ? $matches[1]
-                : $matches[1];
+        // Generated format is "kai" + 8 random chars, keep wider upper bound for future-proofing.
+        if (preg_match('/\b(kai[A-Z0-9]{8,20})\b/i', $content, $matches)) {
+            $depositCode = trim((string) ($matches[1] ?? ''));
         }
 
         if (!$depositCode) {

@@ -4,12 +4,13 @@
 <head>
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>
     <title> Trang Chủ | <?= $chungapi['ten_web']; ?></title>
-    </head> <body> <?php require __DIR__ . '/../../hethong/nav.php'; ?>
-    <main class="bg-light pb-5">
-        <div class="container py-4">
+</head>
+
+<body> <?php require __DIR__ . '/../../hethong/nav.php'; ?>
+    <main class="pb-5">
+        <div class="container py-4 home-main-content">
             <!-- Premium Hero Banner -->
             <div class="home-hero-banner mb-5">
-                <img src="<?= asset('assets/images/banner-bg-03.png') ?>" class="hero-overlay-img" alt="bg">
                 <div class="hero-content">
                     <h1>Khám phá Kho <span class="text-warning">Mã Nguồn</span> & Dịch Vụ Số</h1>
                     <p>Giải pháp công nghệ chuyên nghiệp cho doanh nghiệp và cá nhân. Cam kết chất lượng, bảo hành 24/7.
@@ -85,6 +86,17 @@
                                         </div>
                                         <div class="ds-card-body">
                                             <h4 class="ds-card-title"><?= htmlspecialchars($product['name']) ?></h4>
+                                            <?php
+                                            $stats = $stockStats[$product['id']] ?? ['available' => 0, 'sold' => 0];
+                                            $stock_text = ($product['product_type'] === 'link') ? 'Vô hạn' : number_format($stats['available']);
+                                            $sold_count = number_format($stats['sold']);
+                                            ?>
+                                            <div class="ds-stock-row">
+                                                <span><i class="fas fa-box me-1"></i> Tồn kho: <strong
+                                                        class="text-primary"><?= $stock_text ?></strong></span>
+                                                <span><i class="fas fa-shopping-cart me-1"></i> Đã bán: <strong
+                                                        class="text-success"><?= $sold_count ?></strong></span>
+                                            </div>
                                             <div class="ds-price-row">
                                                 <div class="ds-price"><?= number_format($product['price_vnd']) ?>đ</div>
                                                 <?php if ($discount > 0): ?>
@@ -137,6 +149,6 @@
             });
         });
     </script>
-    </body>
+</body>
 
 </html>

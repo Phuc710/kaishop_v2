@@ -29,9 +29,12 @@ class ProfileController extends Controller
         $siteConfig = Config::getSiteConfig();
 
         $profileSection = trim((string) $this->get('section', ''));
-        $allowedSections = ['profile', 'deposit'];
+        $allowedSections = ['profile', 'balance', 'deposit'];
         if (!in_array($profileSection, $allowedSections, true)) {
             $profileSection = 'profile';
+        }
+        if ($profileSection === 'deposit') {
+            $profileSection = 'balance';
         }
 
         $requestedDepositMethod = trim((string) $this->get('method', ''));
@@ -44,7 +47,7 @@ class ProfileController extends Controller
             'user' => $user,
             'username' => $user['username'],
             'chungapi' => $siteConfig,
-            'activePage' => $profileSection === 'deposit' ? 'deposit' : 'profile',
+            'activePage' => $profileSection === 'balance' ? 'balance' : 'profile',
             'profileSection' => $profileSection,
             'depositPanel' => $depositPanel,
             'depositRouteMethod' => $depositRouteMethod,

@@ -1,17 +1,18 @@
 <?php
 $profileSection = (string) ($profileSection ?? 'profile');
-$isDepositSection = $profileSection === 'deposit';
-$userPageTitle = $isDepositSection ? 'Nạp tiền' : 'Thông tin tài khoản';
+$isBalanceSection = $profileSection === 'balance';
+$userPageTitle = $isBalanceSection ? 'Nạp tiền' : 'Thông tin tài khoản';
 $userPageAssetFlags = [
     'interactive_bundle' => false,
 ];
-$activePage = $isDepositSection ? 'deposit' : 'profile';
+$activePage = $isBalanceSection ? 'balance' : 'profile';
 require __DIR__ . '/layout/header.php';
 ?>
 
-<?php if ($isDepositSection): ?>
-    <?php require __DIR__ . '/partials/deposit_bank_panel.php'; ?>
-    <script src="<?= asset('assets/js/deposit-bank.js') ?>"></script>
+<?php if ($isBalanceSection): ?>
+    <?php require __DIR__ . '/balance.php'; ?>
+    <script src="<?= asset('assets/js/balance-success.js') ?>"></script>
+    <script src="<?= asset('assets/js/balance-bank.js') ?>"></script>
 <?php else: ?>
     <?php
     $currentBalance = (int) ($user['money'] ?? 0);
@@ -23,13 +24,7 @@ require __DIR__ . '/layout/header.php';
     <div class="profile-card">
         <div class="profile-card-header profile-card-header--with-actions">
             <div>
-                <h5 class="text-dark mb-1">Ví của tôi</h5>
-                <div class="user-card-subtitle">Tổng quan số dư và lịch sử nạp của tài khoản.</div>
-            </div>
-            <div class="profile-card-header-actions">
-                <a href="<?= url('balance/bank') ?>" class="btn btn-edit-profile">
-                    <i class="fas fa-university me-1"></i> Nạp tiền
-                </a>
+                <h5 class="text-dark mb-2">VÍ CỦA TÔI</h5>
             </div>
         </div>
         <div class="profile-card-body pt-0">
@@ -37,7 +32,7 @@ require __DIR__ . '/layout/header.php';
                 <div class="col-xl-4 col-md-6">
                     <div class="stat-box neutral">
                         <div class="user-label user-label--sm">Số dư hiện tại</div>
-                        <div class="balance-amount balance-amount--primary"><?= tien($currentBalance); ?>đ</div>
+                        <div class="balance-amount " style="color: #198754 !important;"><?= tien($currentBalance); ?>đ</div>
                     </div>
                 </div>
                 <div class="col-xl-4 col-md-6">
@@ -59,13 +54,9 @@ require __DIR__ . '/layout/header.php';
     <div class="profile-card" id="profile-info-card">
         <div class="profile-card-header profile-card-header--with-actions">
             <div>
-                <h5 class="text-dark mb-1">Hồ sơ của bạn</h5>
-                <div class="user-card-subtitle">Chỉnh sửa email để nhận thông báo và quản lý tài khoản.</div>
+                <h5 class="text-dark mb-1">HỒ SƠ CỦA BẠN</h5>
             </div>
             <div class="profile-card-header-actions">
-                <span class="user-status-badge <?= $twofaEnabled ? 'is-on' : 'is-off' ?>">
-                    2FA: <?= $twofaEnabled ? 'Bật' : 'Tắt' ?>
-                </span>
                 <button type="button" id="btn-edit" class="btn btn-edit-profile">Chỉnh sửa thông tin</button>
             </div>
         </div>

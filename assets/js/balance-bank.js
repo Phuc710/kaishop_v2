@@ -101,6 +101,22 @@
         var bankConfig = config.bank || {};
         var activeDeposit = config.activeDeposit || null;
         var methodRoutes = config.methodRoutes || {};
+        var csrfToken = String(config.csrfToken || '');
+        var storageKey = String(config.storageKey || 'ks_balance_bank');
+        var initialServerNowTs = Number(config.serverNowTs || (activeDeposit && activeDeposit.server_now_ts) || 0);
+        var successPresenter = (window.KaiBalanceSuccess && typeof window.KaiBalanceSuccess.createPresenter === 'function')
+            ? window.KaiBalanceSuccess.createPresenter({
+                endpoints: endpoints,
+                methodRoutes: methodRoutes,
+                activeMethod: config.activeMethod
+            })
+            : {
+                show: function (res) {
+                    var redirectUrl = endpoints.profile || (window.location.origin + '/profile');
+                    alertSuccess('Nạp tiền thành công. Số dư: ' + formatVnd(Number(res && res.new_balance || 0)) + 'đ');
+                    window.location.href = redirectUrl;
+                }
+            };
 
         var elements = {
             stepAmount: root.querySelector('[data-deposit-step="amount"]'),
@@ -131,11 +147,55 @@
             amount: Number(elements.amountInput ? elements.amountInput.value : 10000) || 10000,
             bonusPercent: 0,
             activeCode: activeDeposit && activeDeposit.deposit_code ? String(activeDeposit.deposit_code) : '',
+            activeCreatedAtTs: activeDeposit && activeDeposit.created_at_ts ? Number(activeDeposit.created_at_ts) : 0,
             activeExpiresAtTs: activeDeposit && activeDeposit.expires_at_ts ? Number(activeDeposit.expires_at_ts) : 0,
             countdownTimer: null,
             pollTimer: null,
-            currentCountdownTotal: ttlSeconds
+            pollToken: 0,
+            lastKnownStatus: activeDeposit && activeDeposit.deposit_code ? 'pending' : '',
+            pollBackoffMs: 0,
+            currentCountdownTotal: Math.max(1, Number((activeDeposit && activeDeposit.ttl_seconds) || ttlSeconds || 300)),
+            serverOffsetMs: (Number.isFinite(initialServerNowTs) && initialServerNowTs > 0) ? ((initialServerNowTs * 1000) - Date.now()) : 0
         };
+
+        function storageAvailable() {
+            try {
+                return !!window.localStorage;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function syncServerOffset(serverNowTs) {
+            var ts = Number(serverNowTs || 0);
+            if (!Number.isFinite(ts) || ts <= 0) return;
+            state.serverOffsetMs = (ts * 1000) - Date.now();
+        }
+
+        function getServerNowTs() {
+            return Math.floor((Date.now() + Number(state.serverOffsetMs || 0)) / 1000);
+        }
+
+        function persistActiveDepositSnapshot(extra) {
+            if (!storageKey || !storageAvailable()) return;
+            var payload = Object.assign({
+                deposit_code: state.activeCode || '',
+                created_at_ts: Number(state.activeCreatedAtTs || 0),
+                expires_at_ts: Number(state.activeExpiresAtTs || 0),
+                ttl_seconds: Number(state.currentCountdownTotal || ttlSeconds || 300),
+                server_now_ts: getServerNowTs()
+            }, extra || {});
+            try {
+                window.localStorage.setItem(storageKey, JSON.stringify(payload));
+            } catch (e) { }
+        }
+
+        function clearActiveDepositSnapshot() {
+            if (!storageKey || !storageAvailable()) return;
+            try {
+                window.localStorage.removeItem(storageKey);
+            } catch (e) { }
+        }
 
         function resolveBonusPercent(amount) {
             var sorted = bonusTiers.slice().sort(function (a, b) { return Number(b.amount || 0) - Number(a.amount || 0); });
@@ -212,8 +272,11 @@
         }
 
         function stopPolling() {
+            state.pollToken += 1;
+            state.lastKnownStatus = '';
+            state.pollBackoffMs = 0;
             if (state.pollTimer) {
-                clearInterval(state.pollTimer);
+                clearTimeout(state.pollTimer);
                 state.pollTimer = null;
             }
         }
@@ -225,139 +288,152 @@
 
         function renderCountdown(remainingSeconds) {
             if (!elements.countdown || !elements.countdownFill) return;
-            var remaining = Math.max(0, Math.floor(remainingSeconds));
+            var remainingExact = Math.max(0, Number(remainingSeconds || 0));
+            var remaining = Math.max(0, Math.ceil(remainingExact));
             var mins = Math.floor(remaining / 60);
             var secs = remaining % 60;
             elements.countdown.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
             var total = Math.max(1, state.currentCountdownTotal || ttlSeconds);
-            var pct = Math.max(0, Math.min(100, (remaining / total) * 100));
+            var pct = Math.max(0, Math.min(100, (remainingExact / total) * 100));
             elements.countdownFill.style.width = pct + '%';
         }
 
-        function startCountdown(seconds) {
+        function startCountdownByExpiry(expiresAtTs, totalSeconds, createdAtTs) {
             stopCountdown();
-            var remaining = Math.max(0, Math.floor(seconds));
-            state.currentCountdownTotal = Math.max(1, remaining || ttlSeconds);
-            renderCountdown(remaining);
-            state.countdownTimer = setInterval(function () {
-                remaining -= 1;
+            state.activeExpiresAtTs = Math.max(0, Number(expiresAtTs || 0));
+            state.currentCountdownTotal = Math.max(1, Number(totalSeconds || ttlSeconds || 300));
+            state.activeCreatedAtTs = Math.max(0, Number(createdAtTs || (state.activeExpiresAtTs ? (state.activeExpiresAtTs - state.currentCountdownTotal) : 0)));
+
+            function tick() {
+                var remaining = state.activeExpiresAtTs > 0
+                    ? (state.activeExpiresAtTs - getServerNowTs())
+                    : 0;
                 renderCountdown(remaining);
                 if (remaining <= 0) {
                     stopCountdown();
                     stopPolling();
+                    clearActiveDepositSnapshot();
                     alertInfo('Giao dịch đã hết thời gian. Vui lòng tạo giao dịch mới.');
                     window.location.reload();
                 }
-            }, 1000);
+            }
+
+            tick();
+            state.countdownTimer = setInterval(function () {
+                tick();
+            }, 250);
+        }
+
+        function queueNextPoll(fn, delayMs) {
+            if (state.pollTimer) {
+                clearTimeout(state.pollTimer);
+                state.pollTimer = null;
+            }
+            state.pollTimer = setTimeout(fn, Math.max(0, Number(delayMs || 0)));
+        }
+
+        function handleDepositStatusResponse(res) {
+            if (!res || !res.success) return false;
+
+            syncServerOffset(res.server_now_ts);
+            if (res.expires_at_ts) {
+                state.activeExpiresAtTs = Number(res.expires_at_ts) || state.activeExpiresAtTs;
+            }
+            if (res.created_at_ts) {
+                state.activeCreatedAtTs = Number(res.created_at_ts) || state.activeCreatedAtTs;
+            }
+            if (res.ttl_seconds) {
+                state.currentCountdownTotal = Math.max(1, Number(res.ttl_seconds));
+            }
+            if (res.status) {
+                state.lastKnownStatus = String(res.status);
+            }
+            persistActiveDepositSnapshot();
+
+            if (res.status === 'completed') {
+                stopAll();
+                clearActiveDepositSnapshot();
+                successPresenter.show(res);
+                return true;
+            }
+
+            if (res.status === 'expired' || res.status === 'cancelled') {
+                stopAll();
+                clearActiveDepositSnapshot();
+                window.location.reload();
+                return true;
+            }
+
+            return true;
+        }
+
+        function fetchStatusOnce(depositCode) {
+            if (!depositCode || !endpoints.statusBase) {
+                return Promise.resolve(null);
+            }
+            return fetch(String(endpoints.statusBase).replace(/\/$/, '') + '/' + encodeURIComponent(depositCode), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
+                cache: 'no-store'
+            }).then(function (r) { return r.json(); });
         }
 
         function startPolling(depositCode) {
             stopPolling();
             if (!depositCode || !endpoints.statusBase) return;
-            state.pollTimer = setInterval(function () {
-                fetch(String(endpoints.statusBase).replace(/\/$/, '') + '/' + encodeURIComponent(depositCode), {
-                    credentials: 'same-origin',
-                    cache: 'no-store'
-                })
-                    .then(function (r) { return r.json(); })
+            state.lastKnownStatus = 'pending';
+            var pollToken = state.pollToken;
+
+            function runLongPollCycle() {
+                if (pollToken !== state.pollToken) return;
+                if (!state.activeCode || state.activeCode !== depositCode) return;
+
+                var canLongPoll = !!endpoints.statusWaitBase;
+                var requestPromise;
+
+                if (canLongPoll) {
+                    var waitUrl = String(endpoints.statusWaitBase).replace(/\/$/, '') + '/' + encodeURIComponent(depositCode)
+                        + '?since=' + encodeURIComponent(String(state.lastKnownStatus || ''))
+                        + '&timeout=25';
+                    requestPromise = fetch(waitUrl, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        credentials: 'same-origin',
+                        cache: 'no-store'
+                    }).then(function (r) { return r.json(); });
+                } else {
+                    requestPromise = fetchStatusOnce(depositCode);
+                }
+
+                requestPromise
                     .then(function (res) {
-                        if (!res || !res.success) return;
-                        if (res.status === 'completed') {
-                            stopAll();
-
-                            // Inject CSS for animated checkmark
-                            var styleId = 'success-checkmark-style';
-                            if (!document.getElementById(styleId)) {
-                                var style = document.createElement('style');
-                                style.id = styleId;
-                                style.innerHTML = `
-                                    .success-checkmark {
-                                        width: 80px;
-                                        height: 80px;
-                                        border-radius: 50%;
-                                        display: block;
-                                        stroke-width: 2;
-                                        stroke: #4caf50;
-                                        stroke-miterlimit: 10;
-                                        margin: 10px auto 20px;
-                                        box-shadow: inset 0px 0px 0px #4caf50;
-                                        animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;
-                                    }
-                                    @keyframes fill { 100% { box-shadow: inset 0px 0px 0px 40px #4caf50; } }
-                                    @keyframes scale { 0%, 100% { transform: none; } 50% { transform: scale3d(1.1, 1.1, 1); } }
-                                    .swal2-icon.swal2-success { display: none !important; } /* Hide default icon */
-                                `;
-                                document.head.appendChild(style);
-                            }
-
-                            // SVG Checkmark HTML
-                            var checkmarkSvg = `
-                                <svg class="success-checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-                                    <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
-                                    <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" stroke="#fff" stroke-width="4"/>
-                                </svg>
-                            `;
-
-                            var detailsHtml = checkmarkSvg + '<div style="text-align: left; padding: 15px; background: #f8f9fa; border-radius: 10px; margin-top: 15px;">';
-                            if (res.deposit_info) {
-                                detailsHtml += '<p style="margin-bottom: 5px;">Mã giao dịch: <strong>' + (res.deposit_info.deposit_code || '') + '</strong></p>';
-                                detailsHtml += '<p style="margin-bottom: 5px;">Số tiền nạp: <strong>' + formatVnd(res.deposit_info.amount || 0) + 'đ</strong></p>';
-                                if (res.deposit_info.bonus_percent > 0) {
-                                    detailsHtml += '<p style="margin-bottom: 5px;">Khuyến mãi: <strong>+' + res.deposit_info.bonus_percent + '%</strong></p>';
-                                }
-                            }
-                            detailsHtml += '<div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ccc; text-align: center; font-size: 18px;">Số dư hiện tại<br><strong style="color: #4caf50; font-size: 25px;">' + formatVnd(Number(res.new_balance || 0)) + 'đ</strong></div></div>';
-
-                            if (window.Swal) {
-                                Swal.fire({
-                                    title: 'Thành Công!',
-                                    html: detailsHtml,
-                                    confirmButtonText: 'OK',
-                                    confirmButtonColor: '#ff6900',
-                                    allowOutsideClick: false,
-                                    didOpen: function () {
-                                        if (typeof confetti === 'function') {
-                                            // Phát nổ chính giữa
-                                            confetti({
-                                                particleCount: 150,
-                                                spread: 70,
-                                                origin: { y: 0.5 },
-                                                zIndex: 9999
-                                            });
-
-                                            // Bắn thêm một chút ở hai bên cho xịn
-                                            setTimeout(function () {
-                                                confetti({
-                                                    particleCount: 50,
-                                                    angle: 60,
-                                                    spread: 55,
-                                                    origin: { x: 0 }
-                                                });
-                                                confetti({
-                                                    particleCount: 50,
-                                                    angle: 120,
-                                                    spread: 55,
-                                                    origin: { x: 1 }
-                                                });
-                                            }, 200);
-                                        }
-                                    }
-                                }).then(function () {
-                                    window.location.href = endpoints.profile || (window.location.origin + '/profile');
-                                });
-                            } else {
-                                alertSuccess('Nạp tiền thành công. Số dư: ' + formatVnd(Number(res.new_balance || 0)) + 'đ');
-                                window.location.href = endpoints.profile || (window.location.origin + '/profile');
-                            }
-                            return;
-                        }
-                        if (res.status === 'expired' || res.status === 'cancelled') {
-                            stopAll();
-                            window.location.reload();
-                        }
+                        if (pollToken !== state.pollToken) return;
+                        state.pollBackoffMs = 0;
+                        handleDepositStatusResponse(res);
+                        if (pollToken !== state.pollToken) return;
+                        queueNextPoll(runLongPollCycle, 100);
                     })
-                    .catch(function () { });
-            }, 3000);
+                    .catch(function () {
+                        if (pollToken !== state.pollToken) return;
+                        // Fallback to normal polling cadence on transient errors
+                        state.pollBackoffMs = state.pollBackoffMs > 0 ? Math.min(5000, state.pollBackoffMs * 2) : 1500;
+                        queueNextPoll(function () {
+                            if (pollToken !== state.pollToken) return;
+                            fetchStatusOnce(depositCode)
+                                .then(function (res) {
+                                    if (pollToken !== state.pollToken) return;
+                                    handleDepositStatusResponse(res);
+                                    if (pollToken !== state.pollToken) return;
+                                    queueNextPoll(runLongPollCycle, 300);
+                                })
+                                .catch(function () {
+                                    if (pollToken !== state.pollToken) return;
+                                    queueNextPoll(runLongPollCycle, state.pollBackoffMs || 2000);
+                                });
+                        }, state.pollBackoffMs || 1500);
+                    });
+            }
+
+            runLongPollCycle();
         }
 
         function createDeposit() {
@@ -375,9 +451,13 @@
 
             fetch(endpoints.create, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-Token': csrfToken
+                },
                 credentials: 'same-origin',
-                body: 'amount=' + encodeURIComponent(String(amount))
+                body: 'amount=' + encodeURIComponent(String(amount)) + '&csrf_token=' + encodeURIComponent(csrfToken)
             })
                 .then(function (r) { return r.json(); })
                 .then(function (res) {
@@ -391,16 +471,28 @@
                     state.activeCode = String(data.deposit_code || '');
                     setTransferStepData(data);
                     switchToTransferStep();
+                    syncServerOffset(data.server_now_ts);
 
-                    var expiresAt = 0;
-                    if (data.expires_at) {
+                    var expiresAtTs = Number(data.expires_at_ts || 0);
+                    if (!expiresAtTs && data.expires_at) {
                         var exp = new Date(String(data.expires_at).replace(' ', 'T'));
-                        expiresAt = Math.floor(exp.getTime() / 1000);
+                        expiresAtTs = Math.floor(exp.getTime() / 1000);
                     }
-                    var nowTs = Math.floor(Date.now() / 1000);
-                    var remaining = expiresAt > 0 ? Math.max(0, expiresAt - nowTs) : Number(data.ttl_seconds || ttlSeconds);
-                    state.activeExpiresAtTs = nowTs + remaining;
-                    startCountdown(remaining);
+                    var totalTtl = Math.max(1, Number(data.ttl_seconds || ttlSeconds || 300));
+                    if (!expiresAtTs) {
+                        expiresAtTs = getServerNowTs() + totalTtl;
+                    }
+                    state.activeCreatedAtTs = expiresAtTs - totalTtl;
+                    state.activeExpiresAtTs = expiresAtTs;
+                    state.currentCountdownTotal = totalTtl;
+                    persistActiveDepositSnapshot({
+                        amount: Number(data.amount || 0),
+                        bank_name: data.bank_name || '',
+                        bank_owner: data.bank_owner || '',
+                        bank_account: data.bank_account || '',
+                        deposit_code: state.activeCode
+                    });
+                    startCountdownByExpiry(expiresAtTs, totalTtl, state.activeCreatedAtTs);
                     startPolling(state.activeCode);
                 })
                 .catch(function () {
@@ -423,14 +515,19 @@
                 if (!confirmed) return;
                 fetch(endpoints.cancel, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-Token': csrfToken
+                    },
                     credentials: 'same-origin',
-                    body: 'deposit_code=' + encodeURIComponent(state.activeCode)
+                    body: 'deposit_code=' + encodeURIComponent(state.activeCode) + '&csrf_token=' + encodeURIComponent(csrfToken)
                 })
                     .then(function (r) { return r.json(); })
                     .then(function (res) {
                         if (res && res.success) {
                             stopAll();
+                            clearActiveDepositSnapshot();
                             alertInfo('Đã huỷ giao dịch nạp tiền.');
                             window.location.reload();
                             return;
@@ -517,20 +614,29 @@
         updatePreview();
 
         if (activeDeposit && activeDeposit.deposit_code) {
+            syncServerOffset(activeDeposit.server_now_ts || config.serverNowTs);
             state.activeCode = String(activeDeposit.deposit_code);
+            state.activeCreatedAtTs = Number(activeDeposit.created_at_ts || 0);
             setTransferStepData(activeDeposit);
             switchToTransferStep();
-            var nowTs = Math.floor(Date.now() / 1000);
-            var remain = Math.max(0, Number(activeDeposit.expires_at_ts || 0) - nowTs);
-            startCountdown(remain || ttlSeconds);
+            state.currentCountdownTotal = Math.max(1, Number(activeDeposit.ttl_seconds || ttlSeconds || 300));
+            state.activeExpiresAtTs = Number(activeDeposit.expires_at_ts || 0);
+            persistActiveDepositSnapshot();
+            startCountdownByExpiry(
+                state.activeExpiresAtTs || (getServerNowTs() + state.currentCountdownTotal),
+                state.currentCountdownTotal,
+                state.activeCreatedAtTs || (state.activeExpiresAtTs ? (state.activeExpiresAtTs - state.currentCountdownTotal) : 0)
+            );
             startPolling(state.activeCode);
+        } else {
+            clearActiveDepositSnapshot();
         }
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        var root = document.querySelector('[data-deposit-bank-root]');
+        var root = document.querySelector('[data-balance-bank-root]');
         if (!root) return;
-        var config = parseJsonConfig('deposit-bank-config');
+        var config = parseJsonConfig('balance-bank-config');
         initBankDeposit(root, config);
     });
 })();

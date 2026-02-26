@@ -42,7 +42,6 @@ $privatePaths = [
     '/history-orders',
     '/deposit',
     '/bao-tri',
-    '/bao-tri.php',
 ];
 $isPrivatePage = false;
 foreach ($privatePaths as $p) {
@@ -71,7 +70,6 @@ $lightweightPaths = [
     '/chinh-sach',
     '/dieu-khoan',
     '/bao-tri',
-    '/bao-tri.php',
 ];
 $isLightweightPath = false;
 foreach ($lightweightPaths as $p) {
@@ -128,10 +126,8 @@ $ogType = isset($seoOgType) && trim((string) $seoOgType) !== '' ? trim((string) 
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Signika:wght@600;700;800&display=swap" rel="stylesheet">
-<link
-    href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
-    rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Signika:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boxicons@2.1.0/css/boxicons.min.css">

@@ -46,6 +46,76 @@ class DepositController extends Controller
         return self::ROUTE_METHOD_MAP[$key] ?? DepositService::METHOD_BANK_SEPAY;
     }
 
+    /**
+     * @param array<string,mixed> $user
+     */
+    private function findUserDepositByCode(array $user, string $code): ?array
+    {
+        $deposit = $this->depositModel->findByCode($code);
+        if (!$deposit || (int) ($deposit['user_id'] ?? 0) !== (int) ($user['id'] ?? 0)) {
+            return null;
+        }
+        return $deposit;
+    }
+
+    private function getUserBalanceValue(int $userId): int
+    {
+        global $connection;
+        $stmt = $connection->query('SELECT `money` FROM `users` WHERE `id` = ' . $userId);
+        $row = $stmt ? $stmt->fetch_assoc() : null;
+        return (int) ($row['money'] ?? 0);
+    }
+
+    /**
+     * @param array<string,mixed> $deposit
+     * @param array<string,mixed> $user
+     * @return array<string,mixed>
+     */
+    private function buildDepositStatusResponseData(array $deposit, array $user): array
+    {
+        $createdAt = strtotime((string) ($deposit['created_at'] ?? ''));
+        $now = time();
+        $elapsed = $createdAt ? ($now - $createdAt) : 0;
+        $ttlSeconds = $this->depositModel->getPendingTtlSeconds();
+
+        if (($deposit['status'] ?? '') === 'pending' && $elapsed >= $ttlSeconds) {
+            $this->depositModel->markExpired();
+            $deposit['status'] = 'expired';
+        }
+
+        $responseData = [
+            'success' => true,
+            'status' => (string) ($deposit['status'] ?? 'pending'),
+            'remaining' => max(0, $ttlSeconds - $elapsed),
+            'ttl_seconds' => $ttlSeconds,
+            'server_now_ts' => $now,
+            'created_at_ts' => $createdAt ?: 0,
+            'expires_at_ts' => $createdAt ? ($createdAt + $ttlSeconds) : 0,
+        ];
+
+        if (($deposit['status'] ?? '') === 'completed') {
+            $completedAtRaw = (string) ($deposit['completed_at'] ?? '');
+            $completedAtTs = $completedAtRaw !== '' ? (strtotime($completedAtRaw) ?: 0) : 0;
+            $processingSeconds = ($createdAt && $completedAtTs) ? max(0, $completedAtTs - $createdAt) : 0;
+
+            $responseData['new_balance'] = $this->getUserBalanceValue((int) ($user['id'] ?? 0));
+            $responseData['deposit_info'] = [
+                'method' => DepositService::METHOD_BANK_SEPAY,
+                'deposit_code' => (string) ($deposit['deposit_code'] ?? ''),
+                'content' => (string) ($deposit['deposit_code'] ?? ''),
+                'amount' => (int) ($deposit['amount'] ?? 0),
+                'bonus_percent' => (int) ($deposit['bonus_percent'] ?? 0),
+                'created_at' => (string) ($deposit['created_at'] ?? ''),
+                'created_at_ts' => $createdAt ?: 0,
+                'completed_at' => $completedAtRaw,
+                'completed_at_ts' => $completedAtTs,
+                'processing_seconds' => $processingSeconds,
+            ];
+        }
+
+        return $responseData;
+    }
+
     private function renderBalancePage(string $routeMethod = 'bank')
     {
         $user = $this->requireUser();
@@ -59,8 +129,8 @@ class DepositController extends Controller
             'user' => $user,
             'username' => (string) ($user['username'] ?? ''),
             'chungapi' => $siteConfig,
-            'activePage' => 'deposit',
-            'profileSection' => 'deposit',
+            'activePage' => 'balance',
+            'profileSection' => 'balance',
             'depositPanel' => $depositPanel,
             'depositRouteMethod' => $routeSegment,
         ]);
@@ -104,6 +174,9 @@ class DepositController extends Controller
     public function create()
     {
         $user = $this->requireUser();
+        if (!$this->validateCsrf()) {
+            return $this->json(['success' => false, 'message' => 'Phiên làm việc hết hạn, vui lòng tải lại trang.'], 403);
+        }
         $siteConfig = Config::getSiteConfig();
         $amount = (int) $this->post('amount', 0);
 
@@ -154,16 +227,93 @@ class DepositController extends Controller
             'status' => (string) ($deposit['status'] ?? 'pending'),
             'remaining' => max(0, $ttlSeconds - $elapsed),
             'ttl_seconds' => $ttlSeconds,
+            'server_now_ts' => $now,
+            'created_at_ts' => $createdAt ?: 0,
+            'expires_at_ts' => $createdAt ? ($createdAt + $ttlSeconds) : 0,
         ];
 
         if (($deposit['status'] ?? '') === 'completed') {
             global $connection;
             $stmt = $connection->query('SELECT `money` FROM `users` WHERE `id` = ' . (int) $user['id']);
             $row = $stmt ? $stmt->fetch_assoc() : null;
+            $completedAtRaw = (string) ($deposit['completed_at'] ?? '');
+            $completedAtTs = $completedAtRaw !== '' ? (strtotime($completedAtRaw) ?: 0) : 0;
+            $processingSeconds = ($createdAt && $completedAtTs) ? max(0, $completedAtTs - $createdAt) : 0;
+
             $responseData['new_balance'] = (int) ($row['money'] ?? 0);
+            $responseData['deposit_info'] = [
+                'method' => DepositService::METHOD_BANK_SEPAY,
+                'deposit_code' => (string) ($deposit['deposit_code'] ?? ''),
+                'content' => (string) ($deposit['deposit_code'] ?? ''),
+                'amount' => (int) ($deposit['amount'] ?? 0),
+                'bonus_percent' => (int) ($deposit['bonus_percent'] ?? 0),
+                'created_at' => (string) ($deposit['created_at'] ?? ''),
+                'created_at_ts' => $createdAt ?: 0,
+                'completed_at' => $completedAtRaw,
+                'completed_at_ts' => $completedAtTs,
+                'processing_seconds' => $processingSeconds,
+            ];
         }
 
         return $this->json($responseData);
+    }
+
+    /**
+     * GET /deposit/status-wait/{code}
+     * Long polling endpoint for production-friendly realtime updates.
+     */
+    public function statusWait($code)
+    {
+        $user = $this->requireUser();
+        $depositCode = trim((string) $code);
+        $deposit = $this->findUserDepositByCode($user, $depositCode);
+        if (!$deposit) {
+            return $this->json(['success' => false, 'message' => 'Giao dá»‹ch khÃ´ng tá»“n táº¡i'], 404);
+        }
+
+        $since = strtolower(trim((string) $this->get('since', '')));
+        $timeoutSeconds = max(5, min(30, (int) $this->get('timeout', 25)));
+        $startedAt = microtime(true);
+        $deadline = $startedAt + $timeoutSeconds;
+        $pollIntervalUs = 800000;
+        $payload = $this->buildDepositStatusResponseData($deposit, $user);
+
+        if (function_exists('session_status') && session_status() === PHP_SESSION_ACTIVE) {
+            @session_write_close();
+        }
+        @set_time_limit($timeoutSeconds + 5);
+        @ignore_user_abort(true);
+
+        while (true) {
+            $currentStatus = strtolower((string) ($payload['status'] ?? ''));
+            $isTerminal = in_array($currentStatus, ['completed', 'expired', 'cancelled'], true);
+            $statusChanged = ($since !== '' && $currentStatus !== $since);
+
+            if ($since === '' || $isTerminal || $statusChanged) {
+                $payload['long_poll'] = [
+                    'timed_out' => false,
+                    'waited_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+                ];
+                return $this->json($payload);
+            }
+
+            if (microtime(true) >= $deadline) {
+                break;
+            }
+
+            usleep($pollIntervalUs);
+            $deposit = $this->findUserDepositByCode($user, $depositCode);
+            if (!$deposit) {
+                return $this->json(['success' => false, 'message' => 'Giao dá»‹ch khÃ´ng tá»“n táº¡i'], 404);
+            }
+            $payload = $this->buildDepositStatusResponseData($deposit, $user);
+        }
+
+        $payload['long_poll'] = [
+            'timed_out' => true,
+            'waited_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+        ];
+        return $this->json($payload);
     }
 
     /**
@@ -172,6 +322,9 @@ class DepositController extends Controller
     public function cancel()
     {
         $user = $this->requireUser();
+        if (!$this->validateCsrf()) {
+            return $this->json(['success' => false, 'message' => 'Phiên làm việc hết hạn, vui lòng tải lại trang.'], 403);
+        }
         $depositCode = trim((string) $this->post('deposit_code', ''));
 
         if ($depositCode === '') {

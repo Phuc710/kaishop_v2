@@ -143,6 +143,92 @@ class Order extends Model
         return array_map(fn(array $row) => $this->hydrateOrderRow($row), $rows);
     }
 
+    /**
+     * Fetch all user orders using non-search filters only (for smart AJAX search in PHP).
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function getAllUserVisibleOrders(int $userId, array $filters = []): array
+    {
+        $filtersNoSearch = $filters;
+        $filtersNoSearch['search'] = '';
+        [$whereSql, $params] = $this->buildUserHistoryWhere($userId, $filtersNoSearch);
+
+        $sql = "
+            SELECT *
+            FROM `{$this->table}`
+            {$whereSql}
+            ORDER BY `created_at` DESC, `id` DESC
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        return array_map(fn(array $row) => $this->hydrateOrderRow($row), $rows);
+    }
+
+    /**
+     * Smart search for user order history (accent-insensitive, multi-token, matches visible short code).
+     *
+     * @param array<int,array<string,mixed>> $rows
+     * @return array<int,array<string,mixed>>
+     */
+    public function smartFilterUserVisibleOrders(array $rows, string $search): array
+    {
+        $tokens = $this->tokenizeSmartSearch($search);
+        if ($tokens === []) {
+            return $rows;
+        }
+
+        return array_values(array_filter($rows, function (array $row) use ($tokens): bool {
+            $status = (string) ($row['status'] ?? '');
+            $statusAliases = match ($status) {
+                'completed' => 'hoan tat thanh cong xong done completed',
+                'pending' => 'cho xu ly pending doi',
+                'processing' => 'dang xu ly processing',
+                'cancelled' => 'da huy huy cancelled',
+                default => $status,
+            };
+
+            $price = (int) ($row['price'] ?? 0);
+            $quantity = (int) ($row['quantity'] ?? 1);
+
+            $haystack = implode(' ', array_filter([
+                (string) ($row['order_code'] ?? ''),
+                (string) ($row['order_code_short'] ?? ''),
+                (string) ($row['product_name'] ?? ''),
+                (string) ($row['created_at'] ?? ''),
+                (string) ($row['customer_input'] ?? ''),
+                (string) ($row['cancel_reason'] ?? ''),
+                (string) ($row['stock_content_plain'] ?? ''),
+                (string) $quantity,
+                (string) $price,
+                number_format($price, 0, ',', '.'),
+                $status,
+                $statusAliases,
+            ], static fn($v) => (string) $v !== ''));
+
+            $normalized = $this->normalizeSmartSearchText($haystack);
+            $digits = preg_replace('/\D+/', '', $haystack) ?? '';
+
+            foreach ($tokens as $token) {
+                if ($token === '') {
+                    continue;
+                }
+                if (preg_match('/^\d+$/', $token) === 1) {
+                    if ($digits === '' || strpos($digits, $token) === false) {
+                        return false;
+                    }
+                    continue;
+                }
+                if (strpos($normalized, $token) === false) {
+                    return false;
+                }
+            }
+
+            return true;
+        }));
+    }
+
     public function getByIdForUpdate(int $id): ?array
     {
         $stmt = $this->db->prepare("SELECT * FROM `{$this->table}` WHERE `id` = ? LIMIT 1 FOR UPDATE");
@@ -379,5 +465,45 @@ class Order extends Model
             return '';
         }
         return strtoupper(substr(hash('sha256', $orderCode), 0, 8));
+    }
+
+    /**
+     * @return array<int,string>
+     */
+    private function tokenizeSmartSearch(string $search): array
+    {
+        $normalized = $this->normalizeSmartSearchText($search);
+        if ($normalized === '') {
+            return [];
+        }
+        $parts = preg_split('/\s+/u', $normalized) ?: [];
+        return array_values(array_filter($parts, static fn($p) => $p !== ''));
+    }
+
+    private function normalizeSmartSearchText(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+        $value = mb_strtolower($value, 'UTF-8');
+        $value = strtr($value, [
+            'à' => 'a', 'á' => 'a', 'ạ' => 'a', 'ả' => 'a', 'ã' => 'a',
+            'â' => 'a', 'ầ' => 'a', 'ấ' => 'a', 'ậ' => 'a', 'ẩ' => 'a', 'ẫ' => 'a',
+            'ă' => 'a', 'ằ' => 'a', 'ắ' => 'a', 'ặ' => 'a', 'ẳ' => 'a', 'ẵ' => 'a',
+            'è' => 'e', 'é' => 'e', 'ẹ' => 'e', 'ẻ' => 'e', 'ẽ' => 'e',
+            'ê' => 'e', 'ề' => 'e', 'ế' => 'e', 'ệ' => 'e', 'ể' => 'e', 'ễ' => 'e',
+            'ì' => 'i', 'í' => 'i', 'ị' => 'i', 'ỉ' => 'i', 'ĩ' => 'i',
+            'ò' => 'o', 'ó' => 'o', 'ọ' => 'o', 'ỏ' => 'o', 'õ' => 'o',
+            'ô' => 'o', 'ồ' => 'o', 'ố' => 'o', 'ộ' => 'o', 'ổ' => 'o', 'ỗ' => 'o',
+            'ơ' => 'o', 'ờ' => 'o', 'ớ' => 'o', 'ợ' => 'o', 'ở' => 'o', 'ỡ' => 'o',
+            'ù' => 'u', 'ú' => 'u', 'ụ' => 'u', 'ủ' => 'u', 'ũ' => 'u',
+            'ư' => 'u', 'ừ' => 'u', 'ứ' => 'u', 'ự' => 'u', 'ử' => 'u', 'ữ' => 'u',
+            'ỳ' => 'y', 'ý' => 'y', 'ỵ' => 'y', 'ỷ' => 'y', 'ỹ' => 'y',
+            'đ' => 'd',
+        ]);
+        $value = preg_replace('/[^\p{L}\p{N}\s\-\+]/u', ' ', $value) ?? $value;
+        $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+        return trim($value);
     }
 }

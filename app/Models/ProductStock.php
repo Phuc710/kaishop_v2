@@ -40,17 +40,20 @@ class ProductStock extends Model
      */
     public function getByProduct(int $productId, string $statusFilter = '', string $search = ''): array
     {
-        $sql = "SELECT * FROM {$this->table} WHERE product_id = ?";
+        $sql = "SELECT t.*, u.username as buyer_username 
+                FROM {$this->table} t 
+                LEFT JOIN users u ON t.buyer_id = u.id 
+                WHERE t.product_id = ?";
         $params = [$productId];
         if ($statusFilter !== '') {
-            $sql .= " AND status = ?";
+            $sql .= " AND t.status = ?";
             $params[] = $statusFilter;
         }
         if ($search !== '') {
-            $sql .= " AND content LIKE ?";
+            $sql .= " AND t.content LIKE ?";
             $params[] = '%' . $search . '%';
         }
-        $sql .= " ORDER BY id DESC";
+        $sql .= " ORDER BY t.id DESC";
         return $this->query($sql, $params)->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -216,5 +219,45 @@ class ProductStock extends Model
         );
         $stmt->execute([$productId]);
         return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Claim one available stock item using the current DB transaction.
+     * PurchaseService opens/commits the transaction, so this method must not
+     * start/commit/rollback by itself.
+     */
+    public function claimOneInCurrentTransaction(int $productId, int $buyerId, ?int $orderId = null): ?array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT * FROM {$this->table}
+             WHERE product_id = ? AND status = 'available'
+             ORDER BY id ASC
+             LIMIT 1
+             FOR UPDATE"
+        );
+        $stmt->execute([$productId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+        if (!$row) {
+            return null;
+        }
+
+        $now = date('Y-m-d H:i:s');
+        $update = $this->db->prepare(
+            "UPDATE {$this->table}
+             SET status = 'sold', buyer_id = ?, order_id = ?, sold_at = ?
+             WHERE id = ? AND status = 'available'"
+        );
+        $update->execute([$buyerId, $orderId, $now, (int) $row['id']]);
+
+        if ($update->rowCount() < 1) {
+            return null;
+        }
+
+        $row['status'] = 'sold';
+        $row['buyer_id'] = $buyerId;
+        $row['order_id'] = $orderId;
+        $row['sold_at'] = $now;
+        return $row;
     }
 }
