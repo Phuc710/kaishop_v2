@@ -18,7 +18,9 @@ $maintenanceJson = json_encode(
         content="Hệ thống <?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?> đang bảo trì. Vui lòng quay lại sau.">
     <meta name="robots" content="noindex, nofollow">
     <link rel="canonical" href="<?= htmlspecialchars(url(''), ENT_QUOTES, 'UTF-8') ?>">
-    <link rel="shortcut icon" href="<?= htmlspecialchars($siteFavicon, ENT_QUOTES, 'UTF-8') ?>">
+    <?php $cleanSiteFavicon = trim(preg_replace('/\s+/', '', (string) ($siteFavicon ?? ''))); ?>
+    <link rel="shortcut icon"
+        href="<?= htmlspecialchars($cleanSiteFavicon !== '' ? (str_starts_with($cleanSiteFavicon, 'http') ? $cleanSiteFavicon : asset(ltrim($cleanSiteFavicon, '/'))) : asset('assets/images/favicon.png'), ENT_QUOTES, 'UTF-8') ?>">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="<?= asset('assets/css/error-pages.css') ?>">
     <style>

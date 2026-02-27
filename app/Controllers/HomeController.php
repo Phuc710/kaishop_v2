@@ -41,20 +41,19 @@ class HomeController extends Controller
     }
 
     /**
-     * Show category filter page
+     * Show category filter page (renders homepage UI but filtered)
      */
     public function category($slug)
     {
-        global $chungapi, $user;
+        global $connection, $chungapi, $username, $user;
 
         $categoryModel = new Category();
         $productModel = new Product();
+        $stockModel = new ProductStock();
 
-        // Find category by slug (or name using xoadau for backward compatibility)
         $categoryData = $categoryModel->findBySlug($slug);
 
         if (!$categoryData) {
-            // Fallback: search active categories by xoadau() name just in case
             $categories = $categoryModel->getActive();
             foreach ($categories as $cat) {
                 if (xoadau($cat['name']) === $slug) {
@@ -65,20 +64,31 @@ class HomeController extends Controller
         }
 
         if (!$categoryData) {
-            $this->redirect(BASE_URL . '/NotFound.php');
+            $this->redirect(BASE_URL . '/');
         }
 
-        // Fetch products for this category only using its true ID
-        $products = $productModel->getFiltered([
+        $categories = [$categoryData];
+
+        $allProducts = $productModel->getFiltered([
             'category_id' => (int) $categoryData['id'],
             'status' => 'ON'
         ]);
 
-        $this->view('home/category', [
-            'category' => $categoryData,
-            'products' => $products,
+        $productIds = array_map(fn($p) => (int) $p['id'], $allProducts);
+        $stockStats = empty($productIds) ? [] : $stockModel->getStatsForProducts($productIds);
+
+        $productsByCategory = [];
+        foreach ($allProducts as $product) {
+            $productsByCategory[$product['category_id']][] = $product;
+        }
+
+        $this->view('home/index', [
+            'categories' => $categories,
+            'productsByCategory' => $productsByCategory,
+            'stockStats' => $stockStats,
             'user' => $user,
-            'chungapi' => $chungapi
+            'chungapi' => $chungapi,
+            'is_category_page' => true
         ]);
     }
 }

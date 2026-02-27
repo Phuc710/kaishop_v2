@@ -43,7 +43,6 @@
     }
 }
 
-
 /* ========================================================
    USER PAGES — Shared Stylesheet
    Dùng cho TẤT CẢ trang user-facing: Profile, Password, History...
@@ -55,7 +54,7 @@
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     height: 100%;
-    padding: 12px;
+    padding: 4px 12px 12px 12px;
     display: flex;
     flex-direction: column;
 }
@@ -177,7 +176,7 @@
 }
 
 #depositAmountInput {
-    font-size: 22px !important;
+    font-size: 20px !important;
     font-weight: 700;
     color: #000;
 }
@@ -364,6 +363,15 @@
     margin-top: 2px;
 }
 
+.user-card-badge__icon {
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+    margin-right: 6px;
+    border-radius: 2px;
+    flex: 0 0 14px;
+}
+
 /* Deposit panel in profile */
 .user-deposit-card .profile-card-body {
     padding-top: 0;
@@ -401,11 +409,27 @@
 }
 
 .deposit-method-pill__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
     border-radius: 999px;
-    padding: 1px 6px;
-    font-size: 10px;
+    padding: 0;
+    font-size: 11px;
     border: 1px solid rgba(15, 23, 42, 0.08);
     background: rgba(15, 23, 42, 0.04);
+}
+
+.deposit-method-pill__badge i {
+    line-height: 1;
+}
+
+.deposit-method-pill__badge-img {
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+    display: block;
 }
 
 .deposit-panel-shell {
@@ -446,16 +470,26 @@
 .deposit-panel-title-row {
     display: flex;
     align-items: center;
+    text-align: center;
     justify-content: space-between;
     gap: 10px;
-    margin-bottom: 8px;
+    font-size: 20px;
+    margin-bottom: 16px;
+}
+
+.deposit-panel-title-row--center {
+    justify-content: center;
+}
+
+.deposit-panel-title-row--center .deposit-panel-title {
+    text-align: center;
 }
 
 .deposit-panel-title {
     margin: 0;
     color: #1e293b;
     font-weight: 700;
-    font-size: 16px;
+    font-size: 20px;
 }
 
 .deposit-panel-help {
@@ -487,10 +521,9 @@
 
 .deposit-quick-btn:hover,
 .deposit-quick-btn.active {
-    border-color: #0e7ae9;
-    background: #f0f9ff;
-    color: #0087ff;
-    /* box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15); */
+    border-color: #000000;
+    background: #eef7ff;
+    color: #000000;
     transform: translateY(-2px);
 }
 
@@ -536,8 +569,8 @@
 }
 
 .deposit-preview-row.is-total strong {
-    color: #f97316;
-    font-size: 22px;
+    color: #000000;
+    font-size: 20px;
 }
 
 .deposit-preview-divider {
@@ -626,8 +659,8 @@
 
 .deposit-info-value {
     font-size: 15px;
-    color: #1e293b;
     font-weight: 600;
+    color: #1a1a1a !important;
     text-align: right;
     word-break: break-word;
 }
@@ -637,14 +670,14 @@
 }
 
 .deposit-info-value.is-highlight {
-    color: #0ea5e9;
     font-size: 16px;
     font-weight: 700;
+    color: #1a1a1a !important;
 }
 
 .deposit-info-value.is-amount {
-    color: #10b981;
-    font-size: 18px;
+    color: #1a1a1a !important;
+    font-size: 22px;
     font-weight: 700;
 }
 
@@ -922,6 +955,35 @@
     color: #64748b;
     font-size: 13px;
     font-weight: 500;
+}
+
+/* ── DEPOSIT METHOD PILLS ─────────────────────────── */
+.deposit-method-pill__badge-img {
+    height: 18px;
+    width: 18px;
+    object-fit: contain;
+    vertical-align: middle;
+    margin-top: -2px;
+}
+
+.user-card-badge__icon {
+    height: 16px;
+    width: 16px;
+    object-fit: contain;
+    vertical-align: middle;
+    margin-right: 6px;
+    margin-top: -2px;
+}
+
+.user-card-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    background: #f1f5f9;
+    color: #475569;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
 }
 
 .auth-google-btn {
@@ -1735,6 +1797,12 @@
     color: #c2410c;
 }
 
+.deposit-info-value.is-amount {
+    color: #1a1a1a !important;
+    font-size: 22px;
+    font-weight: 700;
+}
+
 /* ===== Shared history filters / tables ===== */
 .user-history-filters .input-group .form-control,
 .user-history-filters .input-group .input-group-text {
@@ -1990,3 +2058,27 @@
         box-shadow: 0 20px 45px rgba(15, 23, 42, 0.28), 0 0 0 6px rgba(239, 68, 68, 0.15);
     }
 }
+
+/* ── DASHBOARD CHIPS ─────────────────────────────── */
+.pd-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 99px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.pd-chip.info {
+    background: #e0f2fe;
+    color: #1488c2;
+    border: 1px solid #bae6fd;
+}
+.is-binance { color: #f3ba2f !important; }
+
+.is-binance-img { height: 22px !important; width: auto !important; }
+.dropdown-item img[src*='Binance_icon.svg'] { height: 22px !important; width: auto !important; }
+
+.user-card-badge__icon.is-binance-img { height: 22px !important; width: auto !important; margin-top: -1px; }
+.dropdown-menu .dropdown-item img { object-fit: contain; }

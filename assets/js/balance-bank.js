@@ -15,6 +15,14 @@
         return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     }
 
+    function resolveDepositStatusText(status) {
+        var normalized = String(status || '').toLowerCase();
+        if (normalized === 'completed') return 'Đã hoàn tất';
+        if (normalized === 'expired') return 'Đã hết hạn';
+        if (normalized === 'cancelled') return 'Đã hủy';
+        return 'Đang chờ xử lý';
+    }
+
     function toastCopySuccess(text) {
         if (window.Swal) {
             Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Đã sao chép: ' + text, showConfirmButton: false, timer: 1500 });
@@ -136,6 +144,7 @@
             tfOwner: root.querySelector('[data-tf-owner]'),
             tfAccount: root.querySelector('[data-tf-account]'),
             tfContent: root.querySelector('[data-tf-content]'),
+            tfStatus: root.querySelector('[data-tf-status]'),
             tfAmount: root.querySelector('[data-tf-amount]'),
             countdownWrap: root.querySelector('[data-deposit-countdown-wrap]'),
             countdown: root.querySelector('[data-deposit-countdown]'),
@@ -247,6 +256,7 @@
             if (elements.tfOwner) elements.tfOwner.textContent = data.bank_owner || bankConfig.owner || '';
             if (elements.tfAccount) elements.tfAccount.textContent = data.bank_account || bankConfig.account || '';
             if (elements.tfContent) elements.tfContent.textContent = data.deposit_code || '';
+            if (elements.tfStatus) elements.tfStatus.textContent = data.status_text || resolveDepositStatusText(data.status);
             if (elements.tfAmount) elements.tfAmount.textContent = formatVnd(Number(data.amount || 0)) + 'đ';
             if (elements.qr) {
                 var qrUrl = data.qr_url || buildQrUrl(data.bank_short_name || bankConfig.shortName, data.bank_account || bankConfig.account, Number(data.amount || 0), data.deposit_code || '', data.bank_owner || bankConfig.owner);
@@ -347,6 +357,9 @@
             }
             if (res.status) {
                 state.lastKnownStatus = String(res.status);
+                if (elements.tfStatus) {
+                    elements.tfStatus.textContent = resolveDepositStatusText(res.status);
+                }
             }
             persistActiveDepositSnapshot();
 

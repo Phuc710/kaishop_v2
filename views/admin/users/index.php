@@ -58,15 +58,11 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             <div class="dt-filters">
                 <!-- Search Line -->
                 <div class="row g-2 mb-3">
-                    <div class="col-md-3 mb-2">
+                    <div class="col-md-5 mb-2">
                         <input id="f-keyword" class="form-control form-control-sm"
                             placeholder="Tìm Username hoặc Email...">
                     </div>
-                    <div class="col-md-3 mb-2">
-                        <input id="f-fingerprint" class="form-control form-control-sm"
-                            placeholder="Tìm Fingerprint hash...">
-                    </div>
-                    <div class="col-md-2 mb-2 text-center">
+                    <div class="col-md-3 mb-2 text-center">
                         <select id="f-status" class="form-control form-control-sm">
                             <option value="">-- TRẠNG THÁI --</option>
                             <option value="Active">ACTIVE</option>
@@ -109,10 +105,8 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                             <tr>
                                 <th class="text-center font-weight-bold align-middle">USERNAME</th>
                                 <th class="text-center font-weight-bold align-middle">EMAIL</th>
-                                <th class="text-center font-weight-bold align-middle">SỐ DƯ</th>
                                 <th class="text-center font-weight-bold align-middle">TỔNG NẠP</th>
                                 <th class="text-center font-weight-bold align-middle">TRẠNG THÁI</th>
-                                <th class="text-center font-weight-bold align-middle">FINGERPRINT</th>
                                 <th class="text-center font-weight-bold align-middle">NGÀY TẠO</th>
                                 <th class="text-center font-weight-bold align-middle" style="width:120px">THAO TÁC</th>
                             </tr>
@@ -125,9 +119,6 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                             <?= htmlspecialchars($row['username']) ?>
                                         </td>
                                         <td class="text-center align-middle"><?= htmlspecialchars($row['email']) ?></td>
-                                        <td class="text-center align-middle font-weight-bold text-danger">
-                                            <?= number_format($row['money']) ?>đ
-                                        </td>
                                         <td class="text-center align-middle font-weight-bold text-success">
                                             <?= number_format($row['tong_nap'] ?? 0) ?>đ
                                         </td>
@@ -138,23 +129,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                                 <span class="badge badge-success px-2 py-1">Active</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td class="text-center align-middle">
-                                            <?php
-                                            $fp = (string) ($row['fingerprint'] ?? '');
-                                            if ($fp !== ''):
-                                                $fpShort = substr($fp, 0, 8) . '...';
-                                                ?>
-                                                <span class="badge badge-secondary px-2 py-1" data-toggle="tooltip"
-                                                    title="<?= htmlspecialchars($fp) ?>"
-                                                    style="font-family:monospace;cursor:default;">
-                                                    <?= htmlspecialchars($fpShort) ?>
-                                                </span>
-                                            <?php else: ?>
-                                                <span class="text-muted" style="font-size:12px;">—</span>
-                                            <?php endif; ?>
-                                            <!-- Hidden full hash for DataTable search -->
-                                            <span style="display:none;"><?= htmlspecialchars($fp) ?></span>
-                                        </td>
+
                                         <td class="text-center align-middle"
                                             data-time-ts="<?= (int) ($row['list_time_ts'] ?? 0) ?>"
                                             data-time-iso="<?= htmlspecialchars((string) ($row['list_time_iso'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
@@ -170,7 +145,9 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                                     class="btn btn-search-dt btn-sm" title="Sửa">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
-                                                <?php if ($row['bannd'] == 1): ?>
+                                                <?php
+                                                $fp = (string) ($row['fingerprint'] ?? '');
+                                                if ($row['bannd'] == 1): ?>
                                                     <button type="button" class="btn btn-success btn-sm ml-1" title="Mở khóa"
                                                         onclick="unbanUser('<?= htmlspecialchars($row['username']) ?>')">
                                                         <i class="fas fa-unlock"></i>
@@ -213,7 +190,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
         try {
             var rowMeta = settings && settings.aoData ? settings.aoData[dataIndex] : null;
             var rowNode = rowMeta ? rowMeta.nTr : null;
-            var timeCell = rowNode && rowNode.cells ? rowNode.cells[6] : null;
+            var timeCell = rowNode && rowNode.cells ? rowNode.cells[4] : null;
             if (timeCell) {
                 var tsAttr = Number(timeCell.getAttribute('data-time-ts') || '');
                 if (!isNaN(tsAttr) && tsAttr > 0) return tsAttr * 1000;
@@ -227,7 +204,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                     if (!isNaN(nativeTs)) return nativeTs;
                 }
             }
-        } catch (e) {}
+        } catch (e) { }
 
         var text = String(cellHtml || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
         if (window.KaiTime && typeof window.KaiTime.toTimestamp === 'function') {
@@ -246,7 +223,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             order: [[0, "desc"]],
             pageLength: 10,
             columnDefs: [
-                { orderable: false, targets: [5, 7] }  // Fingerprint + action
+                { orderable: false, targets: [5] }  // action
             ],
             language: {
                 sLengthMenu: 'Hiển thị _MENU_ mục',
@@ -267,14 +244,9 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             dtUser.search(this.value.trim()).draw();
         });
 
-        // Fingerprint search — column 5 (full hash hidden span)
-        $('#f-fingerprint').on('input keyup', function () {
-            dtUser.column(5).search(this.value.trim()).draw();
-        });
-
-        // Status filter — column 4
+        // Status filter — column 3
         $('#f-status').change(function () {
-            dtUser.column(4).search($(this).val()).draw();
+            dtUser.column(3).search($(this).val()).draw();
         });
 
         // Date sort
@@ -287,7 +259,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             if (sortVal !== 'all') {
                 var days = parseInt(sortVal);
                 if (!isNaN(days)) {
-                    var rowTime = getUserRowTimestamp(settings, dataIndex, data[6]);
+                    var rowTime = getUserRowTimestamp(settings, dataIndex, data[4]);
                     var pastTime = new Date().getTime() - (days * 24 * 60 * 60 * 1000);
                     if (!isNaN(rowTime) && rowTime < pastTime) return false;
                 }
@@ -297,7 +269,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
 
         // Clear
         $('#btn-clear').click(function () {
-            $('#f-keyword, #f-fingerprint').val('');
+            $('#f-keyword').val('');
             $('#f-status').val('');
             $('#f-length').val('10');
             $('#f-sort').val('all');

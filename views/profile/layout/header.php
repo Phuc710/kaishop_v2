@@ -31,7 +31,7 @@ $activePage = (string) ($activePage ?? 'profile');
     <main class="user-page-main">
         <section class="user-page-section">
             <div class="container user-page-container">
-                <div class="row g-4 user-page-grid">
+                <div class="row gx-4 user-page-grid">
                     <div class="col-lg-3 col-md-4 user-page-sidebar-col">
                         <?php require __DIR__ . '/../../../hethong/user_sidebar.php'; ?>
                     </div>

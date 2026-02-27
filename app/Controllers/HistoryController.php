@@ -51,9 +51,12 @@ class HistoryController extends Controller
         $start = isset($_POST['start']) ? (int) $_POST['start'] : 0;
         $length = isset($_POST['length']) ? (int) $_POST['length'] : 10;
 
+        $searchDt = $_POST['search']['value'] ?? '';
+        $searchCustom = $_POST['reason'] ?? '';
+
         // Custom filters
         $filters = [
-            'search' => $_POST['search']['value'] ?? ($_POST['reason'] ?? ''),
+            'search' => (string) ($searchDt !== '' ? $searchDt : $searchCustom),
             'time_range' => $_POST['time_range'] ?? '',
             'sort_date' => $_POST['sort_date'] ?? 'all'
         ];

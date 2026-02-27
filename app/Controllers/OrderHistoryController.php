@@ -45,8 +45,11 @@ class OrderHistoryController extends Controller
         $start = isset($_POST['start']) ? max(0, (int) $_POST['start']) : 0;
         $length = isset($_POST['length']) ? max(1, (int) $_POST['length']) : 10;
 
+        $searchDt = $_POST['search']['value'] ?? '';
+        $searchCustom = $_POST['keyword'] ?? '';
+
         $filters = [
-            'search' => (string) ($_POST['search']['value'] ?? ($_POST['keyword'] ?? '')),
+            'search' => (string) ($searchDt !== '' ? $searchDt : $searchCustom),
             'time_range' => (string) ($_POST['time_range'] ?? ''),
             'sort_date' => (string) ($_POST['sort_date'] ?? 'all'),
         ];

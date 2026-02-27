@@ -96,7 +96,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                         </h3>
                                     </div>
 
-                                    <!-- 4 Action Buttons -->
+                                    <!-- Quick Action Buttons -->
                                     <div class="d-flex flex-wrap" style="gap: 10px;">
                                         <button type="button" class="btn btn-sm px-3 py-2 text-white font-weight-bold"
                                             onclick="openAddMoney()"
@@ -108,15 +108,25 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                             style="background: linear-gradient(135deg, #ef4444, #dc2626); border: none; border-radius: 8px;">
                                             <i class="fas fa-minus mr-1"></i> Trừ số dư
                                         </button>
-                                        <a href="<?= url('admin/logs/activities') ?>?user=<?= urlencode($toz_user['username']) ?>"
+                                        <a href="<?= url('admin/logs/buying') ?>?search=<?= urlencode($toz_user['username']) ?>"
                                             target="_blank" class="btn btn-sm px-3 py-2 text-white font-weight-bold"
                                             style="background: linear-gradient(135deg, #845adf, #6f42c1); border: none; border-radius: 8px;">
-                                            <i class="fas fa-history mr-1"></i> Lịch sử giao dịch
+                                            <i class="fas fa-shopping-cart mr-1"></i> Lịch sử mua hàng
                                         </a>
-                                        <a href="<?= url('admin/logs/balance-changes') ?>?user=<?= urlencode($toz_user['username']) ?>"
+                                        <a href="<?= url('admin/logs/balance-changes') ?>?search=<?= urlencode($toz_user['username']) ?>"
                                             target="_blank" class="btn btn-sm px-3 py-2 text-white font-weight-bold"
                                             style="background: linear-gradient(135deg, #38bdf8, #0ea5e9); border: none; border-radius: 8px;">
-                                            <i class="fas fa-history mr-1"></i> Biến động số dư
+                                            <i class="fas fa-exchange-alt mr-1"></i> Biến động số dư
+                                        </a>
+                                        <a href="<?= url('admin/logs/system') ?>?search=<?= urlencode($toz_user['username']) ?>"
+                                            target="_blank" class="btn btn-sm px-3 py-2 text-white font-weight-bold"
+                                            style="background: linear-gradient(135deg, #f59e0b, #d97706); border: none; border-radius: 8px;">
+                                            <i class="fas fa-clipboard-list mr-1"></i> Nhật ký hoạt động
+                                        </a>
+                                        <a href="<?= url('admin/logs/deposits') ?>?search=<?= urlencode($toz_user['username']) ?>"
+                                            target="_blank" class="btn btn-sm px-3 py-2 text-white font-weight-bold"
+                                            style="background: linear-gradient(135deg, #10b981, #059669); border: none; border-radius: 8px;">
+                                            <i class="fas fa-money-bill-wave mr-1"></i> Lịch sử nạp tiền
                                         </a>
                                     </div>
 

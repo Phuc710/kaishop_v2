@@ -26,11 +26,11 @@
     <div class="form-group mt-3 mb-2">
         <label class="user-label" for="depositAmountInput">Nhập số tiền khác</label>
         <div class="input-group">
-            <input type="number" id="depositAmountInput" class="form-control" min="10000" step="1000"
-                value="10000" data-deposit-input-amount>
+            <input type="number" id="depositAmountInput" class="form-control" min="10000" step="1000" value="10000"
+                data-deposit-input-amount>
             <span class="input-group-text">VND</span>
         </div>
-        <small class="text-muted">Tối thiểu 10.000đ, tối đa 50.000.000đ</small>
+        <small class="text-muted">Tối thiểu 10.000đ</small>
     </div>
 
     <div class="deposit-preview" data-deposit-preview hidden>
@@ -55,9 +55,8 @@
 </div>
 
 <div class="deposit-panel-step" data-deposit-step="transfer" <?= $activeDepositExists ? '' : 'hidden' ?>>
-    <div class="deposit-panel-title-row">
+    <div class="deposit-panel-title-row deposit-panel-title-row--center">
         <h6 class="deposit-panel-title">Thông tin chuyển khoản</h6>
-        <span class="user-card-badge">Đang chờ xử lý</span>
     </div>
 
     <div class="row align-items-start g-3">
@@ -92,7 +91,8 @@
                     <div class="deposit-info-actions">
                         <span class="deposit-info-value"
                             data-tf-account><?= htmlspecialchars($activeDepositPayload['bank_account'] ?? $bankAccount, ENT_QUOTES, 'UTF-8') ?></span>
-                        <button type="button" class="btn-copy" data-copy-target="account"><i class="fas fa-copy"></i></button>
+                        <button type="button" class="btn-copy" data-copy-target="account"><i
+                                class="fas fa-copy"></i></button>
                     </div>
                 </div>
                 <div class="deposit-info-row">
@@ -100,8 +100,14 @@
                     <div class="deposit-info-actions">
                         <span class="deposit-info-value is-highlight"
                             data-tf-content><?= htmlspecialchars((string) ($activeDepositPayload['deposit_code'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
-                        <button type="button" class="btn-copy" data-copy-target="content"><i class="fas fa-copy"></i></button>
+                        <button type="button" class="btn-copy" data-copy-target="content"><i
+                                class="fas fa-copy"></i></button>
                     </div>
+                </div>
+                <div class="deposit-info-row">
+                    <span class="deposit-info-label">Tình trạng</span>
+                    <span class="pd-chip info" data-tf-status><i class="fas fa-spinner fa-spin"></i> Đang xử
+                        lý</span>
                 </div>
                 <div class="deposit-info-row">
                     <span class="deposit-info-label">Số tiền</span>

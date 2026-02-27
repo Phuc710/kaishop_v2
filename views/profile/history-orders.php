@@ -147,10 +147,9 @@ require __DIR__ . '/layout/header.php';
                     render: function (data, type, row) {
                         const isCompleted = String(row.status || '').toLowerCase() === 'completed';
                         const statusColor = isCompleted ? '#00ad5c' : '';
-                        const statusWeight = isCompleted ? '700' : 'normal';
 
                         return '<div class="fw-semibold">' + escapeHtml(data || '') + '</div>'
-                            + '<div class="small" style="color: ' + statusColor + '; font-weight: ' + statusWeight + ';">' + escapeHtml(row.status_label || '') + '</div>';
+                            + '<div class="small" style="color: ' + statusColor + ';">' + escapeHtml(row.status_label || '') + '</div>';
                     }
                 },
                 { data: 'quantity', className: 'text-center fw-semibold' },
@@ -324,7 +323,7 @@ require __DIR__ . '/layout/header.php';
                 + '<div><div class="user-order-detail__label">Sản phẩm</div><div class="user-order-detail__value">' + escapeHtml(order.product_name || '') + '</div></div>'
                 + '<div><div class="user-order-detail__label">Số lượng</div><div class="user-order-detail__value">' + escapeHtml(order.quantity || 0) + '</div></div>'
                 + '<div><div class="user-order-detail__label">Mã đơn hàng</div><div class="user-order-detail__value">' + escapeHtml(order.order_code_short || order.order_code || '') + '</div></div>'
-                + '<div><div class="user-order-detail__label">Trạng thái</div><div class="user-order-detail__value' + (String(order.status || '').toLowerCase() === 'completed' ? ' text-success fw-bold' : '') + '">' + escapeHtml(order.status || '') + '</div></div>'
+                + '<div><div class="user-order-detail__label">Trạng thái</div><div class="user-order-detail__value' + (String(order.status || '').toLowerCase() === 'completed' ? ' text-success' : '') + '">' + escapeHtml(order.status || '') + '</div></div>'
                 + '<div><div class="user-order-detail__label">Thời gian</div><div class="user-order-detail__value">' + escapeHtml(order.created_at_display || order.created_at || '') + '</div></div>'
                 + '<div><div class="user-order-detail__label">Thanh toán</div><div class="user-order-detail__value text-success fw-bold">' + fmtMoney(order.price || 0) + '</div></div>'
                 + '</div>'

@@ -25,12 +25,34 @@ foreach ($methods as $method) {
 $activeMethodRoute = (string) ($depositRouteMethod ?? ($routeMethodMap[$activeMethod] ?? 'bank'));
 $isBankMethod = $activeMethod === 'bank_sepay';
 $activeDepositExists = $isBankMethod && !empty($activeDepositPayload['deposit_code']);
+// Icons for deposit methods (for methods not using custom images)
+$methodIconMap = [
+];
+
+// Image icons for deposit methods
+$methodImageMap = [
+    'bank_sepay' => [
+        'src' => (string) asset('assets/images/bank.png'),
+        'alt' => 'Ngân hàng',
+    ],
+    'binance' => [
+        'src' => (string) asset('assets/images/Binance_icon.svg'),
+        'alt' => 'Binance',
+    ],
+    'momo' => [
+        'src' => (string) asset('assets/images/momo.webp'),
+        'alt' => 'MoMo',
+    ],
+];
 
 $placeholderQr = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 $qrUrl = $activeDepositExists ? (string) ($activeDepositPayload['qr_url'] ?? $placeholderQr) : $placeholderQr;
 
 $activeMethodLabel = (string) ($activeMethodMeta['label'] ?? 'Nạp tiền');
-$activeMethodBadge = trim((string) ($activeMethodMeta['badge'] ?? ''));
+$activeMethodImage = (array) ($methodImageMap[$activeMethod] ?? []);
+$activeMethodImageSrc = trim((string) ($activeMethodImage['src'] ?? ''));
+$activeMethodImageAlt = trim((string) ($activeMethodImage['alt'] ?? $activeMethodLabel));
+$activeMethodIconClass = (string) ($methodIconMap[$activeMethod] ?? '');
 
 $methodRoutes = [];
 foreach ($methods as $method) {
@@ -60,15 +82,20 @@ if (!is_file($balanceMethodPartialPath)) {
         </div>
         <div class="profile-card-header-actions">
             <span class="user-card-badge user-card-badge--top-right">
-                <?= htmlspecialchars($activeMethodLabel, ENT_QUOTES, 'UTF-8') ?>
-                <?php if ($activeMethodBadge !== ''): ?>
-                    · <?= htmlspecialchars($activeMethodBadge, ENT_QUOTES, 'UTF-8') ?>
+                <?php if ($activeMethodImageSrc !== ''): ?>
+                    <img src="<?= htmlspecialchars($activeMethodImageSrc, ENT_QUOTES, 'UTF-8') ?>"
+                        alt="<?= htmlspecialchars($activeMethodImageAlt, ENT_QUOTES, 'UTF-8') ?>"
+                        class="user-card-badge__icon me-1 <?= $activeMethod === 'binance' ? 'is-binance-img' : '' ?>">
+                <?php elseif ($activeMethodIconClass !== ''): ?>
+                    <i class="<?= htmlspecialchars($activeMethodIconClass, ENT_QUOTES, 'UTF-8') ?> <?= $activeMethod === 'binance' ? 'is-binance' : '' ?> me-1"
+                        aria-hidden="true"></i>
                 <?php endif; ?>
+                <?= htmlspecialchars($activeMethodLabel, ENT_QUOTES, 'UTF-8') ?>
             </span>
         </div>
     </div>
 
-    <div class="profile-card-body pt-0">
+    <div class="profile-card-body p-4">
         <?php if (!empty($methods)): ?>
             <div class="deposit-method-list" role="tablist" aria-label="Phương thức nạp tiền">
                 <?php foreach ($methods as $method): ?>
@@ -76,6 +103,10 @@ if (!is_file($balanceMethodPartialPath)) {
                     $code = (string) ($method['code'] ?? '');
                     $enabled = !empty($method['enabled']);
                     $isActive = $code === $activeMethod;
+                    $methodImage = (array) ($methodImageMap[$code] ?? []);
+                    $methodImageSrc = trim((string) ($methodImage['src'] ?? ''));
+                    $methodImageAlt = trim((string) ($methodImage['alt'] ?? (string) ($method['label'] ?? $code)));
+                    $methodIconClass = (string) ($methodIconMap[$code] ?? '');
                     if ($code === '') {
                         continue;
                     }
@@ -84,11 +115,18 @@ if (!is_file($balanceMethodPartialPath)) {
                         class="deposit-method-pill <?= $isActive ? 'is-active' : '' ?> <?= !$enabled ? 'is-disabled' : '' ?>"
                         data-method-code="<?= htmlspecialchars($code, ENT_QUOTES, 'UTF-8') ?>"
                         data-method-enabled="<?= $enabled ? '1' : '0' ?>" aria-disabled="<?= $enabled ? 'false' : 'true' ?>">
+                        <span class="deposit-method-pill__badge" aria-hidden="true">
+                            <?php if ($methodImageSrc !== ''): ?>
+                                <img src="<?= htmlspecialchars($methodImageSrc, ENT_QUOTES, 'UTF-8') ?>"
+                                    alt="<?= htmlspecialchars($methodImageAlt, ENT_QUOTES, 'UTF-8') ?>"
+                                    class="deposit-method-pill__badge-img <?= $code === 'binance' ? 'is-binance-img' : '' ?>">
+                            <?php elseif ($methodIconClass !== ''): ?>
+                                <i
+                                    class="<?= htmlspecialchars($methodIconClass, ENT_QUOTES, 'UTF-8') ?> <?= $code === 'binance' ? 'is-binance' : '' ?>"></i>
+                            <?php endif; ?>
+                        </span>
                         <span class="deposit-method-pill__label">
                             <?= htmlspecialchars((string) ($method['label'] ?? $code), ENT_QUOTES, 'UTF-8') ?>
-                        </span>
-                        <span class="deposit-method-pill__badge">
-                            <?= htmlspecialchars((string) ($method['badge'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
                         </span>
                     </button>
                 <?php endforeach; ?>

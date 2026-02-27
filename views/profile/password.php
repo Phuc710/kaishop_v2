@@ -13,7 +13,7 @@ require __DIR__ . '/layout/header.php';
             <h5 class="text-dark mb-1">THAY ĐỔI MẬT KHẨU</h5>
         </div>
     </div>
-    <div class="profile-card-body">
+    <div class="profile-card-body p-4">
         <form id="password-form" class="row g-3" novalidate>
             <div class="col-lg-4 col-md-12">
                 <label class="form-label user-label">Mật khẩu hiện tại</label>
@@ -47,13 +47,13 @@ require __DIR__ . '/layout/header.php';
 
 <div class="profile-card mt-4">
     <div class="profile-card-header d-flex align-items-center justify-content-between gap-3">
-        <h5 class="text-dark mb-0">XÁC MINH 2 BƯỚC (OTP GMAIL)</h5>
+        <h5 class="text-dark mb-1">XÁC MINH 2 BƯỚC (OTP GMAIL)</h5>
         <span class="user-status-badge <?= ((int) ($user['twofa_enabled'] ?? 0) === 1) ? 'is-on' : 'is-off' ?>"
             id="twofa-status-badge">
             <?= ((int) ($user['twofa_enabled'] ?? 0) === 1) ? 'Đang bật' : 'Đang tắt' ?>
         </span>
     </div>
-    <div class="profile-card-body">
+    <div class="profile-card-body p-4">
         <form id="security-form" class="row g-3 align-items-center">
             <div class="col-lg-7 col-md-9">
                 <div class="user-security-switch">

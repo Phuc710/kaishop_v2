@@ -24,10 +24,10 @@ require __DIR__ . '/layout/header.php';
     <div class="profile-card">
         <div class="profile-card-header profile-card-header--with-actions">
             <div>
-                <h5 class="text-dark mb-2">VÍ CỦA TÔI</h5>
+                <h5 class="text-dark mb-1">VÍ CỦA TÔI</h5>
             </div>
         </div>
-        <div class="profile-card-body pt-0">
+        <div class="profile-card-body p-4">
             <div class="row g-3">
                 <div class="col-xl-4 col-md-6">
                     <div class="stat-box neutral">
@@ -60,7 +60,7 @@ require __DIR__ . '/layout/header.php';
                 <button type="button" id="btn-edit" class="btn btn-edit-profile">Chỉnh sửa thông tin</button>
             </div>
         </div>
-        <div class="profile-card-body pt-0">
+        <div class="profile-card-body p-4">
             <form id="profile-form" class="row g-4" novalidate>
                 <input type="hidden" name="twofa_enabled" value="<?= $twofaEnabled ? '1' : '0' ?>">
 

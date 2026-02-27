@@ -39,6 +39,7 @@ table.dataTable {
 }
 
 table.dataTable thead th {
+    background-color: #ffffff !important;
     text-transform: uppercase;
     font-size: 13px;
     font-weight: 700;
@@ -50,6 +51,10 @@ table.dataTable thead th {
     border-top: 1px solid #e5e7eb !important;
     border-left: none !important;
     border-right: none !important;
+}
+
+table.dataTable thead tr {
+    background-color: #ffffff !important;
 }
 
 table.dataTable thead .sorting:before,
@@ -145,8 +150,6 @@ table.dataTable.table-bordered {
    FILTER BAR
    ══════════════════════════════════════ */
 .dt-filters {
-    background: #fdfdfd;
-    border-bottom: 1px solid #e5e7eb;
     padding: 16px !important;
 }
 
@@ -154,7 +157,6 @@ table.dataTable.table-bordered {
 .dt-filters .form-select {
     border-radius: 6px;
     font-size: 14px;
-    border: 1px solid #d1d5db;
     box-shadow: none;
 }
 
@@ -563,11 +565,15 @@ table.dataTable.table-bordered {
     position: sticky;
     top: 0;
     z-index: 3;
-    background: #f4f6f9;
+    background: #ffffff !important;
     border-bottom: 1px solid #e6eaf0;
     font-weight: 700;
     color: #374151;
     white-space: nowrap;
+}
+
+.admin-stock-page .stock-table thead tr {
+    background: #ffffff !important;
 }
 
 .admin-stock-page .stock-table tbody td {
@@ -579,6 +585,7 @@ table.dataTable.table-bordered {
 
 .admin-stock-page .stock-content-cell {
     min-width: 280px;
+    text-align: left !important;
 }
 
 .admin-stock-page .stock-content-sold {

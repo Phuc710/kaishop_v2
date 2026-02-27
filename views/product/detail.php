@@ -62,11 +62,15 @@ if ($requiresInfo) {
 } elseif ($productType === 'link') {
     $stockLabel = 'Unlimited';
 } elseif (is_int($availableStock)) {
-    $stockLabel = max(0, $availableStock) . ' Stock';
+    $stockLabel = (string) max(0, $availableStock);
     if ($availableStock <= 0) {
         $canPurchase = false;
         $isOutOfStock = true;
     }
+}
+$stockColor = '';
+if (is_int($availableStock) && !$requiresInfo && $productType === 'account') {
+    $stockColor = $availableStock > 0 ? '#0f7a2f' : '#dc2626';
 }
 
 if ($displayMaxQty > 0 && $displayMaxQty < $purchaseMinQty) {
@@ -74,7 +78,8 @@ if ($displayMaxQty > 0 && $displayMaxQty < $purchaseMinQty) {
 }
 
 $seoTitle = $productName . ' | ' . (string) ($chungapi['ten_web'] ?? 'KaiShop');
-$rawDesc = trim((string) ($product['description'] ?? ''));
+$rawDescHtml = trim((string) ($product['description'] ?? ''));
+$rawDesc = trim(strip_tags(html_entity_decode($rawDescHtml, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
 $seoDescription = trim((string) ($product['seo_description'] ?? ''));
 if ($seoDescription === '') {
     $seoDescription = function_exists('mb_substr')
@@ -83,6 +88,20 @@ if ($seoDescription === '') {
 }
 $seoCanonical = $publicUrl;
 $seoImage = $galleryImages[0] ?? '';
+
+$descriptionHtml = 'Chưa có mô tả cho sản phẩm này.';
+if ($rawDescHtml !== '') {
+    $descriptionDecoded = html_entity_decode($rawDescHtml, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $descriptionAllowedTags = '<p><br><strong><b><em><i><u><span><ul><ol><li><a><blockquote><h1><h2><h3><h4><h5><h6><table><thead><tbody><tr><th><td><img><hr><pre><code><div>';
+    $descriptionHtml = strip_tags($descriptionDecoded, $descriptionAllowedTags);
+    $descriptionHtml = preg_replace('~<(script|style|iframe|object|embed|form|input|button|textarea|select|option)[^>]*>.*?</\1>~is', '', $descriptionHtml) ?? $descriptionHtml;
+    $descriptionHtml = preg_replace('~\son[a-z]+\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s>]+)~i', '', $descriptionHtml) ?? $descriptionHtml;
+    $descriptionHtml = preg_replace('~\s(?:href|src)\s*=\s*(["\'])\s*javascript:[^"\']*\1~i', '', $descriptionHtml) ?? $descriptionHtml;
+    $descriptionHtml = trim($descriptionHtml);
+    if ($descriptionHtml === '') {
+        $descriptionHtml = 'Chưa có mô tả cho sản phẩm này.';
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -103,23 +122,126 @@ $seoImage = $galleryImages[0] ?? '';
             box-shadow: 0 8px 24px rgba(17, 24, 39, .04);
         }
 
+        .pd-gallery-shell {
+            background: #fff;
+            padding: 12px;
+        }
+
+        .pd-gallery-stage {
+            position: relative;
+            border-radius: 12px;
+            background: #f8fafc;
+            border: 1px solid #eceef6;
+            min-height: 360px;
+            display: grid;
+            place-items: center;
+            overflow: hidden;
+        }
+
+        .pd-gallery-main-btn {
+            width: 100%;
+            height: 100%;
+            min-height: 360px;
+            border: 0;
+            background: transparent;
+            padding: 14px;
+            cursor: zoom-in;
+            display: grid;
+            place-items: center;
+        }
+
         .pd-gallery-main {
             width: 100%;
-            aspect-ratio: 1/1;
-            object-fit: cover;
-            border-radius: 14px;
-            background: #f3f4f6;
-            border: 1px solid #edf0f5;
+            max-height: 520px;
+            object-fit: contain;
+            display: block;
+            border-radius: 10px;
+        }
+
+        .pd-gallery-main.is-entering {
+            animation: pdGalleryImageIn .28s ease;
+        }
+
+        @keyframes pdGalleryImageIn {
+            from {
+                opacity: .25;
+                transform: translateY(8px) scale(.985);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .pd-gallery-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%) scale(.92);
+            width: 44px;
+            height: 44px;
+            border-radius: 999px;
+            border: 1px solid #d6deea;
+            background: rgba(255, 255, 255, .8);
+            color: #0f172a;
+            font-size: 22px;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .22s ease, transform .22s ease, background-color .22s ease, border-color .22s ease;
+        }
+
+        .pd-gallery-nav.prev {
+            left: 12px;
+        }
+
+        .pd-gallery-nav.next {
+            right: 12px;
+        }
+
+        .pd-gallery-stage:hover .pd-gallery-nav,
+        .pd-gallery-stage:focus-within .pd-gallery-nav {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(-50%) scale(1);
+        }
+
+        .pd-gallery-nav:hover {
+            background: #fff;
+            border-color: #c5d0e2;
+        }
+
+        .pd-gallery-counter {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 2;
+            color: #0f172a;
+            background: rgba(255, 255, 255, .92);
+            border: 1px solid #d6deea;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 13px;
+            font-weight: 700;
         }
 
         .pd-thumbs {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
-            gap: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
             margin-top: 12px;
+            overflow-x: auto;
+            padding-bottom: 2px;
         }
 
         .pd-thumb-btn {
+            width: 64px;
+            height: 64px;
+            flex: 0 0 64px;
             border: 1px solid #e7e8f0;
             border-radius: 10px;
             padding: 0;
@@ -129,15 +251,15 @@ $seoImage = $galleryImages[0] ?? '';
         }
 
         .pd-thumb-btn.is-active {
-            border-color: #845adf;
-            box-shadow: 0 0 0 2px rgba(132, 90, 223, .12);
+            border: 1px solid #000000ff;
         }
 
         .pd-thumb-btn img {
             width: 100%;
-            aspect-ratio: 1/1;
-            object-fit: cover;
+            height: 100%;
+            object-fit: contain;
             display: block;
+            background: #f8fafc;
         }
 
         .pd-title {
@@ -171,6 +293,11 @@ $seoImage = $galleryImages[0] ?? '';
             color: #00ad5c;
             font-weight: 800;
             font-size: 25px;
+        }
+
+        #pdUnitPriceText {
+            color: #000;
+            font-size: 22px;
         }
 
         .pd-stock {
@@ -282,6 +409,11 @@ $seoImage = $galleryImages[0] ?? '';
             color: #151a2d;
         }
 
+        #sumTotal {
+            color: #000;
+            font-size: 22px;
+        }
+
         .pd-summary-row.discount {
             color: #078631ff;
             font-weight: 700;
@@ -306,9 +438,43 @@ $seoImage = $galleryImages[0] ?? '';
         .pd-desc {
             color: #334155;
             line-height: 1.65;
-            white-space: pre-line;
+            white-space: normal;
             overflow-wrap: break-word;
             word-break: break-word;
+        }
+
+        .pd-desc p,
+        .pd-desc ul,
+        .pd-desc ol,
+        .pd-desc h1,
+        .pd-desc h2,
+        .pd-desc h3,
+        .pd-desc h4,
+        .pd-desc h5,
+        .pd-desc h6,
+        .pd-desc blockquote {
+            margin-bottom: .85rem;
+        }
+
+        .pd-desc img {
+            max-width: 100%;
+            height: auto;
+            object-fit: contain;
+            border-radius: 10px;
+        }
+
+        .pd-desc table {
+            width: 100%;
+            display: block;
+            overflow-x: auto;
+        }
+
+        .pd-desc :first-child {
+            margin-top: 0;
+        }
+
+        .pd-desc :last-child {
+            margin-bottom: 0;
         }
 
         .pd-buy-btn {
@@ -355,6 +521,22 @@ $seoImage = $galleryImages[0] ?? '';
         }
 
         @media (max-width: 767.98px) {
+
+            .pd-gallery-stage,
+            .pd-gallery-main-btn {
+                min-height: 260px;
+            }
+
+            .pd-gallery-main {
+                max-height: 360px;
+            }
+
+            .pd-gallery-nav {
+                width: 38px;
+                height: 38px;
+                font-size: 20px;
+            }
+
             .pd-title {
                 font-size: 1.25rem;
             }
@@ -372,6 +554,15 @@ $seoImage = $galleryImages[0] ?? '';
                 width: 100%;
             }
         }
+
+        @media (hover: none),
+        (pointer: coarse) {
+            .pd-gallery-nav {
+                opacity: 1;
+                pointer-events: auto;
+                transform: translateY(-50%) scale(1);
+            }
+        }
     </style>
 </head>
 
@@ -385,22 +576,42 @@ $seoImage = $galleryImages[0] ?? '';
             <div class="row g-4">
                 <div class="col-lg-5">
                     <div class="pd-card p-3">
-                        <img id="pdMainImage"
-                            src="<?= htmlspecialchars((string) ($galleryImages[0] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
-                            alt="<?= htmlspecialchars($productName, ENT_QUOTES, 'UTF-8') ?>" class="pd-gallery-main">
+                        <div class="pd-gallery-shell">
+                            <div class="pd-gallery-stage">
+                                <?php if (count($galleryImages) > 1): ?>
+                                    <button type="button" id="pdGalleryPrev" class="pd-gallery-nav prev"
+                                        aria-label="Ảnh trước">&lsaquo;</button>
+                                    <button type="button" id="pdGalleryNext" class="pd-gallery-nav next"
+                                        aria-label="Ảnh tiếp theo">&rsaquo;</button>
+                                <?php endif; ?>
 
-                        <?php if (count($galleryImages) > 1): ?>
-                            <div class="pd-thumbs" id="pdThumbs">
-                                <?php foreach ($galleryImages as $idx => $img): ?>
-                                    <button type="button" class="pd-thumb-btn <?= $idx === 0 ? 'is-active' : '' ?>"
-                                        data-img="<?= htmlspecialchars($img, ENT_QUOTES, 'UTF-8') ?>"
-                                        aria-label="Ảnh sản phẩm <?= $idx + 1 ?>">
-                                        <img src="<?= htmlspecialchars($img, ENT_QUOTES, 'UTF-8') ?>"
-                                            alt="<?= htmlspecialchars($productName, ENT_QUOTES, 'UTF-8') ?>">
-                                    </button>
-                                <?php endforeach; ?>
+                                <button type="button" id="pdMainImageOpen" class="pd-gallery-main-btn"
+                                    aria-label="Xem ảnh full">
+                                    <img id="pdMainImage"
+                                        src="<?= htmlspecialchars((string) ($galleryImages[0] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                        alt="<?= htmlspecialchars($productName, ENT_QUOTES, 'UTF-8') ?>"
+                                        class="pd-gallery-main">
+                                </button>
+
+                                <div class="pd-gallery-counter" id="pdGalleryCounter">
+                                    1 / <?= (int) count($galleryImages) ?>
+                                </div>
                             </div>
-                        <?php endif; ?>
+
+                            <?php if (count($galleryImages) > 1): ?>
+                                <div class="pd-thumbs" id="pdThumbs">
+                                    <?php foreach ($galleryImages as $idx => $img): ?>
+                                        <button type="button" class="pd-thumb-btn <?= $idx === 0 ? 'is-active' : '' ?>"
+                                            data-index="<?= (int) $idx ?>"
+                                            data-img="<?= htmlspecialchars($img, ENT_QUOTES, 'UTF-8') ?>"
+                                            aria-label="Ảnh sản phẩm <?= $idx + 1 ?>">
+                                            <img src="<?= htmlspecialchars($img, ENT_QUOTES, 'UTF-8') ?>"
+                                                alt="<?= htmlspecialchars($productName, ENT_QUOTES, 'UTF-8') ?>">
+                                        </button>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
 
@@ -415,7 +626,7 @@ $seoImage = $galleryImages[0] ?? '';
                             </div>
                             <div class="pd-stock">
                                 <div class="pd-note">Stock</div>
-                                <div id="pdStockLabel">
+                                <div id="pdStockLabel"<?= $stockColor !== '' ? ' style="color: ' . $stockColor . ';"' : '' ?>>
                                     <?= htmlspecialchars($stockLabel, ENT_QUOTES, 'UTF-8') ?>
                                 </div>
                             </div>
@@ -442,7 +653,7 @@ $seoImage = $galleryImages[0] ?? '';
                                 <?php if ($displayMaxQty > 0): ?>
                                     <span class="pd-chip info"><i class="fas fa-arrow-up-1-9"></i> Max
                                         <?= $displayMaxQty ?></span>
-                                <?php elseif ($productType !== 'link'): ?>
+                                <?php elseif ($productType !== 'link' && !$isOutOfStock): ?>
                                     <span class="pd-chip info"><i class="fas fa-infinity"></i> Max không giới hạn</span>
                                 <?php endif; ?>
                             <?php endif; ?>
@@ -519,7 +730,7 @@ $seoImage = $galleryImages[0] ?? '';
                     <div class="pd-card p-3 p-md-4">
                         <h3 class="mb-3" style="font-weight:700; color:#151a2d;">Chi tiết sản phẩm</h3>
                         <div class="pd-desc">
-                            <?= nl2br(htmlspecialchars((string) ($product['description'] ?? 'Chưa có mô tả cho sản phẩm này.'), ENT_QUOTES, 'UTF-8')) ?>
+                            <?= $descriptionHtml ?>
                         </div>
                     </div>
                 </div>
@@ -546,6 +757,8 @@ $seoImage = $galleryImages[0] ?? '';
             loginUrl: <?= json_encode(url('login'), JSON_UNESCAPED_UNICODE) ?>,
             csrfToken: <?= json_encode(function_exists('csrf_token') ? csrf_token() : '', JSON_UNESCAPED_UNICODE) ?>
         };
+        const PRODUCT_GALLERY_IMAGES = <?= json_encode(array_values($galleryImages), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+        const PRODUCT_GALLERY_FALLBACK = <?= json_encode(asset('assets/images/banner-bg-03.png'), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
         let APPLIED_GIFTCODE_PREVIEW = null;
         let APPLY_GIFTCODE_LOADING = false;
 
@@ -590,7 +803,7 @@ $seoImage = $galleryImages[0] ?? '';
             const stock = Math.max(0, Number(PRODUCT_DETAIL.availableStock || 0));
             const stockEl = getStockLabelEl();
             if (stockEl) {
-                stockEl.textContent = stock + ' Stock';
+                stockEl.textContent = String(stock);
                 stockEl.style.color = stock > 0 ? '#0f7a2f' : '#dc2626';
                 stockEl.style.fontWeight = '700';
             }
@@ -867,28 +1080,22 @@ $seoImage = $galleryImages[0] ?? '';
 
             const count = 250;
             const defaults = {
-                origin: { y: 0.7 },
-                spread: 90,
-                ticks: 300,
-                gravity: 1.2,
-                decay: 0.94,
-                startVelocity: 45,
-                zIndex: 100000
+                origin: { x: 0.5, y: 1 },
+                zIndex: 100000,
+                angle: 90
             };
 
-            confetti({
-                ...defaults,
-                particleCount: count,
-                angle: 60,
-                origin: { x: 0, y: 0.7 }
-            });
+            function fire(particleRatio, opts) {
+                confetti(Object.assign({}, defaults, opts, {
+                    particleCount: Math.floor(count * particleRatio)
+                }));
+            }
 
-            confetti({
-                ...defaults,
-                particleCount: count,
-                angle: 120,
-                origin: { x: 1, y: 0.7 }
-            });
+            fire(0.25, { spread: 26, startVelocity: 65 });
+            fire(0.2, { spread: 60, startVelocity: 45 });
+            fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8, startVelocity: 55 });
+            fire(0.1, { spread: 120, startVelocity: 35, decay: 0.92, scalar: 1.2 });
+            fire(0.1, { spread: 120, startVelocity: 75 });
         }
 
         function buildOrderDownloadUrl(order) {
@@ -929,190 +1136,10 @@ $seoImage = $galleryImages[0] ?? '';
             }
         }
 
-        function buildSuccessHtml(data) {
-            const order = data.order || {};
-            const isPending = !!data.pending;
-            const orderCodeDisplay = order.order_code_short || order.order_code || '-';
-            const subtotal = Number(order.subtotal_price || order.price || 0);
-            const discount = Number(order.discount_amount || 0);
-            const total = Number(order.price || 0);
 
-            let html = '';
-            html += '<div style="text-align:left">';
-            html += '<div style="display:flex;justify-content:center;margin-bottom:10px;">';
-            html += '<span style="display:inline-flex;align-items:center;gap:8px;border:1px solid #bbf7d0;background:#f0fdf4;color:#065f46;padding:7px 12px;border-radius:999px;font-weight:700;font-size:14px;cursor:pointer;" title="Bấm để sao chép mã đơn" class="js-copy-success-order" data-copy="' + escapeHtml(orderCodeDisplay) + '">';
-            html += 'Mã đơn #' + escapeHtml(orderCodeDisplay) + '</span></div>';
-            html += '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin-bottom:10px;">';
-            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;"><span>Sản phẩm</span><strong>' + escapeHtml(order.product_name || '-') + '</strong></div>';
-            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;"><span>Số lượng</span><strong>' + escapeHtml(order.quantity || 1) + '</strong></div>';
-            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;"><span>Thành tiền</span><strong>' + fmtMoney(subtotal) + '</strong></div>';
-            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;color:#16a34a;"><span>Giảm giá</span><strong>-' + fmtMoney(discount) + '</strong></div>';
-            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px dashed #cbd5e1;margin-top:4px;"><span><b>Tổng thanh toán</b></span><strong>' + fmtMoney(total) + '</strong></div>';
-            if (order.giftcode) {
-                html += '<div style="margin-top:4px;font-size:12px;color:#0f766e;">Đã áp dụng mã: <b>' + escapeHtml(order.giftcode) + '</b></div>';
-            }
-            html += '</div>';
-
-            if (isPending) {
-                html += '<p style="margin:0 0 6px;font-size:14px;"><b>Đơn hàng đang ở trạng thái chờ xử lý.</b> Admin sẽ xử lý và trả kết quả sau.</p>';
-                if (order.customer_input) {
-                    html += '<p style="margin:0 0 5px;font-size:14px;"><b>Thông tin bạn đã gửi:</b></p>';
-                    html += '<textarea readonly style="width:100%;min-height:90px;border:1px solid #ddd;border-radius:10px;padding:10px;font-size:13px;">' + escapeHtml(order.customer_input) + '</textarea>';
-                }
-            } else {
-                html += '<p style="margin:0 0 5px;font-size:14px;"><b>Dữ liệu bàn giao:</b></p>';
-                html += '<textarea readonly style="width:100%;min-height:110px;border:1px solid #ddd;border-radius:10px;padding:10px;font-size:13px;">' + escapeHtml(order.content || '') + '</textarea>';
-            }
-
-            html += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px;">';
-            html += '<button type="button" class="js-order-modal-history" style="border:1px solid #0ea5e9;background:#f0f9ff;color:#0369a1;border-radius:10px;padding:10px 8px;font-weight:700;">Xem đơn hàng</button>';
-            html += '<button type="button" class="js-order-modal-buy-more" style="border:1px solid #d1d5db;background:#f9fafb;color:#111827;border-radius:10px;padding:10px 8px;font-weight:700;">Mua thêm</button>';
-            html += '<button type="button" class="js-order-modal-download" style="border:1px solid #16a34a;background:#f0fdf4;color:#166534;border-radius:10px;padding:10px 8px;font-weight:700;">Down</button>';
-            html += '</div>';
-            html += '</div>';
-            return html;
-        }
-
-        function showPurchaseSuccess(data) {
-            const isPending = !!data.pending;
-            const title = isPending ? 'Tạo đơn hàng thành công' : 'Thanh toán thành công!';
-
-            if (window.Swal && Swal.fire) {
-                Swal.fire({
-                    icon: 'success',
-                    title: title,
-                    html: buildSuccessHtml(data),
-                    width: 680,
-                    confirmButtonText: 'Đóng',
-                    didOpen: function () {
-                        fireDoubleSideConfetti();
-                        attachSuccessModalActions(data);
-
-                        const copyBtn = document.querySelector('.js-copy-success-order');
-                        if (copyBtn) {
-                            copyBtn.addEventListener('click', async function () {
-                                const text = String(copyBtn.getAttribute('data-copy') || '').trim();
-                                if (!text) return;
-                                try {
-                                    if (navigator.clipboard && navigator.clipboard.writeText) {
-                                        await navigator.clipboard.writeText(text);
-                                    } else {
-                                        const ta = document.createElement('textarea');
-                                        ta.value = text;
-                                        document.body.appendChild(ta);
-                                        ta.select();
-                                        document.execCommand('copy');
-                                        ta.remove();
-                                    }
-                                    if (window.SwalHelper && SwalHelper.toast) {
-                                        SwalHelper.toast('Đã sao chép mã đơn', 'success');
-                                    }
-                                } catch (e) { }
-                            });
-                        }
-                    }
-                });
-                return;
-            }
-
-            alert(data.message || 'Thành công');
-        }
 
         // Override popup builder to keep labels/buttons aligned with latest UX requirements.
-        function buildSuccessHtml(data) {
-            const order = data.order || {};
-            const isPending = !!data.pending;
-            const orderCodeDisplay = order.order_code_short || order.order_code || '-';
-            const quantity = Math.max(1, Number(order.quantity || 1));
-            const subtotal = Number(order.subtotal_price || order.price || 0);
-            const discount = Number(order.discount_amount || 0);
-            const total = Number(order.price || 0);
-            const unitPrice = quantity > 0 ? Math.round(subtotal / quantity) : subtotal;
 
-            let html = '';
-            html += '<div style="text-align:left">';
-            html += '<div style="display:flex;justify-content:center;margin-bottom:10px;">';
-            html += '<span style="display:inline-flex;align-items:center;gap:8px;border:1px solid #bbf7d0;background:#f0fdf4;color:#065f46;padding:7px 12px;border-radius:999px;font-weight:700;font-size:14px;cursor:pointer;" title="Bấm để sao chép mã đơn" class="js-copy-success-order" data-copy="' + escapeHtml(orderCodeDisplay) + '">';
-            html += 'Mã đơn #' + escapeHtml(orderCodeDisplay) + '</span></div>';
-
-            html += '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin-bottom:10px;">';
-            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;"><span>Sản phẩm</span><strong>' + escapeHtml(order.product_name || '-') + '</strong></div>';
-            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;"><span>Giá</span><strong>' + fmtMoney(unitPrice) + '</strong></div>';
-            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;"><span>Số lượng</span><strong>' + escapeHtml(quantity) + '</strong></div>';
-            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;color:#16a34a;"><span>Giảm giá</span><strong>-' + fmtMoney(discount) + '</strong></div>';
-            html += '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px dashed #cbd5e1;margin-top:4px;"><span><b>Tổng thanh toán</b></span><strong>' + fmtMoney(total) + '</strong></div>';
-            if (order.giftcode) {
-                html += '<div style="margin-top:4px;font-size:12px;color:#0f766e;">Đã áp dụng mã: <b>' + escapeHtml(order.giftcode) + '</b></div>';
-            }
-            html += '</div>';
-
-            if (isPending) {
-                html += '<p style="margin:0 0 6px;font-size:14px;"><b>Đơn hàng đang ở trạng thái chờ xử lý.</b> Admin sẽ xử lý và trả kết quả sau.</p>';
-                if (order.customer_input) {
-                    html += '<p style="margin:0 0 5px;font-size:14px;"><b>Thông tin bạn đã gửi:</b></p>';
-                    html += '<textarea readonly style="width:100%;min-height:80px;max-height:140px;border:1px solid #ddd;border-radius:10px;padding:10px;font-size:13px;">' + escapeHtml(order.customer_input) + '</textarea>';
-                }
-            } else {
-                html += '<p style="margin:0 0 5px;font-size:14px;"><b>Đơn hàng:</b></p>';
-                html += '<textarea readonly style="width:100%;min-height:80px;max-height:150px;border:1px solid #ddd;border-radius:10px;padding:10px;font-size:13px;">' + escapeHtml(order.content || '') + '</textarea>';
-            }
-
-            html += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px;">';
-            html += '<button type="button" class="js-order-modal-history" style="border:1px solid #0ea5e9;background:#f0f9ff;color:#0369a1;border-radius:10px;padding:10px 8px;font-weight:700;">Chi tiết</button>';
-            html += '<button type="button" class="js-order-modal-download" style="border:1px solid #16a34a;background:#f0fdf4;color:#166534;border-radius:10px;padding:10px 8px;font-weight:700;">DOWNLOAD</button>';
-            html += '<button type="button" class="js-order-modal-buy-more" style="border:1px solid #d1d5db;background:#f9fafb;color:#111827;border-radius:10px;padding:10px 8px;font-weight:700;">Mua thêm</button>';
-            html += '</div>';
-            html += '</div>';
-            return html;
-        }
-
-        function showPurchaseSuccess(data) {
-            const isPending = !!data.pending;
-            const title = isPending ? 'Tạo đơn hàng thành công' : 'Thanh toán thành công!';
-
-            if (window.Swal && Swal.fire) {
-                Swal.fire({
-                    icon: 'success',
-                    title: title,
-                    html: buildSuccessHtml(data),
-                    width: 680,
-                    showConfirmButton: false,
-                    showCloseButton: false,
-                    didOpen: function () {
-                        ensureConfettiReady().then(function () {
-                            fireDoubleSideConfetti();
-                        }).catch(function () { });
-                        attachSuccessModalActions(data);
-
-                        const copyBtn = document.querySelector('.js-copy-success-order');
-                        if (copyBtn) {
-                            copyBtn.addEventListener('click', async function () {
-                                const text = String(copyBtn.getAttribute('data-copy') || '').trim();
-                                if (!text) return;
-                                try {
-                                    if (navigator.clipboard && navigator.clipboard.writeText) {
-                                        await navigator.clipboard.writeText(text);
-                                    } else {
-                                        const ta = document.createElement('textarea');
-                                        ta.value = text;
-                                        document.body.appendChild(ta);
-                                        ta.select();
-                                        document.execCommand('copy');
-                                        ta.remove();
-                                    }
-                                    if (window.SwalHelper && SwalHelper.toast) {
-                                        SwalHelper.toast('Đã sao chép mã đơn', 'success');
-                                    }
-                                } catch (e) { }
-                            });
-                        }
-                    }
-                });
-                return;
-            }
-
-            alert(data.message || 'Thành công');
-        }
 
         function buyProduct(id) {
             if (!PRODUCT_DETAIL.canPurchase) {
@@ -1194,17 +1221,111 @@ $seoImage = $galleryImages[0] ?? '';
         document.addEventListener('DOMContentLoaded', function () {
             const mainImg = document.getElementById('pdMainImage');
             const thumbsWrap = document.getElementById('pdThumbs');
+            const prevBtn = document.getElementById('pdGalleryPrev');
+            const nextBtn = document.getElementById('pdGalleryNext');
+            const counterEl = document.getElementById('pdGalleryCounter');
+            const openBtn = document.getElementById('pdMainImageOpen');
+            const galleryImages = Array.isArray(PRODUCT_GALLERY_IMAGES) ? PRODUCT_GALLERY_IMAGES.slice() : [];
+            let galleryIndex = 0;
+            let galleryLightbox = null;
+
+            function normalizeGalleryIndex(nextIndex) {
+                const total = galleryImages.length;
+                if (total <= 0) return 0;
+                let idx = Number(nextIndex || 0);
+                if (!Number.isFinite(idx)) idx = 0;
+                idx = Math.floor(idx);
+                if (idx < 0) idx = total - 1;
+                if (idx >= total) idx = 0;
+                return idx;
+            }
+
+            function renderGallery(nextIndex) {
+                if (!mainImg || galleryImages.length <= 0) return;
+                galleryIndex = normalizeGalleryIndex(nextIndex);
+                const nextSrc = String(galleryImages[galleryIndex] || '').trim() || PRODUCT_GALLERY_FALLBACK;
+                mainImg.classList.remove('is-entering');
+                void mainImg.offsetWidth;
+                mainImg.src = nextSrc;
+                mainImg.classList.add('is-entering');
+
+                if (counterEl) {
+                    counterEl.textContent = (galleryIndex + 1) + ' / ' + galleryImages.length;
+                }
+
+                if (thumbsWrap) {
+                    thumbsWrap.querySelectorAll('.pd-thumb-btn').forEach((el) => {
+                        const idx = Number(el.getAttribute('data-index') || 0);
+                        el.classList.toggle('is-active', idx === galleryIndex);
+                    });
+                }
+            }
+
+            if (mainImg) {
+                mainImg.addEventListener('error', function () {
+                    if (this.src !== PRODUCT_GALLERY_FALLBACK) {
+                        this.src = PRODUCT_GALLERY_FALLBACK;
+                    }
+                });
+            }
+
             if (thumbsWrap && mainImg) {
                 thumbsWrap.addEventListener('click', function (e) {
                     const btn = e.target.closest('.pd-thumb-btn');
                     if (!btn) return;
-                    const next = btn.getAttribute('data-img');
-                    if (!next) return;
-                    mainImg.src = next;
-                    thumbsWrap.querySelectorAll('.pd-thumb-btn').forEach((el) => el.classList.remove('is-active'));
-                    btn.classList.add('is-active');
+                    const idx = Number(btn.getAttribute('data-index') || 0);
+                    renderGallery(idx);
                 });
             }
+
+            if (prevBtn) {
+                prevBtn.addEventListener('click', function () {
+                    renderGallery(galleryIndex - 1);
+                });
+            }
+
+            if (nextBtn) {
+                nextBtn.addEventListener('click', function () {
+                    renderGallery(galleryIndex + 1);
+                });
+            }
+
+            if (openBtn) {
+                openBtn.addEventListener('click', function () {
+                    if (galleryImages.length <= 0) return;
+
+                    if (!galleryLightbox && window.GLightbox) {
+                        galleryLightbox = GLightbox({
+                            elements: galleryImages.map(function (src) {
+                                return { href: src, type: 'image' };
+                            }),
+                            loop: true,
+                            touchNavigation: true,
+                            draggable: true
+                        });
+                    }
+
+                    if (galleryLightbox && typeof galleryLightbox.openAt === 'function') {
+                        galleryLightbox.openAt(galleryIndex);
+                        return;
+                    }
+
+                    window.open(String(galleryImages[galleryIndex] || PRODUCT_GALLERY_FALLBACK), '_blank', 'noopener');
+                });
+            }
+
+            document.addEventListener('keydown', function (e) {
+                if (galleryImages.length <= 1) return;
+                const tag = String((e.target && e.target.tagName) || '').toLowerCase();
+                if (tag === 'input' || tag === 'textarea') return;
+                if (e.key === 'ArrowLeft') {
+                    renderGallery(galleryIndex - 1);
+                } else if (e.key === 'ArrowRight') {
+                    renderGallery(galleryIndex + 1);
+                }
+            });
+
+            renderGallery(0);
 
             const qtyInput = getQtyInput();
             const minusBtn = document.getElementById('qtyMinusBtn');

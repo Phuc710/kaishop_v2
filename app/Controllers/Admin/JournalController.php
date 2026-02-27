@@ -263,6 +263,9 @@ class JournalController extends Controller
     private function renderJournal(array $data): void
     {
         global $chungapi;
+        if (empty($chungapi)) {
+            $chungapi = class_exists('Config') ? Config::getSiteConfig() : [];
+        }
 
         $this->view('admin/logs/journal', array_merge([
             'chungapi' => $chungapi,

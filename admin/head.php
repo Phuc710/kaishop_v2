@@ -10,7 +10,9 @@ if (empty($_SESSION['admin'])) {
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="shortcut icon" href="<?= $chungapi['favicon'] ?? '' ?>" />
+<?php $cleanAdminFavicon = trim(preg_replace('/\s+/', '', (string) ($chungapi['favicon'] ?? ''))); ?>
+<link rel="shortcut icon"
+    href="<?= $cleanAdminFavicon !== '' ? (str_starts_with($cleanAdminFavicon, 'http') ? $cleanAdminFavicon : asset(ltrim($cleanAdminFavicon, '/'))) : asset('assets/images/favicon.png') ?>" />
 <?php
 $adminNeedsFlatpickr = !empty($adminNeedsFlatpickr);
 $adminNeedsSummernote = !empty($adminNeedsSummernote);

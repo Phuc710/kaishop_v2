@@ -15,8 +15,8 @@ $adminNeedsFlatpickr = true;
 require_once __DIR__ . '/../layout/head.php';
 require_once __DIR__ . '/../layout/breadcrumb.php';
 
-// Read ?user= param (passed from User Edit Page buttons)
-$prefilterUser = trim((string) ($_GET['user'] ?? ''));
+// Read ?search= or ?user= param (passed from User Edit Page buttons)
+$prefilterUser = trim((string) ($_GET['search'] ?? $_GET['user'] ?? ''));
 $isPurchaseJournal = (($basePath ?? '') === 'admin/logs/buying');
 ?>
 
@@ -264,7 +264,7 @@ $isPurchaseJournal = (($basePath ?? '') === 'admin/logs/buying');
                 onReady: function (selectedDates, dateStr, instance) {
                     const clearBtn = document.createElement('div');
                     clearBtn.className = 'flatpickr-clear-btn mt-2 text-center text-danger';
-                        clearBtn.innerHTML = '<span style="cursor:pointer;font-weight:bold;">Xóa lựa chọn</span>';
+                    clearBtn.innerHTML = '<span style="cursor:pointer;font-weight:bold;">Xóa lựa chọn</span>';
                     clearBtn.onclick = function () {
                         instance.clear();
                         dt.draw();
@@ -378,7 +378,7 @@ $isPurchaseJournal = (($basePath ?? '') === 'admin/logs/buying');
                     if (!isNaN(nativeTs)) return nativeTs;
                 }
             }
-        } catch (e) {}
+        } catch (e) { }
 
         var text = String(cellHtml || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
         if (window.KaiTime && typeof window.KaiTime.toTimestamp === 'function') {
@@ -626,4 +626,3 @@ $isPurchaseJournal = (($basePath ?? '') === 'admin/logs/buying');
         }
     }
 </script>
-

@@ -128,7 +128,9 @@ $ogType = isset($seoOgType) && trim((string) $seoOgType) !== '' ? trim((string) 
     <meta name="twitter:image" content="<?= htmlspecialchars($seoImageValue, ENT_QUOTES, 'UTF-8') ?>">
 <?php endif; ?>
 
-<link rel="shortcut icon" href="<?= htmlspecialchars((string) ($chungapi['favicon'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+<?php $cleanFavicon = trim(preg_replace('/\s+/', '', (string) ($chungapi['favicon'] ?? ''))); ?>
+<link rel="shortcut icon"
+    href="<?= htmlspecialchars($cleanFavicon !== '' ? (str_starts_with($cleanFavicon, 'http') ? $cleanFavicon : asset(ltrim($cleanFavicon, '/'))) : asset('assets/images/favicon.png'), ENT_QUOTES, 'UTF-8') ?>">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

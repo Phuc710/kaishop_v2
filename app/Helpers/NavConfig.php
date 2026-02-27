@@ -145,6 +145,7 @@ class NavConfig
                 'href' => self::buildUrl(''),
                 'label' => 'Trang chủ',
                 'mobile_icon' => 'fa-solid fa-house-chimney',
+                'embed_img' => 'https://media.giphy.com/media/KBlX7iF04rYrtuvSHc/giphy.gif',
             ],
             [
                 'type' => 'dropdown',
@@ -154,14 +155,17 @@ class NavConfig
                     [
                         'href' => self::buildUrl('balance/bank'),
                         'label' => 'Bank',
+                        'embed_img' => self::buildUrl('assets/images/bank.png'),
                     ],
                     [
                         'href' => self::buildUrl('balance/binance'),
                         'label' => 'Binance',
+                        'embed_img' => self::buildUrl('assets/images/Binance_icon.svg'),
                     ],
                     [
                         'href' => self::buildUrl('balance/momo'),
                         'label' => 'Momo',
+                        'embed_img' => self::buildUrl('assets/images/momo.webp'),
                     ],
                 ],
             ],

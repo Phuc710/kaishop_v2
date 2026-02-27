@@ -162,6 +162,7 @@ foreach ($authNavPaths as $p) {
                         $navType = (string) ($navItem['type'] ?? 'link');
                         $navLabel = htmlspecialchars((string) ($navItem['label'] ?? ''), ENT_QUOTES, 'UTF-8');
                         $navMobileIcon = htmlspecialchars((string) ($navItem['mobile_icon'] ?? ''), ENT_QUOTES, 'UTF-8');
+                        $embedImg = (string) ($navItem['embed_img'] ?? '');
                         ?>
                         <?php if ($navType === 'dropdown'): ?>
                             <li class="nav-item dropdown">
@@ -169,13 +170,35 @@ foreach ($authNavPaths as $p) {
                                     data-bs-auto-close="outside" aria-expanded="false">
                                     <?php if ($navMobileIcon !== ''): ?><i
                                             class="<?= $navMobileIcon ?> me-2 d-xl-none"></i><?php endif; ?><?= $navLabel ?>
+                                    <?php if ($embedImg !== ''): ?>
+                                        <img src="<?= htmlspecialchars($embedImg, ENT_QUOTES, 'UTF-8') ?>" alt="icon"
+                                            style="height: 22px; margin-left: 4px; vertical-align: middle; margin-top: -2px;">
+                                    <?php endif; ?>
                                 </a>
                                 <ul class="dropdown-menu">
                                     <?php foreach ((array) ($navItem['children'] ?? []) as $child): ?>
+                                        <?php
+                                        $childLabel = htmlspecialchars((string) ($child['label'] ?? ''), ENT_QUOTES, 'UTF-8');
+                                        $childIcon = (string) ($child['icon'] ?? '');
+                                        $childImg = (string) ($child['embed_img'] ?? '');
+                                        $isBinance = strpos(strtolower($childLabel), 'binance') !== false;
+                                        ?>
                                         <li>
                                             <a href="<?= htmlspecialchars((string) ($child['href'] ?? '#'), ENT_QUOTES, 'UTF-8') ?>"
-                                                class="dropdown-item">
-                                                <span><?= htmlspecialchars((string) ($child['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                                                class="dropdown-item d-flex align-items-center">
+                                                <?php if ($childImg !== '' || $childIcon !== ''): ?>
+                                                    <span class="d-flex align-items-center justify-content-center me-2"
+                                                        style="width: 30px;">
+                                                        <?php if ($childImg !== ''): ?>
+                                                            <img src="<?= htmlspecialchars($childImg, ENT_QUOTES, 'UTF-8') ?>" alt="icon"
+                                                                style="height: <?= $isBinance ? '25px' : '18px' ?>; width: auto; max-width: 28px; vertical-align: middle;">
+                                                        <?php elseif ($childIcon !== ''): ?>
+                                                            <i class="<?= htmlspecialchars($childIcon, ENT_QUOTES, 'UTF-8') ?> <?= $isBinance ? 'is-binance' : '' ?>"
+                                                                style="font-size: <?= $isBinance ? '18px' : '14px' ?>;"></i>
+                                                        <?php endif; ?>
+                                                    </span>
+                                                <?php endif; ?>
+                                                <span><?= $childLabel ?></span>
                                             </a>
                                         </li>
                                     <?php endforeach; ?>
@@ -188,6 +211,10 @@ foreach ($authNavPaths as $p) {
                                     role="button" aria-expanded="false">
                                     <?php if ($navMobileIcon !== ''): ?><i
                                             class="<?= $navMobileIcon ?> me-2 d-xl-none"></i><?php endif; ?><?= $navLabel ?>
+                                    <?php if ($embedImg !== ''): ?>
+                                        <img src="<?= htmlspecialchars($embedImg, ENT_QUOTES, 'UTF-8') ?>" alt="icon"
+                                            style="height: 22px; margin-left: 4px; vertical-align: middle; margin-top: -4px;">
+                                    <?php endif; ?>
                                 </a>
                             </li>
                         <?php endif; ?>
@@ -204,8 +231,8 @@ foreach ($authNavPaths as $p) {
 
                     <div class="align-items-center">
                         <div class="dropdown">
-                            <button type="button" class="d-flex header-widget" data-bs-toggle="dropdown"
-                                aria-expanded="false">
+                            <button type="button" class="d-flex align-items-center header-widget" data-bs-toggle="dropdown"
+                                aria-expanded="false" style="padding: 4px 8px; justify-content: center;">
                                 <?php
                                 $userAvatar = trim((string) (($user['avatar_url'] ?? '') ?: ($user['avatar'] ?? '')));
                                 if ($userAvatar === '') {
@@ -213,14 +240,14 @@ foreach ($authNavPaths as $p) {
                                 }
                                 ?>
                                 <img src="<?= htmlspecialchars($userAvatar, ENT_QUOTES, 'UTF-8') ?>"
-                                    class="rounded-circle w-40 me-1" alt="">
-                                <span>
+                                    class="rounded-circle w-40" style="margin-right: 8px;" alt="">
+                                <span class="text-center">
                                     <p class="text-uppercase"
                                         style="font-weight: bold; color: #333; line-height: 1; border-radius: 6px; display: inline-block; font-size: 13px;">
                                         <?= $username; ?>
                                     </p>
-                                    <p style=" color: red; font-weight: 800; font-size: 14px; line-height: 1;
-                                    margin-top: 2px;"><?= tien($user['money']); ?>đ</p>
+                                    <p style=" color: #ff6900; font-weight: 800; font-size: 13px; line-height: 1;
+                                    margin-top: 2px;"><strong><?= tien($user['money']); ?>đ</strong></p>
                                 </span>
                             </button>
 

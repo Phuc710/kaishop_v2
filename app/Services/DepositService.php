@@ -47,10 +47,13 @@ class DepositService
             $createdTs = strtotime((string) ($activeDeposit['created_at'] ?? ''));
             $depositCode = (string) ($activeDeposit['deposit_code'] ?? '');
             $depositAmount = (int) ($activeDeposit['amount'] ?? 0);
+            $depositStatus = (string) ($activeDeposit['status'] ?? 'pending');
             $activeDepositPayload = [
                 'deposit_code' => $depositCode,
                 'amount' => $depositAmount,
                 'bonus_percent' => (int) ($activeDeposit['bonus_percent'] ?? 0),
+                'status' => $depositStatus,
+                'status_text' => $this->mapDepositStatusText($depositStatus),
                 'created_at' => (string) ($activeDeposit['created_at'] ?? ''),
                 'created_at_ts' => $createdTs ?: 0,
                 'expires_at_ts' => $createdTs ? ($createdTs + $ttlSeconds) : 0,
@@ -121,6 +124,8 @@ class DepositService
                 'deposit_code' => (string) $result['deposit_code'],
                 'amount' => $amount,
                 'bonus_percent' => $bonusPercent,
+                'status' => 'pending',
+                'status_text' => $this->mapDepositStatusText('pending'),
                 'bonus_amount' => $bonusAmount,
                 'total_receive' => $amount + $bonusAmount,
                 'expires_at' => (string) ($result['expires_at'] ?? ''),
@@ -255,5 +260,20 @@ class DepositService
             . '-qr_only.png?amount=' . $amount
             . '&addInfo=' . rawurlencode($content)
             . '&accountName=' . rawurlencode($accountName);
+    }
+
+    private function mapDepositStatusText(string $status): string
+    {
+        $normalized = strtolower(trim($status));
+        if ($normalized === 'completed') {
+            return 'Đã hoàn tất';
+        }
+        if ($normalized === 'expired') {
+            return 'Đã hết hạn';
+        }
+        if ($normalized === 'cancelled') {
+            return 'Đã hủy';
+        }
+        return 'Đang chờ xử lý';
     }
 }

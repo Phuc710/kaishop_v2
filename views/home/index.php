@@ -13,6 +13,20 @@
     ?>
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>
     <title> Trang Chủ | <?= $chungapi['ten_web']; ?></title>
+    <style>
+        .ds-category-title {
+            width: 100% !important;
+            background-color: #0d6efd !important;
+            color: #fff !important;
+            padding: 10px 16px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .category-section-wrapper.d-none {
+            display: none !important;
+        }
+    </style>
 </head>
 
 <body> <?php require __DIR__ . '/../../hethong/nav.php'; ?>
@@ -33,12 +47,21 @@
             </div>
             <div class="category-nav-container">
                 <div class="category-nav-scroll">
-                    <a href="#" class="category-pill active">
-                        <i class="fas fa-border-all"></i> Tất cả
-                    </a>
+                    <?php if (isset($is_category_page) && $is_category_page): ?>
+                        <a href="<?= url('') ?>" class="category-pill">
+                            <i class="fas fa-border-all"></i> Tất cả
+                        </a>
+                    <?php else: ?>
+                        <a href="#" class="category-pill active" data-filter="all">
+                            <i class="fas fa-border-all"></i> Tất cả
+                        </a>
+                    <?php endif; ?>
+
                     <?php if (!empty($categories)): ?>
                         <?php foreach ($categories as $cat): ?>
-                            <a href="#cat-<?= $cat['id'] ?>" class="category-pill">
+                            <a href="#cat-<?= $cat['id'] ?>"
+                                class="category-pill <?= (isset($is_category_page) && $is_category_page) ? 'active' : '' ?>"
+                                data-filter="cat-wrap-<?= $cat['id'] ?>">
                                 <i class="fas fa-tags"></i> <?= htmlspecialchars($cat['name']) ?>
                             </a>
                         <?php endforeach; ?>
@@ -51,71 +74,69 @@
                 <?php if (!empty($categories) && !empty($productsByCategory)): ?>
                     <?php foreach ($categories as $category): ?>
                         <?php if (!empty($productsByCategory[$category['id']])): ?>
-                            <div id="cat-<?= $category['id'] ?>" class="ds-section-header mt-5 mb-4">
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <h3 class="ds-category-title mb-0"><?= htmlspecialchars($category['name']) ?></h3>
-                                    <a href="<?= url('category/' . ($category['slug'] ?? xoadau($category['name']))) ?>"
-                                        class="btn btn-sm btn-outline-primary rounded-pill px-3">
-                                        Xem tất cả <i class="fas fa-chevron-right ms-1"></i>
-                                    </a>
+                            <div class="category-section-wrapper" id="cat-wrap-<?= $category['id'] ?>">
+                                <div id="cat-<?= $category['id'] ?>" class="ds-section-header mt-5 mb-4">
+                                    <div class="d-flex align-items-center justify-content-center">
+                                        <h3 class="ds-category-title mb-0"><?= htmlspecialchars($category['name']) ?></h3>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div class="ds-product-grid">
-                                <?php foreach ($productsByCategory[$category['id']] as $product): ?>
-                                    <?php
-                                    $is_offline = $product['status'] !== 'ON';
-                                    $discount = 0;
-                                    if ($product['old_price'] > $product['price']) {
-                                        $discount = round((($product['old_price'] - $product['price']) / $product['old_price']) * 100);
-                                    }
+                                <div class="ds-product-grid">
+                                    <?php foreach ($productsByCategory[$category['id']] as $product): ?>
+                                        <?php
+                                        $is_offline = $product['status'] !== 'ON';
+                                        $discount = 0;
+                                        if ($product['old_price'] > $product['price']) {
+                                            $discount = round((($product['old_price'] - $product['price']) / $product['old_price']) * 100);
+                                        }
 
-                                    // Visual Tags
-                                    $badge = '';
-                                    if (stripos($product['name'], 'Premium') !== false)
-                                        $badge = 'premium';
-                                    if (stripos($product['name'], 'Pro') !== false)
-                                        $badge = 'pro';
-                                    if (!empty($product['badge_text']))
-                                        $badge_text = $product['badge_text'];
-                                    else
-                                        $badge_text = $badge ? ucfirst($badge) : '';
-                                    ?>
-                                    <a href="<?= url($product['public_path'] ?? ('product/' . $product['id'])) ?>"
-                                        class="ds-card <?= $is_offline ? 'offline' : '' ?>">
-                                        <div class="ds-card-img-wrap">
-                                            <img src="<?= $product['image'] ?>" class="ds-card-img" alt="<?= $product['name'] ?>"
-                                                loading="lazy">
-                                            <?php if ($badge_text): ?>
-                                                <div class="ds-badge <?= $badge ?>"><?= htmlspecialchars($badge_text) ?></div>
-                                            <?php endif; ?>
-                                            <?php if ($is_offline): ?>
-                                                <div class="ds-status-badge">Tạm hết</div>
-                                            <?php endif; ?>
-                                        </div>
-                                        <div class="ds-card-body">
-                                            <h4 class="ds-card-title"><?= htmlspecialchars($product['name']) ?></h4>
-                                            <?php
-                                            $stats = $stockStats[$product['id']] ?? ['available' => 0, 'sold' => 0];
-                                            $stock_text = ($product['product_type'] === 'link') ? 'Vô hạn' : number_format($stats['available']);
-                                            $sold_count = number_format($stats['sold']);
-                                            ?>
-                                            <div class="ds-stock-row">
-                                                <span><i class="fas fa-box me-1"></i> Tồn kho: <strong
-                                                        class="text-primary"><?= $stock_text ?></strong></span>
-                                                <span><i class="fas fa-shopping-cart me-1"></i> Đã bán: <strong
-                                                        class="text-success"><?= $sold_count ?></strong></span>
-                                            </div>
-                                            <div class="ds-price-row">
-                                                <div class="ds-price"><?= number_format($product['price_vnd']) ?>đ</div>
-                                                <?php if ($discount > 0): ?>
-                                                    <div class="ds-old-price"><?= number_format($product['old_price']) ?>đ</div>
-                                                    <div class="ds-discount">-<?= $discount ?>%</div>
+                                        // Visual Tags
+                                        $badge = '';
+                                        if (stripos($product['name'], 'Premium') !== false)
+                                            $badge = 'premium';
+                                        if (stripos($product['name'], 'Pro') !== false)
+                                            $badge = 'pro';
+                                        if (!empty($product['badge_text']))
+                                            $badge_text = $product['badge_text'];
+                                        else
+                                            $badge_text = $badge ? ucfirst($badge) : '';
+                                        ?>
+                                        <a href="<?= url($product['public_path'] ?? ('product/' . $product['id'])) ?>"
+                                            class="ds-card <?= $is_offline ? 'offline' : '' ?>">
+                                            <div class="ds-card-img-wrap">
+                                                <img src="<?= $product['image'] ?>" class="ds-card-img" alt="<?= $product['name'] ?>"
+                                                    loading="lazy">
+                                                <?php if ($badge_text): ?>
+                                                    <div class="ds-badge <?= $badge ?>"><?= htmlspecialchars($badge_text) ?></div>
+                                                <?php endif; ?>
+                                                <?php if ($is_offline): ?>
+                                                    <div class="ds-status-badge">Tạm hết</div>
                                                 <?php endif; ?>
                                             </div>
-                                        </div>
-                                    </a>
-                                <?php endforeach; ?>
+                                            <div class="ds-card-body">
+                                                <h4 class="ds-card-title"><?= htmlspecialchars($product['name']) ?></h4>
+                                                <?php
+                                                $stats = $stockStats[$product['id']] ?? ['available' => 0, 'sold' => 0];
+                                                $stock_text = ($product['product_type'] === 'link') ? 'Vô hạn' : number_format($stats['available']);
+                                                $sold_count = number_format($stats['sold']);
+                                                ?>
+                                                <div class="ds-stock-row">
+                                                    <span><i class="fas fa-box me-1"></i> Tồn kho: <strong
+                                                            class="text-primary"><?= $stock_text ?></strong></span>
+                                                    <span><i class="fas fa-shopping-cart me-1"></i> Đã bán: <strong
+                                                            class="text-success"><?= $sold_count ?></strong></span>
+                                                </div>
+                                                <div class="ds-price-row">
+                                                    <div class="ds-price"><?= number_format($product['price_vnd']) ?>đ</div>
+                                                    <?php if ($discount > 0): ?>
+                                                        <div class="ds-old-price"><?= number_format($product['old_price']) ?>đ</div>
+                                                        <div class="ds-discount">-<?= $discount ?>%</div>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    <?php endforeach; ?>
+                                </div>
                             </div>
                         <?php endif; ?>
                     <?php endforeach; ?>
@@ -134,27 +155,31 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const pills = document.querySelectorAll('.category-pill');
+            const sections = document.querySelectorAll('.category-section-wrapper');
 
             // Handle Active State on Click
             pills.forEach(pill => {
-                pill.addEventListener('click', function () {
+                pill.addEventListener('click', function (e) {
+                    const filter = this.getAttribute('data-filter');
+
+                    if (!filter) return; // Allow normal navigation for non-filtering pills
+
+                    e.preventDefault();
                     pills.forEach(p => p.classList.remove('active'));
                     this.classList.add('active');
-                });
-            });
 
-            // Smooth scroll offset adjustment if needed
-            window.addEventListener('hashchange', function () {
-                const targetId = window.location.hash;
-                if (targetId) {
-                    const el = document.querySelector(targetId);
-                    if (el) {
-                        window.scrollTo({
-                            top: el.offsetTop - 100, // Offset for navbar
-                            behavior: 'smooth'
+                    if (filter === 'all') {
+                        sections.forEach(sec => sec.classList.remove('d-none'));
+                    } else {
+                        sections.forEach(sec => {
+                            if (sec.id === filter) {
+                                sec.classList.remove('d-none');
+                            } else {
+                                sec.classList.add('d-none');
+                            }
                         });
                     }
-                }
+                });
             });
         });
     </script>
