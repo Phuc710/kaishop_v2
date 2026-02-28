@@ -295,23 +295,23 @@ $pageAssetFlagsResolved = isset($GLOBALS['pageAssetFlagsResolved']) && is_array(
 $loadInteractiveBundle = !empty($pageAssetFlagsResolved['interactive_bundle']);
 ?>
 <?php if ($loadInteractiveBundle): ?>
-    <script src="<?= asset('assets/js/owl_carousel.js') ?>"></script>
-    <script src="<?= asset('assets/js/jquery_migrate.js') ?>"></script>
-    <script src="<?= asset('assets/js/counterup.js') ?>"></script>
-    <script src="<?= asset('assets/js/waypoints.js') ?>"></script>
-    <script src="<?= asset('assets/js/nice_select.js') ?>"></script>
+    <script src="<?= asset('assets/js/owl_carousel.js') ?>" defer></script>
+    <script src="<?= asset('assets/js/jquery_migrate.js') ?>" defer></script>
+    <script src="<?= asset('assets/js/counterup.js') ?>" defer></script>
+    <script src="<?= asset('assets/js/waypoints.js') ?>" defer></script>
+    <script src="<?= asset('assets/js/nice_select.js') ?>" defer></script>
     <?php if (!empty($pageAssetFlagsResolved['vendor_isotope'])): ?>
-        <script src="<?= asset('assets/js/isotope.js') ?>"></script>
-        <script src="<?= asset('assets/js/imagesloaded.js') ?>"></script>
+        <script src="<?= asset('assets/js/isotope.js') ?>" defer></script>
+        <script src="<?= asset('assets/js/imagesloaded.js') ?>" defer></script>
     <?php endif; ?>
     <?php if (!empty($pageAssetFlagsResolved['vendor_aos'])): ?>
-        <script src="<?= asset('assets/js/aos.js') ?>"></script>
+        <script src="<?= asset('assets/js/aos.js') ?>" defer></script>
     <?php endif; ?>
     <?php if (!empty($pageAssetFlagsResolved['vendor_quill'])): ?>
-        <script src="<?= asset('assets/js/quill.js') ?>"></script>
+        <script src="<?= asset('assets/js/quill.js') ?>" defer></script>
     <?php endif; ?>
     <?php if (!empty($pageAssetFlagsResolved['vendor_glightbox'])): ?>
-        <script src="<?= asset('assets/js/glightbox.js') ?>"></script>
+        <script src="<?= asset('assets/js/glightbox.js') ?>" defer></script>
     <?php endif; ?>
 <?php endif; ?>
 <!-- Popper -->
@@ -320,7 +320,7 @@ $loadInteractiveBundle = !empty($pageAssetFlagsResolved['interactive_bundle']);
 <script src="<?= asset('assets/js/bootstrap.js') ?>"></script>
 <?php if ($loadInteractiveBundle): ?>
     <?php if (!empty($pageAssetFlagsResolved['vendor_swiper'])): ?>
-        <script src="<?= asset('assets/js/swiper.js') ?>"></script>
+        <script src="<?= asset('assets/js/swiper.js') ?>" defer></script>
     <?php endif; ?>
     <?php
     $publicScriptPath = dirname(__DIR__) . '/assets/js/script.js';
@@ -329,8 +329,8 @@ $loadInteractiveBundle = !empty($pageAssetFlagsResolved['interactive_bundle']);
     <script src="<?= asset('assets/js/script.js?v=' . $publicScriptVer) ?>"></script>
     <script src="<?= asset('assets/js/main.js') ?>"></script>
 <?php endif; ?>
-<script src="<?= asset('assets/js/clipboard.js') ?>"></script>
-<script src="<?= asset('assets/js/perf-loader.js') ?>"></script>
+<script src="<?= asset('assets/js/clipboard.js') ?>" defer></script>
+<script src="<?= asset('assets/js/perf-loader.js') ?>" defer></script>
 
 <script>
     // Global Sticky Menu & Back to top
@@ -468,7 +468,7 @@ $loadInteractiveBundle = !empty($pageAssetFlagsResolved['interactive_bundle']);
             if (typeof window.KaiMaintenanceRuntime === 'function') {
                 runtime = new window.KaiMaintenanceRuntime({
                     statusUrl: statusUrl,
-                    pollMs: 10000
+                    pollMs: 3000
                 });
                 runtime.onUpdate(applyState);
                 runtime.start();
@@ -490,7 +490,7 @@ $loadInteractiveBundle = !empty($pageAssetFlagsResolved['interactive_bundle']);
                         .catch(function () { });
                 };
                 pollFallback();
-                window.setInterval(pollFallback, 10000);
+                window.setInterval(pollFallback, 3000);
             }
         })();
     </script>

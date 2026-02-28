@@ -641,24 +641,25 @@ if ($rawDescHtml !== '') {
                                 <div class="pd-note">Giá bán</div>
                                 <div class="pd-price" id="pdUnitPriceText"><?= number_format($priceVnd) ?>đ</div>
                             </div>
-                            <div class="pd-stock">
-                                <div class="pd-note">Stock</div>
-                                <div id="pdStockLabel" <?= $stockColor !== '' ? ' style="color: ' . $stockColor . ';"' : '' ?>>
-                                    <?= htmlspecialchars($stockLabel, ENT_QUOTES, 'UTF-8') ?>
+                            <?php if ($deliveryMode !== 'source_link'): ?>
+                                <div class="pd-stock">
+                                    <div class="pd-note">Stock</div>
+                                    <div id="pdStockLabel" <?= $stockColor !== '' ? ' style="color: ' . $stockColor . ';"' : '' ?>>
+                                        <?= htmlspecialchars($stockLabel, ENT_QUOTES, 'UTF-8') ?>
+                                    </div>
                                 </div>
-                            </div>
+                            <?php endif; ?>
                         </div>
 
                         <div class="pd-chips">
                             <?php if ($deliveryMode === 'account_stock'): ?>
-                                <span class="pd-chip success"><i class="fas fa-user-shield"></i> Tài Khoản (Giao
-                                    Ngay)</span>
+                                <span class="pd-chip success"><i class="fas fa-user-shield"></i> Tài Khoản</span>
                             <?php elseif ($deliveryMode === 'manual_info'): ?>
-                                <span class="pd-chip warn"><i class="fas fa-keyboard"></i> Giao Theo Yêu Cầu</span>
+                                <span class="pd-chip warn"><i class="fas fa-keyboard"></i> Yêu cầu thông tin</span>
                             <?php else: ?>
-                                <span class="pd-chip info"><i class="fas fa-infinity"></i> Unlimited Source</span>
+                                <span class="pd-chip info"><i class="fas fa-link"></i> Source</span>
                             <?php endif; ?>
-                            <?php if ($requiresInfo): ?>
+                            <?php if ($requiresInfo && $deliveryMode !== 'manual_info'): ?>
                                 <span class="pd-chip warn"><i class="fas fa-keyboard"></i> Yêu cầu thông tin</span>
                             <?php endif; ?>
                             <?php if ($productType === 'link'): ?>

@@ -1,0 +1,474 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="vi" lang="vi">
+<head>
+  <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ACCESS TERMINAL</title>
+
+  <style type="text/css">
+    /* ====== XHTML-safe CSS ====== */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: #050807;
+      color: #57ff8a;
+      font-family: "Consolas","Courier New",monospace;
+      overflow: hidden;
+    }
+
+    .wrap {
+      position: relative;
+      height: 100%;
+      width: 100%;
+    }
+
+    /* Matrix canvas */
+    #matrix {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      opacity: 0.22;
+    }
+
+    /* Scanlines + vignette */
+    .scanlines {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      pointer-events: none;
+      background:
+        linear-gradient(to bottom,
+          rgba(0,0,0,0.12) 0%,
+          rgba(0,0,0,0.12) 50%,
+          rgba(0,0,0,0.22) 51%,
+          rgba(0,0,0,0.22) 100%);
+      background-size: 100% 4px;
+      mix-blend-mode: multiply;
+    }
+
+    .vignette {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 3;
+      pointer-events: none;
+      background: radial-gradient(circle at center, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.9) 100%);
+    }
+
+    /* Main panel */
+    .panel {
+      position: relative;
+      z-index: 5;
+      height: 100%;
+      display: -webkit-box;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-orient: vertical;
+      -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+      flex-direction: column;
+      padding: 18px;
+      box-sizing: border-box;
+    }
+
+    .topbar {
+      border: 1px solid rgba(87,255,138,0.25);
+      background: rgba(0, 20, 10, 0.35);
+      box-shadow: 0 0 18px rgba(87,255,138,0.12);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: -webkit-box;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -ms-flex-align: center;
+      align-items: center;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 99px;
+      display: inline-block;
+      background: rgba(87,255,138,0.65);
+      box-shadow: 0 0 12px rgba(87,255,138,0.6);
+      -webkit-animation: pulse 1.5s infinite;
+      animation: pulse 1.5s infinite;
+    }
+
+    @-webkit-keyframes pulse {
+      0% { opacity: 0.35; -webkit-transform: scale(0.9); transform: scale(0.9); }
+      50% { opacity: 1; -webkit-transform: scale(1.1); transform: scale(1.1); }
+      100% { opacity: 0.35; -webkit-transform: scale(0.9); transform: scale(0.9); }
+    }
+    @keyframes pulse {
+      0% { opacity: 0.35; -webkit-transform: scale(0.9); transform: scale(0.9); }
+      50% { opacity: 1; -webkit-transform: scale(1.1); transform: scale(1.1); }
+      100% { opacity: 0.35; -webkit-transform: scale(0.9); transform: scale(0.9); }
+    }
+
+    .brand {
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-shadow: 0 0 14px rgba(87,255,138,0.35);
+      white-space: nowrap;
+    }
+
+    .marq {
+      -webkit-box-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      opacity: 0.9;
+    }
+
+    /* XHTML supports <marquee> in many browsers (non-standard) */
+    marquee {
+      color: #76ff9f;
+      text-shadow: 0 0 10px rgba(87,255,138,0.25);
+    }
+
+    .content {
+      margin-top: 16px;
+      border: 1px solid rgba(87,255,138,0.22);
+      background: rgba(0, 16, 8, 0.25);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 0 26px rgba(87,255,138,0.10);
+      height: calc(100% - 86px);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .glitch {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      position: relative;
+      display: inline-block;
+      margin: 0 0 10px 0;
+      text-shadow: 0 0 16px rgba(87,255,138,0.28);
+    }
+
+    .glitch:before, .glitch:after {
+      content: attr(data-text);
+      position: absolute;
+      top: 0;
+      left: 0;
+      opacity: 0.85;
+      clip: rect(0, 0, 0, 0);
+    }
+
+    .glitch:before {
+      -webkit-animation: glitchTop 2.2s infinite linear alternate-reverse;
+      animation: glitchTop 2.2s infinite linear alternate-reverse;
+      color: #8dffb6;
+    }
+
+    .glitch:after {
+      -webkit-animation: glitchBot 2.0s infinite linear alternate-reverse;
+      animation: glitchBot 2.0s infinite linear alternate-reverse;
+      color: #2eff6a;
+    }
+
+    @-webkit-keyframes glitchTop {
+      0% { clip: rect(0px, 9999px, 0px, 0px); -webkit-transform: translate(0,0); transform: translate(0,0); }
+      10% { clip: rect(0px, 9999px, 12px, 0px); -webkit-transform: translate(-1px,-1px); transform: translate(-1px,-1px); }
+      30% { clip: rect(0px, 9999px, 8px, 0px); -webkit-transform: translate(2px,-1px); transform: translate(2px,-1px); }
+      60% { clip: rect(0px, 9999px, 16px, 0px); -webkit-transform: translate(-2px,0); transform: translate(-2px,0); }
+      100% { clip: rect(0px, 9999px, 0px, 0px); -webkit-transform: translate(0,0); transform: translate(0,0); }
+    }
+    @keyframes glitchTop {
+      0% { clip: rect(0px, 9999px, 0px, 0px); transform: translate(0,0); }
+      10% { clip: rect(0px, 9999px, 12px, 0px); transform: translate(-1px,-1px); }
+      30% { clip: rect(0px, 9999px, 8px, 0px); transform: translate(2px,-1px); }
+      60% { clip: rect(0px, 9999px, 16px, 0px); transform: translate(-2px,0); }
+      100% { clip: rect(0px, 9999px, 0px, 0px); transform: translate(0,0); }
+    }
+
+    @-webkit-keyframes glitchBot {
+      0% { clip: rect(0px, 9999px, 0px, 0px); -webkit-transform: translate(0,0); transform: translate(0,0); }
+      15% { clip: rect(14px, 9999px, 28px, 0px); -webkit-transform: translate(1px,0); transform: translate(1px,0); }
+      35% { clip: rect(10px, 9999px, 26px, 0px); -webkit-transform: translate(-2px,1px); transform: translate(-2px,1px); }
+      70% { clip: rect(18px, 9999px, 34px, 0px); -webkit-transform: translate(2px,1px); transform: translate(2px,1px); }
+      100% { clip: rect(0px, 9999px, 0px, 0px); -webkit-transform: translate(0,0); transform: translate(0,0); }
+    }
+    @keyframes glitchBot {
+      0% { clip: rect(0px, 9999px, 0px, 0px); transform: translate(0,0); }
+      15% { clip: rect(14px, 9999px, 28px, 0px); transform: translate(1px,0); }
+      35% { clip: rect(10px, 9999px, 26px, 0px); transform: translate(-2px,1px); }
+      70% { clip: rect(18px, 9999px, 34px, 0px); transform: translate(2px,1px); }
+      100% { clip: rect(0px, 9999px, 0px, 0px); transform: translate(0,0); }
+    }
+
+    .term {
+      margin-top: 10px;
+      height: calc(100% - 70px);
+      overflow: hidden;
+      border-radius: 12px;
+      border: 1px solid rgba(87,255,138,0.20);
+      background: rgba(0, 0, 0, 0.25);
+      padding: 12px;
+      box-sizing: border-box;
+      position: relative;
+    }
+
+    .lines {
+      height: 100%;
+      overflow: hidden;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.35;
+      font-size: 14px;
+      text-shadow: 0 0 10px rgba(87,255,138,0.18);
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 10px;
+      height: 16px;
+      background: rgba(87,255,138,0.75);
+      box-shadow: 0 0 12px rgba(87,255,138,0.55);
+      vertical-align: -2px;
+      margin-left: 4px;
+      -webkit-animation: blink 0.9s infinite;
+      animation: blink 0.9s infinite;
+    }
+
+    @-webkit-keyframes blink { 0%{opacity:1;} 50%{opacity:0;} 100%{opacity:1;} }
+    @keyframes blink { 0%{opacity:1;} 50%{opacity:0;} 100%{opacity:1;} }
+
+    .footer {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 14px;
+      z-index: 6;
+      font-size: 12px;
+      opacity: 0.8;
+      display: -webkit-box;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: justify;
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .kbd {
+      padding: 2px 8px;
+      border: 1px solid rgba(87,255,138,0.25);
+      border-radius: 10px;
+      background: rgba(0, 20, 10, 0.35);
+      box-shadow: 0 0 14px rgba(87,255,138,0.10);
+      display: inline-block;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <canvas id="matrix"></canvas>
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+
+    <div class="panel">
+      <div class="topbar">
+        <span class="dot"></span>
+        <span class="brand">KAI :: ACCESS TERMINAL</span>
+        <div class="marq">
+          <marquee behavior="scroll" direction="left" scrollamount="6">
+            [SECURE] Establishing encrypted channel... :: AUTH :: TRACE :: LOGS :: READY
+            &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+            Tip: Press [SPACE] to speed up typing • Press [R] to restart sequence
+          </marquee>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="glitch" data-text="SYSTEM INTERFACE">SYSTEM INTERFACE</div>
+        <div class="term">
+          <div class="lines">
+            <span id="out"></span><span class="cursor"></span>
+          </div>
+        </div>
+
+        <div class="footer">
+          <div>STATUS: <span class="kbd" id="status">IDLE</span></div>
+          <div>SESSION: <span class="kbd" id="session">#000000</span></div>
+          <div>NODE: <span class="kbd" id="node">vn-hcm-01</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+  // <![CDATA[
+  (function () {
+    var out = document.getElementById('out');
+    var statusEl = document.getElementById('status');
+    var sessionEl = document.getElementById('session');
+
+    function padHex(n) {
+      var s = n.toString(16);
+      while (s.length < 6) { s = '0' + s; }
+      return s;
+    }
+
+    function setSession() {
+      var rnd = Math.floor(Math.random() * 0xFFFFFF);
+      sessionEl.appendChild(document.createTextNode('#' + padHex(rnd)));
+    }
+
+    // Clear session text safely (XHTML)
+    while (sessionEl.firstChild) { sessionEl.removeChild(sessionEl.firstChild); }
+    setSession();
+
+    var baseLines = [
+      "root@kai:~$ init --secure --v=3",
+      "[+] loading modules: crypto, io, net, ui",
+      "[+] handshake: OK",
+      "[*] scanning ports: 80, 443, 3306, 8080",
+      "[+] firewall: detected",
+      "[*] injecting payload: <green/byte-stream>...",
+      "[+] tunnel established: vn-hcm-01 -> edge",
+      "[*] verifying permissions...",
+      "[+] access level: USER",
+      "",
+      "root@kai:~$ tail -f /var/log/access.log",
+      "Feb 28 2026 16:00:01  GET / 200  (cache: HIT)",
+      "Feb 28 2026 16:00:03  GET /assets/app.js 200",
+      "Feb 28 2026 16:00:04  POST /auth 302 (redirect)",
+      "Feb 28 2026 16:00:06  GET /admin 403 (blocked)",
+      "",
+      "[!] NOTE: Đây chỉ là giao diện hiệu ứng (demo) - không làm gì độc hại.",
+      "",
+      "root@kai:~$ _"
+    ];
+
+    var text = baseLines.join("\n");
+    var i = 0;
+    var speed = 16; // ms per char
+    var boost = 1;
+
+    function setStatus(t) {
+      while (statusEl.firstChild) { statusEl.removeChild(statusEl.firstChild); }
+      statusEl.appendChild(document.createTextNode(t));
+    }
+
+    function reset() {
+      i = 0;
+      boost = 1;
+      while (out.firstChild) { out.removeChild(out.firstChild); }
+      setStatus("RUNNING");
+    }
+
+    function typeTick() {
+      if (i >= text.length) {
+        setStatus("READY");
+        return;
+      }
+
+      var chunk = 1 * boost;
+      while (chunk > 0 && i < text.length) {
+        out.appendChild(document.createTextNode(text.charAt(i)));
+        i += 1;
+        chunk -= 1;
+      }
+
+      // Keep latest content visible (fake tail)
+      // (We rely on container overflow hidden; typing stays visible)
+      window.setTimeout(typeTick, speed);
+    }
+
+    reset();
+    typeTick();
+
+    // Controls
+    document.onkeydown = function (e) {
+      e = e || window.event;
+      var code = e.keyCode || 0;
+
+      // SPACE: speed up
+      if (code === 32) { boost = 6; }
+      // R: restart
+      if (code === 82) {
+        while (sessionEl.firstChild) { sessionEl.removeChild(sessionEl.firstChild); }
+        setSession();
+        reset();
+        typeTick();
+      }
+    };
+
+    document.onkeyup = function (e) {
+      e = e || window.event;
+      var code = e.keyCode || 0;
+      if (code === 32) { boost = 1; }
+    };
+
+    // Matrix effect (lightweight)
+    var canvas = document.getElementById('matrix');
+    var ctx = canvas.getContext('2d');
+
+    function resize() {
+      canvas.width = window.innerWidth || document.documentElement.clientWidth || 1200;
+      canvas.height = window.innerHeight || document.documentElement.clientHeight || 700;
+    }
+    resize();
+
+    var letters = "01abcdefhijklmnpqrstuvwxyz#$%&*@";
+    var fontSize = 14;
+    var columns = Math.floor(canvas.width / fontSize);
+    var drops = [];
+    var x = 0;
+    while (x < columns) { drops[x] = Math.floor(Math.random() * canvas.height / fontSize); x += 1; }
+
+    function draw() {
+      // fade
+      ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.font = fontSize + "px monospace";
+      // default canvas fillStyle is black; set green:
+      ctx.fillStyle = "rgba(87, 255, 138, 0.9)";
+
+      var i2 = 0;
+      while (i2 < drops.length) {
+        var ch = letters.charAt(Math.floor(Math.random() * letters.length));
+        ctx.fillText(ch, i2 * fontSize, drops[i2] * fontSize);
+
+        if (drops[i2] * fontSize > canvas.height && Math.random() > 0.975) {
+          drops[i2] = 0;
+        }
+        drops[i2] = drops[i2] + 1;
+        i2 += 1;
+      }
+      window.requestAnimationFrame(draw);
+    }
+    draw();
+
+    window.onresize = function () {
+      resize();
+      columns = Math.floor(canvas.width / fontSize);
+      drops = [];
+      var j = 0;
+      while (j < columns) { drops[j] = Math.floor(Math.random() * canvas.height / fontSize); j += 1; }
+    };
+  })();
+  // ]]>
+  </script>
+</body>
+</html>

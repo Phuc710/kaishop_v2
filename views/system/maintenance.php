@@ -191,10 +191,14 @@ $maintenanceJson = json_encode(
                     return;
                 }
 
-                const showCountdown = !!currentState.show_end_countdown;
+                const showCountdown = !!currentState.show_end_countdown && !currentState.active_by_manual;
                 const manualOverdue = !!currentState.manual_overdue;
+                const shouldShowWrap = showCountdown || manualOverdue;
 
-                if (countdownWrap) countdownWrap.hidden = false;
+                if (countdownWrap) countdownWrap.hidden = !shouldShowWrap;
+                if (!shouldShowWrap) {
+                    return;
+                }
 
                 if (showCountdown && localSecondsLeft > 0) {
                     renderClock(localSecondsLeft);
@@ -233,7 +237,7 @@ $maintenanceJson = json_encode(
             if (typeof window.KaiMaintenanceRuntime === 'function') {
                 const runtime = new window.KaiMaintenanceRuntime({
                     statusUrl: statusUrl,
-                    pollMs: 10000
+                    pollMs: 3000
                 });
                 runtime.onUpdate(applyRuntime);
                 runtime.start();

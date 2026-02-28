@@ -131,15 +131,24 @@
     color: #666;
     margin-bottom: 10px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
     border-top: 1px dashed #eee;
     padding-top: 10px;
     gap: 6px;
 }
 
+.ds-stock-row > *:last-child {
+    margin-left: auto;
+    text-align: right;
+}
+
 .ds-stock-row strong {
     font-weight: 600;
+}
+
+.ds-stock-row .ds-stock-infinity {
+    font-size: 1.3em;
+    line-height: 1;
 }
 
 /* ── Price Row ────────────────────────────────────── */

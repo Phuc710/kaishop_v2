@@ -131,9 +131,9 @@ foreach ($authNavPaths as $p) {
 </div>
 
 <script>
-    window.addEventListener('load', function () {
+    document.addEventListener('DOMContentLoaded', function () {
         var loadingOverlay = document.querySelector('.loader-wrapper');
-        loadingOverlay.style.display = 'none';
+        if (loadingOverlay) loadingOverlay.style.display = 'none';
     });
 </script>
 

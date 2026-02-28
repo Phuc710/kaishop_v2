@@ -76,25 +76,84 @@ class AuthSecurityService
 
     public function checkRateLimit(string $action, string $usernameOrEmail = ''): ?array
     {
-        // IP burst: 10 attempts / 10 minutes
+        // IP burst: 10 attempts / 15 minutes
         $ip = $this->clientIp();
-        $stmt = $this->db->prepare("SELECT COUNT(*) c FROM auth_login_attempts WHERE action = ? AND ip_address = ? AND created_at >= (NOW() - INTERVAL 10 MINUTE)");
+        $stmt = $this->db->prepare("SELECT COUNT(*) c FROM auth_login_attempts WHERE action = ? AND ip_address = ? AND created_at >= (NOW() - INTERVAL 15 MINUTE)");
         $stmt->execute([$action, $ip]);
         $ipCount = (int) $stmt->fetchColumn();
         if ($ipCount >= 10) {
-            return ['blocked' => true, 'message' => 'Bạn thao tác quá nhanh. Vui lòng thử lại sau ít phút.'];
+            return ['blocked' => true, 'message' => 'Bạn thao tác quá nhanh. Vui lòng thử lại sau 15 phút.'];
         }
 
         if ($usernameOrEmail !== '') {
-            $stmt = $this->db->prepare("SELECT COUNT(*) c FROM auth_login_attempts WHERE action = ? AND username_or_email = ? AND ip_address = ? AND success = 0 AND created_at >= (NOW() - INTERVAL 10 MINUTE)");
+            $stmt = $this->db->prepare("SELECT COUNT(*) c FROM auth_login_attempts WHERE action = ? AND username_or_email = ? AND ip_address = ? AND success = 0 AND created_at >= (NOW() - INTERVAL 15 MINUTE)");
             $stmt->execute([$action, mb_substr($usernameOrEmail, 0, 190), $ip]);
             $failCount = (int) $stmt->fetchColumn();
             if ($failCount >= 5) {
-                return ['blocked' => true, 'message' => 'Tài khoản này đang bị giới hạn đăng nhập tạm thời do nhập sai nhiều lần.'];
+                // Send email warning on first lockout trigger
+                $this->sendLockoutWarningEmail($usernameOrEmail, $ip, $failCount);
+                return ['blocked' => true, 'message' => 'Tài khoản này đã bị khoá tạm thời 15 phút do nhập sai quá 5 lần.'];
             }
         }
 
         return null;
+    }
+
+    /**
+     * Send a security warning email when a user account is locked out due to too many failed login attempts.
+     */
+    private function sendLockoutWarningEmail(string $usernameOrEmail, string $ip, int $attemptCount): void
+    {
+        try {
+            // Avoid sending duplicate lockout emails within the same lockout window
+            $cacheKey = 'lockout_email_' . md5($usernameOrEmail . $ip);
+            if (!empty($_SESSION[$cacheKey]) && (time() - (int) $_SESSION[$cacheKey]) < 900) {
+                return; // Already sent within 15 minutes
+            }
+
+            // Find user by username or email
+            $stmt = $this->db->prepare("SELECT id, username, email FROM users WHERE username = ? OR email = ? LIMIT 1");
+            $stmt->execute([$usernameOrEmail, $usernameOrEmail]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$user || empty($user['email'])) {
+                return;
+            }
+
+            $mailService = $this->mailService();
+            $username = (string) $user['username'];
+            $email = (string) $user['email'];
+            $time = date('d/m/Y H:i:s');
+
+            $subject = '⚠️ Cảnh báo bảo mật - Tài khoản bị khoá tạm thời';
+            $headline = 'Cảnh báo bảo mật';
+            $content = '
+                <p style="font-size:15px;color:#334155;">Xin chào <strong>' . htmlspecialchars($username, ENT_QUOTES, 'UTF-8') . '</strong>,</p>
+                <p style="font-size:15px;color:#334155;">Tài khoản của bạn vừa bị <strong style="color:#dc2626;">khoá tạm thời 15 phút</strong> do nhập sai mật khẩu <strong>' . (int) $attemptCount . ' lần liên tiếp</strong>.</p>
+                <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:16px 20px;margin:16px 0;">
+                    <p style="margin:0 0 8px;font-weight:700;color:#991b1b;">📌 Chi tiết:</p>
+                    <p style="margin:0;font-size:14px;color:#7f1d1d;">• Thời gian: ' . $time . '</p>
+                    <p style="margin:0;font-size:14px;color:#7f1d1d;">• Địa chỉ IP: ' . htmlspecialchars($ip, ENT_QUOTES, 'UTF-8') . '</p>
+                    <p style="margin:0;font-size:14px;color:#7f1d1d;">• Số lần thử sai: ' . (int) $attemptCount . '</p>
+                </div>
+                <p style="font-size:15px;color:#334155;">Nếu <strong>không phải bạn</strong> thực hiện, hãy đổi mật khẩu ngay lập tức để bảo vệ tài khoản.</p>
+                <p style="font-size:13px;color:#94a3b8;margin-top:20px;">Email này được gửi tự động từ hệ thống bảo mật. Vui lòng không trả lời.</p>
+            ';
+
+            $body = $mailService->buildLayout($subject, $headline, $content);
+            $mailService->send($email, $username, $subject, $body);
+
+            $_SESSION[$cacheKey] = time();
+
+            Logger::warning('Auth', 'lockout_email_sent', "Email cảnh báo khoá tạm gửi cho {$username}", [
+                'username' => $username,
+                'ip' => $ip,
+                'attempts' => $attemptCount,
+            ]);
+        } catch (Throwable $e) {
+            // Non-blocking: don't let email failure affect the lockout
+            error_log('sendLockoutWarningEmail failed: ' . $e->getMessage());
+        }
     }
 
     public function getDeviceContext(string $fingerprintHash = ''): array

@@ -135,7 +135,13 @@
                                                 $sold_count = number_format($stats['sold']);
                                                 ?>
                                                 <div class="ds-stock-row">
-                                                    <span><?= $stock_display ?></span>
+                                                    <?php if ($delivery_mode === 'source_link'): ?>
+                                                        <span><i class="fas fa-box me-1"></i> Stock: <strong
+                                                                class="ds-stock-infinity text-primary">∞</strong></span>
+                                                    <?php else: ?>
+                                                        <span><i class="fas fa-box me-1"></i> Stock: <strong
+                                                                class="text-primary"><?= number_format($availableCount) ?></strong></span>
+                                                    <?php endif; ?>
                                                     <span><i class="fas fa-shopping-cart me-1"></i> Đã bán: <strong
                                                             class="text-success"><?= $sold_count ?></strong></span>
                                                 </div>

@@ -441,7 +441,6 @@ body.sidebar-collapsed .admin-sidebar {
     padding: 16px 20px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
 }
 
 .card.custom-card .card-title,

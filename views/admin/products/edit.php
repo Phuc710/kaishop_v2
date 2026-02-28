@@ -107,10 +107,47 @@ $productType = $product['product_type'] ?? 'account';
                             margin-bottom: 4px;
                         }
 
-                        .mode-card-desc {
-                            font-size: 12px;
-                            color: #6b7280;
-                            line-height: 1.35;
+                        .thumb-preview-box,
+                        .gallery-line-preview {
+                            height: 42px;
+                            border: 1px dashed #d1d5db;
+                            border-radius: 8px;
+                            background: #f8fafc;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            overflow: hidden;
+                            padding: 4px;
+                        }
+
+                        .thumb-preview-box img,
+                        .gallery-line-preview img {
+                            max-height: 34px;
+                            max-width: 100%;
+                            object-fit: contain;
+                        }
+
+                        .thumb-preview-box span,
+                        .gallery-line-preview span {
+                            font-size: 11px;
+                            color: #9ca3af;
+                        }
+
+                        .gallery-line {
+                            margin-bottom: 12px;
+                        }
+
+                        .btn-add-gallery {
+                            color: #000000ff;
+                            border-color: #000000ff;
+                            background: transparent;
+                            transition: all 0.2s;
+                            font-weight: 500;
+                        }
+
+                        .btn-add-gallery:hover {
+                            background: #000000ff;
+                            color: #fff;
                         }
 
                         @media (max-width: 991.98px) {
@@ -120,17 +157,17 @@ $productType = $product['product_type'] ?? 'account';
                         }
                     </style>
 
-                    <!-- Row 1: Tên, Slug, Giá -->
+                    <!-- Row 1: Tên, Slug -->
                     <div class="form-section mb-4">
                         <div class="row">
-                            <div class="col-md-5">
+                            <div class="col-md-7">
                                 <div class="form-group mb-3">
                                     <label class="font-weight-bold form-label-req">Tên sản phẩm</label>
                                     <input type="text" class="form-control" id="name" name="name"
                                         value="<?= htmlspecialchars($product['name'] ?? '') ?>" required>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-5">
                                 <div class="form-group mb-3">
                                     <label class="font-weight-bold">Đường dẫn (Slug)</label>
                                     <div class="input-group">
@@ -138,18 +175,6 @@ $productType = $product['product_type'] ?? 'account';
                                                 id="slugPrefix">/danh-muc/</span></div>
                                         <input type="text" class="form-control" name="slug" id="slug"
                                             value="<?= htmlspecialchars($product['slug'] ?? '') ?>">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-group mb-3">
-                                    <label class="font-weight-bold form-label-req">Giá bán (VNĐ)</label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control text-success font-weight-bold"
-                                            name="price_vnd" value="<?= (int) ($product['price_vnd'] ?? 0) ?>" min="0"
-                                            required>
-                                        <div class="input-group-append"><span class="input-group-text">đ</span>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -271,19 +296,33 @@ $productType = $product['product_type'] ?? 'account';
                             </div>
                         </div>
 
-                        <!-- Row 3: Trạng thái, Danh mục, Thứ tự -->
+                        <!-- Row 3: Giá, Trạng thái, Danh mục, Thứ tự -->
                         <div class="form-section mb-4">
                             <div class="row">
                                 <div class="col-md-3">
                                     <div class="form-group mb-3">
+                                        <label class="font-weight-bold form-label-req">Giá bán (VNĐ)</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control text-success font-weight-bold"
+                                                name="price_vnd" value="<?= (int) ($product['price_vnd'] ?? 0) ?>"
+                                                min="0" required>
+                                            <div class="input-group-append"><span class="input-group-text">đ</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group mb-3">
                                         <label class="font-weight-bold">Trạng thái hiển thị</label>
                                         <select class="form-control font-weight-bold" name="status">
-                                            <option value="ON" <?= ($product['status'] ?? 'ON') === 'ON' ? 'selected' : '' ?>>HIỂN THỊ (ON)</option>
-                                            <option value="OFF" <?= ($product['status'] ?? '') === 'OFF' ? 'selected' : '' ?>>ẨN (OFF)</option>
+                                            <option value="ON" <?= ($product['status'] ?? 'ON') === 'ON' ? 'selected' : '' ?>>
+                                                HIỂN THỊ (ON)</option>
+                                            <option value="OFF" <?= ($product['status'] ?? '') === 'OFF' ? 'selected' : '' ?>>
+                                                ẨN (OFF)</option>
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="form-group mb-3">
                                         <label class="font-weight-bold">Danh mục</label>
                                         <select class="form-control" name="category_id" id="category_id" required>
@@ -298,9 +337,9 @@ $productType = $product['product_type'] ?? 'account';
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <div class="form-group mb-3">
-                                        <label class="font-weight-bold">Thứ tự ưu tiên</label>
+                                        <label class="font-weight-bold">Thứ tự</label>
                                         <input type="number" class="form-control" name="display_order"
                                             value="<?= (int) ($product['display_order'] ?? 0) ?>" min="0">
                                     </div>
@@ -309,10 +348,10 @@ $productType = $product['product_type'] ?? 'account';
                         </div>
 
 
-                        <!-- Row 5: Ảnh Thumbnail -->
+                        <!-- Row 5: Ảnh (Thumbnail & Gallery) -->
                         <div class="form-section mb-4">
-                            <div class="row align-items-center">
-                                <div class="col-md-8">
+                            <div class="row align-items-center mb-4">
+                                <div class="col-md-9">
                                     <div class="form-group mb-0">
                                         <label class="font-weight-bold">Ảnh sản phẩm (Thumbnail)</label>
                                         <div class="input-group">
@@ -327,62 +366,57 @@ $productType = $product['product_type'] ?? 'account';
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-4 mt-2 mt-md-0">
-                                    <div class="thumb-preview-box p-1 border rounded bg-light text-center"
-                                        style="height: 50px; display: flex; align-items: center; justify-content: center;">
+                                <div class="col-md-3 mt-2 mt-md-0">
+                                    <div class="thumb-preview-box">
                                         <img id="imagePreview" src="<?= htmlspecialchars($product['image'] ?? '') ?>"
                                             alt=""
-                                            style="max-height: 40px; max-width: 100%; display: <?= empty($product['image']) ? 'none' : 'inline-block' ?>;">
-                                        <span id="noImage" class="text-muted small"
+                                            style="display: <?= empty($product['image']) ? 'none' : 'inline-block' ?>;">
+                                        <span id="noImage"
                                             style="display: <?= empty($product['image']) ? 'inline-block' : 'none' ?>;">Xem
                                             trước</span>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Row 6: Gallery -->
-                        <div class="form-section mb-4">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label class="font-weight-bold mb-0">Ảnh Gallery</label>
-                                <button type="button" class="btn btn-outline-primary btn-sm"
-                                    style="color: #6f42c1; border-color: #6f42c1;" onclick="addGalleryItem()">
-                                    <i class="fas fa-plus mr-1"></i>Thêm ảnh
-                                </button>
-                            </div>
-                            <div id="gallery-container">
-                                <?php foreach ($galleryArr as $i => $gUrl): ?>
-                                    <div class="gallery-line mb-3" id="gallery-row-<?= (int) $i ?>">
-                                        <div class="row align-items-center">
-                                            <div class="col-md-9">
-                                                <div class="input-group input-group-sm">
-                                                    <input type="text" class="form-control" name="gallery[]"
-                                                        id="gallery-input-<?= (int) $i ?>"
-                                                        value="<?= htmlspecialchars($gUrl) ?>">
-                                                    <div class="input-group-append">
-                                                        <button type="button" class="btn btn-primary"
-                                                            style="background-color: #6f42c1; border-color: #6f42c1;"
-                                                            onclick="openImageManager('gallery-input-<?= (int) $i ?>')">
-                                                            <i class="fas fa-images"></i>
-                                                        </button>
-                                                        <button type="button" class="btn btn-danger"
-                                                            onclick="removeGalleryItem(<?= (int) $i ?>)">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
+                            <div class="mt-4 pt-3 border-top">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="font-weight-bold mb-0">Ảnh Gallery</label>
+                                    <button type="button" class="btn btn-add-gallery btn-sm" onclick="addGalleryItem()">
+                                        <i class="fas fa-plus mr-1"></i>Thêm ảnh
+                                    </button>
+                                </div>
+                                <div id="gallery-container">
+                                    <?php foreach ($galleryArr as $i => $gUrl): ?>
+                                        <div class="gallery-line mb-3" id="gallery-row-<?= (int) $i ?>">
+                                            <div class="row align-items-center">
+                                                <div class="col-md-9">
+                                                    <div class="input-group input-group-sm">
+                                                        <input type="text" class="form-control" name="gallery[]"
+                                                            id="gallery-input-<?= (int) $i ?>"
+                                                            value="<?= htmlspecialchars($gUrl) ?>">
+                                                        <div class="input-group-append">
+                                                            <button type="button" class="btn btn-primary"
+                                                                style="background-color: #6f42c1; border-color: #6f42c1;"
+                                                                onclick="openImageManager('gallery-input-<?= (int) $i ?>')">
+                                                                <i class="fas fa-images"></i>
+                                                            </button>
+                                                            <button type="button" class="btn btn-danger"
+                                                                onclick="removeGalleryItem(<?= (int) $i ?>)">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3 mt-2 mt-md-0">
+                                                    <div class="gallery-line-preview">
+                                                        <img class="gallery-preview-img" alt="preview"
+                                                            src="<?= htmlspecialchars($gUrl) ?>">
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="col-md-3 mt-2 mt-md-0">
-                                                <div class="gallery-line-preview m-0"
-                                                    style="height: 31px; display: flex; align-items: center; justify-content: center; border: 1px dashed #d1d5db; border-radius: 8px; background: #f8fafc;">
-                                                    <img class="gallery-preview-img" alt="preview"
-                                                        style="max-height: 27px; max-width: 100%;"
-                                                        src="<?= htmlspecialchars($gUrl) ?>">
-                                                </div>
-                                            </div>
                                         </div>
-                                    </div>
-                                <?php endforeach; ?>
+                                    <?php endforeach; ?>
+                                </div>
                             </div>
                         </div>
 
@@ -480,7 +514,13 @@ $productType = $product['product_type'] ?? 'account';
             $('#productType').val(type);
             $('#requires_info').val(requiresInfo);
 
-            $('#section-stock-info').show();
+            // Chỉ hiện section kho khi là Tài Khoản
+            var showStock = (mode === 'account_stock');
+            if (showStock) {
+                $('#section-stock-info').slideDown();
+            } else {
+                $('#section-stock-info').slideUp();
+            }
 
             if (mode === 'source_link') {
                 $('#section-link').slideDown();
@@ -498,16 +538,17 @@ $productType = $product['product_type'] ?? 'account';
                 $('#info_instructions').prop('disabled', true);
             }
 
-            // Khóa số lượng tối đa là 1 nếu là Source / Link
+            // Cột Stock preview
             if (mode === 'source_link') {
                 $('input[name="max_purchase_qty"]').val(1).prop('readonly', true).css('background-color', '#e9ecef');
-                $('#stockPreviewInput').val('0').prop('readonly', true).css('background-color', '#e9ecef');
-                $('#stockLabel').text('Stock (Link)');
+                $('#stockPreviewInput').val('Unlimited').prop('readonly', true).css('background-color', '#e9ecef');
+                $('#stockLabel').text('Stock (Unlimited)');
             } else if (mode === 'manual_info') {
                 $('input[name="max_purchase_qty"]').prop('readonly', false).css('background-color', '');
                 $('#stockPreviewInput').prop('readonly', false).css('background-color', '');
                 $('#stockLabel').text('Số lượng Stock');
             } else {
+                var accountStock = Number($('#stockPreviewInput').data('accountStock') || 0);
                 $('input[name="max_purchase_qty"]').prop('readonly', false).css('background-color', '');
                 $('#stockPreviewInput').val(String(accountStock)).prop('readonly', true).css('background-color', '#e9ecef');
                 $('#stockLabel').text('Tồn kho');
@@ -521,6 +562,26 @@ $productType = $product['product_type'] ?? 'account';
             $(this).find('input').prop('checked', true).trigger('change');
         });
         updateDeliveryModeUI();
+
+        // Validation: max_purchase_qty <= stock
+        $('#productForm').on('submit', function (e) {
+            var mode = $('input[name="sale_mode_ui"]:checked').val() || 'account_stock';
+            if (mode !== 'account_stock' && mode !== 'manual_info') return true;
+
+            var maxQty = parseInt($('input[name="max_purchase_qty"]').val(), 10) || 0;
+            var stock = parseInt($('#stockPreviewInput').val(), 10) || 0;
+
+            if (maxQty > 0 && stock > 0 && maxQty > stock) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Không hợp lệ',
+                    html: '<b>Mua tối đa (' + maxQty + ')</b> không được lớn hơn <b>Tồn kho (' + stock + ')</b>.',
+                    confirmButtonText: 'OK'
+                });
+                return false;
+            }
+        });
     }
 
     let galleryIndex = <?= count($galleryArr) ?>;
@@ -548,9 +609,9 @@ $productType = $product['product_type'] ?? 'account';
                         </div>
                     </div>
                     <div class="col-md-3 mt-2 mt-md-0">
-                        <div class="gallery-line-preview m-0" style="height: 31px; display: flex; align-items: center; justify-content: center; border: 1px dashed #d1d5db; border-radius: 8px; background: #f8fafc;">
-                            <img id="${previewImgId}" class="gallery-preview-img" alt="preview" style="max-height: 27px; max-width: 100%; ${url ? '' : 'display: none;'} " src="${escHtml(url)}">
-                            <span id="${previewEmptyId}" class="gallery-preview-empty text-muted" style="font-size: 10px; ${url ? 'display: none;' : ''}">Xem trước</span>
+                        <div class="gallery-line-preview">
+                            <img id="${previewImgId}" class="gallery-preview-img" alt="preview" style="${url ? '' : 'display: none;'} " src="${escHtml(url)}">
+                            <span id="${previewEmptyId}" class="gallery-preview-empty" style="${url ? 'display: none;' : ''}">Xem trước</span>
                         </div>
                     </div>
                 </div>

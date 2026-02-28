@@ -393,7 +393,7 @@ class Product extends Model
             case 'manual_info':
                 return 'Yêu cầu thông tin';
             case 'source_link':
-                return 'Unlimited';
+                return 'Source';
             default:
                 return 'Khác';
         }

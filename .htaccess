@@ -1,6 +1,30 @@
 RewriteEngine On
 RewriteBase /kaishop_v2/
 
+# ─── SECURITY: Block access to sensitive files and directories ───
+<FilesMatch "\.(env|git|gitignore|sql|md|log|bak|swp|sh|bat)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Block access to sensitive directories
+RewriteRule ^\.git(/|$) - [F,L]
+RewriteRule ^\.env$ - [F,L]
+RewriteRule ^config/ - [F,L]
+RewriteRule ^database/ - [F,L]
+RewriteRule ^core/ - [F,L]
+RewriteRule ^app/ - [F,L]
+RewriteRule ^csdl\.sql$ - [F,L]
+RewriteRule ^docs/ - [F,L]
+RewriteRule ^storage/ - [F,L]
+
+# Disable directory listing
+Options -Indexes
+
+# ─── SECURITY: Block common scraper/bot User-Agents ───
+RewriteCond %{HTTP_USER_AGENT} (curl|wget|python|scrapy|httpclient|java|libwww|mechanize|phantom|headless|sqlmap|nikto|nmap|masscan) [NC]
+RewriteRule ^ - [F,L]
+
 # Compression for text assets (faster first load over network)
 <IfModule mod_deflate.c>
     AddOutputFilterByType DEFLATE text/plain text/html text/xml text/css application/xml application/xhtml+xml application/rss+xml application/javascript application/x-javascript application/json image/svg+xml

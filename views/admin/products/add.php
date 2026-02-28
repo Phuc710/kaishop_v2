@@ -110,46 +110,30 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                             transition: all 0.3s ease;
                         }
 
-                        .thumb-preview-box {
-                            min-height: 58px;
-                            border: 1px dashed #d1d5db;
-                            border-radius: 10px;
-                            background: #f8fafc;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            padding: 8px;
-                        }
-
-                        .gallery-line {
-                            border: 1px solid #edf2f7;
-                            border-radius: 10px;
-                            padding: 10px;
-                            background: #fff;
-                            margin-bottom: 10px;
-                        }
-
+                        .thumb-preview-box,
                         .gallery-line-preview {
-                            margin-top: 8px;
-                            min-height: 56px;
-                            border: 1px dashed #e5e7eb;
+                            height: 42px;
+                            border: 1px dashed #d1d5db;
                             border-radius: 8px;
                             background: #f8fafc;
                             display: flex;
                             align-items: center;
                             justify-content: center;
                             overflow: hidden;
+                            padding: 4px;
                         }
 
+                        .thumb-preview-box img,
                         .gallery-line-preview img {
-                            max-height: 54px;
+                            max-height: 34px;
                             max-width: 100%;
                             object-fit: contain;
                             display: none;
                         }
 
+                        .thumb-preview-box span,
                         .gallery-line-preview span {
-                            font-size: 12px;
+                            font-size: 11px;
                             color: #9ca3af;
                         }
 
@@ -160,17 +144,17 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                         }
                     </style>
 
-                    <!-- Row 1: Tên, Slug, Giá -->
+                    <!-- Row 1: Tên, Slug -->
                     <div class="form-section mb-4">
                         <div class="row">
-                            <div class="col-md-5">
+                            <div class="col-md-7">
                                 <div class="form-group mb-3">
                                     <label class="font-weight-bold form-label-req">Tên sản phẩm</label>
                                     <input type="text" class="form-control" id="name" name="name"
                                         placeholder="Nhập tên sản phẩm..." required>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-5">
                                 <div class="form-group mb-3">
                                     <label class="font-weight-bold">Đường dẫn (Slug)</label>
                                     <div class="input-group">
@@ -181,6 +165,12 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Giá, Thứ tự, Trạng thái, Danh mục -->
+                    <div class="form-section mb-4">
+                        <div class="row">
                             <div class="col-md-3">
                                 <div class="form-group mb-3">
                                     <label class="font-weight-bold form-label-req">Giá bán (VNĐ)</label>
@@ -191,12 +181,6 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Row 2: Thứ tự, Trạng thái, Danh mục -->
-                    <div class="form-section mb-4">
-                        <div class="row">
                             <div class="col-md-2">
                                 <div class="form-group mb-3">
                                     <label class="font-weight-bold">Thứ tự</label>
@@ -212,7 +196,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-7">
+                            <div class="col-md-4">
                                 <div class="form-group mb-3">
                                     <label class="font-weight-bold">Danh mục</label>
                                     <select class="form-control" name="category_id" id="category_id" required>
@@ -332,42 +316,45 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                     </div>
 
 
-                    <!-- Row 5: Ảnh (Thumbnail) -->
+                    <!-- Row 5: Ảnh (Thumbnail & Gallery) -->
                     <div class="form-section mb-4">
-                        <label class="font-weight-bold d-block">Ảnh sản phẩm (Thumbnail)</label>
-                        <div class="row align-items-center">
-                            <div class="col-md-8">
-                                <div class="input-group">
-                                    <input type="text" class="form-control" id="image" name="image"
-                                        placeholder="Link ảnh hoặc chọn từ máy">
-                                    <div class="input-group-append">
-                                        <button type="button" class="btn btn-primary px-4"
-                                            style="background-color: #6f42c1; border-color: #6f42c1;"
-                                            onclick="openImageManager && openImageManager('image')">Chọn ảnh</button>
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <label class="font-weight-bold d-block">Ảnh sản phẩm (Thumbnail)</label>
+                                <div class="row align-items-center">
+                                    <div class="col-md-9">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="image" name="image"
+                                                placeholder="Link ảnh hoặc chọn từ máy">
+                                            <div class="input-group-append">
+                                                <button type="button" class="btn btn-primary px-4"
+                                                    style="background-color: #6f42c1; border-color: #6f42c1;"
+                                                    onclick="openImageManager && openImageManager('image')">Chọn
+                                                    ảnh</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mt-2 mt-md-0">
+                                        <div class="thumb-preview-box">
+                                            <img id="imagePreview" src="" alt="" style="display:none;">
+                                            <span id="noImage">Xem trước ảnh đại diện</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4 mt-2 mt-md-0">
-                                <div class="thumb-preview-box">
-                                    <img id="imagePreview" src="" alt=""
-                                        style="max-height: 46px; max-width: 100%; display:none;">
-                                    <span id="noImage" class="text-muted small">Xem trước ảnh đại diện</span>
-                                </div>
-                            </div>
                         </div>
-                    </div>
 
-                    <!-- Row 6: Gallery Ảnh -->
-                    <div class="form-section mb-4">
-                        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap">
-                            <label class="font-weight-bold mb-0">Ảnh trong sản phẩm (Gallery)</label>
-                            <button type="button" class="btn btn-outline-primary btn-sm"
-                                style="color: #6f42c1; border-color: #6f42c1;" onclick="addGalleryItem()">
-                                <i class="fas fa-plus mr-1"></i>Thêm dòng ảnh
-                            </button>
+                        <div class="mt-4 pt-3 border-top">
+                            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap">
+                                <label class="font-weight-bold mb-0">Ảnh trong sản phẩm (Gallery)</label>
+                                <button type="button" class="btn btn-add-gallery btn-sm" onclick="addGalleryItem()">
+                                    <i class="fas fa-plus mr-1"></i>Thêm dòng ảnh
+                                </button>
+                            </div>
+                            <small class="text-muted d-block mb-3">Hình ảnh chi tiết sản phẩm hiển thị dạng
+                                trượt.</small>
+                            <div id="gallery-container"></div>
                         </div>
-                        <small class="text-muted d-block mb-3">Hình ảnh chi tiết sản phẩm hiển thị dạng trượt.</small>
-                        <div id="gallery-container"></div>
                     </div>
 
                     <!-- Row 7: Mô tả -->
@@ -420,6 +407,26 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
         if ($('#gallery-container .gallery-line').length === 0) {
             addGalleryItem();
         }
+
+        // Validation: max_purchase_qty <= stock
+        $('#productForm').on('submit', function (e) {
+            var mode = getSelectedSaleMode();
+            if (mode !== 'account_stock' && mode !== 'manual_info') return true;
+
+            var maxQty = parseInt($('input[name="max_purchase_qty"]').val(), 10) || 0;
+            var stock = parseInt($('#stockPreviewInput').val(), 10) || 0;
+
+            if (maxQty > 0 && stock > 0 && maxQty > stock) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Không hợp lệ',
+                    html: '<b>Mua tối đa (' + maxQty + ')</b> không được lớn hơn <b>Tồn kho (' + stock + ')</b>.',
+                    confirmButtonText: 'OK'
+                });
+                return false;
+            }
+        });
     }
 
     function handleStockFile(input) {
@@ -533,24 +540,27 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
         $('#productType').val(productType);
         $('#requires_info').val(requiresInfo);
 
-        var showStock = true;
+        var showStock = (mode === 'account_stock');
         var showLink = (mode === 'source_link');
         var showInfo = (mode === 'manual_info');
 
-        $('#section-stock').show();
+        // Section kho: chỉ với Tài Khoản
+        $('#section-stock').toggle(showStock);
         $('#initial_stock').prop('disabled', !showStock);
 
+        // Section link: chỉ với Source
         $('#section-link').toggle(showLink);
         $('#source_link').prop('required', showLink).prop('disabled', !showLink);
 
+        // Section info: chỉ với Yêu cầu thông tin
         $('#section-info').toggle(showInfo);
         $('#info_instructions').prop('disabled', !showInfo);
 
-        // Khóa số lượng tối đa là 1 nếu là Source / Link
+        // Cột Tồn kho / Stock preview
         if (showLink) {
             $('input[name="max_purchase_qty"]').val(1).prop('readonly', true).css('background-color', '#e9ecef');
             $('#stockPreviewInput').val('Unlimited').prop('readonly', true).css('background-color', '#e9ecef');
-            $('#stockLabel').text('Stock (Link)');
+            $('#stockLabel').text('Stock (Unlimited)');
         } else if (showInfo) {
             $('input[name="max_purchase_qty"]').prop('readonly', false).css('background-color', '');
             $('#stockPreviewInput').prop('readonly', false).css('background-color', '');
@@ -607,9 +617,9 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             + '      </div>'
             + '    </div>'
             + '    <div class="col-md-3 mt-2 mt-md-0">'
-            + '      <div class="gallery-line-preview m-0" style="height: 38px; display: flex; align-items: center; justify-content: center; border: 1px dashed #d1d5db; border-radius: 8px; background: #f8fafc;">'
-            + '        <img id="' + previewImgId + '" class="gallery-preview-img" alt="preview" style="max-height: 34px; max-width: 100%; display: none;">'
-            + '        <span id="' + previewEmptyId + '" class="gallery-preview-empty text-muted" style="font-size: 11px;">Xem trước</span>'
+            + '      <div class="gallery-line-preview">'
+            + '        <img id="' + previewImgId + '" class="gallery-preview-img" alt="preview">'
+            + '        <span id="' + previewEmptyId + '" class="gallery-preview-empty">Xem trước</span>'
             + '      </div>'
             + '    </div>'
             + '  </div>'

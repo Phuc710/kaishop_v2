@@ -81,15 +81,25 @@ ini_set('display_errors', $appDebug ? '1' : '0');
 
 // Handle CORS and preflight requests (OPTIONS) for APIs and cross-origin Auth fetches
 $httpOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if ($httpOrigin !== '' && !headers_sent()) {
+$allowedOrigins = array_filter(array_map('trim', explode(',', (string) EnvHelper::get('CORS_ORIGINS', ''))));
+// Always allow same-origin and localhost for dev
+if ($allowedOrigins === []) {
+    $allowedOrigins = [rtrim((string) (defined('BASE_URL') ? BASE_URL : ''), '/')];
+}
+$isAllowedOrigin = $httpOrigin !== '' && in_array(rtrim($httpOrigin, '/'), $allowedOrigins, true);
+// Also allow localhost for dev convenience
+if (!$isAllowedOrigin && $httpOrigin !== '' && preg_match('/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/', $httpOrigin)) {
+    $isAllowedOrigin = true;
+}
+if ($isAllowedOrigin && !headers_sent()) {
     header("Access-Control-Allow-Origin: $httpOrigin");
     header("Access-Control-Allow-Credentials: true");
-    header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
+    header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
     header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-CSRF-TOKEN, Accept");
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
+    http_response_code($isAllowedOrigin ? 200 : 403);
     exit();
 }
 
@@ -150,6 +160,36 @@ if (!function_exists('csrf_validate_request')) {
         }
 
         return $provided !== '' && hash_equals($sessionToken, $provided);
+    }
+}
+
+// HMAC helpers using APP_KEY for secure signing
+if (!function_exists('hmac_sign')) {
+    /**
+     * Generate an HMAC-SHA256 signature for the given data using APP_KEY.
+     */
+    function hmac_sign(string $data): string
+    {
+        $key = defined('APP_KEY') ? APP_KEY : '';
+        if ($key === '') {
+            throw new RuntimeException('APP_KEY is not configured. Cannot sign data.');
+        }
+        return hash_hmac('sha256', $data, $key);
+    }
+}
+
+if (!function_exists('hmac_verify')) {
+    /**
+     * Verify an HMAC-SHA256 signature against the given data using APP_KEY.
+     */
+    function hmac_verify(string $data, string $signature): bool
+    {
+        $key = defined('APP_KEY') ? APP_KEY : '';
+        if ($key === '') {
+            return false;
+        }
+        $expected = hash_hmac('sha256', $data, $key);
+        return hash_equals($expected, $signature);
     }
 }
 
@@ -293,4 +333,20 @@ if ($securityProfile !== null) {
     if ($securityMethod === 'POST' && !empty($_POST)) {
         inspectSensitiveInput($_POST, $patterns, 'post');
     }
+}
+
+// ─── AntiFlood / Anti-Bot Protection ───────────────────
+// Runs on every request: rate limit, burst detection, honeypot, IP blacklist
+try {
+    require_once BASE_PATH . '/app/Services/AntiFloodService.php';
+    $antiFlood = new AntiFloodService();
+    $antiFlood->inspect($securityPath, $securityMethod);
+
+    // Probabilistic cleanup (~1% of requests)
+    if (random_int(1, 100) <= 1) {
+        $antiFlood->cleanup();
+    }
+} catch (Throwable $antiFloodError) {
+    // Non-blocking: never let anti-flood crash the app
+    error_log('AntiFloodService error: ' . $antiFloodError->getMessage());
 }

@@ -449,8 +449,12 @@ if ($telegramTokenStored !== '') {
                                     <input type="checkbox" class="custom-control-input" id="maintenance_enabled"
                                         name="maintenance_enabled" value="1" <?= !empty($maintenanceConfig['enabled']) ? 'checked' : '' ?>>
                                     <label class="custom-control-label font-weight-bold text-uppercase small"
-                                        for="maintenance_enabled">Bật chế độ bảo trì</label>
+                                        for="maintenance_enabled">Bật bảo trì thủ công</label>
                                 </div>
+                                <small class="text-muted d-block mt-2">
+                                    OFF sẽ chạy theo lịch đã setup. ON sẽ ép website vào bảo trì ngay và giữ nguyên
+                                    cho tới khi bạn tắt lại, kể cả khi giờ kết thúc trong lịch đã qua.
+                                </small>
                             </div>
 
                             <input type="hidden" name="maintenance_notice_minutes"
@@ -462,11 +466,17 @@ if ($telegramTokenStored !== '') {
                                     <span id="maintenanceStatusBadge" class="badge badge-secondary px-2 py-1">Đang
                                         tải...</span>
                                 </div>
+                                <div id="maintenanceStatusText" class="small text-muted mb-3">Đang đồng bộ trạng thái...</div>
                                 <div class="row">
                                     <div class="col-md-6 mb-2">
                                         <div class="small text-muted text-uppercase font-weight-bold">Đếm ngược tới bắt
                                             đầu</div>
                                         <div id="maintenanceCountdownStart" class="font-weight-bold">--:--:--</div>
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <div class="small text-muted text-uppercase font-weight-bold">Countdown cảnh
+                                            báo</div>
+                                        <div id="maintenanceCountdownNotice" class="font-weight-bold">--:--:--</div>
                                     </div>
 
                                     <div class="col-md-6 mb-2">
@@ -480,6 +490,7 @@ if ($telegramTokenStored !== '') {
                                         <div id="maintenanceElapsed" class="font-weight-bold">--:--:--</div>
                                     </div>
                                 </div>
+                                <div id="maintenanceSyncMeta" class="small text-muted mt-2">Đang lấy dữ liệu từ máy chủ...</div>
                             </div>
 
                             <div class="row">
@@ -488,8 +499,7 @@ if ($telegramTokenStored !== '') {
                                         <label class="font-weight-bold small text-uppercase">Bắt đầu</label>
                                         <input type="datetime-local" class="form-control" name="maintenance_start_at"
                                             value="<?= htmlspecialchars((string) ($maintenanceStartInput ?? '')) ?>">
-                                        <small class="text-muted">Nếu bỏ trống và bật bảo trì, hệ thống sẽ tự bắt đầu
-                                            sau 5 phút countdown.</small>
+                                        <small class="text-muted">Lưu lịch không phụ thuộc công tắc thủ công ở trên.</small>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -535,6 +545,7 @@ if ($telegramTokenStored !== '') {
     $(document).ready(function () {
         const CSRF_TOKEN = '<?= function_exists('csrf_token') ? csrf_token() : '' ?>';
         const MAINTENANCE_STATUS_URL = '<?= url('api/system/maintenance-status') ?>';
+        let maintenanceStatusPollOnce = null;
 
         const Toast = Swal.mixin({
             toast: true, position: 'top-end', showConfirmButton: false, timer: 3000,
@@ -663,9 +674,10 @@ if ($telegramTokenStored !== '') {
                 setBadge(phase);
                 $statusText.text(String(state.status_text || 'Không có trạng thái'));
 
-                setCountdown($start, secondsUntilStart, phase === 'active' ? 'Đã bắt đầu' : 'Chưa có lịch');
-                setCountdown($noticeCd, noticeLeft, phase === 'active' ? 'Đã vào bảo trì' : 'Chưa vào 5 phút cảnh báo');
-                setCountdown($end, secondsUntilEnd, phase === 'active' ? 'Không có thời lượng kết thúc' : 'Chưa chạy');
+                const manualActive = !!state.active_by_manual;
+                setCountdown($start, secondsUntilStart, manualActive ? 'Đang giữ thủ công' : (phase === 'active' ? 'Đã bắt đầu' : 'Chưa có lịch'));
+                setCountdown($noticeCd, noticeLeft, manualActive ? 'Bỏ qua countdown' : (phase === 'active' ? 'Đã vào bảo trì' : 'Chưa vào 5 phút cảnh báo'));
+                setCountdown($end, manualActive ? null : secondsUntilEnd, manualActive ? 'Thủ công, không đếm giờ' : (phase === 'active' ? 'Không có thời lượng kết thúc' : 'Chưa chạy'));
                 setCountdown($elapsed, elapsed, phase === 'active' ? '00:00:00' : 'Chưa chạy');
 
                 const meta = [];
@@ -679,9 +691,21 @@ if ($telegramTokenStored !== '') {
             if (typeof window.KaiMaintenanceRuntime === 'function') {
                 const runtime = new window.KaiMaintenanceRuntime({
                     statusUrl: MAINTENANCE_STATUS_URL,
-                    pollMs: 10000
+                    pollMs: 3000
                 });
                 runtime.onUpdate(render);
+                maintenanceStatusPollOnce = function () {
+                    $.getJSON(MAINTENANCE_STATUS_URL, function (res) {
+                        if (!res || !res.success || !res.maintenance) return;
+                        render({
+                            state: res.maintenance,
+                            secondsUntilStart: res.maintenance.seconds_until_start,
+                            secondsUntilEnd: res.maintenance.seconds_until_end,
+                            noticeSecondsLeft: res.maintenance.notice_seconds_left,
+                            serverNowTs: res.maintenance.server_time_ts
+                        });
+                    });
+                };
                 runtime.start();
             } else {
                 function pollOnce() {
@@ -696,10 +720,40 @@ if ($telegramTokenStored !== '') {
                         });
                     });
                 }
+                maintenanceStatusPollOnce = pollOnce;
                 pollOnce();
-                setInterval(pollOnce, 10000);
+                setInterval(pollOnce, 3000);
             }
         })();
+
+        $('#maintenance_enabled').on('change', function () {
+            const $switch = $(this);
+            const checked = $switch.is(':checked');
+
+            $switch.prop('disabled', true);
+            $.post('<?= url('admin/setting/update') ?>', {
+                action: 'toggle_maintenance_manual',
+                maintenance_enabled: checked ? 1 : 0,
+                csrf_token: CSRF_TOKEN
+            }, function (res) {
+                $switch.prop('disabled', false);
+
+                if (res && res.status === 'success') {
+                    Toast.fire({ icon: 'success', title: res.message });
+                    if (typeof maintenanceStatusPollOnce === 'function') {
+                        maintenanceStatusPollOnce();
+                    }
+                    return;
+                }
+
+                $switch.prop('checked', !checked);
+                Toast.fire({ icon: 'error', title: (res && res.message) ? res.message : 'Lỗi cập nhật bảo trì!' });
+            }, 'json').fail(function () {
+                $switch.prop('disabled', false);
+                $switch.prop('checked', !checked);
+                Toast.fire({ icon: 'error', title: 'Lỗi máy chủ!' });
+            });
+        });
 
         $('#btn-clear-maintenance').on('click', function () {
             $.post('<?= url('admin/setting/update') ?>', { action: 'clear_maintenance', csrf_token: CSRF_TOKEN }, function (res) {

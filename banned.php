@@ -115,16 +115,16 @@ session_destroy();
         </p>
 
         <?php if ($reason !== ''): ?>
+            <!-- Admin banned manually → show reason -->
             <div class="reason-box">
                 <strong>Lý do</strong>
-                <p>
-                    <?= $reason ?>
-                </p>
+                <p><?= $reason ?></p>
             </div>
         <?php else: ?>
+            <!-- Auto-banned by system → hide reason -->
             <div class="reason-box">
-                <strong>Lý do</strong>
-                <p>Vui lòng liên hệ bộ phận hỗ trợ để được giải đáp.</p>
+                <strong>Thông báo</strong>
+                <p>Nếu bạn cho rằng đây là nhầm lẫn, vui lòng liên hệ bộ phận hỗ trợ.</p>
             </div>
         <?php endif; ?>
 
@@ -135,6 +135,67 @@ session_destroy();
         </div>
 
     </div>
+
+    <script>
+        // ─── Anti-Debug / Anti-F12 ───────────────────────────────
+        (function () {
+            // 1. Block keyboard shortcuts
+            document.addEventListener('keydown', function (e) {
+                // F12
+                if (e.key === 'F12' || e.keyCode === 123) { e.preventDefault(); return false; }
+                // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C (DevTools)
+                if (e.ctrlKey && e.shiftKey && ['I', 'J', 'C', 'i', 'j', 'c'].includes(e.key)) { e.preventDefault(); return false; }
+                // Ctrl+U (View Source)
+                if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); return false; }
+                // Ctrl+S (Save Page)
+                if (e.ctrlKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); return false; }
+                // Ctrl+Shift+K (Firefox Console)
+                if (e.ctrlKey && e.shiftKey && (e.key === 'K' || e.key === 'k')) { e.preventDefault(); return false; }
+            }, true);
+
+            // 2. Block right-click context menu
+            document.addEventListener('contextmenu', function (e) { e.preventDefault(); return false; }, true);
+
+            // 3. Block text selection & drag
+            document.addEventListener('selectstart', function (e) { e.preventDefault(); }, true);
+            document.addEventListener('dragstart', function (e) { e.preventDefault(); }, true);
+            document.addEventListener('copy', function (e) { e.preventDefault(); }, true);
+
+            // 4. DevTools open detection via debugger trap
+            var _dt = false;
+            setInterval(function () {
+                var t0 = performance.now();
+                debugger;
+                if (performance.now() - t0 > 100) {
+                    if (!_dt) {
+                        _dt = true;
+                        document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0f172a;"><p style="color:#ef4444;font-size:20px;font-weight:700;font-family:sans-serif;">⛔ Truy cập bị từ chối</p></div>';
+                    }
+                }
+            }, 1000);
+
+            // 5. Window size delta detection (DevTools docked changes viewport)
+            var _w = window.outerWidth - window.innerWidth;
+            var _h = window.outerHeight - window.innerHeight;
+            setInterval(function () {
+                var dw = window.outerWidth - window.innerWidth;
+                var dh = window.outerHeight - window.innerHeight;
+                if (dw > _w + 160 || dh > _h + 160) {
+                    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0f172a;"><p style="color:#ef4444;font-size:20px;font-weight:700;font-family:sans-serif;">⛔ Truy cập bị từ chối</p></div>';
+                }
+            }, 500);
+
+            // 6. Disable console methods
+            try {
+                Object.defineProperty(window, 'console', {
+                    get: function () {
+                        return { log: function () { }, warn: function () { }, error: function () { }, info: function () { }, dir: function () { }, table: function () { } };
+                    },
+                    set: function () { }
+                });
+            } catch (e) { }
+        })();
+    </script>
 </body>
 
 </html>

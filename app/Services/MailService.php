@@ -273,7 +273,7 @@ class MailService
     /**
      * Bao bọc nội dung vào layout HTML email chuẩn, center, responsive.
      */
-    private function buildLayout(
+    public function buildLayout(
         string $subject,
         string $headline,
         string $content,
@@ -357,7 +357,7 @@ class MailService
     /**
      * Core send method: wraps PHPMailer SMTP.
      */
-    private function send(
+    public function send(
         string $toEmail,
         string $toName,
         string $subject,

@@ -43,7 +43,7 @@ const SwalHelper = {
             title: 'Thất Bại',
             text: message || 'Có lỗi xảy ra.',
             confirmButtonText: 'OK',
-            confirmButtonColor: '#3085d6'
+            confirmButtonColor: '#0981ce'
         }).then(() => {
             if (callback) callback();
         });
@@ -55,7 +55,7 @@ const SwalHelper = {
             icon: 'warning',
             title: 'Cảnh Báo',
             text: message,
-            confirmButtonColor: '#3085d6'
+            confirmButtonColor: '#0981ce'
         }).then(() => {
             if (callback) callback();
         });
@@ -67,7 +67,7 @@ const SwalHelper = {
             icon: 'info',
             title: 'Thông Báo',
             text: message,
-            confirmButtonColor: '#3085d6'
+            confirmButtonColor: '#0981ce'
         });
     },
 
@@ -205,7 +205,7 @@ const SwalHelper = {
             icon: 'error',
             title: 'Thất Bại',
             text: message,
-            confirmButtonColor: '#3085d6'
+            confirmButtonColor: '#0981ce'
         }).then(() => {
             window.location.href = url;
         });
@@ -217,7 +217,7 @@ const SwalHelper = {
             icon: 'error',
             title: 'Thất Bại',
             text: message,
-            confirmButtonColor: '#3085d6'
+            confirmButtonColor: '#0981ce'
         }).then(() => {
             window.location.reload();
         });
@@ -274,6 +274,7 @@ const SwalHelper = {
         const style = document.createElement('style');
         style.id = 'ks-order-result-style';
         style.textContent = [
+            'div:where(.swal2-container) button:where(.swal2-styled):where(.swal2-confirm):hover{background-color:#076fa5 !important;}',
             '.ks-order-modal-popup{max-width:680px !important;border-radius:24px !important;padding:28px 24px 24px !important;}',
             '.ks-order-modal{padding:0;}',
             '.ks-order-modal__head{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:18px;}',

@@ -1,9 +1,5 @@
 <?php
 
-/**
- * Admin Setting Controller
- * Handles website configuration
- */
 class SettingController extends Controller
 {
     private $authService;
@@ -15,9 +11,6 @@ class SettingController extends Controller
         $this->maintenanceService = new MaintenanceService();
     }
 
-    /**
-     * Check admin access
-     */
     private function requireAdmin()
     {
         $this->authService->requireAuth();
@@ -25,13 +18,10 @@ class SettingController extends Controller
 
         if (!isset($user['level']) || (int) $user['level'] !== 9) {
             http_response_code(403);
-            die('Truy cập bị từ chối - Chỉ dành cho quản trị viên');
+            die('Truy cap bi tu choi - chi danh cho quan tri vien');
         }
     }
 
-    /**
-     * Show settings page
-     */
     public function index()
     {
         $this->requireAdmin();
@@ -49,16 +39,12 @@ class SettingController extends Controller
         ]);
     }
 
-    /**
-     * Update settings (AJAX)
-     */
     public function update()
     {
         $this->requireAdmin();
 
-        // Simple CSRF check from base Controller
         if (!$this->validateCsrf()) {
-            return $this->json(['status' => 'error', 'message' => 'Lỗi xác thực (CSRF). Vui lòng tải lại trang.']);
+            return $this->json(['status' => 'error', 'message' => 'Loi xac thuc (CSRF). Vui long tai lai trang.']);
         }
 
         $action = $this->post('action');
@@ -77,20 +63,20 @@ class SettingController extends Controller
                     'ten_web',
                     'sdt_admin',
                     'email_cf',
-                    'mo_ta'
+                    'mo_ta',
                 ]);
 
             case 'update_smtp':
                 return $this->updateSettings([
                     'ten_nguoi_gui',
                     'email_auto',
-                    'pass_mail_auto'
+                    'pass_mail_auto',
                 ]);
 
             case 'update_notification':
                 return $this->updateSettings([
                     'popup_template',
-                    'thongbao'
+                    'thongbao',
                 ]);
 
             case 'update_telegram':
@@ -107,37 +93,49 @@ class SettingController extends Controller
                     'bonus_2_amount',
                     'bonus_2_percent',
                     'bonus_3_amount',
-                    'bonus_3_percent'
+                    'bonus_3_percent',
                 ]);
 
             case 'update_maintenance':
                 $res = $this->maintenanceService->saveConfig($data);
                 if ($res['success']) {
-                    Logger::info('System', 'update_maintenance', 'Cập nhật cấu hình bảo trì');
+                    Logger::info('System', 'update_maintenance', 'Cap nhat cau hinh bao tri');
                 }
                 return $this->json([
                     'status' => $res['success'] ? 'success' : 'error',
-                    'message' => $res['message']
+                    'message' => $res['message'],
+                ]);
+
+            case 'toggle_maintenance_manual':
+                $res = $this->maintenanceService->setManualMode(!empty($data['maintenance_enabled']));
+                if ($res['success']) {
+                    Logger::info(
+                        'System',
+                        'toggle_maintenance_manual',
+                        !empty($data['maintenance_enabled']) ? 'Bat bao tri thu cong' : 'Tat bao tri thu cong'
+                    );
+                }
+                return $this->json([
+                    'status' => $res['success'] ? 'success' : 'error',
+                    'message' => $res['message'],
+                    'maintenance' => $res['maintenance'] ?? null,
                 ]);
 
             case 'clear_maintenance':
                 $res = $this->maintenanceService->clearNow();
                 if ($res['success']) {
-                    Logger::info('System', 'clear_maintenance', 'Tắt chế độ bảo trì ngay lập tức');
+                    Logger::info('System', 'clear_maintenance', 'Tat che do bao tri ngay lap tuc');
                 }
                 return $this->json([
                     'status' => $res['success'] ? 'success' : 'error',
-                    'message' => $res['message']
+                    'message' => $res['message'],
                 ]);
 
             default:
-                return $this->json(['status' => 'error', 'message' => 'Hành động không hợp lệ']);
+                return $this->json(['status' => 'error', 'message' => 'Hanh dong khong hop le']);
         }
     }
 
-    /**
-     * Helper to update multiple settings in the `setting` table
-     */
     private function updateSettings(array $keys)
     {
         global $connection;
@@ -152,31 +150,24 @@ class SettingController extends Controller
         }
 
         if (empty($sets)) {
-            return $this->json(['status' => 'error', 'message' => 'Không có dữ liệu thay đổi']);
+            return $this->json(['status' => 'error', 'message' => 'Khong co du lieu thay doi']);
         }
 
         $sql = "UPDATE `setting` SET " . implode(', ', $sets) . " ORDER BY `id` ASC LIMIT 1";
 
         if ($connection->query($sql)) {
-            // Log the update
-            Logger::info('Admin', $action, 'Cập nhật cài đặt hệ thống: ' . implode(', ', $keys));
+            Logger::info('Admin', $action, 'Cap nhat cai dat he thong: ' . implode(', ', $keys));
 
-            // Clear cache if Config class exists
             if (class_exists('Config')) {
                 Config::clearSiteConfigCache();
             }
-            return $this->json(['status' => 'success', 'message' => 'Cập nhật thành công']);
+
+            return $this->json(['status' => 'success', 'message' => 'Cap nhat thanh cong']);
         }
 
-        return $this->json(['status' => 'error', 'message' => 'Lỗi database: ' . $connection->error]);
+        return $this->json(['status' => 'error', 'message' => 'Loi database: ' . $connection->error]);
     }
 
-    /**
-     * Update Telegram bot settings with secure handling:
-     * - bot token is never exposed in logs
-     * - empty token input keeps existing token
-     * - explicit clear checkbox to remove token
-     */
     private function updateTelegramSettings()
     {
         global $connection;
@@ -188,7 +179,7 @@ class SettingController extends Controller
         if ($token !== '' && !preg_match('/^\d{6,}:[A-Za-z0-9_-]{20,}$/', $token)) {
             return $this->json([
                 'status' => 'error',
-                'message' => 'Telegram Bot Token không hợp lệ (định dạng thường là 123456789:ABC...)',
+                'message' => 'Telegram Bot Token khong hop le (dinh dang thuong la 123456789:ABC...)',
             ]);
         }
 
@@ -197,7 +188,7 @@ class SettingController extends Controller
         if ($chatId !== '' && !$isNumericChatId && !$isChannelChat) {
             return $this->json([
                 'status' => 'error',
-                'message' => 'Telegram Chat ID không hợp lệ (ví dụ: -1001234567890 hoặc @channel_name)',
+                'message' => 'Telegram Chat ID khong hop le (vi du: -1001234567890 hoac @channel_name)',
             ]);
         }
 
@@ -222,7 +213,7 @@ class SettingController extends Controller
         if (empty($sets)) {
             return $this->json([
                 'status' => 'error',
-                'message' => 'Không có thay đổi nào để lưu',
+                'message' => 'Khong co thay doi nao de luu',
             ]);
         }
 
@@ -230,7 +221,7 @@ class SettingController extends Controller
         if (!$connection->query($sql)) {
             return $this->json([
                 'status' => 'error',
-                'message' => 'Lỗi database: ' . $connection->error,
+                'message' => 'Loi database: ' . $connection->error,
             ]);
         }
 
@@ -238,7 +229,7 @@ class SettingController extends Controller
             Config::clearSiteConfigCache();
         }
 
-        Logger::info('Admin', 'update_telegram', 'Cập nhật cấu hình Telegram', [
+        Logger::info('Admin', 'update_telegram', 'Cap nhat cau hinh Telegram', [
             'fields' => $changedFields,
             'has_token' => $clearToken ? false : ($token !== '' ? true : null),
             'has_chat_id' => $chatId !== '',
@@ -246,7 +237,7 @@ class SettingController extends Controller
 
         return $this->json([
             'status' => 'success',
-            'message' => 'Đã lưu cấu hình Telegram',
+            'message' => 'Da luu cau hinh Telegram',
         ]);
     }
 }

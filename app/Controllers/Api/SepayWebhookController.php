@@ -21,21 +21,31 @@ class SepayWebhookController extends Controller
     {
         global $chungapi, $connection;
 
-        // 1. Validate API Key
+        // 1. Validate API Key (fail-closed: reject if key not configured)
         $expectedKey = trim((string) ($chungapi['sepay_api_key'] ?? ''));
         $authHeader = trim((string) ($_SERVER['HTTP_AUTHORIZATION'] ?? ''));
 
-        if ($expectedKey !== '' && $authHeader !== '') {
-            // SePay sends "Apikey YOUR_KEY"
-            $providedKey = '';
-            if (stripos($authHeader, 'Apikey ') === 0) {
-                $providedKey = trim(substr($authHeader, 7));
-            }
+        if ($expectedKey === '') {
+            // API key not configured — reject all requests to prevent abuse
+            Logger::danger('Billing', 'webhook_no_api_key', 'SePay webhook called but sepay_api_key is not configured', [
+                'ip' => $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0',
+            ]);
+            http_response_code(403);
+            return $this->json(['success' => false, 'message' => 'Webhook not configured']);
+        }
 
-            if ($providedKey !== $expectedKey) {
-                http_response_code(401);
-                return $this->json(['success' => false, 'message' => 'Invalid API key']);
-            }
+        // SePay sends "Apikey YOUR_KEY"
+        $providedKey = '';
+        if (stripos($authHeader, 'Apikey ') === 0) {
+            $providedKey = trim(substr($authHeader, 7));
+        }
+
+        if (!hash_equals($expectedKey, $providedKey)) {
+            Logger::danger('Billing', 'webhook_invalid_key', 'SePay webhook: invalid API key', [
+                'ip' => $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0',
+            ]);
+            http_response_code(401);
+            return $this->json(['success' => false, 'message' => 'Invalid API key']);
         }
 
         // 2. Parse JSON body
@@ -124,32 +134,23 @@ class SepayWebhookController extends Controller
         $bonusAmount = (int) ($transferAmount * $bonusPercent / 100);
         $totalCredit = $transferAmount + $bonusAmount;
 
-        // 9. Credit user balance
+        // 9. Credit user balance (PDO prepared statements)
         $username = $deposit['username'];
         $userId = (int) $deposit['user_id'];
 
-        $safeUsername = $connection->real_escape_string($username);
-        $connection->query("UPDATE `users` SET `money` = `money` + {$totalCredit}, `tong_nap` = `tong_nap` + {$transferAmount} WHERE `id` = {$userId}");
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->prepare("UPDATE `users` SET `money` = `money` + ?, `tong_nap` = `tong_nap` + ? WHERE `id` = ?");
+        $stmt->execute([$totalCredit, $transferAmount, $userId]);
 
         // 10. Mark deposit as completed
         $this->depositModel->markComplete((int) $deposit['id'], $sepayId);
 
-        // 11. Record in history_nap_bank
+        // 11. Record in history_nap_bank (PDO prepared statements)
         $now = time();
-        $safeContent = $connection->real_escape_string($content);
-        $safeRef = $connection->real_escape_string($referenceCode);
-        $safeGateway = $connection->real_escape_string($gateway);
 
-        $connection->query("INSERT INTO `history_nap_bank` SET
-            `trans_id` = '{$safeRef}',
-            `username` = '{$safeUsername}',
-            `type` = '{$safeGateway}',
-            `ctk` = '{$safeContent}',
-            `stk` = '{$connection->real_escape_string($accountNumber)}',
-            `thucnhan` = '{$totalCredit}',
-            `status` = 'hoantat',
-            `time` = '{$now}'
-        ");
+        $stmt = $db->prepare("INSERT INTO `history_nap_bank` (`trans_id`, `username`, `type`, `ctk`, `stk`, `thucnhan`, `status`, `time`) VALUES (?, ?, ?, ?, ?, ?, 'hoantat', ?)");
+        $stmt->execute([$referenceCode, $username, $gateway, $content, $accountNumber, $totalCredit, $now]);
+
 
         // 12. Log
         Logger::info('Billing', 'deposit_completed', "Nạp tiền thành công cho {$username}", [
