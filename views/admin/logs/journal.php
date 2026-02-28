@@ -8,7 +8,7 @@
  * Supports ?user= param to auto-filter by username from User Edit page.
  */
 $breadcrumbs = [
-    ['label' => 'Nhật ký', 'url' => url('admin/logs/activities')],
+    ['label' => 'Nhật ký', 'url' => url('admin/logs/buying')],
     ['label' => $pageTitle ?? 'Nhật ký'],
 ];
 $adminNeedsFlatpickr = true;
@@ -18,9 +18,38 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
 // Read ?search= or ?user= param (passed from User Edit Page buttons)
 $prefilterUser = trim((string) ($_GET['search'] ?? $_GET['user'] ?? ''));
 $isPurchaseJournal = (($basePath ?? '') === 'admin/logs/buying');
+$prefilterOrderStatus = trim((string) ($_GET['order_status'] ?? 'all'));
+if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed', 'cancelled'], true)) {
+    $prefilterOrderStatus = 'all';
+}
 ?>
 
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
+<style>
+    .badge-soft-success {
+        background-color: #ecfdf5 !important;
+        color: #059669 !important;
+        border: 1px solid #10b981 !important;
+    }
+
+    .badge-soft-danger {
+        background-color: #fef2f2 !important;
+        color: #dc2626 !important;
+        border: 1px solid #f87171 !important;
+    }
+
+    .badge-soft-warning {
+        background-color: #fffbeb !important;
+        color: #d97706 !important;
+        border: 1px solid #fbbf24 !important;
+    }
+
+    .badge-pill {
+        border-radius: 50rem !important;
+        padding: 0.35em 0.8em !important;
+        font-weight: 600 !important;
+    }
+</style>
 
 <section class="content pb-4 mt-3">
     <div class="container-fluid">
@@ -39,6 +68,22 @@ $isPurchaseJournal = (($basePath ?? '') === 'admin/logs/buying');
                         <input id="f-search" class="form-control form-control-sm" placeholder="Tìm kiếm tất cả..."
                             value="<?= htmlspecialchars($prefilterUser) ?>">
                     </div>
+                    <?php if ($isPurchaseJournal): ?>
+                        <div class="col-md-2 mb-2">
+                            <select id="f-order-status" class="form-control form-control-sm">
+                                <option value="all" <?= $prefilterOrderStatus === 'all' ? 'selected' : '' ?>>Tất cả trạng thái
+                                </option>
+                                <option value="pending" <?= $prefilterOrderStatus === 'pending' ? 'selected' : '' ?>>Pending
+                                </option>
+                                <option value="processing" <?= $prefilterOrderStatus === 'processing' ? 'selected' : '' ?>>Đang
+                                    xử lý</option>
+                                <option value="completed" <?= $prefilterOrderStatus === 'completed' ? 'selected' : '' ?>>Hoàn
+                                    tất</option>
+                                <option value="cancelled" <?= $prefilterOrderStatus === 'cancelled' ? 'selected' : '' ?>>Đã hủy
+                                </option>
+                            </select>
+                        </div>
+                    <?php endif; ?>
 
                     <?php if (!empty($showSeverityFilter)): ?>
                         <div class="filter-show ms-3" style="min-width: 150px;">
@@ -87,7 +132,7 @@ $isPurchaseJournal = (($basePath ?? '') === 'admin/logs/buying');
             <div class="card-body pt-3">
                 <div class="table-responsive table-wrapper mb-3">
                     <table id="<?= htmlspecialchars($tableId ?? 'journalTable') ?>"
-                        class="table text-nowrap table-hover table-bordered w-100">
+                        class="table table-hover table-bordered w-100">
                         <thead>
                             <tr>
                                 <?php foreach (($columns ?? []) as $column): ?>
@@ -158,6 +203,14 @@ $isPurchaseJournal = (($basePath ?? '') === 'admin/logs/buying');
                                 <label class="font-weight-bold">Thông tin khách đã gửi</label>
                                 <textarea id="purchaseOrderCustomerInput" class="form-control" rows="5" readonly></textarea>
                             </div>
+
+                            <!-- Stock Hint -->
+                            <div id="purchaseOrderStockHint" class="alert alert-info py-2 mb-3 d-none">
+                                <i class="fas fa-key mr-1"></i><b>Nội dung kho đã gán sẵn:</b>
+                                <div id="purchaseOrderStockContent" class="mt-1"
+                                    style="font-family:monospace;white-space:pre-wrap;font-size:12px;"></div>
+                            </div>
+
                             <div class="form-group mb-0">
                                 <label class="font-weight-bold">Nội dung bàn giao / trả code</label>
                                 <textarea id="purchaseOrderDeliveryContent" class="form-control" rows="7"
@@ -187,8 +240,7 @@ $isPurchaseJournal = (($basePath ?? '') === 'admin/logs/buying');
 
 <script>
     let dt;
-    const TABLE_ID = '<?= htmlspecialchars($tableId ?? 'journalTable') ?>';
-    // Detect which column index has time data (look for column key = 'time')
+    const TABLE_ID = '<?= htmlspecialchars($tableId ?? "journalTable") ?>';
     const TIME_COL_INDEX = <?php
     $timeIdx = 0;
     foreach (($columns ?? []) as $i => $col) {
@@ -199,8 +251,6 @@ $isPurchaseJournal = (($basePath ?? '') === 'admin/logs/buying');
     }
     echo $timeIdx;
     ?>;
-
-    // Detect which column index has severity data
     const SEVERITY_COL_INDEX = <?php
     $sevIdx = -1;
     foreach (($columns ?? []) as $i => $col) {
@@ -211,10 +261,20 @@ $isPurchaseJournal = (($basePath ?? '') === 'admin/logs/buying');
     }
     echo $sevIdx;
     ?>;
+    const STATUS_COL_INDEX = <?php
+    $statusIdx = -1;
+    foreach (($columns ?? []) as $i => $col) {
+        if (($col['key'] ?? '') === 'status') {
+            $statusIdx = $i;
+            break;
+        }
+    }
+    echo $statusIdx;
+    ?>;
     const IS_PURCHASE_JOURNAL = <?= $isPurchaseJournal ? 'true' : 'false' ?>;
-    const PURCHASE_DETAIL_BASE_URL = '<?= url('admin/logs/buying/detail') ?>';
-    const PURCHASE_FULFILL_URL = '<?= url('admin/logs/buying/fulfill') ?>';
-    const PURCHASE_CANCEL_URL = '<?= url('admin/logs/buying/cancel') ?>';
+    const PURCHASE_DETAIL_BASE_URL = '<?= url("admin/logs/buying/detail") ?>';
+    const PURCHASE_FULFILL_URL = '<?= url("admin/logs/buying/fulfill") ?>';
+    const PURCHASE_CANCEL_URL = '<?= url("admin/logs/buying/cancel") ?>';
     const CSRF_TOKEN = <?= json_encode(function_exists('csrf_token') ? csrf_token() : '', JSON_UNESCAPED_UNICODE) ?>;
     let purchaseModalCurrentOrderId = 0;
 
@@ -245,13 +305,14 @@ $isPurchaseJournal = (($basePath ?? '') === 'admin/logs/buying');
             }
         });
 
-        // Pre-filter by ?user= param if present
         var prefilter = '<?= addslashes($prefilterUser) ?>';
         if (prefilter) {
             dt.search(prefilter).draw();
         }
+        if (IS_PURCHASE_JOURNAL && STATUS_COL_INDEX >= 0) {
+            applyPurchaseStatusFilter();
+        }
 
-        // Date Picker initialization (Flatpickr)
         if (typeof flatpickr !== 'undefined') {
             flatpickr('#f-date', {
                 mode: 'range',
@@ -260,31 +321,18 @@ $isPurchaseJournal = (($basePath ?? '') === 'admin/logs/buying');
                     if (selectedDates.length === 2) {
                         dt.draw();
                     }
-                },
-                onReady: function (selectedDates, dateStr, instance) {
-                    const clearBtn = document.createElement('div');
-                    clearBtn.className = 'flatpickr-clear-btn mt-2 text-center text-danger';
-                    clearBtn.innerHTML = '<span style="cursor:pointer;font-weight:bold;">Xóa lựa chọn</span>';
-                    clearBtn.onclick = function () {
-                        instance.clear();
-                        dt.draw();
-                    };
-                    instance.calendarContainer.appendChild(clearBtn);
                 }
             });
         }
 
-        // Smart Search â€” no button, auto-filter on keyup
         $('#f-search').on('input keyup', function () {
             dt.search($(this).val().trim()).draw();
         });
 
-        // Dropdown Page Length
         $('#f-length').change(function () {
             dt.page.len($(this).val()).draw();
         });
 
-        // Dropdown Severity Filter
         $('#f-severity').change(function () {
             var val = $(this).val();
             if (SEVERITY_COL_INDEX >= 0) {
@@ -296,97 +344,35 @@ $isPurchaseJournal = (($basePath ?? '') === 'admin/logs/buying');
             }
         });
 
-        // Sort by date dropdown
+        $('#f-order-status').change(function () {
+            applyPurchaseStatusFilter();
+        });
+
         $('#f-sort').change(function () {
             dt.draw();
         });
 
-        // Clear All Filters
         $('#btn-clear').click(function () {
             $('#f-search, #f-date').val('');
             $('#f-length').val('20');
             $('#f-sort').val('all');
-            $('#f-severity').val('all');
-            dt.search('').columns().search('');
-            dt.page.len(20).order([TIME_COL_INDEX, 'desc']).draw();
+            $('#f-order-status').val('all');
+            dt.search('').columns().search('').page.len(20).draw();
         });
-
-        // Date Range Custom Filter (7/15/30 days + daterangepicker)
-        $.fn.dataTable.ext.search.push(
-            function (settings, data, dataIndex) {
-                if (settings.nTable.id !== TABLE_ID) return true;
-
-                // Sort by dropdown (7, 15, 30 days)
-                var sortVal = $('#f-sort').val();
-                if (sortVal !== 'all') {
-                    var days = parseInt(sortVal);
-                    if (!isNaN(days)) {
-                        var rowTime = getJournalRowTimestamp(settings, dataIndex, data[TIME_COL_INDEX]);
-                        var pastTime = new Date().getTime() - (days * 24 * 60 * 60 * 1000);
-                        if (!isNaN(rowTime) && rowTime < pastTime) return false;
-                    }
-                }
-
-                // DateRangePicker / Flatpickr
-                var dr = $('#f-date').val();
-                if (!dr) return true;
-
-                var separator = dr.includes(' to ') ? ' to ' : ' - ';
-                var range = dr.split(separator);
-                if (range.length !== 2) return true;
-
-                var min = new Date(range[0] + ' 00:00:00').getTime();
-                var max = new Date(range[1] + ' 23:59:59').getTime();
-                var timeCol = getJournalRowTimestamp(settings, dataIndex, data[TIME_COL_INDEX]);
-
-                if (isNaN(min) || isNaN(max) || isNaN(timeCol)) return true;
-                return timeCol >= min && timeCol <= max;
-            }
-        );
-
-        // Tooltips
-        if (typeof $.fn.tooltip === 'function') {
-            $('[data-toggle="tooltip"]').tooltip();
-        }
 
         if (IS_PURCHASE_JOURNAL) {
             initPurchaseOrderActions();
         }
     }
 
-    function getJournalRowTimestamp(settings, dataIndex, cellHtml) {
-        try {
-            var rowMeta = settings && settings.aoData ? settings.aoData[dataIndex] : null;
-            var rowNode = rowMeta ? rowMeta.nTr : null;
-            var timeCell = rowNode && rowNode.cells ? rowNode.cells[TIME_COL_INDEX] : null;
-            if (timeCell) {
-                var timeMetaEl = timeCell.querySelector('[data-time-ts]');
-                if (timeMetaEl) {
-                    var tsAttr = Number(timeMetaEl.getAttribute('data-time-ts') || '');
-                    if (!isNaN(tsAttr) && tsAttr > 0) {
-                        return tsAttr * 1000;
-                    }
-                }
-                var timeIsoEl = timeCell.querySelector('[data-time-iso]');
-                if (timeIsoEl) {
-                    var rawIso = timeIsoEl.getAttribute('data-time-iso') || '';
-                    if (window.KaiTime && typeof window.KaiTime.toTimestamp === 'function') {
-                        var ts = window.KaiTime.toTimestamp(rawIso);
-                        if (!isNaN(ts) && ts > 0) return ts * 1000;
-                    }
-                    var nativeTs = Date.parse(rawIso);
-                    if (!isNaN(nativeTs)) return nativeTs;
-                }
-            }
-        } catch (e) { }
-
-        var text = String(cellHtml || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-        if (window.KaiTime && typeof window.KaiTime.toTimestamp === 'function') {
-            var fallbackTs = window.KaiTime.toTimestamp(text);
-            if (!isNaN(fallbackTs) && fallbackTs > 0) return fallbackTs * 1000;
+    function applyPurchaseStatusFilter() {
+        if (!IS_PURCHASE_JOURNAL || STATUS_COL_INDEX < 0) return;
+        var val = String($('#f-order-status').val() || 'all');
+        if (val === 'all') {
+            dt.column(STATUS_COL_INDEX).search('').draw();
+        } else {
+            dt.column(STATUS_COL_INDEX).search(val).draw();
         }
-        var nativeFallback = Date.parse(text);
-        return isNaN(nativeFallback) ? NaN : nativeFallback;
     }
 
     function initPurchaseOrderActions() {
@@ -424,15 +410,16 @@ $isPurchaseJournal = (($basePath ?? '') === 'admin/logs/buying');
         purchaseModalCurrentOrderId = Number(order.id || 0);
 
         var metaHtml = ''
-            + '<div class=\"row\">'
-            + '<div class=\"col-md-6 mb-2\"><b>Mã đơn:</b> <span class=\"badge bg-light text-dark border\">' + escapeHtml(order.order_code_short || order.order_code || '-') + '</span></div>'
-            + '<div class=\"col-md-6 mb-2\"><b>Trạng thái:</b> ' + escapeHtml(order.status || '-') + '</div>'
-            + '<div class=\"col-md-6 mb-2\"><b>Khách hàng:</b> ' + escapeHtml(order.username || '-') + '</div>'
-            + '<div class=\"col-md-6 mb-2\"><b>Số lượng:</b> ' + escapeHtml(order.quantity || 1) + '</div>'
-            + '<div class=\"col-md-12 mb-2\"><b>Sản phẩm:</b> ' + escapeHtml(order.product_name || '-') + '</div>'
+            + '<div class="row">'
+            + '<div class="col-md-6 mb-2"><b>Mã đơn:</b> <span class="badge bg-light text-dark border">' + escapeHtml(order.order_code_short || order.order_code || '-') + '</span></div>'
+            + '<div class="col-md-6 mb-2"><b>Trạng thái:</b> ' + escapeHtml(order.status || '-') + '</div>'
+            + '<div class="col-md-6 mb-2"><b>Khách hàng:</b> ' + escapeHtml(order.username || '-') + '</div>'
+            + '<div class="col-md-6 mb-2"><b>Số lượng:</b> ' + escapeHtml(order.quantity || 1) + '</div>'
+            + '<div class="col-md-12 mb-2"><b>Sản phẩm:</b> ' + escapeHtml(order.product_name || '-') + '</div>'
             + '</div>';
         $('#purchaseOrderMeta').html(metaHtml);
         $('#purchaseOrderCustomerInput').val(order.customer_input || '');
+
         var userMessage = '';
         if (order.status === 'cancelled' && order.cancel_reason) {
             userMessage = order.cancel_reason;
@@ -441,183 +428,100 @@ $isPurchaseJournal = (($basePath ?? '') === 'admin/logs/buying');
         }
         $('#purchaseOrderDeliveryContent').val(userMessage);
 
+        var hasStock = !!order.delivery_content && order.status === 'pending';
+        $('#purchaseOrderStockHint').toggleClass('d-none', !hasStock);
+        if (hasStock) {
+            $('#purchaseOrderStockContent').text(order.delivery_content);
+        }
+
         var canFulfill = ['pending', 'processing'].indexOf(String(order.status || '')) !== -1;
         var canCancel = String(order.status || '') === 'pending';
         $('#purchaseOrderDeliveryContent').prop('readonly', !canFulfill);
-        $('#btnFulfillOrderSubmit, #btnCancelOrderSubmit').prop('disabled', false);
         $('#btnFulfillOrderSubmit').toggle(canFulfill);
         $('#btnCancelOrderSubmit').toggle(canCancel);
+
         if (openFulfillMode && canFulfill) {
             setTimeout(function () {
-                var input = document.getElementById('purchaseOrderDeliveryContent');
-                if (input) input.focus();
+                $('#purchaseOrderDeliveryContent').focus();
             }, 150);
-        }
-
-        if (order.cancel_reason && order.status === 'cancelled') {
-            setPurchaseModalError('Lý do hủy: ' + String(order.cancel_reason));
         }
     }
 
     function openPurchaseOrderModal(orderId, openFulfillMode) {
         if (!IS_PURCHASE_JOURNAL) return;
-        purchaseModalCurrentOrderId = Number(orderId || 0);
         setPurchaseModalError('');
         setPurchaseModalLoading(true);
-        $('#btnFulfillOrderSubmit, #btnCancelOrderSubmit').prop('disabled', true).hide();
         $('#purchaseOrderModal').modal('show');
 
-        fetch(PURCHASE_DETAIL_BASE_URL + '/' + encodeURIComponent(orderId), {
-            method: 'GET',
-            credentials: 'same-origin',
-            cache: 'no-store'
-        })
-            .then(async function (res) {
-                var data = {};
-                try { data = await res.json(); } catch (e) { }
-                if (!res.ok || !data.success) {
-                    throw new Error((data && data.message) ? data.message : 'Không tải được chi tiết đơn hàng.');
+        fetch(PURCHASE_DETAIL_BASE_URL + '/' + encodeURIComponent(orderId))
+            .then(res => res.json())
+            .then(data => {
+                setPurchaseModalLoading(false);
+                if (data.success) {
+                    fillPurchaseOrderModal(data.order, openFulfillMode);
+                } else {
+                    setPurchaseModalError(data.message);
                 }
-                return data.order || {};
             })
-            .then(function (order) {
+            .catch(err => {
                 setPurchaseModalLoading(false);
-                fillPurchaseOrderModal(order, openFulfillMode);
-            })
-            .catch(function (err) {
-                setPurchaseModalLoading(false);
-                $('#purchaseOrderModalContent').addClass('d-none');
-                setPurchaseModalError((err && err.message) ? err.message : 'Không tải được chi tiết đơn hàng.');
+                setPurchaseModalError('Lỗi kết nối server.');
             });
     }
 
     function submitPurchaseFulfill() {
-        if (!IS_PURCHASE_JOURNAL) return;
-        var orderId = Number(purchaseModalCurrentOrderId || 0);
-        var deliveryContent = String($('#purchaseOrderDeliveryContent').val() || '').trim();
-        if (!orderId) return;
-        if (!deliveryContent) {
-            setPurchaseModalError('Vui lòng nhập nội dung bàn giao.');
-            return;
-        }
-
-        setPurchaseModalError('');
-        $('#btnFulfillOrderSubmit').prop('disabled', true).html('<i class=\"fas fa-spinner fa-spin mr-1\"></i> Đang xử lý...');
+        var orderId = purchaseModalCurrentOrderId;
+        var content = $('#purchaseOrderDeliveryContent').val().trim();
+        if (!content) return setPurchaseModalError('Nhập nội dung!');
 
         var formData = new FormData();
-        formData.append('order_id', String(orderId));
-        formData.append('delivery_content', deliveryContent);
+        formData.append('order_id', orderId);
+        formData.append('delivery_content', content);
         formData.append('csrf_token', CSRF_TOKEN);
 
-        fetch(PURCHASE_FULFILL_URL, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { 'X-CSRF-Token': CSRF_TOKEN },
-            body: formData
-        })
-            .then(async function (res) {
-                var data = {};
-                try { data = await res.json(); } catch (e) { }
-                if (!res.ok || !data.success) {
-                    throw new Error((data && data.message) ? data.message : 'Không thể giao hàng lúc này.');
+        fetch(PURCHASE_FULFILL_URL, { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    $('#purchaseOrderModal').modal('hide');
+                    location.reload();
+                } else {
+                    setPurchaseModalError(data.message);
                 }
-                return data;
-            })
-            .then(function (data) {
-                if (window.Swal && Swal.fire) {
-                    Swal.fire({ icon: 'success', title: 'Thành công', text: data.message || 'Đã giao hàng.' });
-                }
-                $('#purchaseOrderModal').modal('hide');
-                window.location.reload();
-            })
-            .catch(function (err) {
-                setPurchaseModalError((err && err.message) ? err.message : 'Không thể giao hàng lúc này.');
-            })
-            .finally(function () {
-                $('#btnFulfillOrderSubmit').prop('disabled', false).html('<i class=\"fas fa-paper-plane mr-1\"></i> Giao hàng & Hoàn tất');
             });
     }
 
     function submitPurchaseCancel() {
-        if (!IS_PURCHASE_JOURNAL) return;
-        var orderId = Number(purchaseModalCurrentOrderId || 0);
-        var cancelReason = String($('#purchaseOrderDeliveryContent').val() || '').trim();
-        if (!orderId) return;
-        if (!cancelReason) {
-            setPurchaseModalError('Vui lòng nhập nội dung hủy/phản hồi cho user.');
-            return;
-        }
+        var orderId = purchaseModalCurrentOrderId;
+        var reason = $('#purchaseOrderDeliveryContent').val().trim();
+        if (!reason) return setPurchaseModalError('Nhập lý do!');
 
-        var proceed = function () {
-            setPurchaseModalError('');
-            $('#btnCancelOrderSubmit').prop('disabled', true).html('<i class=\"fas fa-spinner fa-spin mr-1\"></i> Đang hủy...');
+        var formData = new FormData();
+        formData.append('order_id', orderId);
+        formData.append('cancel_reason', reason);
+        formData.append('csrf_token', CSRF_TOKEN);
 
-            var formData = new FormData();
-            formData.append('order_id', String(orderId));
-            formData.append('cancel_reason', cancelReason);
-            formData.append('csrf_token', CSRF_TOKEN);
-
-            fetch(PURCHASE_CANCEL_URL, {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: { 'X-CSRF-Token': CSRF_TOKEN },
-                body: formData
-            })
-                .then(async function (res) {
-                    var data = {};
-                    try { data = await res.json(); } catch (e) { }
-                    if (!res.ok || !data.success) {
-                        throw new Error((data && data.message) ? data.message : 'Không thể hủy đơn lúc này.');
-                    }
-                    return data;
-                })
-                .then(function (data) {
-                    if (window.Swal && Swal.fire) {
-                        Swal.fire({ icon: 'success', title: 'Thành công', text: data.message || 'Đã hủy đơn và hoàn tiền.' });
-                    }
+        fetch(PURCHASE_CANCEL_URL, { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
                     $('#purchaseOrderModal').modal('hide');
-                    window.location.reload();
-                })
-                .catch(function (err) {
-                    setPurchaseModalError((err && err.message) ? err.message : 'Không thể hủy đơn lúc này.');
-                })
-                .finally(function () {
-                    $('#btnCancelOrderSubmit').prop('disabled', false).html('<i class=\"fas fa-undo mr-1\"></i> Hủy đơn + Hoàn tiền');
-                });
-        };
-
-        if (window.Swal && Swal.fire) {
-            Swal.fire({
-                title: 'Hủy đơn pending và hoàn tiền?',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Hủy đơn',
-                cancelButtonText: 'Đóng'
-            }).then(function (result) {
-                if (result.isConfirmed) {
-                    proceed();
+                    location.reload();
+                } else {
+                    setPurchaseModalError(data.message);
                 }
             });
-            return;
-        }
-
-        if (window.confirm('Hủy đơn pending và hoàn tiền cho user?')) {
-            proceed();
-        }
     }
 
-    function escapeHtml(value) {
-        return String(value || '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/\"/g, '&quot;')
-            .replace(/'/g, '&#039;');
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     function showPayloadModal(payloadData) {
         try {
-            let parsed = typeof payloadData === 'string' ? JSON.parse(payloadData) : payloadData;
+            var parsed = typeof payloadData === 'string' ? JSON.parse(payloadData) : payloadData;
             document.getElementById('payloadContent').textContent = JSON.stringify(parsed, null, 4);
             $('#payloadModal').modal('show');
         } catch (e) {

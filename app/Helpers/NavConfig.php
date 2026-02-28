@@ -176,7 +176,7 @@ class NavConfig
                 'children' => [
                     [
                         'href' => self::buildUrl('history-balance'),
-                        'label' => 'Lịch sử nạp tiền',
+                        'label' => 'Biến động số dư',
                     ],
                     [
                         'href' => self::buildUrl('history-orders'),
@@ -250,7 +250,7 @@ class NavConfig
                 'active_key' => 'history',
                 'href' => self::buildUrl('history-balance'),
                 'icon' => 'fas fa-wallet',
-                'label' => 'Lịch sử nạp tiền',
+                'label' => 'Biến động số dư',
             ],
             [
                 'type' => 'link',

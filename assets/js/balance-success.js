@@ -36,51 +36,6 @@
         return parts.join(' ');
     }
 
-    function ensureConfettiReady() {
-        if (typeof confetti === 'function') return Promise.resolve();
-        if (__ksBalanceConfettiLoader) return __ksBalanceConfettiLoader;
-
-        __ksBalanceConfettiLoader = new Promise(function (resolve, reject) {
-            var script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js';
-            script.async = true;
-            script.onload = function () { resolve(); };
-            script.onerror = function () { reject(new Error('confetti_load_failed')); };
-            document.head.appendChild(script);
-        }).catch(function () {
-            __ksBalanceConfettiLoader = null;
-        });
-
-        return __ksBalanceConfettiLoader || Promise.resolve();
-    }
-
-    function fireDoubleSideConfetti() {
-        if (typeof confetti !== 'function') return;
-
-        var count = 250;
-        var defaults = {
-            origin: { y: 0.7 },
-            spread: 90,
-            ticks: 300,
-            gravity: 1.2,
-            decay: 0.94,
-            startVelocity: 45,
-            zIndex: 100000
-        };
-
-        confetti(Object.assign({}, defaults, {
-            particleCount: count,
-            angle: 60,
-            origin: { x: 0, y: 0.7 }
-        }));
-
-        confetti(Object.assign({}, defaults, {
-            particleCount: count,
-            angle: 120,
-            origin: { x: 1, y: 0.7 }
-        }));
-    }
-
     function DepositSuccessPresenter(options) {
         options = options || {};
         this.endpoints = options.endpoints || {};
@@ -96,10 +51,11 @@
         style.id = styleId;
         style.innerHTML = [
             '.kai-swal-success-popup{width:680px !important;max-width:92vw !important;border-radius:16px !important;padding:22px 22px 20px !important;}',
-            '.kai-swal-success-title{font-size:26px !important;font-weight:800 !important;color:#333 !important;line-height:1.2 !important;margin-top:4px !important;}',
+            '.kai-swal-success-title{font-size:26px !important;font-weight:800 !important;color:#333 !important;line-height:1.2 !important;margin-top:4px !important;margin-bottom:4px !important;}',
             '.kai-swal-success-html{margin:0 !important;padding:0 !important;}',
             '.kai-swal-success-actions{margin-top:14px !important;}',
             '.kai-swal-success-confirm{background:#ff6900 !important;color:#fff !important;border-radius:10px !important;padding:10px 22px !important;font-weight:700 !important;box-shadow:none !important;}',
+            '.kai-swal-success-close{color:#94a3b8 !important;font-size:28px !important;padding:8px 12px !important;right:4px !important;top:4px !important;}',
             '.kai-balance-success-wrap{text-align:left;}',
             '.kai-balance-success-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin-bottom:10px;}',
             '.kai-balance-success-row{display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-size:14px;}',
@@ -115,7 +71,11 @@
     };
 
     DepositSuccessPresenter.prototype.fireDoubleSideConfetti = function () {
-        fireDoubleSideConfetti();
+        if (window.KaiConfetti) {
+            window.KaiConfetti.ensureReady().then(function () {
+                window.KaiConfetti.fire();
+            });
+        }
     };
 
     DepositSuccessPresenter.prototype.resolveRedirectUrl = function (res) {
@@ -168,20 +128,18 @@
             title: 'Nạp tiền thành công',
             html: self.buildHtml(res),
             width: 680,
-            confirmButtonText: 'OK',
-            confirmButtonColor: '#ff6900',
+            showConfirmButton: false,
+            showCloseButton: true,
             allowOutsideClick: false,
             customClass: {
                 popup: 'kai-swal-success-popup',
                 title: 'kai-swal-success-title',
                 htmlContainer: 'kai-swal-success-html',
                 actions: 'kai-swal-success-actions',
-                confirmButton: 'kai-swal-success-confirm'
+                closeButton: 'kai-swal-success-close'
             },
             didOpen: function () {
-                ensureConfettiReady().then(function () {
-                    self.fireDoubleSideConfetti();
-                }).catch(function () { });
+                self.fireDoubleSideConfetti();
             }
         }).then(function () {
             window.location.href = redirectUrl;
@@ -190,10 +148,7 @@
 
     window.KaiBalanceSuccess = window.KaiBalanceSuccess || {};
     window.KaiBalanceSuccess.DepositSuccessPresenter = DepositSuccessPresenter;
-    window.KaiBalanceSuccess.ensureConfettiReady = ensureConfettiReady;
-    window.KaiBalanceSuccess.fireDoubleSideConfetti = fireDoubleSideConfetti;
     window.KaiBalanceSuccess.createPresenter = function (options) {
         return new DepositSuccessPresenter(options || {});
     };
-    window.fireDoubleSideConfetti = fireDoubleSideConfetti;
 })();

@@ -8,11 +8,13 @@ class PasswordController extends Controller
 {
     private $authService;
     private $validator;
+    private $telegramService;
 
     public function __construct()
     {
         $this->authService = new AuthService();
         $this->validator = new AuthValidator();
+        $this->telegramService = class_exists('TelegramService') ? new TelegramService() : null;
     }
 
     /**
@@ -70,8 +72,11 @@ class PasswordController extends Controller
         $newPass = sha1(md5($password2));
         $userModel->update((int) ($user['id'] ?? 0), ['password' => $newPass]);
 
-        if (function_exists('sendTele')) {
-            @sendTele($username . ' đã đổi mật khẩu thành công');
+        $teleMessage = $username . ' da doi mat khau thanh cong';
+        if ($this->telegramService instanceof TelegramService) {
+            $this->telegramService->send($teleMessage);
+        } elseif (function_exists('sendTele')) {
+            @sendTele($teleMessage);
         }
 
         return $this->json([

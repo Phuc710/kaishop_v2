@@ -100,9 +100,8 @@ $maintenanceJson = json_encode(
 
 <body class="error-page-wrapper maintenance-page">
     <div class="error-card maintenance-card">
-        <div class="maintenance-glow" aria-hidden="true"></div>
-        <img class="maintenance-gif" src="<?= asset('assets/images/maintenance.gif') ?>" alt="Bảo trì hệ thống">
-        <div class="error-code maintenance-code"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+        <img class="maintenance-gif" src="<?= asset('assets/images/maintenance.gif?v=1771944320') ?>"
+            alt="Bảo trì hệ thống">
         <h1 class="error-title">HỆ THỐNG ĐANG BẢO TRÌ</h1>
         <p class="error-message">Chúng tôi đang nâng cấp hệ thống để dịch vụ ổn định hơn. Vui lòng quay lại sau.</p>
 
@@ -134,12 +133,11 @@ $maintenanceJson = json_encode(
                     <div class="mnt-clock__label">Giây</div>
                 </div>
             </div>
-            <div id="maintenanceCountdownMeta" class="maintenance-countdown-meta"></div>
         </div>
 
         <div class="maintenance-message-box">
             <div class="maintenance-message-title">
-                <i class="fa-solid fa-bullhorn"></i> Thông báo từ admin
+                <i class="fa-solid fa-bullhorn"></i> Thông báo
             </div>
             <div class="maintenance-message-content"><?= nl2br(htmlspecialchars($message, ENT_QUOTES, 'UTF-8')) ?></div>
         </div>
@@ -151,6 +149,7 @@ $maintenanceJson = json_encode(
         </div>
     </div>
 
+    <script src="<?= asset('assets/js/maintenance-runtime.js') ?>"></script>
     <script>
         (function () {
             const statusUrl = '<?= url('api/system/maintenance-status') ?>';
@@ -158,7 +157,6 @@ $maintenanceJson = json_encode(
             const countdownWrap = document.getElementById('maintenanceCountdownWrap');
             const countdownMeta = document.getElementById('maintenanceCountdownMeta');
 
-            // Digit elements
             const dH0 = document.getElementById('dH0');
             const dH1 = document.getElementById('dH1');
             const dM0 = document.getElementById('dM0');
@@ -168,8 +166,6 @@ $maintenanceJson = json_encode(
 
             let currentState = <?= $maintenanceJson ?: '{}' ?>;
             let localSecondsLeft = Math.max(0, Number((currentState && currentState.seconds_until_end) || 0));
-            let tickId = null;
-            let pollId = null;
 
             function pad2(n) { return String(Math.max(0, n)).padStart(2, '0'); }
 
@@ -195,44 +191,58 @@ $maintenanceJson = json_encode(
                     return;
                 }
 
-                const showCountdown = !!(currentState.show_end_countdown);
-                const manualOverdue = !!(currentState.manual_overdue);
+                const showCountdown = !!currentState.show_end_countdown;
+                const manualOverdue = !!currentState.manual_overdue;
 
                 if (countdownWrap) countdownWrap.hidden = false;
 
                 if (showCountdown && localSecondsLeft > 0) {
                     renderClock(localSecondsLeft);
                     if (countdownMeta) {
-                        countdownMeta.textContent = currentState.end_at
-                            ? 'Dự kiến kết thúc: ' + currentState.end_at
-                            : '';
+                        countdownMeta.textContent = currentState.end_at_display
+                            ? 'Dự kiến kết thúc: ' + currentState.end_at_display
+                            : (currentState.end_at ? 'Dự kiến kết thúc: ' + currentState.end_at : '');
                     }
                 } else {
                     renderClock(0);
                     if (countdownMeta) {
                         countdownMeta.textContent = manualOverdue
                             ? 'Đã quá thời gian dự kiến, admin vẫn đang giữ bảo trì thủ công.'
-                            : 'Admin sẽ mở lại hệ thống sau khi hoàn tất bảo trì.';
+                            : '';
                     }
                 }
             }
 
-            function startTick() {
-                if (tickId) return;
-                tickId = window.setInterval(function () {
-                    if (!currentState || !currentState.active || !currentState.show_end_countdown) return;
-                    if (localSecondsLeft > 0) { localSecondsLeft--; }
-                    updateUI();
-                }, 1000);
+            function applyRuntime(payload) {
+                const m = payload && payload.state ? payload.state : null;
+                if (!m || !m.active) {
+                    window.location.href = homeUrl;
+                    return;
+                }
+
+                currentState = m;
+                const sec = payload && Number.isFinite(Number(payload.secondsUntilEnd))
+                    ? Number(payload.secondsUntilEnd)
+                    : Number(m.seconds_until_end || 0);
+                localSecondsLeft = Math.max(0, sec);
+                updateUI();
             }
 
-            function pollStatus() {
+            updateUI();
+
+            if (typeof window.KaiMaintenanceRuntime === 'function') {
+                const runtime = new window.KaiMaintenanceRuntime({
+                    statusUrl: statusUrl,
+                    pollMs: 10000
+                });
+                runtime.onUpdate(applyRuntime);
+                runtime.start();
+            } else {
                 fetch(statusUrl, { credentials: 'same-origin', cache: 'no-store' })
                     .then(function (r) { return r.json(); })
                     .then(function (data) {
                         const m = data && data.maintenance ? data.maintenance : null;
                         if (!m || !m.active) {
-                            // Maintenance ended – go home
                             window.location.href = homeUrl;
                             return;
                         }
@@ -240,14 +250,8 @@ $maintenanceJson = json_encode(
                         localSecondsLeft = Math.max(0, Number(m.seconds_until_end || 0));
                         updateUI();
                     })
-                    .catch(function () { /* keep ticking */ });
+                    .catch(function () { });
             }
-
-            // Boot
-            updateUI();
-            startTick();
-            pollStatus(); // immediate first check
-            pollId = window.setInterval(pollStatus, 10000); // poll every 10s
         })();
     </script>
 </body>

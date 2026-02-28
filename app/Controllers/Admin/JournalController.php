@@ -280,11 +280,17 @@ class JournalController extends Controller
      */
     private function buildQueryState(): array
     {
+        $orderStatus = trim((string) $this->get('order_status', ''));
+        if (!in_array($orderStatus, ['all', 'pending', 'processing', 'completed', 'cancelled'], true)) {
+            $orderStatus = 'all';
+        }
+
         return [
             'search' => trim((string) $this->get('search', '')),
             'severity' => trim((string) $this->get('severity', 'all')),
             'time_range' => trim((string) $this->get('time_range', '')),
             'date_filter' => $this->normalizeDateFilter((string) $this->get('date_filter', 'all')),
+            'order_status' => $orderStatus,
         ];
     }
 
@@ -327,31 +333,27 @@ class JournalController extends Controller
 
             $status = trim((string) ($row['status'] ?? 'processing'));
             if ($status === 'completed') {
-                $statusLabel = '<span class="badge bg-success">Hoàn tất</span>';
+                $statusLabel = '<span style="display:none;">completed</span><span class="badge badge-pill badge-soft-success">Hoàn tất</span>';
             } elseif ($status === 'cancelled') {
-                $statusLabel = '<span class="badge bg-secondary">Đã hủy</span>';
+                $statusLabel = '<span style="display:none;">cancelled</span><span class="badge badge-pill badge-soft-danger">Đã hủy</span>';
             } elseif ($status === 'pending') {
-                $statusLabel = '<span class="badge bg-danger">Pending</span>';
+                $statusLabel = '<span style="display:none;">pending</span><span class="badge badge-pill badge-soft-warning">Pending</span>';
             } elseif ($status === 'processing') {
-                $statusLabel = '<span class="badge bg-warning text-dark">Đang xử lý</span>';
+                $statusLabel = '<span style="display:none;">processing</span><span class="badge badge-pill badge-soft-warning">Đang xử lý</span>';
             } else {
                 $statusLabel = '<span class="badge bg-secondary">' . htmlspecialchars($status) . '</span>';
             }
-
             $price = (int) ($row['price'] ?? 0);
-            $priceFormatted = '<span class="font-weight-bold" style="color:#ff0000;">-' . number_format($price, 0, '.', ',') . 'd</span>';
+            $priceFormatted = '<span class="font-weight-bold" style="color:#000000;">-' . number_format($price, 0, '.', ',') . 'đ</span>';
             $quantity = max(1, (int) ($row['quantity'] ?? 1));
             $orderId = (int) ($row['id'] ?? 0);
             $rawOrderCode = (string) ($row['order_code'] ?? '--');
             $shortOrderCode = $this->shortOrderCode($rawOrderCode);
 
             $actionButtons = '<div class="btn-group btn-group-sm" role="group">'
-                . '<button type="button" class="btn btn-info js-order-view" data-order-id="' . $orderId . '" title="Xem chi tiết"><i class="fas fa-eye"></i></button>';
-            if (in_array($status, ['pending', 'processing'], true)) {
-                $actionButtons .= '<button type="button" class="btn btn-success js-order-fulfill" data-order-id="' . $orderId . '" title="Giao hàng"><i class="fas fa-paper-plane"></i></button>';
-            }
+                . '<button type="button" class="btn btn-info btn-xs px-2 js-order-view" data-order-id="' . $orderId . '" title="Xem chi tiết"><i class="fas fa-eye"></i></button>';
             if ($status === 'pending') {
-                $actionButtons .= '<button type="button" class="btn btn-danger js-order-cancel" data-order-id="' . $orderId . '" title="Hủy đơn + hoàn tiền"><i class="fas fa-times"></i></button>';
+                $actionButtons .= '<button type="button" class="btn btn-danger btn-xs px-2 js-order-cancel" data-order-id="' . $orderId . '" title="Hủy đơn + hoàn tiền"><i class="fas fa-times"></i></button>';
             }
             $actionButtons .= '</div>';
 

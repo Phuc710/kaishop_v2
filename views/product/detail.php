@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $productName = (string) ($product['name'] ?? 'Sản phẩm');
 $productId = (int) ($product['id'] ?? 0);
 $priceVnd = max(0, (int) ($product['price_vnd'] ?? 0));
@@ -6,6 +6,8 @@ $purchaseMinQty = max(1, (int) ($product['min_purchase_qty'] ?? 1));
 $purchaseMaxQty = max(0, (int) ($product['max_purchase_qty'] ?? 0));
 $requiresInfo = (int) ($product['requires_info'] ?? 0) === 1;
 $productType = (string) ($product['product_type'] ?? 'account');
+$deliveryMode = (string) ($product['delivery_mode'] ?? 'account_stock');
+$stockManaged = !empty($product['stock_managed']);
 $infoInstructions = trim((string) ($product['info_instructions'] ?? ''));
 $availableStock = isset($product['available_stock']) ? (int) $product['available_stock'] : null;
 $teleAdminRaw = trim((string) ($chungapi['tele_admin'] ?? ''));
@@ -50,18 +52,14 @@ if (empty($galleryImages)) {
 $displayMaxQty = $purchaseMaxQty;
 if ($productType === 'link') {
     $displayMaxQty = 1;
-} elseif ($productType === 'account' && !$requiresInfo && is_int($availableStock)) {
+} elseif ($stockManaged && is_int($availableStock)) {
     $displayMaxQty = $purchaseMaxQty > 0 ? min($purchaseMaxQty, $availableStock) : $availableStock;
 }
 
 $canPurchase = true;
 $stockLabel = 'Unlimited';
 $isOutOfStock = false;
-if ($requiresInfo) {
-    $stockLabel = 'Theo yêu cầu';
-} elseif ($productType === 'link') {
-    $stockLabel = 'Unlimited';
-} elseif (is_int($availableStock)) {
+if ($stockManaged && is_int($availableStock)) {
     $stockLabel = (string) max(0, $availableStock);
     if ($availableStock <= 0) {
         $canPurchase = false;
@@ -69,8 +67,21 @@ if ($requiresInfo) {
     }
 }
 $stockColor = '';
-if (is_int($availableStock) && !$requiresInfo && $productType === 'account') {
+if ($stockManaged && is_int($availableStock)) {
     $stockColor = $availableStock > 0 ? '#0f7a2f' : '#dc2626';
+}
+
+if ($deliveryMode === 'manual_info') {
+    if ($availableStock > 0) {
+        $stockLabel = 'Sẵn hàng';
+        $stockColor = '#d97706';
+    } else {
+        $stockLabel = 'Tạm hết';
+        $stockColor = '#dc2626';
+    }
+} elseif ($deliveryMode === 'source_link') {
+    $stockLabel = 'Unlimited';
+    $stockColor = '#0369a1';
 }
 
 if ($displayMaxQty > 0 && $displayMaxQty < $purchaseMinQty) {
@@ -590,7 +601,10 @@ if ($rawDescHtml !== '') {
                                     <img id="pdMainImage"
                                         src="<?= htmlspecialchars((string) ($galleryImages[0] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                                         alt="<?= htmlspecialchars($productName, ENT_QUOTES, 'UTF-8') ?>"
-                                        class="pd-gallery-main">
+                                        class="pd-gallery-main"
+                                        loading="eager"
+                                        decoding="async"
+                                        fetchpriority="high">
                                 </button>
 
                                 <div class="pd-gallery-counter" id="pdGalleryCounter">
@@ -606,7 +620,10 @@ if ($rawDescHtml !== '') {
                                             data-img="<?= htmlspecialchars($img, ENT_QUOTES, 'UTF-8') ?>"
                                             aria-label="Ảnh sản phẩm <?= $idx + 1 ?>">
                                             <img src="<?= htmlspecialchars($img, ENT_QUOTES, 'UTF-8') ?>"
-                                                alt="<?= htmlspecialchars($productName, ENT_QUOTES, 'UTF-8') ?>">
+                                                alt="<?= htmlspecialchars($productName, ENT_QUOTES, 'UTF-8') ?>"
+                                                loading="lazy"
+                                                decoding="async"
+                                                fetchpriority="low">
                                         </button>
                                     <?php endforeach; ?>
                                 </div>
@@ -626,22 +643,23 @@ if ($rawDescHtml !== '') {
                             </div>
                             <div class="pd-stock">
                                 <div class="pd-note">Stock</div>
-                                <div id="pdStockLabel"<?= $stockColor !== '' ? ' style="color: ' . $stockColor . ';"' : '' ?>>
+                                <div id="pdStockLabel" <?= $stockColor !== '' ? ' style="color: ' . $stockColor . ';"' : '' ?>>
                                     <?= htmlspecialchars($stockLabel, ENT_QUOTES, 'UTF-8') ?>
                                 </div>
                             </div>
                         </div>
 
                         <div class="pd-chips">
-                            <?php if ($productType === 'account'): ?>
-                                <span class="pd-chip success"><i class="fas fa-user-shield"></i> Tài khoản từ
-                                    kho</span>
+                            <?php if ($deliveryMode === 'account_stock'): ?>
+                                <span class="pd-chip success"><i class="fas fa-user-shield"></i> Tài Khoản (Giao
+                                    Ngay)</span>
+                            <?php elseif ($deliveryMode === 'manual_info'): ?>
+                                <span class="pd-chip warn"><i class="fas fa-keyboard"></i> Giao Theo Yêu Cầu</span>
                             <?php else: ?>
-                                <span class="pd-chip info"><i class="fas fa-link"></i> Source / Link</span>
+                                <span class="pd-chip info"><i class="fas fa-infinity"></i> Unlimited Source</span>
                             <?php endif; ?>
                             <?php if ($requiresInfo): ?>
-                                <span class="pd-chip warn"><i class="fas fa-keyboard"></i> Yêu cầu thông tin từ
-                                    user</span>
+                                <span class="pd-chip warn"><i class="fas fa-keyboard"></i> Yêu cầu thông tin</span>
                             <?php endif; ?>
                             <?php if ($productType === 'link'): ?>
                                 <span class="pd-chip info"><i class="fas fa-arrow-up-1-9"></i> Max 1</span>
@@ -748,7 +766,7 @@ if ($rawDescHtml !== '') {
             maxQty: <?= (int) $displayMaxQty ?>,
             maxQtyConfig: <?= (int) $purchaseMaxQty ?>,
             availableStock: <?= is_int($availableStock) ? (int) $availableStock : 'null' ?>,
-            stockManaged: <?= ($productType === 'account' && !$requiresInfo && is_int($availableStock)) ? 'true' : 'false' ?>,
+            stockManaged: <?= ($stockManaged && is_int($availableStock)) ? 'true' : 'false' ?>,
             requiresInfo: <?= $requiresInfo ? 'true' : 'false' ?>,
             productType: <?= json_encode($productType, JSON_UNESCAPED_UNICODE) ?>,
             canPurchase: <?= $canPurchase ? 'true' : 'false' ?>,
@@ -764,15 +782,6 @@ if ($rawDescHtml !== '') {
 
         function fmtMoney(value) {
             return new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + 'đ';
-        }
-
-        function escapeHtml(value) {
-            return String(value || '')
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
         }
 
         function getQtyInput() {
@@ -850,7 +859,6 @@ if ($rawDescHtml !== '') {
 
         function applyPurchaseSuccessRealtimeState(data, requestedQty) {
             if (!PRODUCT_DETAIL.stockManaged) return;
-            if (data && data.pending) return;
 
             const order = (data && data.order) ? data.order : {};
             const qtyBought = Math.max(1, Number(order.quantity || requestedQty || 1));
@@ -1055,92 +1063,34 @@ if ($rawDescHtml !== '') {
             setPurchaseControlsAvailability();
         }
 
-        let __ksConfettiLoader = null;
 
-        function ensureConfettiReady() {
-            if (typeof confetti === 'function') return Promise.resolve();
-            if (__ksConfettiLoader) return __ksConfettiLoader;
+        function showPurchaseSuccess(data) {
+            const payload = data || {};
+            const order = payload.order || {};
+            const isPending = !!payload.pending || String(order.status || '').toLowerCase() === 'pending';
+            const orderId = Number(order.id || 0);
+            const historyUrl = BASE_URL + '/history-orders';
+            const detailUrl = historyUrl + (orderId > 0 ? ('?order_id=' + encodeURIComponent(String(orderId))) : '');
 
-            __ksConfettiLoader = new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js';
-                script.async = true;
-                script.onload = () => resolve();
-                script.onerror = () => reject(new Error('confetti_load_failed'));
-                document.head.appendChild(script);
-            }).catch(() => {
-                __ksConfettiLoader = null;
-            });
-
-            return __ksConfettiLoader || Promise.resolve();
-        }
-
-        function fireDoubleSideConfetti() {
-            if (typeof confetti !== 'function') return;
-
-            const count = 250;
-            const defaults = {
-                origin: { x: 0.5, y: 1 },
-                zIndex: 100000,
-                angle: 90
-            };
-
-            function fire(particleRatio, opts) {
-                confetti(Object.assign({}, defaults, opts, {
-                    particleCount: Math.floor(count * particleRatio)
-                }));
-            }
-
-            fire(0.25, { spread: 26, startVelocity: 65 });
-            fire(0.2, { spread: 60, startVelocity: 45 });
-            fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8, startVelocity: 55 });
-            fire(0.1, { spread: 120, startVelocity: 35, decay: 0.92, scalar: 1.2 });
-            fire(0.1, { spread: 120, startVelocity: 75 });
-        }
-
-        function buildOrderDownloadUrl(order) {
-            const id = Number(order && order.id ? order.id : 0);
-            if (!id) return '';
-            return BASE_URL + '/history-orders/download/' + encodeURIComponent(String(id));
-        }
-
-        function attachSuccessModalActions(data) {
-            const order = data.order || {};
-
-            const historyBtn = document.querySelector('.js-order-modal-history');
-            if (historyBtn) {
-                historyBtn.addEventListener('click', function () {
-                    window.location.href = BASE_URL + '/history-orders';
-                });
-            }
-
-            const buyMoreBtn = document.querySelector('.js-order-modal-buy-more');
-            if (buyMoreBtn) {
-                buyMoreBtn.addEventListener('click', function () {
-                    if (window.Swal && Swal.close) Swal.close();
-                });
-            }
-
-            const downBtn = document.querySelector('.js-order-modal-download');
-            if (downBtn) {
-                downBtn.addEventListener('click', function () {
-                    const url = buildOrderDownloadUrl(order);
-                    if (!url) {
-                        if (window.SwalHelper && SwalHelper.toast) {
-                            SwalHelper.toast('Không thể tải đơn hàng này.', 'error');
+            if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.purchaseResult === 'function') {
+                SwalHelper.purchaseResult(payload, {
+                    historyUrl: historyUrl,
+                    detailUrl: detailUrl,
+                    onCompletedOpen: function () {
+                        if (window.KaiConfetti) {
+                            window.KaiConfetti.ensureReady().then(function () {
+                                window.KaiConfetti.fire();
+                            });
                         }
-                        return;
                     }
-                    window.open(url, '_blank');
                 });
+                return;
             }
+
+            alert(isPending
+                ? 'Đặt hàng thành công. Đơn đang chờ xử lý.'
+                : 'Thanh toán thành công.');
         }
-
-
-
-        // Override popup builder to keep labels/buttons aligned with latest UX requirements.
-
-
         function buyProduct(id) {
             if (!PRODUCT_DETAIL.canPurchase) {
                 return;

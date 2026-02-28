@@ -100,7 +100,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             </div>
             <div class="card-body pt-3">
                 <div class="table-responsive table-wrapper mb-3">
-                    <table id="datatable1" class="table text-nowrap table-hover table-bordered w-100">
+                    <table id="datatable1" class="table table-hover table-bordered w-100">
                         <thead>
                             <tr>
                                 <th class="text-center font-weight-bold align-middle">USERNAME</th>

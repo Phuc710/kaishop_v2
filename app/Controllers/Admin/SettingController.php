@@ -38,10 +38,14 @@ class SettingController extends Controller
         global $chungapi;
 
         $maintenanceConfig = $this->maintenanceService->getConfig();
+        $maintenanceStartInput = $this->maintenanceService->toDateTimeLocalInput($maintenanceConfig['start_at'] ?? null);
+        $maintenanceEndInput = $this->maintenanceService->toDateTimeLocalInput($maintenanceConfig['end_at'] ?? null);
 
         $this->view('admin/setting', [
             'chungapi' => $chungapi,
-            'maintenanceConfig' => $maintenanceConfig
+            'maintenanceConfig' => $maintenanceConfig,
+            'maintenanceStartInput' => $maintenanceStartInput,
+            'maintenanceEndInput' => $maintenanceEndInput,
         ]);
     }
 
@@ -88,6 +92,9 @@ class SettingController extends Controller
                     'popup_template',
                     'thongbao'
                 ]);
+
+            case 'update_telegram':
+                return $this->updateTelegramSettings();
 
             case 'update_bank':
                 return $this->updateSettings([
@@ -162,5 +169,84 @@ class SettingController extends Controller
         }
 
         return $this->json(['status' => 'error', 'message' => 'Lỗi database: ' . $connection->error]);
+    }
+
+    /**
+     * Update Telegram bot settings with secure handling:
+     * - bot token is never exposed in logs
+     * - empty token input keeps existing token
+     * - explicit clear checkbox to remove token
+     */
+    private function updateTelegramSettings()
+    {
+        global $connection;
+
+        $token = trim((string) $this->post('telegram_bot_token', ''));
+        $chatId = trim((string) $this->post('telegram_chat_id', ''));
+        $clearToken = in_array((string) $this->post('clear_telegram_bot_token', '0'), ['1', 'true', 'on'], true);
+
+        if ($token !== '' && !preg_match('/^\d{6,}:[A-Za-z0-9_-]{20,}$/', $token)) {
+            return $this->json([
+                'status' => 'error',
+                'message' => 'Telegram Bot Token không hợp lệ (định dạng thường là 123456789:ABC...)',
+            ]);
+        }
+
+        $isNumericChatId = preg_match('/^-?\d+$/', $chatId) === 1;
+        $isChannelChat = preg_match('/^@[A-Za-z0-9_]{5,}$/', $chatId) === 1;
+        if ($chatId !== '' && !$isNumericChatId && !$isChannelChat) {
+            return $this->json([
+                'status' => 'error',
+                'message' => 'Telegram Chat ID không hợp lệ (ví dụ: -1001234567890 hoặc @channel_name)',
+            ]);
+        }
+
+        $sets = [];
+        $changedFields = [];
+
+        if ($clearToken) {
+            $sets[] = "`telegram_bot_token` = ''";
+            $changedFields[] = 'telegram_bot_token:cleared';
+        } elseif ($token !== '') {
+            $safeToken = $connection->real_escape_string($token);
+            $sets[] = "`telegram_bot_token` = '{$safeToken}'";
+            $changedFields[] = 'telegram_bot_token:updated';
+        }
+
+        if (isset($_POST['telegram_chat_id'])) {
+            $safeChatId = $connection->real_escape_string($chatId);
+            $sets[] = "`telegram_chat_id` = '{$safeChatId}'";
+            $changedFields[] = 'telegram_chat_id:updated';
+        }
+
+        if (empty($sets)) {
+            return $this->json([
+                'status' => 'error',
+                'message' => 'Không có thay đổi nào để lưu',
+            ]);
+        }
+
+        $sql = "UPDATE `setting` SET " . implode(', ', $sets) . " ORDER BY `id` ASC LIMIT 1";
+        if (!$connection->query($sql)) {
+            return $this->json([
+                'status' => 'error',
+                'message' => 'Lỗi database: ' . $connection->error,
+            ]);
+        }
+
+        if (class_exists('Config')) {
+            Config::clearSiteConfigCache();
+        }
+
+        Logger::info('Admin', 'update_telegram', 'Cập nhật cấu hình Telegram', [
+            'fields' => $changedFields,
+            'has_token' => $clearToken ? false : ($token !== '' ? true : null),
+            'has_chat_id' => $chatId !== '',
+        ]);
+
+        return $this->json([
+            'status' => 'success',
+            'message' => 'Đã lưu cấu hình Telegram',
+        ]);
     }
 }

@@ -138,7 +138,7 @@ class OrderHistoryController extends Controller
                 'created_at_iso_utc' => TimeService::instance()->toIso8601Utc($order['created_at'] ?? null),
                 'created_at_display' => TimeService::instance()->formatDisplay($order['created_at'] ?? null),
                 'customer_input' => (string) ($order['customer_input'] ?? ''),
-                'delivery_content' => (string) ($order['stock_content_plain'] ?? ''),
+                'delivery_content' => ((string) ($order['status'] ?? '') === 'pending') ? '' : (string) ($order['stock_content_plain'] ?? ''),
                 'cancel_reason' => (string) ($order['cancel_reason'] ?? ''),
             ],
         ]);
@@ -175,7 +175,7 @@ class OrderHistoryController extends Controller
             $content[] = $customerInput;
         }
 
-        if ($deliveryContent !== '') {
+        if ($deliveryContent !== '' && (string) ($order['status'] ?? '') !== 'pending') {
             $content[] = '';
             $content[] = '--- NOI_DUNG_BAN_GIAO ---';
             $content[] = $deliveryContent;

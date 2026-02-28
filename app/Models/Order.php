@@ -7,55 +7,20 @@ class Order extends Model
 {
     protected $table = 'orders';
     private ?CryptoService $crypto = null;
+    private ProductStock $productStockModel;
 
     public function __construct()
     {
         parent::__construct();
+        $this->productStockModel = new ProductStock();
         if (class_exists('CryptoService')) {
             $this->crypto = new CryptoService();
         }
-        $this->ensureColumns();
     }
 
     public function generateOrderCode(): string
     {
-        return 'Y' . strtoupper(bin2hex(random_bytes(8)));
-    }
-
-    private function ensureColumns(): void
-    {
-        $cols = [
-            'quantity' => "ALTER TABLE `{$this->table}` ADD COLUMN `quantity` INT NOT NULL DEFAULT 1 AFTER `price`",
-            'customer_input' => "ALTER TABLE `{$this->table}` ADD COLUMN `customer_input` LONGTEXT NULL AFTER `stock_content`",
-            'fulfilled_by' => "ALTER TABLE `{$this->table}` ADD COLUMN `fulfilled_by` VARCHAR(100) NULL AFTER `customer_input`",
-            'fulfilled_at' => "ALTER TABLE `{$this->table}` ADD COLUMN `fulfilled_at` DATETIME NULL AFTER `fulfilled_by`",
-            'cancel_reason' => "ALTER TABLE `{$this->table}` ADD COLUMN `cancel_reason` TEXT NULL AFTER `fulfilled_at`",
-            'user_deleted_at' => "ALTER TABLE `{$this->table}` ADD COLUMN `user_deleted_at` DATETIME NULL AFTER `cancel_reason`",
-        ];
-
-        foreach ($cols as $col => $sql) {
-            if ($this->hasColumn($col)) {
-                continue;
-            }
-            try {
-                $this->db->exec($sql);
-            } catch (Throwable $e) {
-                // Keep backward compatibility on restricted DB users.
-            }
-        }
-    }
-
-    public function hasColumn(string $column): bool
-    {
-        $stmt = $this->db->prepare("
-            SELECT COUNT(*)
-            FROM information_schema.COLUMNS
-            WHERE TABLE_SCHEMA = DATABASE()
-              AND TABLE_NAME = ?
-              AND COLUMN_NAME = ?
-        ");
-        $stmt->execute([$this->table, $column]);
-        return (int) $stmt->fetchColumn() > 0;
+        return strtoupper(bin2hex(random_bytes(4)));
     }
 
     public function getById(int $id): ?array
@@ -68,11 +33,10 @@ class Order extends Model
 
     public function getByIdForUser(int $id, int $userId): ?array
     {
-        $softDeleteEnabled = $this->hasColumn('user_deleted_at');
         $stmt = $this->db->prepare("
             SELECT *
             FROM `{$this->table}`
-            WHERE `id` = ? AND `user_id` = ?" . ($softDeleteEnabled ? " AND `user_deleted_at` IS NULL" : "") . "
+            WHERE `id` = ? AND `user_id` = ? AND `user_deleted_at` IS NULL
             LIMIT 1
         ");
         $stmt->execute([$id, $userId]);
@@ -87,23 +51,13 @@ class Order extends Model
         }
 
         try {
-            if ($this->hasColumn('user_deleted_at')) {
-                $stmt = $this->db->prepare("
-                    UPDATE `{$this->table}`
-                    SET `user_deleted_at` = NOW()
-                    WHERE `id` = ? AND `user_id` = ? AND `user_deleted_at` IS NULL
-                    LIMIT 1
-                ");
-                $stmt->execute([$id, $userId]);
-            } else {
-                // Fallback for DBs where ALTER TABLE is not permitted.
-                $stmt = $this->db->prepare("
-                    DELETE FROM `{$this->table}`
-                    WHERE `id` = ? AND `user_id` = ?
-                    LIMIT 1
-                ");
-                $stmt->execute([$id, $userId]);
-            }
+            $stmt = $this->db->prepare("
+                UPDATE `{$this->table}`
+                SET `user_deleted_at` = NOW()
+                WHERE `id` = ? AND `user_id` = ? AND `user_deleted_at` IS NULL
+                LIMIT 1
+            ");
+            $stmt->execute([$id, $userId]);
 
             if ($stmt->rowCount() < 1) {
                 return ['success' => false, 'message' => 'Đơn hàng không tồn tại hoặc đã bị xóa.'];
@@ -160,6 +114,35 @@ class Order extends Model
             {$whereSql}
             ORDER BY `created_at` DESC, `id` DESC
         ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        return array_map(fn(array $row) => $this->hydrateOrderRow($row), $rows);
+    }
+
+    public function getProductOrdersQueue(int $productId, array $filters = []): array
+    {
+        $where = ["`product_id` = ?"];
+        $params = [$productId];
+
+        $statusFilter = trim((string) ($filters['status_filter'] ?? ''));
+        if ($statusFilter !== '') {
+            $where[] = "`status` = ?";
+            $params[] = $statusFilter;
+        }
+
+        $search = trim((string) ($filters['search'] ?? ''));
+        if ($search !== '') {
+            $where[] = "(`username` LIKE ? OR `order_code` LIKE ? OR `customer_input` LIKE ?)";
+            $params[] = '%' . $search . '%';
+            $params[] = '%' . $search . '%';
+            $params[] = '%' . $search . '%';
+        }
+
+        $limit = max(1, min(500, (int) ($filters['limit'] ?? 20)));
+        $whereSql = 'WHERE ' . implode(' AND ', $where);
+
+        $sql = "SELECT * FROM `{$this->table}` {$whereSql} ORDER BY `created_at` DESC LIMIT {$limit}";
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
@@ -268,18 +251,13 @@ class Order extends Model
                 ? $this->crypto->encryptString($deliveryContent)
                 : $deliveryContent;
 
-            $sets = ["`status` = 'completed'", "`stock_content` = ?"];
-            $params = [$storedContent];
-
-            if ($this->hasColumn('fulfilled_by')) {
-                $sets[] = "`fulfilled_by` = ?";
-                $params[] = $adminUsername;
-            }
-            if ($this->hasColumn('fulfilled_at')) {
-                $sets[] = "`fulfilled_at` = NOW()";
-            }
-
-            $params[] = $id;
+            $sets = [
+                "`status` = 'completed'",
+                "`stock_content` = ?",
+                "`fulfilled_by` = ?",
+                "`fulfilled_at` = NOW()",
+            ];
+            $params = [$storedContent, $adminUsername, $id];
             $sql = "UPDATE `{$this->table}` SET " . implode(', ', $sets) . " WHERE `id` = ? LIMIT 1";
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
@@ -346,24 +324,19 @@ class Order extends Model
                 throw new RuntimeException('Khong the hoan tien cho nguoi dung.');
             }
 
-            $sets = ["`status` = 'cancelled'"];
-            $params = [];
-            if ($this->hasColumn('cancel_reason')) {
-                $sets[] = "`cancel_reason` = ?";
-                $params[] = ($reason !== '' ? $reason : null);
-            }
-            if ($this->hasColumn('fulfilled_by')) {
-                $sets[] = "`fulfilled_by` = ?";
-                $params[] = $adminUsername;
-            }
-            if ($this->hasColumn('fulfilled_at')) {
-                $sets[] = "`fulfilled_at` = NOW()";
-            }
-            $params[] = $id;
+            $sets = [
+                "`status` = 'cancelled'",
+                "`cancel_reason` = ?",
+                "`fulfilled_by` = ?",
+                "`fulfilled_at` = NOW()",
+            ];
+            $params = [($reason !== '' ? $reason : null), $adminUsername, $id];
 
             $updateSql = "UPDATE `{$this->table}` SET " . implode(', ', $sets) . " WHERE `id` = ? LIMIT 1";
             $updateStmt = $this->db->prepare($updateSql);
             $updateStmt->execute($params);
+
+            $this->productStockModel->releaseByOrderId($id);
 
             try {
                 $activityStmt = $this->db->prepare("
@@ -417,9 +390,7 @@ class Order extends Model
     {
         $where = ["`user_id` = ?"];
         $params = [$userId];
-        if ($this->hasColumn('user_deleted_at')) {
-            $where[] = "`user_deleted_at` IS NULL";
-        }
+        $where[] = "`user_deleted_at` IS NULL";
 
         $search = trim((string) ($filters['search'] ?? ''));
         if ($search !== '') {
@@ -488,18 +459,72 @@ class Order extends Model
         }
         $value = mb_strtolower($value, 'UTF-8');
         $value = strtr($value, [
-            'à' => 'a', 'á' => 'a', 'ạ' => 'a', 'ả' => 'a', 'ã' => 'a',
-            'â' => 'a', 'ầ' => 'a', 'ấ' => 'a', 'ậ' => 'a', 'ẩ' => 'a', 'ẫ' => 'a',
-            'ă' => 'a', 'ằ' => 'a', 'ắ' => 'a', 'ặ' => 'a', 'ẳ' => 'a', 'ẵ' => 'a',
-            'è' => 'e', 'é' => 'e', 'ẹ' => 'e', 'ẻ' => 'e', 'ẽ' => 'e',
-            'ê' => 'e', 'ề' => 'e', 'ế' => 'e', 'ệ' => 'e', 'ể' => 'e', 'ễ' => 'e',
-            'ì' => 'i', 'í' => 'i', 'ị' => 'i', 'ỉ' => 'i', 'ĩ' => 'i',
-            'ò' => 'o', 'ó' => 'o', 'ọ' => 'o', 'ỏ' => 'o', 'õ' => 'o',
-            'ô' => 'o', 'ồ' => 'o', 'ố' => 'o', 'ộ' => 'o', 'ổ' => 'o', 'ỗ' => 'o',
-            'ơ' => 'o', 'ờ' => 'o', 'ớ' => 'o', 'ợ' => 'o', 'ở' => 'o', 'ỡ' => 'o',
-            'ù' => 'u', 'ú' => 'u', 'ụ' => 'u', 'ủ' => 'u', 'ũ' => 'u',
-            'ư' => 'u', 'ừ' => 'u', 'ứ' => 'u', 'ự' => 'u', 'ử' => 'u', 'ữ' => 'u',
-            'ỳ' => 'y', 'ý' => 'y', 'ỵ' => 'y', 'ỷ' => 'y', 'ỹ' => 'y',
+            'à' => 'a',
+            'á' => 'a',
+            'ạ' => 'a',
+            'ả' => 'a',
+            'ã' => 'a',
+            'â' => 'a',
+            'ầ' => 'a',
+            'ấ' => 'a',
+            'ậ' => 'a',
+            'ẩ' => 'a',
+            'ẫ' => 'a',
+            'ă' => 'a',
+            'ằ' => 'a',
+            'ắ' => 'a',
+            'ặ' => 'a',
+            'ẳ' => 'a',
+            'ẵ' => 'a',
+            'è' => 'e',
+            'é' => 'e',
+            'ẹ' => 'e',
+            'ẻ' => 'e',
+            'ẽ' => 'e',
+            'ê' => 'e',
+            'ề' => 'e',
+            'ế' => 'e',
+            'ệ' => 'e',
+            'ể' => 'e',
+            'ễ' => 'e',
+            'ì' => 'i',
+            'í' => 'i',
+            'ị' => 'i',
+            'ỉ' => 'i',
+            'ĩ' => 'i',
+            'ò' => 'o',
+            'ó' => 'o',
+            'ọ' => 'o',
+            'ỏ' => 'o',
+            'õ' => 'o',
+            'ô' => 'o',
+            'ồ' => 'o',
+            'ố' => 'o',
+            'ộ' => 'o',
+            'ổ' => 'o',
+            'ỗ' => 'o',
+            'ơ' => 'o',
+            'ờ' => 'o',
+            'ớ' => 'o',
+            'ợ' => 'o',
+            'ở' => 'o',
+            'ỡ' => 'o',
+            'ù' => 'u',
+            'ú' => 'u',
+            'ụ' => 'u',
+            'ủ' => 'u',
+            'ũ' => 'u',
+            'ư' => 'u',
+            'ừ' => 'u',
+            'ứ' => 'u',
+            'ự' => 'u',
+            'ử' => 'u',
+            'ữ' => 'u',
+            'ỳ' => 'y',
+            'ý' => 'y',
+            'ỵ' => 'y',
+            'ỷ' => 'y',
+            'ỹ' => 'y',
             'đ' => 'd',
         ]);
         $value = preg_replace('/[^\p{L}\p{N}\s\-\+]/u', ' ', $value) ?? $value;

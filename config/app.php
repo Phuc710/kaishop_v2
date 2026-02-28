@@ -176,53 +176,121 @@ spl_autoload_register(function ($class) {
 // Load helper functions
 require_once BASE_PATH . '/hethong/config.php';
 
-// Global Security Check (SQL Injection & XSS)
-function checkMaliciousInput($data)
+function normalizedRequestPathForSecurity(): string
 {
-    if (is_array($data)) {
-        foreach ($data as $key => $value) {
-            checkMaliciousInput($value);
-        }
-    } else {
-        $dataStr = strtolower((string) $data);
-        $patterns = [
-            '/union\s+select/i',
-            '/select\s+.*\s+from/i',
-            '/insert\s+into/i',
-            '/update\s+.*\s+set/i',
-            '/delete\s+from/i',
-            '/drop\s+table/i',
-            '/<script\b[^>]*>(.*?)<\/script>/is',
-            '/onload=/i',
-            '/onerror=/i',
-            '/javascript:/i'
-        ];
-        foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $dataStr)) {
-                // Suspicious payload detected
-                $payload = [
-                    'uri' => $_SERVER['REQUEST_URI'] ?? '',
-                    'method' => $_SERVER['REQUEST_METHOD'] ?? '',
-                    'matched_pattern' => $pattern,
-                    'input' => substr($data, 0, 200) // Truncate to avoid massive logs
-                ];
-                // Try to load Logger if available
-                if (class_exists('Logger')) {
-                    Logger::danger('Security', 'sql_injection_attempt', 'Phát hiện truy vấn độc hại (SQLi / XSS)', $payload);
-                }
+    $requestPath = (string) (parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/');
+    $appDir = defined('APP_DIR') ? rtrim((string) APP_DIR, '/') : '';
+    if ($appDir !== '' && strpos($requestPath, $appDir) === 0) {
+        $requestPath = substr($requestPath, strlen($appDir));
+    }
 
-                // Optionally block request:
-                // die('Security Violation Detected');
-                break;
+    return $requestPath !== '' ? $requestPath : '/';
+}
+
+function resolveInputSecurityProfile(string $path, string $method): ?array
+{
+    $method = strtoupper($method);
+    $profiles = [
+        ['prefixes' => ['/admin'], 'methods' => ['POST'], 'patterns' => 'xss,sqli'],
+        ['prefixes' => ['/login', '/register', '/password-reset', '/forgot-password', '/password/security', '/api/'], 'methods' => ['POST'], 'patterns' => 'xss,sqli'],
+        ['prefixes' => ['/contact', '/lien-he'], 'methods' => ['POST'], 'patterns' => 'xss,sqli'],
+        ['prefixes' => ['/search', '/tim-kiem'], 'methods' => ['GET', 'POST'], 'patterns' => 'xss'],
+    ];
+
+    foreach ($profiles as $profile) {
+        if (!in_array($method, $profile['methods'], true)) {
+            continue;
+        }
+
+        foreach ($profile['prefixes'] as $prefix) {
+            $isPrefix = substr($prefix, -1) === '/';
+            if (($isPrefix && strpos($path, $prefix) === 0) || (!$isPrefix && ($path === $prefix || strpos($path, $prefix . '/') === 0))) {
+                return $profile;
             }
         }
     }
+
+    return null;
 }
 
-// Check GET and POST globally
-if (!empty($_GET)) {
-    checkMaliciousInput($_GET);
+function maliciousInputPatterns(string $profileKey): array
+{
+    $groups = [
+        'xss' => [
+            '/<script\b[^>]*>/i',
+            '/javascript\s*:/i',
+            '/on(?:load|error|click|focus|mouseover|mouseenter|submit|change)\s*=/i',
+        ],
+        'sqli' => [
+            '/\bunion\s+select\b/i',
+            '/\binsert\s+into\b/i',
+            '/\bdelete\s+from\b/i',
+            '/\bdrop\s+table\b/i',
+            '/\bupdate\b[\s\S]{0,40}\bset\b/i',
+        ],
+    ];
+
+    $resolved = [];
+    foreach (array_filter(array_map('trim', explode(',', $profileKey))) as $group) {
+        if (!empty($groups[$group])) {
+            $resolved = array_merge($resolved, $groups[$group]);
+        }
+    }
+
+    return $resolved;
 }
-if (!empty($_POST)) {
-    checkMaliciousInput($_POST);
+
+function inspectSensitiveInput($data, array $patterns, string $fieldPath = 'root'): void
+{
+    if (empty($patterns)) {
+        return;
+    }
+
+    if (is_array($data)) {
+        foreach ($data as $key => $value) {
+            $nextPath = $fieldPath . '.' . (is_string($key) || is_int($key) ? $key : 'item');
+            inspectSensitiveInput($value, $patterns, $nextPath);
+        }
+        return;
+    }
+
+    if (!is_scalar($data) && $data !== null) {
+        return;
+    }
+
+    $raw = trim((string) $data);
+    if ($raw === '' || strlen($raw) < 4) {
+        return;
+    }
+
+    foreach ($patterns as $pattern) {
+        if (!preg_match($pattern, $raw)) {
+            continue;
+        }
+
+        if (class_exists('Logger')) {
+            Logger::danger('Security', 'sensitive_input_detected', 'Phat hien input nghi van tren route nhay cam', [
+                'uri' => $_SERVER['REQUEST_URI'] ?? '',
+                'method' => $_SERVER['REQUEST_METHOD'] ?? '',
+                'field' => $fieldPath,
+                'matched_pattern' => $pattern,
+                'input' => substr($raw, 0, 200),
+            ]);
+        }
+        break;
+    }
+}
+
+$securityPath = normalizedRequestPathForSecurity();
+$securityMethod = (string) ($_SERVER['REQUEST_METHOD'] ?? 'GET');
+$securityProfile = resolveInputSecurityProfile($securityPath, $securityMethod);
+
+if ($securityProfile !== null) {
+    $patterns = maliciousInputPatterns((string) ($securityProfile['patterns'] ?? ''));
+    if ($securityMethod === 'GET' && !empty($_GET)) {
+        inspectSensitiveInput($_GET, $patterns, 'get');
+    }
+    if ($securityMethod === 'POST' && !empty($_POST)) {
+        inspectSensitiveInput($_POST, $patterns, 'post');
+    }
 }

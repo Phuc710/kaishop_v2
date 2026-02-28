@@ -4,24 +4,29 @@
  * Product Controller
  * Handles product display
  */
-class ProductController extends Controller {
+class ProductController extends Controller
+{
     private $productModel;
     private $stockModel;
+    private $inventoryService;
     private $authService;
     private $purchaseService;
-    
-    public function __construct() {
+
+    public function __construct()
+    {
         $this->productModel = new Product();
         $this->stockModel = new ProductStock();
+        $this->inventoryService = new ProductInventoryService($this->stockModel);
         $this->authService = new AuthService();
         $this->purchaseService = new PurchaseService();
     }
-    
+
     /**
      * Show product detail
      * @param int $id
      */
-    public function show($id) {
+    public function show($id)
+    {
         $product = $this->productModel->find($id);
         if (!$product || (string) ($product['status'] ?? '') !== 'ON') {
             http_response_code(404);
@@ -42,8 +47,16 @@ class ProductController extends Controller {
      */
     public function showBySlug($categorySlug, $productSlug)
     {
-        $product = $this->productModel->findByCategoryAndProductSlug((string) $categorySlug, (string) $productSlug);
+        $categorySlug = trim((string) $categorySlug, " /|");
+        $productSlug = trim((string) $productSlug, " /|");
+
+        $product = $this->productModel->findByCategoryAndProductSlug($categorySlug, $productSlug);
         if (!$product) {
+            // Check if productSlug is actually an ID (fallback for old links)
+            if (is_numeric($productSlug)) {
+                return $this->show((int) $productSlug);
+            }
+
             http_response_code(404);
             die('Product not found or unavailable');
         }
@@ -109,13 +122,7 @@ class ProductController extends Controller {
     {
         global $chungapi, $user;
 
-        $requiresInfo = (int) ($product['requires_info'] ?? 0) === 1;
-        $productType = (string) ($product['product_type'] ?? 'account');
-
-        $availableStock = null;
-        if ($productType === 'account' && !$requiresInfo) {
-            $availableStock = $this->stockModel->countAvailable((int) ($product['id'] ?? 0));
-        }
+        $availableStock = $this->inventoryService->getAvailableStock($product);
 
         $product['available_stock'] = $availableStock;
         $product['public_url'] = url((string) ($product['public_path'] ?? ('product/' . (int) ($product['id'] ?? 0))));

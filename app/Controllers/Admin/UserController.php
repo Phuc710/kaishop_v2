@@ -254,17 +254,6 @@ class UserController extends Controller
             return $this->json(['success' => false, 'message' => 'Chưa có dữ liệu Fingerprint của người dùng này để khóa thiết bị.']);
         }
 
-        // Ensure banned_fingerprints table exists
-        $db = Database::getInstance()->getConnection();
-        $db->exec("CREATE TABLE IF NOT EXISTS `banned_fingerprints` (
-            `id` INT AUTO_INCREMENT PRIMARY KEY,
-            `fingerprint_hash` VARCHAR(255) NOT NULL,
-            `reason` TEXT DEFAULT NULL,
-            `banned_by` VARCHAR(100) DEFAULT NULL,
-            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE KEY `uniq_fp` (`fingerprint_hash`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-
         $fpHash = mysqli_real_escape_string($connection, $user['fingerprint']);
         $safeReason = mysqli_real_escape_string($connection, $reason);
         $adminName = mysqli_real_escape_string($connection, $_SESSION['admin'] ?? 'Admin');

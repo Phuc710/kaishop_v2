@@ -95,6 +95,7 @@
 
         var eagerBudget = 2;
         images.forEach(function (img) {
+            if (img.dataset && img.dataset.noPerfLazy === '1') return;
             if (!img.getAttribute('decoding')) {
                 img.setAttribute('decoding', 'async');
             }
@@ -109,34 +110,21 @@
             var nearViewport = !!rect && rect.top < (window.innerHeight * 1.2);
             if (nearViewport && eagerBudget > 0) {
                 img.setAttribute('loading', 'eager');
+                if (!img.getAttribute('fetchpriority')) {
+                    img.setAttribute('fetchpriority', 'high');
+                }
                 eagerBudget--;
             } else {
                 img.setAttribute('loading', 'lazy');
+                if (!img.getAttribute('fetchpriority')) {
+                    img.setAttribute('fetchpriority', 'low');
+                }
             }
         });
     }
 
     function preconnectOrigins() {
-        if (isSlowConnection()) return;
-        var origins = [
-            'https://cdn.jsdelivr.net',
-            'https://cdn.datatables.net',
-            'https://cdn.jsdelivr.net',
-            'https://cdn.gtranslate.net',
-            'https://fonts.googleapis.com',
-            'https://fonts.gstatic.com'
-        ];
-        var seen = new Set();
-        origins.forEach(function (origin) {
-            if (!origin || seen.has(origin)) return;
-            seen.add(origin);
-            if (document.head.querySelector('link[rel="preconnect"][href="' + origin + '"]')) return;
-            var link = document.createElement('link');
-            link.rel = 'preconnect';
-            link.href = origin;
-            link.crossOrigin = 'anonymous';
-            document.head.appendChild(link);
-        });
+        return;
     }
 
     function run() {

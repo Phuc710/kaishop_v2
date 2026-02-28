@@ -9,10 +9,10 @@ class PurchaseService
     private PDO $db;
     private Product $productModel;
     private ProductStock $stockModel;
+    private ProductInventoryService $inventoryService;
     private User $userModel;
     private Order $orderModel;
     private $giftCodeModel = null;
-    private ?CryptoService $crypto = null;
 
     public function __construct(
         ?Product $productModel = null,
@@ -23,6 +23,7 @@ class PurchaseService
         $this->db = Database::getInstance()->getConnection();
         $this->productModel = $productModel ?: new Product();
         $this->stockModel = $stockModel ?: new ProductStock();
+        $this->inventoryService = new ProductInventoryService($this->stockModel);
         $this->userModel = $userModel ?: new User();
         $this->orderModel = $orderModel ?: new Order();
         if (class_exists('GiftCode')) {
@@ -66,9 +67,11 @@ class PurchaseService
             if (!$product || (string) ($product['status'] ?? '') !== 'ON') {
                 throw new RuntimeException('Sản phẩm không khả dụng.');
             }
+            $product = Product::normalizeRuntimeRow($product);
 
             $productType = (string) ($product['product_type'] ?? 'account');
             $requiresInfo = (int) ($product['requires_info'] ?? 0) === 1;
+            $stockManaged = Product::isStockManagedProduct($product);
 
             $price = (int) ($product['price_vnd'] ?? 0);
             if ($price <= 0) {
@@ -85,12 +88,9 @@ class PurchaseService
                 throw new RuntimeException('Vui lòng nhập thông tin yêu cầu trước khi mua.');
             }
 
-            $availableStock = null;
-            if ($productType === 'account' && !$requiresInfo) {
-                $stockCountStmt = $this->db->prepare("SELECT COUNT(*) FROM `product_stock` WHERE `product_id` = ? AND `status` = 'available'");
-                $stockCountStmt->execute([$productId]);
-                $availableStock = (int) $stockCountStmt->fetchColumn();
-                $dynamicMax = $maxQtyConfig > 0 ? min($maxQtyConfig, $availableStock) : $availableStock;
+            $availableStock = $this->inventoryService->getAvailableStock($product);
+            if ($stockManaged) {
+                $dynamicMax = $this->inventoryService->getDynamicMaxQty($product, $maxQtyConfig);
                 if ($dynamicMax <= 0) {
                     throw new RuntimeException('Sản phẩm tạm hết hàng.');
                 }
@@ -126,23 +126,46 @@ class PurchaseService
             $orderCode = $this->orderModel->generateOrderCode();
 
             $orderStatus = $requiresInfo ? 'pending' : 'processing';
-            $orderColumns = ['order_code', 'user_id', 'username', 'product_id', 'product_name', 'price', 'status', 'payment_method', 'ip_address', 'user_agent'];
-            $orderValues = [$orderCode, $userId, $username, $productId, (string) ($product['name'] ?? ('Product #' . $productId)), $totalPrice, $orderStatus, 'wallet', (string) ($_SERVER['REMOTE_ADDR'] ?? ''), (string) ($_SERVER['HTTP_USER_AGENT'] ?? '')];
-
-            if ($this->orderModel->hasColumn('quantity')) {
-                $orderColumns[] = 'quantity';
-                $orderValues[] = $requestedQty;
-            }
-            if ($this->orderModel->hasColumn('customer_input')) {
-                $orderColumns[] = 'customer_input';
-                $orderValues[] = $customerInput !== '' ? $customerInput : null;
-            }
+            $orderColumns = [
+                'order_code',
+                'user_id',
+                'username',
+                'product_id',
+                'product_name',
+                'price',
+                'status',
+                'payment_method',
+                'ip_address',
+                'user_agent',
+                'quantity',
+                'customer_input',
+            ];
+            $orderValues = [
+                $orderCode,
+                $userId,
+                $username,
+                $productId,
+                (string) ($product['name'] ?? ('Product #' . $productId)),
+                $totalPrice,
+                $orderStatus,
+                'wallet',
+                (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
+                (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''),
+                $requestedQty,
+                $customerInput !== '' ? $customerInput : null,
+            ];
 
             $insertFields = '`' . implode('`, `', $orderColumns) . '`';
             $insertMarks = implode(', ', array_fill(0, count($orderColumns), '?'));
             $insertOrder = $this->db->prepare("INSERT INTO `orders` ({$insertFields}) VALUES ({$insertMarks})");
             $insertOrder->execute($orderValues);
             $orderId = (int) $this->db->lastInsertId();
+
+            // Decrement manual stock if applicable
+            if ($requiresInfo && ($product['delivery_mode'] ?? '') === 'manual_info') {
+                $decStmt = $this->db->prepare("UPDATE `products` SET `manual_stock` = GREATEST(0, `manual_stock` - ?) WHERE `id` = ?");
+                $decStmt->execute([$requestedQty, $productId]);
+            }
 
             if ($totalPrice > 0) {
                 $debitStmt = $this->db->prepare("UPDATE `users` SET `money` = `money` - ? WHERE `id` = ? AND `money` >= ?");
@@ -159,21 +182,20 @@ class PurchaseService
             $deliveredPlain = '';
             $firstStockId = 0;
 
-            if (!$requiresInfo && $productType === 'account') {
-                $stockItems = [];
-                for ($i = 0; $i < $requestedQty; $i++) {
-                    $stock = $this->stockModel->claimOneInCurrentTransaction($productId, $userId, $orderId);
-                    if (!$stock) {
-                        throw new RuntimeException('Sản phẩm tạm hết hàng.');
-                    }
-                    if ($firstStockId === 0) {
-                        $firstStockId = (int) ($stock['id'] ?? 0);
-                    }
-                    $stockItems[] = (string) ($stock['content'] ?? '');
+            if ($stockManaged) {
+                $allocated = $this->inventoryService->allocateInCurrentTransaction($product, $requestedQty, $userId, $orderId);
+                if (!$allocated) {
+                    throw new RuntimeException('San pham tam het hang.');
                 }
 
-                $deliveredPlain = implode(PHP_EOL, $stockItems);
-                $this->completeOrderDelivery($orderId, $firstStockId, $deliveredPlain);
+                $firstStockId = (int) ($allocated['stock_id'] ?? 0);
+                $deliveredPlain = (string) ($allocated['delivery_content'] ?? '');
+
+                if (!$requiresInfo && $deliveredPlain !== '') {
+                    $this->completeOrderDelivery($orderId, $firstStockId, $deliveredPlain);
+                } elseif ($requiresInfo) {
+                    $this->linkStockToPendingOrder($orderId, $firstStockId, $deliveredPlain);
+                }
             } elseif (!$requiresInfo && $productType === 'link') {
                 if ($requestedQty > 1) {
                     throw new RuntimeException('Loại sản phẩm này chỉ được mua tối đa 1 cái mỗi đơn hàng.');
@@ -236,6 +258,7 @@ class PurchaseService
                         'status' => 'pending',
                         'customer_input' => $customerInput,
                         'info_instructions' => (string) ($product['info_instructions'] ?? ''),
+                        'created_at' => date('H:i:s d/m/Y'),
                     ],
                 ];
             }
@@ -257,6 +280,7 @@ class PurchaseService
                     'quantity' => $requestedQty,
                     'content' => $deliveredPlain,
                     'stock_id' => $firstStockId,
+                    'created_at' => date('H:i:s d/m/Y'),
                 ],
             ];
         } catch (Throwable $e) {
@@ -296,9 +320,11 @@ class PurchaseService
             if (!$product || (string) ($product['status'] ?? '') !== 'ON') {
                 throw new RuntimeException('Sản phẩm không khả dụng.');
             }
+            $product = Product::normalizeRuntimeRow($product);
 
             $productType = (string) ($product['product_type'] ?? 'account');
             $requiresInfo = (int) ($product['requires_info'] ?? 0) === 1;
+            $stockManaged = Product::isStockManagedProduct($product);
             $price = (int) ($product['price_vnd'] ?? 0);
             if ($price <= 0) {
                 throw new RuntimeException('Giá sản phẩm không hợp lệ.');
@@ -315,13 +341,9 @@ class PurchaseService
                 throw new RuntimeException('Loại sản phẩm này chỉ hỗ trợ mua tối đa 1 sản phẩm mỗi đơn.');
             }
 
-            $availableStock = null;
-            if ($productType === 'account' && !$requiresInfo) {
-                $stockCountStmt = $this->db->prepare("SELECT COUNT(*) FROM `product_stock` WHERE `product_id` = ? AND `status` = 'available'");
-                $stockCountStmt->execute([$productId]);
-                $availableStock = (int) $stockCountStmt->fetchColumn();
-
-                $dynamicMax = $maxQtyConfig > 0 ? min($maxQtyConfig, $availableStock) : $availableStock;
+            $availableStock = $this->inventoryService->getAvailableStock($product);
+            if ($stockManaged) {
+                $dynamicMax = $this->inventoryService->getDynamicMaxQty($product, $maxQtyConfig);
                 if ($dynamicMax <= 0) {
                     throw new RuntimeException('Sản phẩm tạm hết hàng.');
                 }
@@ -371,9 +393,7 @@ class PurchaseService
 
     private function completeOrderDelivery(int $orderId, ?int $stockId, string $deliveryContentPlain): void
     {
-        $stored = ($this->crypto instanceof CryptoService && $this->crypto->isEnabled())
-            ? $this->crypto->encryptString($deliveryContentPlain)
-            : $deliveryContentPlain;
+        $stored = $deliveryContentPlain;
 
         if ($stockId !== null && $stockId > 0) {
             $stmt = $this->db->prepare("
@@ -391,6 +411,18 @@ class PurchaseService
             WHERE `id` = ? LIMIT 1
         ");
         $stmt->execute([$stored, $orderId]);
+    }
+
+    private function linkStockToPendingOrder(int $orderId, ?int $stockId, string $deliveryContentPlain): void
+    {
+        $stored = $deliveryContentPlain;
+
+        $stmt = $this->db->prepare("
+            UPDATE `orders`
+            SET `stock_id` = ?, `stock_content` = ?
+            WHERE `id` = ? LIMIT 1
+        ");
+        $stmt->execute([$stockId, $stored, $orderId]);
     }
 
     private function validateGiftCodeForPurchase(string $giftcode, int $productId, int $subtotalPrice): array
@@ -482,3 +514,4 @@ class PurchaseService
         return strtoupper(substr(hash('sha256', $orderCode), 0, 8));
     }
 }
+

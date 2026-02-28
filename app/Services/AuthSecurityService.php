@@ -23,13 +23,11 @@ class AuthSecurityService
     private const REFRESH_TTL_DEFAULT = 86400; // 1 day
     private const TRUSTED_DEVICE_DAYS = 30;
 
-    private static bool $schemaReady = false;
     private static bool $pruneAttempted = false;
 
     public function __construct()
     {
         $this->db = Database::getInstance()->getConnection();
-        $this->ensureSchema();
         $this->maybePruneExpiredAuthData();
     }
 
@@ -605,126 +603,6 @@ class AuthSecurityService
             'username' => (string) ($user['username'] ?? ''),
             'ip' => $this->clientIp(),
         ]);
-    }
-
-    private function ensureSchema(): void
-    {
-        if (self::$schemaReady) {
-            return;
-        }
-        self::$schemaReady = true;
-
-        $this->db->exec("CREATE TABLE IF NOT EXISTS auth_sessions (
-            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
-            session_selector VARCHAR(64) NOT NULL,
-            access_token_hash CHAR(64) NOT NULL,
-            refresh_token_hash CHAR(64) NOT NULL,
-            legacy_session_token VARCHAR(100) DEFAULT NULL,
-            access_expires_at DATETIME NOT NULL,
-            refresh_expires_at DATETIME NOT NULL,
-            ip_address VARCHAR(45) DEFAULT NULL,
-            user_agent TEXT DEFAULT NULL,
-            device_fingerprint VARCHAR(128) DEFAULT NULL,
-            device_hash CHAR(64) DEFAULT NULL,
-            device_os VARCHAR(100) DEFAULT NULL,
-            device_browser VARCHAR(100) DEFAULT NULL,
-            device_type VARCHAR(50) DEFAULT NULL,
-            remember_me TINYINT(1) NOT NULL DEFAULT 0,
-            status VARCHAR(20) NOT NULL DEFAULT 'active',
-            revoke_reason VARCHAR(64) DEFAULT NULL,
-            last_rotated_at DATETIME DEFAULT NULL,
-            revoked_at DATETIME DEFAULT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT NULL,
-            UNIQUE KEY uniq_auth_sessions_selector (session_selector),
-            KEY idx_auth_sessions_user (user_id),
-            KEY idx_auth_sessions_status (status)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
-        $this->ensureIndex('auth_sessions', 'idx_auth_sessions_status_refresh', "ALTER TABLE auth_sessions ADD INDEX idx_auth_sessions_status_refresh (status, refresh_expires_at)");
-        $this->ensureIndex('auth_sessions', 'idx_auth_sessions_selector_status', "ALTER TABLE auth_sessions ADD INDEX idx_auth_sessions_selector_status (session_selector, status)");
-        $this->ensureIndex('auth_sessions', 'idx_auth_sessions_legacy_session', "ALTER TABLE auth_sessions ADD INDEX idx_auth_sessions_legacy_session (legacy_session_token)");
-
-        $this->db->exec("CREATE TABLE IF NOT EXISTS auth_otp_codes (
-            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            challenge_id VARCHAR(64) NOT NULL,
-            user_id INT NOT NULL,
-            purpose VARCHAR(30) NOT NULL,
-            email VARCHAR(190) DEFAULT NULL,
-            code_hash CHAR(64) NOT NULL,
-            attempts INT NOT NULL DEFAULT 0,
-            max_attempts INT NOT NULL DEFAULT 5,
-            expires_at DATETIME NOT NULL,
-            verified_at DATETIME DEFAULT NULL,
-            consumed_at DATETIME DEFAULT NULL,
-            ip_address VARCHAR(45) DEFAULT NULL,
-            user_agent TEXT DEFAULT NULL,
-            device_hash CHAR(64) DEFAULT NULL,
-            metadata_json LONGTEXT DEFAULT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE KEY uniq_auth_otp_challenge (challenge_id),
-            KEY idx_auth_otp_user (user_id),
-            KEY idx_auth_otp_purpose (purpose)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
-        $this->ensureIndex('auth_otp_codes', 'idx_auth_otp_challenge_purpose', "ALTER TABLE auth_otp_codes ADD INDEX idx_auth_otp_challenge_purpose (challenge_id, purpose)");
-        $this->ensureIndex('auth_otp_codes', 'idx_auth_otp_expires', "ALTER TABLE auth_otp_codes ADD INDEX idx_auth_otp_expires (expires_at)");
-
-        $this->db->exec("CREATE TABLE IF NOT EXISTS user_trusted_devices (
-            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
-            device_hash CHAR(64) NOT NULL,
-            ip_address VARCHAR(45) DEFAULT NULL,
-            user_agent TEXT DEFAULT NULL,
-            os VARCHAR(100) DEFAULT NULL,
-            browser VARCHAR(100) DEFAULT NULL,
-            device_type VARCHAR(50) DEFAULT NULL,
-            trusted_until DATETIME DEFAULT NULL,
-            last_seen_at DATETIME DEFAULT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT NULL,
-            UNIQUE KEY uniq_user_device (user_id, device_hash),
-            KEY idx_user_device_until (trusted_until)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
-        $this->ensureIndex('user_trusted_devices', 'idx_user_device_user_until', "ALTER TABLE user_trusted_devices ADD INDEX idx_user_device_user_until (user_id, trusted_until)");
-
-        $this->db->exec("CREATE TABLE IF NOT EXISTS auth_login_attempts (
-            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            action VARCHAR(30) NOT NULL,
-            username_or_email VARCHAR(190) DEFAULT NULL,
-            ip_address VARCHAR(45) DEFAULT NULL,
-            success TINYINT(1) NOT NULL DEFAULT 0,
-            reason VARCHAR(190) DEFAULT NULL,
-            user_agent TEXT DEFAULT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            KEY idx_auth_attempt_action_ip_time (action, ip_address, created_at),
-            KEY idx_auth_attempt_user_ip_time (username_or_email, ip_address, created_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
-        $this->ensureIndex('auth_login_attempts', 'idx_auth_attempt_action_user_ip_success_time', "ALTER TABLE auth_login_attempts ADD INDEX idx_auth_attempt_action_user_ip_success_time (action, username_or_email, ip_address, success, created_at)");
-
-        $this->ensureUserColumn('twofa_enabled', "ALTER TABLE users ADD COLUMN twofa_enabled TINYINT(1) NOT NULL DEFAULT 0 AFTER email");
-        $this->ensureUserColumn('password_updated_at', "ALTER TABLE users ADD COLUMN password_updated_at DATETIME DEFAULT NULL AFTER password");
-    }
-
-    private function ensureIndex(string $table, string $indexName, string $sql): void
-    {
-        try {
-            $stmt = $this->db->prepare("SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?");
-            $stmt->execute([$table, $indexName]);
-            if ((int) $stmt->fetchColumn() === 0) {
-                $this->db->exec($sql);
-            }
-        } catch (Throwable $e) {
-            // non-blocking
-        }
-    }
-
-    private function ensureUserColumn(string $column, string $sql): void
-    {
-        $stmt = $this->db->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = ?");
-        $stmt->execute([$column]);
-        if ((int) $stmt->fetchColumn() === 0) {
-            $this->db->exec($sql);
-        }
     }
 
     private function maybePruneExpiredAuthData(): void

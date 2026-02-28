@@ -39,14 +39,6 @@ class CategoryController extends Controller
         $this->requireAdmin();
         global $chungapi;
 
-        // Auto add slug column if it doesn't exist
-        $db = Database::getInstance()->getConnection();
-        try {
-            $db->exec("ALTER TABLE `categories` ADD COLUMN `slug` VARCHAR(100) NULL AFTER `name`");
-        } catch (PDOException $e) {
-            // Column might already exist
-        }
-
         $categories = $this->categoryModel->getAll();
         $stats = $this->categoryModel->getStats();
 

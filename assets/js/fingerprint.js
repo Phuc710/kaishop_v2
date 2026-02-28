@@ -232,8 +232,28 @@ const KaiFingerprint = (() => {
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    // ─── Main Collector ───────────────────────────────────
-    async function collect() {
+    let _cachedResult = null;
+    /**
+     * Main Collector
+     * @param {boolean} force - If true, bypass cache
+     */
+    async function collect(force = false) {
+        if (!force && _cachedResult) return _cachedResult;
+
+        // Check localStorage for a persistent cache (2 hour TTL)
+        const CACHE_KEY = 'ks_fp_cache';
+        const now = Date.now();
+        try {
+            const stored = localStorage.getItem(CACHE_KEY);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (parsed && parsed.expiry > now && parsed.data) {
+                    _cachedResult = parsed.data;
+                    return _cachedResult;
+                }
+            }
+        } catch (e) { }
+
         const canvas = getCanvasFingerprint();
         const webgl = getWebGLFingerprint();
         const audio = await getAudioFingerprint();
@@ -244,7 +264,7 @@ const KaiFingerprint = (() => {
         const storage = getStorageInfo();
 
         const components = {
-            canvas: canvas.substring(0, 100), // truncate for storage
+            canvas: canvas.substring(0, 100),
             webgl,
             audio,
             fonts,
@@ -254,7 +274,6 @@ const KaiFingerprint = (() => {
             storage
         };
 
-        // Build stable string for hashing (exclude volatile data)
         const stableSignals = [
             canvas,
             JSON.stringify(webgl),
@@ -273,8 +292,17 @@ const KaiFingerprint = (() => {
         ].join('|||');
 
         const hash = await sha256(stableSignals);
+        _cachedResult = { hash, components };
 
-        return { hash, components };
+        // Save to localStorage (2 hours)
+        try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                expiry: now + (2 * 60 * 60 * 1000),
+                data: _cachedResult
+            }));
+        } catch (e) { }
+
+        return _cachedResult;
     }
 
     return { collect };

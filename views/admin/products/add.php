@@ -239,7 +239,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                     <label class="mode-card active" data-mode="account_stock">
                                         <input type="radio" name="sale_mode_ui" value="account_stock" checked>
                                         <div class="mode-card-title"><i class="fas fa-user-lock mr-1 text-primary"></i>
-                                            Tài khoản</div>
+                                            Tài Khoản</div>
                                     </label>
                                     <label class="mode-card" data-mode="source_link">
                                         <input type="radio" name="sale_mode_ui" value="source_link">
@@ -249,7 +249,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                     <label class="mode-card" data-mode="manual_info">
                                         <input type="radio" name="sale_mode_ui" value="manual_info">
                                         <div class="mode-card-title"><i class="fas fa-keyboard mr-1 text-warning"></i>
-                                            Yêu cầu</div>
+                                            Yêu cầu thông tin</div>
                                     </label>
                                 </div>
 
@@ -261,7 +261,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                         <div id="section-stock">
                                             <div class="d-flex justify-content-between align-items-center mb-2">
                                                 <h6 class="font-weight-bold mb-0 text-primary small"><i
-                                                        class="fas fa-box-open mr-1"></i> NHẬP KHO TÀI KHOẢN</h6>
+                                                        class="fas fa-box-open mr-1"></i> NHẬP KHO SẢN PHẨM</h6>
                                                 <button type="button" class="btn btn-xs btn-outline-primary"
                                                     onclick="$('#stockFile').click()">
                                                     <i class="fas fa-file-import mr-1"></i>File .txt
@@ -271,7 +271,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                             </div>
                                             <textarea class="form-control" id="initial_stock" name="initial_stock"
                                                 rows="5" style="font-family:Consolas,monospace;font-size:12px;"
-                                                placeholder="user1:pass1&#10;user2:pass2&#10;..."></textarea>
+                                                placeholder="Nội dung giao 1&#10;Nội dung giao 2&#10;..."></textarea>
                                         </div>
 
                                         <!-- Section Link -->
@@ -295,18 +295,25 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
 
                                 <!-- QUY ĐỊNH SỐ LƯỢNG MUA -->
                                 <div class="row mt-3">
-                                    <div class="col-6">
+                                    <div class="col-md-4 col-12 mb-2 mb-md-0">
                                         <div class="form-group mb-0">
                                             <label class="font-weight-bold small">Mua tối thiểu</label>
                                             <input type="number" class="form-control form-control-sm"
                                                 name="min_purchase_qty" value="1" min="1" step="1">
                                         </div>
                                     </div>
-                                    <div class="col-6">
+                                    <div class="col-md-4 col-12 mb-2 mb-md-0">
                                         <div class="form-group mb-0">
                                             <label class="font-weight-bold small">Mua tối đa</label>
                                             <input type="number" class="form-control form-control-sm"
                                                 name="max_purchase_qty" value="0" min="0" step="1">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 col-12">
+                                        <div class="form-group mb-0">
+                                            <label class="font-weight-bold small" id="stockLabel">Tồn kho</label>
+                                            <input type="number" class="form-control form-control-sm"
+                                                name="manual_stock" id="stockPreviewInput" value="0" readonly>
                                         </div>
                                     </div>
                                 </div>
@@ -314,7 +321,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                         </div>
                         <div class="col-md-6 mb-4">
                             <div class="form-section h-100 mb-0">
-                                <div class="form-section-title">🔍 Thông tin SEO / Thẻ</div>
+                                <div class="form-section-title">👉 Thông tin SEO / Thẻ</div>
                                 <div class="form-group mb-0">
                                     <label class="font-weight-bold">Mô tả SEO</label>
                                     <textarea class="form-control" name="seo_description" rows="9"
@@ -350,7 +357,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                         </div>
                     </div>
 
-                    <!-- Row 6: Gallery ảnh -->
+                    <!-- Row 6: Gallery Ảnh -->
                     <div class="form-section mb-4">
                         <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap">
                             <label class="font-weight-bold mb-0">Ảnh trong sản phẩm (Gallery)</label>
@@ -365,7 +372,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
 
                     <!-- Row 7: Mô tả -->
                     <div class="form-section mt-4">
-                        <div class="form-section-title">📝 Mô tả sản phẩm</div>
+                        <div class="form-section-title">👉 Mô tả sản phẩm</div>
                         <div class="form-group mb-0">
                             <textarea class="form-control" id="description" name="description" rows="12"></textarea>
                         </div>
@@ -422,6 +429,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
         reader.onload = function (e) {
             const content = e.target.result;
             $('#initial_stock').val(content);
+            updateStockPreview('account_stock');
             if (window.Toast) {
                 Toast.fire({ icon: 'success', title: 'Đã tải nội dung từ file' });
             } else {
@@ -433,6 +441,10 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
     }
 
     function bindThumbPreview() {
+        $('#initial_stock').on('input', function () {
+            updateStockPreview();
+        });
+
         $('#image').on('change keyup paste', function () {
             updateImagePreview($(this).val(), '#imagePreview', '#noImage', 'Xem trước ảnh đại diện');
         });
@@ -477,6 +489,30 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
         return $('input[name="sale_mode_ui"]:checked').val() || 'account_stock';
     }
 
+    function countStockPreviewItems(rawText) {
+        var seen = {};
+        var count = 0;
+        String(rawText || '').split(/\r?\n/).forEach(function (line) {
+            var normalized = String(line || '').trim();
+            if (!normalized || seen[normalized]) return;
+            seen[normalized] = true;
+            count++;
+        });
+        return count;
+    }
+
+    function updateStockPreview(mode) {
+        var currentMode = mode || getSelectedSaleMode();
+        var stockInput = $('#stockPreviewInput');
+
+        if (currentMode === 'source_link') {
+            stockInput.val('Unlimited');
+            return;
+        }
+
+        stockInput.val(String(countStockPreviewItems($('#initial_stock').val())));
+    }
+
     function applySaleMode(mode) {
         mode = mode || 'account_stock';
 
@@ -497,11 +533,11 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
         $('#productType').val(productType);
         $('#requires_info').val(requiresInfo);
 
-        var showStock = (mode === 'account_stock');
+        var showStock = true;
         var showLink = (mode === 'source_link');
         var showInfo = (mode === 'manual_info');
 
-        $('#section-stock').toggle(showStock);
+        $('#section-stock').show();
         $('#initial_stock').prop('disabled', !showStock);
 
         $('#section-link').toggle(showLink);
@@ -513,9 +549,19 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
         // Khóa số lượng tối đa là 1 nếu là Source / Link
         if (showLink) {
             $('input[name="max_purchase_qty"]').val(1).prop('readonly', true).css('background-color', '#e9ecef');
+            $('#stockPreviewInput').val('Unlimited').prop('readonly', true).css('background-color', '#e9ecef');
+            $('#stockLabel').text('Stock (Link)');
+        } else if (showInfo) {
+            $('input[name="max_purchase_qty"]').prop('readonly', false).css('background-color', '');
+            $('#stockPreviewInput').prop('readonly', false).css('background-color', '');
+            $('#stockLabel').text('Số lượng Stock');
         } else {
             $('input[name="max_purchase_qty"]').prop('readonly', false).css('background-color', '');
+            $('#stockPreviewInput').val(String(countStockPreviewItems($('#initial_stock').val()))).prop('readonly', true).css('background-color', '#e9ecef');
+            $('#stockLabel').text('Tồn kho');
         }
+
+        updateStockPreview(mode);
     }
 
     function bindGalleryLivePreview() {

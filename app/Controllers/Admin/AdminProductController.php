@@ -9,6 +9,8 @@ class AdminProductController extends Controller
     private AuthService $authService;
     private Product $productModel;
     private ProductStock $stockModel;
+    private ProductInventoryService $inventoryService;
+    private Order $orderModel;
     private $timeService;
 
     public function __construct()
@@ -16,6 +18,8 @@ class AdminProductController extends Controller
         $this->authService = new AuthService();
         $this->productModel = new Product();
         $this->stockModel = new ProductStock();
+        $this->orderModel = new Order();
+        $this->inventoryService = new ProductInventoryService($this->stockModel);
         $this->timeService = class_exists('TimeService') ? TimeService::instance() : null;
     }
 
@@ -50,12 +54,7 @@ class AdminProductController extends Controller
         $categories = $this->productModel->getCategories();
         $stats = $this->productModel->getStats();
 
-        // Load stock stats for account products
-        $accountProductIds = array_map(
-            fn($p) => (int) $p['id'],
-            array_filter($products, fn($p) => ($p['product_type'] ?? 'account') === 'account')
-        );
-        $stockStats = $this->stockModel->getStatsForProducts($accountProductIds);
+        $stockStats = $this->inventoryService->getStatsForProducts($products);
 
         $this->view('admin/products/index', [
             'products' => $products,
@@ -112,8 +111,8 @@ class AdminProductController extends Controller
 
         $productId = (int) $this->productModel->create($data);
 
-        // If account type: import initial stock from textarea
-        if (($data['product_type'] ?? 'account') === 'account' && (int) ($data['requires_info'] ?? 0) !== 1) {
+        // Only stock-managed account products import initial stock from textarea
+        if (Product::isStockManagedProduct($data)) {
             $rawStock = trim((string) $this->post('initial_stock', ''));
             if ($rawStock !== '' && $productId > 0) {
                 $this->stockModel->importBulk($productId, $rawStock);
@@ -136,10 +135,15 @@ class AdminProductController extends Controller
             $this->redirect(url('admin/products'));
         }
 
+        $stockStats = $this->inventoryService->getStats($product);
+        $accountStockCount = $this->stockModel->countAvailable((int) ($product['id'] ?? 0));
+
         $this->view('admin/products/edit', [
             'chungapi' => $chungapi,
             'product' => $product,
             'categories' => $this->productModel->getCategories(),
+            'stockStats' => $stockStats,
+            'accountStockCount' => $accountStockCount,
         ]);
     }
 
@@ -172,26 +176,44 @@ class AdminProductController extends Controller
 
         $id = (int) $id;
         $product = $this->productModel->find($id);
-        if (!$product || ($product['product_type'] ?? 'account') !== 'account') {
-            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Lỗi', 'message' => 'Sản phẩm không tồn tại hoặc không phải loại tài khoản'];
+        if (!$product || !Product::isStockManagedProduct($product)) {
+            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Loi', 'message' => 'San pham nay khong su dung kho.'];
             $this->redirect(url('admin/products'));
         }
 
-        $statusFilter = $this->get('status_filter', '');
-        $search = $this->get('search', '');
-        $items = $this->stockModel->getByProduct($id, $statusFilter, $search);
-        foreach ($items as &$stockItem) {
-            $stockItem = $this->attachTimeMeta($stockItem, 'created_at');
-            $stockItem = $this->attachTimeMeta($stockItem, 'sold_at');
+        $filters = [
+            'status_filter' => $this->get('status_filter', ''),
+            'search' => $this->get('search', ''),
+            'date_filter' => $this->get('date_filter', ''),
+            'limit' => $this->get('limit', 20),
+        ];
+
+        $stats = $this->inventoryService->getStats($product);
+        $isManualQueue = !empty($stats['is_manual_queue']);
+
+        if ($isManualQueue) {
+            $items = $this->orderModel->getProductOrdersQueue($id, $filters);
+        } else {
+            $items = $this->stockModel->getByProduct($id, $filters);
         }
-        unset($stockItem);
-        $stats = $this->stockModel->getStats($id);
+
+        foreach ($items as &$item) {
+            $item = $this->attachTimeMeta($item, 'created_at');
+            if (isset($item['sold_at'])) {
+                $item = $this->attachTimeMeta($item, 'sold_at');
+            }
+            if (isset($item['fulfilled_at'])) {
+                $item = $this->attachTimeMeta($item, 'fulfilled_at');
+            }
+        }
+        unset($item);
 
         if ($this->isAjax()) {
             return $this->json([
                 'success' => true,
                 'items' => $items,
-                'stats' => $stats
+                'stats' => $stats,
+                'isManualQueue' => $isManualQueue,
             ]);
         }
 
@@ -200,8 +222,11 @@ class AdminProductController extends Controller
             'product' => $product,
             'items' => $items,
             'stats' => $stats,
-            'statusFilter' => $statusFilter,
-            'search' => $search,
+            'statusFilter' => $filters['status_filter'],
+            'search' => $filters['search'],
+            'dateFilter' => $filters['date_filter'],
+            'limit' => $filters['limit'],
+            'isManualQueue' => $isManualQueue,
         ]);
     }
 
@@ -210,8 +235,8 @@ class AdminProductController extends Controller
         $this->requireAdmin();
         $id = (int) $id;
         $product = $this->productModel->find($id);
-        if (!$product || ($product['product_type'] ?? 'account') !== 'account') {
-            return $this->json(['success' => false, 'message' => 'Sản phẩm không hợp lệ'], 400);
+        if (!$product || !Product::isStockManagedProduct($product)) {
+            return $this->json(['success' => false, 'message' => 'San pham khong hop le'], 400);
         }
 
         $rawText = trim((string) $this->post('content', ''));
@@ -249,6 +274,10 @@ class AdminProductController extends Controller
         if (!$product)
             return $this->json(['success' => false, 'message' => 'Sản phẩm không tồn tại'], 404);
 
+        if (!Product::isStockManagedProduct($product)) {
+            return $this->json(['success' => false, 'message' => 'San pham nay khong su dung kho de don.'], 400);
+        }
+
         $count = $this->stockModel->deleteAllAvailable($id);
         return $this->json([
             'success' => true,
@@ -283,6 +312,9 @@ class AdminProductController extends Controller
         $productType = $this->post('product_type', 'account') === 'link' ? 'link' : 'account';
         $priceVnd = max(0, (int) $this->post('price_vnd', 0));
         $sourceLink = trim((string) $this->post('source_link', ''));
+        $manualStock = max(0, (int) $this->post('manual_stock', 0));
+        $requiresInfo = in_array((string) $this->post('requires_info', '0'), ['1', 'true', 'on'], true) ? 1 : 0;
+        $infoInstructions = trim((string) $this->post('info_instructions', ''));
         $minPurchaseQty = max(1, (int) $this->post('min_purchase_qty', 1));
         $maxPurchaseQty = max(0, (int) $this->post('max_purchase_qty', 0));
         $description = (string) $this->post('description', '');
@@ -314,6 +346,16 @@ class AdminProductController extends Controller
         if ($productType === 'link' && $sourceLink === '')
             $errors[] = 'Vui lòng nhập link download cho sản phẩm loại Source Link';
 
+        if ($productType === 'link') {
+            $requiresInfo = 0;
+            $infoInstructions = '';
+            $manualStock = 0;
+            $minPurchaseQty = 1;
+            $maxPurchaseQty = 1;
+        } elseif ($requiresInfo !== 1) {
+            $manualStock = 0;
+        }
+
         if ($minPurchaseQty < 1)
             $errors[] = 'So luong mua toi thieu phai tu 1';
         if ($maxPurchaseQty > 0 && $maxPurchaseQty < $minPurchaseQty)
@@ -327,6 +369,9 @@ class AdminProductController extends Controller
             'product_type' => $productType,
             'price_vnd' => $priceVnd,
             'source_link' => $productType === 'link' && $sourceLink !== '' ? $sourceLink : null,
+            'manual_stock' => ($productType === 'account' && $requiresInfo === 1) ? $manualStock : 0,
+            'requires_info' => $productType === 'account' ? $requiresInfo : 0,
+            'info_instructions' => ($productType === 'account' && $requiresInfo === 1 && $infoInstructions !== '') ? $infoInstructions : null,
             'min_purchase_qty' => $minPurchaseQty,
             'max_purchase_qty' => $maxPurchaseQty,
             'badge_text' => $badgeText !== '' ? $badgeText : null,
@@ -370,6 +415,7 @@ class AdminProductController extends Controller
         $row[$field . '_iso'] = $meta['iso'];
         $row[$field . '_iso_utc'] = $meta['iso_utc'];
         $row[$field . '_display'] = $meta['display'];
+        $row[$field . '_ago'] = ($meta['ts'] !== null) ? FormatHelper::timeAgo($meta['ts']) : '';
         return $row;
     }
 
@@ -400,3 +446,4 @@ class AdminProductController extends Controller
         ];
     }
 }
+

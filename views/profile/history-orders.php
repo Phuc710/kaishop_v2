@@ -9,7 +9,7 @@ $activePage = 'order-history';
 require __DIR__ . '/layout/header.php';
 ?>
 
-<div class="profile-card">
+<div class="profile-card" id="order-history-page">
     <div class="profile-card-header profile-card-header--with-actions">
         <div>
             <h5 class="text-dark mb-1">LỊCH SỬ ĐƠN HÀNG</h5>
@@ -72,9 +72,10 @@ require __DIR__ . '/layout/header.php';
             <table id="order-history-table" class="table table-hover align-middle w-100 mb-0 user-history-table">
                 <thead class="table-light">
                     <tr>
-                        <th class="py-3 text-nowrap text-center">MÃ ĐƠN HÀNG</th>
+
                         <th class="py-3 text-nowrap text-center">SẢN PHẨM</th>
-                        <th class="py-3 text-nowrap text-center">SỐ LƯỢNG</th>
+                        <th class="py-3 text-nowrap text-center">TÌNH TRẠNG</th>
+                        <th class="py-3 text-nowrap text-center">SL</th>
                         <th class="py-3 text-nowrap text-center">THANH TOÁN</th>
                         <th class="py-3 text-nowrap text-center">THỜI GIAN</th>
                         <th class="py-3 text-nowrap text-center">THAO TÁC</th>
@@ -86,6 +87,66 @@ require __DIR__ . '/layout/header.php';
     </div>
 </div>
 
+<style>
+    #order-history-page .profile-card-body,
+    #order-history-page .profile-card-body *:not(i) {
+        font-family: 'Signika', sans-serif !important;
+        font-size: 13px !important;
+    }
+
+    #order-history-page .dataTables_wrapper .dataTables_info,
+    #order-history-page .dataTables_wrapper .paginate_button,
+    #order-history-page .user-toolbar-label,
+    #order-history-page .user-toolbar-select,
+    #order-history-page .form-control,
+    #order-history-page .btn {
+        font-family: 'Signika', sans-serif !important;
+        font-size: 13px !important;
+    }
+
+    #order-history-page #order-history-table .user-order-status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 3px 12px;
+        border-radius: 99px;
+        border: 1px solid #dbe3ee;
+        background: #f8fafc;
+        color: #334155;
+        font-size: 11px !important;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    #order-history-page #order-history-table .user-order-status.is-pending,
+    #order-history-page #order-history-table .small {
+        border-color: #facc15;
+        background: #fffbeb;
+        color: #b45309 !important;
+    }
+
+    #order-history-page #order-history-table .user-order-status.is-completed,
+    #order-history-page #order-history-table .small[style*="#00ad5c"],
+    #order-history-page #order-history-table .small[style*="#00AD5C"] {
+        border-color: #86efac;
+        background: #f0fdf4;
+        color: #16a34a !important;
+    }
+
+    #order-history-page #order-history-table .small {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 3px 12px;
+        border-radius: 99px;
+        border-width: 1px;
+        border-style: solid;
+        font-size: 11px !important;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+</style>
+
 <script>
     $(document).ready(function () {
         function escapeHtml(v) {
@@ -96,17 +157,17 @@ require __DIR__ . '/layout/header.php';
                 .replace(/"/g, '&quot;');
         }
 
-        function renderUserTimeCell(rawValue, timeAgo, fallbackText, timeTs) {
-            const ts = Number(timeTs || 0);
-            const raw = (window.KaiTime && ts > 0)
-                ? String(window.KaiTime.formatYmdHms(ts) || '').trim()
-                : String(rawValue || '').trim();
-            const display = raw || String(fallbackText || '').trim();
-            if (!display) return '--';
-            const ago = (window.KaiTime && ts > 0)
-                ? String(window.KaiTime.timeAgo(ts) || '').trim()
-                : String(timeAgo || '').trim();
-            return '<span class="user-time-plain" title="' + escapeHtml(ago || display) + '">' + escapeHtml(display) + '</span>';
+        function renderSharedTimeCell(row) {
+            if (window.KaiTime && typeof window.KaiTime.renderUserTimeCell === 'function') {
+                return window.KaiTime.renderUserTimeCell({
+                    timeTs: row.time_ts,
+                    rawValue: row.time_raw || row.time_display,
+                    fallbackText: row.time_display,
+                    timeAgo: row.time_ago,
+                    className: 'user-time-plain'
+                });
+            }
+            return String(row.time_display || '--');
         }
 
         function debounce(fn, wait) {
@@ -134,25 +195,21 @@ require __DIR__ . '/layout/header.php';
                 }
             },
             columns: [
+
+                {
+                    data: 'product_name',
+                    render: function (data) {
+                        return '<div class="fw-semibold">' + escapeHtml(data || '') + '</div>';
+                    }
+                },
                 {
                     data: null,
                     className: 'text-center',
                     render: function (row) {
-                        const code = escapeHtml(row.order_code_short || row.order_code || '');
-                        return '<button type="button" class="order-code-copy js-copy-order" data-copy="' + code + '">' + code + '</button>';
+                        return renderOrderStatusBadge(row.status_label || row.status || '', row.status);
                     }
                 },
-                {
-                    data: 'product_name',
-                    render: function (data, type, row) {
-                        const isCompleted = String(row.status || '').toLowerCase() === 'completed';
-                        const statusColor = isCompleted ? '#00ad5c' : '';
-
-                        return '<div class="fw-semibold">' + escapeHtml(data || '') + '</div>'
-                            + '<div class="small" style="color: ' + statusColor + ';">' + escapeHtml(row.status_label || '') + '</div>';
-                    }
-                },
-                { data: 'quantity', className: 'text-center fw-semibold' },
+                { data: 'quantity', className: 'text-center' },
                 {
                     data: 'payment',
                     className: 'text-center',
@@ -164,7 +221,7 @@ require __DIR__ . '/layout/header.php';
                     data: null,
                     className: 'text-center',
                     render: function (row) {
-                        return renderUserTimeCell(row.time_raw, row.time_ago, row.time_raw || row.time_display, row.time_ts);
+                        return renderSharedTimeCell(row);
                     }
                 },
                 {
@@ -228,15 +285,7 @@ require __DIR__ . '/layout/header.php';
             table.draw();
         });
 
-        $('#order-history-table').on('click', '.js-copy-order', async function () {
-            const code = $(this).data('copy');
-            try {
-                await copyToClipboard(code);
-                SwalHelper.toast('Đã sao chép mã đơn hàng', 'success');
-            } catch (e) {
-                SwalHelper.error('Không thể sao chép mã đơn hàng.');
-            }
-        });
+
 
         $('#order-history-table').on('click', '.js-view-order', function () {
             viewOrderDetail($(this).data('id'));
@@ -249,6 +298,20 @@ require __DIR__ . '/layout/header.php';
 
     function fmtMoney(v) {
         return new Intl.NumberFormat('vi-VN').format(Number(v || 0)) + 'đ';
+    }
+
+    function getOrderStatusClass(status) {
+        const normalized = String(status || '').trim().toLowerCase();
+        if (normalized === 'completed') return 'is-completed';
+        if (normalized === 'pending') return 'is-pending';
+        if (normalized === 'processing') return 'is-processing';
+        if (normalized === 'cancelled' || normalized === 'canceled' || normalized === 'failed') return 'is-cancelled';
+        return 'is-default';
+    }
+
+    function renderOrderStatusBadge(label, status) {
+        const text = String(label || status || '--');
+        return '<span class="user-order-status ' + getOrderStatusClass(status) + '">' + escapeHtml(text) + '</span>';
     }
 
     function escapeHtml(v) {
@@ -323,7 +386,7 @@ require __DIR__ . '/layout/header.php';
                 + '<div><div class="user-order-detail__label">Sản phẩm</div><div class="user-order-detail__value">' + escapeHtml(order.product_name || '') + '</div></div>'
                 + '<div><div class="user-order-detail__label">Số lượng</div><div class="user-order-detail__value">' + escapeHtml(order.quantity || 0) + '</div></div>'
                 + '<div><div class="user-order-detail__label">Mã đơn hàng</div><div class="user-order-detail__value">' + escapeHtml(order.order_code_short || order.order_code || '') + '</div></div>'
-                + '<div><div class="user-order-detail__label">Trạng thái</div><div class="user-order-detail__value' + (String(order.status || '').toLowerCase() === 'completed' ? ' text-success' : '') + '">' + escapeHtml(order.status || '') + '</div></div>'
+                + '<div><div class="user-order-detail__label">Trạng thái</div><div class="user-order-detail__value">' + renderOrderStatusBadge(order.status_label || order.status || '', order.status) + '</div></div>'
                 + '<div><div class="user-order-detail__label">Thời gian</div><div class="user-order-detail__value">' + escapeHtml(order.created_at_display || order.created_at || '') + '</div></div>'
                 + '<div><div class="user-order-detail__label">Thanh toán</div><div class="user-order-detail__value text-success fw-bold">' + fmtMoney(order.price || 0) + '</div></div>'
                 + '</div>'

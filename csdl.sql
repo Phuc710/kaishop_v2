@@ -42,6 +42,7 @@ CREATE TABLE `products` (
   `product_type` enum('account','link') NOT NULL DEFAULT 'account' COMMENT 'account = bán tk từ kho, link = bán link download',
   `price_vnd` bigint(20) NOT NULL DEFAULT 0 COMMENT 'Giá bán (VNĐ)',
   `source_link` text DEFAULT NULL COMMENT 'Link download (Mega/GDrive...) - chỉ dùng khi product_type=link',
+  `manual_stock` int(11) NOT NULL DEFAULT 0 COMMENT 'Stock số lượng cho sản phẩm yêu cầu info',
   `min_purchase_qty` int(11) NOT NULL DEFAULT 1 COMMENT 'So luong mua toi thieu',
   `max_purchase_qty` int(11) NOT NULL DEFAULT 0 COMMENT '0 = khong gioi han cau hinh',
   `badge_text` varchar(100) DEFAULT NULL COMMENT 'Badge hiển thị (NEW, HOT, SALE...)',
@@ -329,6 +330,8 @@ CREATE TABLE `setting` (
   `bank_account` varchar(100) DEFAULT NULL,
   `bank_owner` varchar(100) DEFAULT NULL,
   `sepay_api_key` varchar(255) DEFAULT NULL,
+  `telegram_bot_token` varchar(255) DEFAULT NULL,
+  `telegram_chat_id` varchar(64) DEFAULT NULL,
   `bonus_1_amount` bigint(20) DEFAULT 100000,
   `bonus_1_percent` int(11) DEFAULT 10,
   `bonus_2_amount` bigint(20) DEFAULT 200000,
@@ -337,7 +340,7 @@ CREATE TABLE `setting` (
   `bonus_3_percent` int(11) DEFAULT 20,
   `maintenance_enabled` tinyint(1) NOT NULL DEFAULT 0,
   `maintenance_start_at` datetime DEFAULT NULL,
-  `maintenance_duration_minutes` int(11) NOT NULL DEFAULT 60,
+  `maintenance_end_at` datetime DEFAULT NULL,
   `maintenance_notice_minutes` int(11) NOT NULL DEFAULT 5,
   `maintenance_message` text DEFAULT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
@@ -350,9 +353,9 @@ INSERT INTO `setting` (
   `id`, `ten_web`, `logo`, `logo_footer`, `banner`, `favicon`, `key_words`, `mo_ta`, `fb_admin`, `sdt_admin`, `tele_admin`, `tiktok_admin`, `youtube_admin`,
   `email_auto`, `pass_mail_auto`, `ten_nguoi_gui`,
   `email_cf`, `contact_page_title`, `contact_page_subtitle`, `contact_email_label`, `contact_phone_label`, `contact_support_note`, `policy_page_title`, `policy_page_subtitle`, `policy_content_html`, `policy_notice_text`, `terms_page_title`, `terms_page_subtitle`, `terms_content_html`, `terms_notice_text`, `apikey`, `thongbao`, `license`,
-  `bank_name`, `bank_account`, `bank_owner`, `sepay_api_key`,
+  `bank_name`, `bank_account`, `bank_owner`, `sepay_api_key`, `telegram_bot_token`, `telegram_chat_id`,
   `bonus_1_amount`, `bonus_1_percent`, `bonus_2_amount`, `bonus_2_percent`, `bonus_3_amount`, `bonus_3_percent`,
-  `maintenance_enabled`, `maintenance_start_at`, `maintenance_duration_minutes`, `maintenance_notice_minutes`, `maintenance_message`
+  `maintenance_enabled`, `maintenance_start_at`, `maintenance_end_at`, `maintenance_notice_minutes`, `maintenance_message`
 ) VALUES (
   1, 'KaiShop', '', '', 'KaiShop', '', 'KaiShop, Shop account', 'Dịch vụ KaiShop uy tín chất lượng', 'https://facebook.com/phamlinh7114', '0812420710', 'https://t.me/kaishop25', 'https://www.tiktok.com/@kai_01s.', 'https://www.youtube.com/@KaiOfficial-0x',
   NULL, NULL, NULL,
@@ -364,9 +367,9 @@ INSERT INTO `setting` (
   <b>Phiên bản: v1.1</b><br>
   <span>Khi dùng dịch vụ chính hãng, bạn được hỗ trợ tốt hơn và nâng cấp tính năng với chi phí tối ưu.</span>
 </div>', '',
-  'MB Bank', '', '', '',
+  'MB Bank', '', '', '', '', '',
   100000, 10, 200000, 15, 500000, 20,
-  0, NULL, 60, 5, 'Hệ thống đang bảo trì để nâng cấp dịch vụ. Vui lòng quay lại sau ít phút.'
+  0, NULL, NULL, 5, 'Hệ thống đang bảo trì để nâng cấp dịch vụ. Vui lòng quay lại sau ít phút.'
 );
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -6,6 +6,7 @@
 class UrlHelper
 {
     private static $BASE_PATH = null;
+    private static $ASSET_VERSION_CACHE = [];
 
     /**
      * Tự động lấy BASE_PATH từ APP_DIR constant
@@ -39,7 +40,46 @@ class UrlHelper
      */
     public static function asset($path)
     {
-        return self::base(ltrim($path, '/'));
+        return self::base(self::appendAssetVersion(ltrim((string) $path, '/')));
+    }
+
+    private static function appendAssetVersion(string $path): string
+    {
+        if ($path === '' || preg_match('~^(?:https?:)?//|^(?:data|blob):~i', $path)) {
+            return $path;
+        }
+
+        $parts = parse_url($path);
+        if ($parts === false) {
+            return $path;
+        }
+
+        $query = (string) ($parts['query'] ?? '');
+        if ($query !== '') {
+            parse_str($query, $queryParams);
+            if (isset($queryParams['v'])) {
+                return $path;
+            }
+        }
+
+        $cleanPath = ltrim((string) ($parts['path'] ?? $path), '/');
+        if ($cleanPath === '') {
+            return $path;
+        }
+
+        if (isset(self::$ASSET_VERSION_CACHE[$cleanPath])) {
+            $version = self::$ASSET_VERSION_CACHE[$cleanPath];
+        } else {
+            $localPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $cleanPath);
+            $version = is_file($localPath) ? (string) (@filemtime($localPath) ?: '') : '';
+            self::$ASSET_VERSION_CACHE[$cleanPath] = $version;
+        }
+
+        if ($version === '') {
+            return $path;
+        }
+
+        return $path . ($query !== '' ? '&' : '?') . 'v=' . rawurlencode($version);
     }
 
     /**

@@ -2,7 +2,7 @@
 
 /**
  * ProductStock Model
- * Manages stock items (accounts) for products of type 'account'
+ * Manages warehouse stock items for every stock-managed product.
  */
 class ProductStock extends Model
 {
@@ -11,49 +11,44 @@ class ProductStock extends Model
     public function __construct()
     {
         parent::__construct();
-        $this->ensureTable();
     }
 
     /**
-     * Ensure the product_stock table exists
+     * Get all stock items for a product with filtering
      */
-    private function ensureTable(): void
+    public function getByProduct(int $productId, array $filters = []): array
     {
-        $this->db->exec("CREATE TABLE IF NOT EXISTS `product_stock` (
-            `id` int(11) NOT NULL AUTO_INCREMENT,
-            `product_id` int(11) NOT NULL,
-            `content` text NOT NULL,
-            `status` enum('available','sold') NOT NULL DEFAULT 'available',
-            `order_id` int(11) DEFAULT NULL,
-            `buyer_id` int(11) DEFAULT NULL,
-            `note` varchar(255) DEFAULT NULL,
-            `sold_at` datetime DEFAULT NULL,
-            `created_at` datetime DEFAULT current_timestamp(),
-            PRIMARY KEY (`id`),
-            KEY `idx_stock_product` (`product_id`),
-            KEY `idx_stock_status` (`status`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
-    }
+        $status = $filters['status_filter'] ?? '';
+        $search = $filters['search'] ?? '';
+        $dateFilter = $filters['date_filter'] ?? '';
+        $limit = (int) ($filters['limit'] ?? 20);
 
-    /**
-     * Get all stock items for a product
-     */
-    public function getByProduct(int $productId, string $statusFilter = '', string $search = ''): array
-    {
         $sql = "SELECT t.*, u.username as buyer_username 
                 FROM {$this->table} t 
                 LEFT JOIN users u ON t.buyer_id = u.id 
                 WHERE t.product_id = ?";
         $params = [$productId];
-        if ($statusFilter !== '') {
+
+        if ($status !== '') {
             $sql .= " AND t.status = ?";
-            $params[] = $statusFilter;
+            $params[] = $status;
         }
         if ($search !== '') {
-            $sql .= " AND t.content LIKE ?";
+            $sql .= " AND (t.content LIKE ? OR u.username LIKE ?)";
+            $params[] = '%' . $search . '%';
             $params[] = '%' . $search . '%';
         }
-        $sql .= " ORDER BY t.id DESC";
+
+        if ($dateFilter === '7days') {
+            $sql .= " AND t.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+        } elseif ($dateFilter === '14days') {
+            $sql .= " AND t.created_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)";
+        } elseif ($dateFilter === '30days') {
+            $sql .= " AND t.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        }
+
+        $sql .= " ORDER BY t.id DESC LIMIT " . (int) $limit;
+
         return $this->query($sql, $params)->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -198,15 +193,41 @@ class ProductStock extends Model
     }
 
     /**
-     * Update stock item content (only if available)
+     * Update stock item content.
+     * Allow both available and sold items because admins may need to adjust
+     * delivered credentials for warranty/support cases.
      */
     public function updateContent(int $id, string $content): bool
     {
+        $existing = $this->find($id);
+        if (!$existing) {
+            return false;
+        }
+
+        if ((string) ($existing['content'] ?? '') === $content) {
+            return true;
+        }
+
         $stmt = $this->db->prepare(
-            "UPDATE {$this->table} SET content=? WHERE id=? AND status='available'"
+            "UPDATE {$this->table} SET content=? WHERE id=?"
         );
         $stmt->execute([$content, $id]);
         return $stmt->rowCount() > 0;
+    }
+
+    public function releaseByOrderId(int $orderId): int
+    {
+        if ($orderId <= 0) {
+            return 0;
+        }
+
+        $stmt = $this->db->prepare(
+            "UPDATE {$this->table}
+             SET status='available', buyer_id=NULL, order_id=NULL, sold_at=NULL
+             WHERE order_id=? AND status='sold'"
+        );
+        $stmt->execute([$orderId]);
+        return $stmt->rowCount();
     }
 
     /**
@@ -261,3 +282,4 @@ class ProductStock extends Model
         return $row;
     }
 }
+

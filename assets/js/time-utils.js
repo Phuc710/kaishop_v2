@@ -105,6 +105,46 @@
         return parts.join(' ');
     }
 
+    function escapeHtml(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function renderUserTimeCell(input) {
+        var options = input || {};
+        var ts = toTimestamp(options.timeTs != null ? options.timeTs : options.ts);
+        var raw = String(options.rawValue != null ? options.rawValue : '').trim();
+        var fallback = String(options.fallbackText != null ? options.fallbackText : '').trim();
+        var className = String(options.className || 'user-time-plain').trim();
+
+        var display = '';
+        if (ts != null) {
+            display = String(formatYmdHms(ts) || '').trim();
+        }
+        if (!display) {
+            display = raw || fallback;
+        }
+        if (!display) {
+            return options.emptyHtml || '--';
+        }
+
+        var ago = '';
+        if (ts != null) {
+            ago = String(timeAgo(ts) || '').trim();
+        }
+        if (!ago) {
+            ago = String(options.timeAgo != null ? options.timeAgo : '').trim();
+        }
+        if (!ago) {
+            ago = display;
+        }
+
+        return '<span class="' + escapeHtml(className) + '" title="' + escapeHtml(ago) + '">' + escapeHtml(display) + '</span>';
+    }
+
     window.KaiTime = window.KaiTime || {};
     window.KaiTime.config = cfg;
     window.KaiTime.toTimestamp = toTimestamp;
@@ -112,5 +152,7 @@
     window.KaiTime.formatYmdHms = formatYmdHms;
     window.KaiTime.timeAgo = timeAgo;
     window.KaiTime.formatDurationVi = formatDurationVi;
+    window.KaiTime.escapeHtml = escapeHtml;
+    window.KaiTime.renderUserTimeCell = renderUserTimeCell;
 })();
 

@@ -134,13 +134,19 @@ $ogType = isset($seoOgType) && trim((string) $seoOgType) !== '' ? trim((string) 
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="dns-prefetch" href="//fonts.googleapis.com">
+<link rel="dns-prefetch" href="//fonts.gstatic.com">
+<link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
 <link href="https://fonts.googleapis.com/css2?family=Signika:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boxicons@2.1.0/css/boxicons.min.css">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" media="print"
+    onload="this.media='all'">
+<noscript>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+</noscript>
 
-<link rel="stylesheet" href="<?= asset('assets/css/nice_select.css') ?>">
+<link rel="stylesheet" href="<?= asset('assets/css/nice_select.css') ?>" media="print" onload="this.media='all'">
 <link href="<?= asset('assets/css/bootstrap.css') ?>" rel="stylesheet">
 <link href="<?= asset('assets/css/style.css') ?>" rel="stylesheet">
 <link href="<?= asset('assets/css/job_post.css') ?>" rel="stylesheet">
@@ -148,7 +154,7 @@ $ogType = isset($seoOgType) && trim((string) $seoOgType) !== '' ? trim((string) 
 <link rel="stylesheet" href="<?= asset('assets/css/styles.css') ?>">
 <link rel="stylesheet" href="<?= asset('assets/css/divineshop.css') ?>">
 <link rel="stylesheet" href="<?= asset('assets/css/user-pages.css') ?>">
-<link rel="stylesheet" href="<?= asset('assets/css/notify.css') ?>">
+<link rel="stylesheet" href="<?= asset('assets/css/notify.css') ?>" media="print" onload="this.media='all'">
 
 <?php if (!empty($resolvedAssetFlags['interactive_bundle']) && !empty($resolvedAssetFlags['vendor_glightbox'])): ?>
     <link rel="stylesheet" href="<?= asset('assets/css/glightbox.css') ?>">
@@ -173,9 +179,9 @@ $ogType = isset($seoOgType) && trim((string) $seoOgType) !== '' ? trim((string) 
 <?php endif; ?>
 
 <script src="<?= asset('assets/js/jquery.js') ?>"></script>
-<script src="<?= asset('assets/js/notify.js') ?>"></script>
-<script src="<?= asset('assets/js/sweetalert.js') ?>"></script>
-<script src="<?= asset('assets/js/swal_helper.js') ?>"></script>
+<script src="<?= asset('assets/js/notify.js') ?>" defer></script>
+<script src="<?= asset('assets/js/sweetalert.js') ?>" defer></script>
+<script src="<?= asset('assets/js/swal_helper.js') ?>" defer></script>
 <script src="<?= asset('assets/js/lazyload.js') ?>"></script>
 
 <?php if (!empty($resolvedAssetFlags['flatpickr'])): ?>
@@ -201,22 +207,44 @@ $ogType = isset($seoOgType) && trim((string) $seoOgType) !== '' ? trim((string) 
         locale: 'vi-VN'
     });
 </script>
-<script src="<?= asset('assets/js/time-utils.js') ?>"></script>
+<script src="<?= asset('assets/js/time-utils.js') ?>" defer></script>
+<script src="<?= asset('assets/js/maintenance-runtime.js') ?>" defer></script>
+<script src="<?= asset('assets/js/confetti-effect.js') ?>" defer></script>
 
 <?php if (isset($user['id'])): ?>
     <script src="<?= asset('assets/js/fingerprint.js') ?>"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const fp = await KaiFingerprint.collect();
-                let fd = new FormData();
-                fd.append('fingerprint', fp.hash);
-                fd.append('fp_components', JSON.stringify(fp.components));
-                fetch(BASE_URL + '/api/update-fingerprint', {
-                    method: 'POST',
-                    body: fd
-                }).catch(() => { });
-            } catch (e) { }
+        window.addEventListener('load', () => {
+            setTimeout(async () => {
+                try {
+                    if (typeof KaiFingerprint === 'undefined') return;
+                    const fp = await KaiFingerprint.collect();
+                    if (!fp || !fp.hash) return;
+                    const syncKey = 'ks_fp_sync_meta_v1';
+                    const now = Date.now();
+                    let lastSync = null;
+                    try {
+                        lastSync = JSON.parse(localStorage.getItem(syncKey) || 'null');
+                    } catch (e) { }
+                    if (lastSync && lastSync.hash === fp.hash && Number(lastSync.expiry || 0) > now) {
+                        return;
+                    }
+
+                    const fd = new FormData();
+                    fd.append('fingerprint', fp.hash);
+                    fetch(BASE_URL + '/api/update-fingerprint', {
+                        method: 'POST',
+                        body: fd
+                    }).then(() => {
+                        try {
+                            localStorage.setItem(syncKey, JSON.stringify({
+                                hash: fp.hash,
+                                expiry: now + (24 * 60 * 60 * 1000)
+                            }));
+                        } catch (e) { }
+                    }).catch(() => { });
+                } catch (e) { }
+            }, 1500);
         });
     </script>
 <?php endif; ?>

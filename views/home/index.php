@@ -84,7 +84,11 @@
                                 <div class="ds-product-grid">
                                     <?php foreach ($productsByCategory[$category['id']] as $product): ?>
                                         <?php
-                                        $is_offline = $product['status'] !== 'ON';
+                                        $stats = $stockStats[$product['id']] ?? ['available' => 0, 'sold' => 0];
+                                        $isStockManaged = !empty($product['stock_managed']);
+                                        $availableCount = (int) ($stats['available'] ?? 0);
+                                        $isOutOfStock = $isStockManaged && $availableCount <= 0;
+                                        $is_offline = $product['status'] !== 'ON' || $isOutOfStock;
                                         $discount = 0;
                                         if ($product['old_price'] > $product['price']) {
                                             $discount = round((($product['old_price'] - $product['price']) / $product['old_price']) * 100);
@@ -105,7 +109,9 @@
                                             class="ds-card <?= $is_offline ? 'offline' : '' ?>">
                                             <div class="ds-card-img-wrap">
                                                 <img src="<?= $product['image'] ?>" class="ds-card-img" alt="<?= $product['name'] ?>"
-                                                    loading="lazy">
+                                                    loading="lazy"
+                                                    decoding="async"
+                                                    fetchpriority="low">
                                                 <?php if ($badge_text): ?>
                                                     <div class="ds-badge <?= $badge ?>"><?= htmlspecialchars($badge_text) ?></div>
                                                 <?php endif; ?>
@@ -116,13 +122,20 @@
                                             <div class="ds-card-body">
                                                 <h4 class="ds-card-title"><?= htmlspecialchars($product['name']) ?></h4>
                                                 <?php
-                                                $stats = $stockStats[$product['id']] ?? ['available' => 0, 'sold' => 0];
-                                                $stock_text = ($product['product_type'] === 'link') ? 'Vô hạn' : number_format($stats['available']);
+                                                $delivery_mode = $product['delivery_mode'] ?? 'account_stock';
+                                                $delivery_label = $product['delivery_label'] ?? 'Tài Khoản';
+
+                                                if ($delivery_mode === 'account_stock') {
+                                                    $stock_display = '<i class="fas fa-box me-1"></i> Tồn kho: <strong class="text-primary">' . number_format($availableCount) . '</strong>';
+                                                } elseif ($delivery_mode === 'manual_info') {
+                                                    $stock_display = '<i class="fas fa-bolt me-1"></i> ' . (($availableCount > 0) ? '<strong class="text-warning">Sẵn hàng</strong>' : '<strong class="text-danger">Hết hàng</strong>');
+                                                } else {
+                                                    $stock_display = '<i class="fas fa-infinity me-1"></i> ' . $delivery_label . ': <strong class="text-info">Unlimited</strong>';
+                                                }
                                                 $sold_count = number_format($stats['sold']);
                                                 ?>
                                                 <div class="ds-stock-row">
-                                                    <span><i class="fas fa-box me-1"></i> Tồn kho: <strong
-                                                            class="text-primary"><?= $stock_text ?></strong></span>
+                                                    <span><?= $stock_display ?></span>
                                                     <span><i class="fas fa-shopping-cart me-1"></i> Đã bán: <strong
                                                             class="text-success"><?= $sold_count ?></strong></span>
                                                 </div>

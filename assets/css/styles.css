@@ -17507,9 +17507,9 @@ html.menu-opened body {
         padding-left: 0;
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: flex-start;
         align-items: stretch;
-        gap: 12px;
+        gap: 8px;
     }
 
     .footer .location-list li {
@@ -17517,24 +17517,28 @@ html.menu-opened body {
         flex: 1 1 auto;
         min-width: 0;
         margin: 0;
-        padding: 12px;
-        border-radius: 14px;
-        border: 1px solid #1f1f1f;
-        background: #0a0a0a;
-        text-align: center;
-        flex-direction: column;
+        padding: 5px 0;
+        border: none;
+        background: transparent;
+        text-align: left;
+        flex-direction: row;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
+        gap: 12px;
     }
 
     .footer .location-list li span {
-        width: 42px;
-        height: 42px;
+        width: 38px;
+        height: 38px;
         margin-right: 0;
-        margin-bottom: 8px;
-        border-radius: 12px;
-        background: #161616;
+        margin-bottom: 0;
+        border-radius: 8px;
+        background: rgba(255, 105, 0, 0.1);
         color: #ff6900;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
     }
 
     .footer .location-list .location-info {
@@ -17543,17 +17547,19 @@ html.menu-opened body {
     }
 
     .footer .location-list li h6 {
-        margin-bottom: 2px;
-        font-size: 12px;
+        margin-bottom: 0;
+        font-size: 13px;
         color: #a8a8a8;
-        text-align: center;
+        text-align: left;
+        font-weight: 500;
     }
 
     .footer .location-list li p {
-        font-size: 14px;
-        line-height: 1.35;
-        word-break: break-word;
-        text-align: center;
+        font-size: 15px;
+        color: #fff;
+        text-align: left;
+        font-weight: 600;
+        line-height: 1.2;
     }
 
     .footer .footer-bottom {
@@ -17846,15 +17852,12 @@ html.menu-opened body {
 
 .header-widget {
     position: relative;
-    /* Để .header-widget làm gốc cho vị trí tuyệt đối của sup */
     display: inline-block;
-    /* Giữ bố cục nội tuyến */
 }
 
 .header-widget span {
     font-size: 13px;
     font-weight: 500;
-    margin-left: 8px;
     letter-spacing: 0.3px;
     white-space: nowrap;
     text-align: left;

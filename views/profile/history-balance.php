@@ -87,26 +87,17 @@ require __DIR__ . '/layout/header.php';
 
 <script>
     $(document).ready(function () {
-        function escapeHtml(v) {
-            return String(v == null ? '' : v)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
-        }
-
-        function renderUserTimeCell(rawValue, timeAgo, fallbackHtml, timeTs) {
-            const ts = Number(timeTs || 0);
-            const raw = (window.KaiTime && ts > 0)
-                ? String(window.KaiTime.formatYmdHms(ts) || '').trim()
-                : String(rawValue || '').trim();
-            if (!raw) {
-                return fallbackHtml || '--';
+        function renderSharedTimeCell(row) {
+            if (window.KaiTime && typeof window.KaiTime.renderUserTimeCell === 'function') {
+                return window.KaiTime.renderUserTimeCell({
+                    timeTs: row.time_ts,
+                    rawValue: row.time_raw,
+                    fallbackText: row.time,
+                    timeAgo: row.time_ago,
+                    className: 'user-time-plain'
+                });
             }
-            const ago = (window.KaiTime && ts > 0)
-                ? String(window.KaiTime.timeAgo(ts) || '').trim()
-                : String(timeAgo || '').trim();
-            return '<span class="user-time-plain" title="' + escapeHtml(ago || raw) + '">' + escapeHtml(raw) + '</span>';
+            return String(row.time || '--');
         }
 
         function fmtMoneyVnd(value) {
@@ -168,7 +159,7 @@ require __DIR__ . '/layout/header.php';
                     width: '15%',
                     className: 'text-center',
                     render: function (row) {
-                        return renderUserTimeCell(row.time_raw, row.time_ago, row.time, row.time_ts);
+                        return renderSharedTimeCell(row);
                     }
                 },
                 {

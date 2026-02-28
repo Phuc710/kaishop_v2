@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * View: Cấu hình Website
  * Route: GET /admin/setting
@@ -11,6 +11,16 @@ $breadcrumbs = [
 ];
 require_once __DIR__ . '/layout/head.php';
 require_once __DIR__ . '/layout/breadcrumb.php';
+
+$telegramTokenStored = trim((string) ($chungapi['telegram_bot_token'] ?? ''));
+$telegramChatIdStored = trim((string) ($chungapi['telegram_chat_id'] ?? ''));
+$telegramConfigured = $telegramTokenStored !== '' && $telegramChatIdStored !== '';
+$maskedTelegramToken = '';
+if ($telegramTokenStored !== '') {
+    $head = substr($telegramTokenStored, 0, 6);
+    $tail = substr($telegramTokenStored, -4);
+    $maskedTelegramToken = $head . '***' . $tail;
+}
 ?>
 
 <style>
@@ -269,6 +279,61 @@ require_once __DIR__ . '/layout/breadcrumb.php';
                         </div>
                     </div>
                 </form>
+
+                <form id="form-telegram">
+                    <div class="card custom-card mt-3">
+                        <div class="card-header border-0">
+                            <h3 class="card-title text-uppercase font-weight-bold">
+                                TELEGRAM BOT ALERT
+                            </h3>
+                        </div>
+                        <div class="card-body pt-0">
+                            <div class="alert alert-warning py-2" style="border-radius: 8px;">
+                                <i class="fas fa-shield-alt mr-1"></i>
+                                Bảo mật: Bot token sẽ không hiển thị lại trên giao diện.
+                            </div>
+
+                            <div class="mb-3">
+                                <span
+                                    class="badge <?= $telegramConfigured ? 'badge-success' : 'badge-secondary' ?> mr-1">
+                                    <?= $telegramConfigured ? 'ĐÃ CẤU HÌNH' : 'CHƯA CẤU HÌNH' ?>
+                                </span>
+                                <?php if ($maskedTelegramToken !== ''): ?>
+                                    <span class="small text-muted">Token hiện tại:
+                                        <?= htmlspecialchars($maskedTelegramToken) ?></span>
+                                <?php endif; ?>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="font-weight-bold small text-uppercase">Telegram Bot Token</label>
+                                <input type="password" class="form-control" name="telegram_bot_token"
+                                    placeholder="Để trống để giữ token hiện tại" autocomplete="new-password">
+                                <small class="text-muted">Định dạng thường: `123456789:AA...`</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="font-weight-bold small text-uppercase">Telegram Chat ID / Channel</label>
+                                <input type="text" class="form-control" name="telegram_chat_id"
+                                    placeholder="-1001234567890 hoặc @channel_name"
+                                    value="<?= htmlspecialchars($telegramChatIdStored) ?>">
+                            </div>
+
+                            <div class="custom-control custom-checkbox">
+                                <input class="custom-control-input" type="checkbox" value="1"
+                                    id="clear_telegram_bot_token" name="clear_telegram_bot_token">
+                                <label for="clear_telegram_bot_token" class="custom-control-label">
+                                    Xóa token hiện tại (chỉ giữ Chat ID)
+                                </label>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-0 text-right">
+                            <button type="submit" class="btn btn-primary shadow-sm px-4 font-weight-bold"
+                                style="border-radius: 8px;">
+                                <i class="fas fa-save mr-1"></i> LƯU TELEGRAM
+                            </button>
+                        </div>
+                    </div>
+                </form>
             </div>
 
             <!-- BANK & PROMO SETTINGS -->
@@ -376,9 +441,7 @@ require_once __DIR__ . '/layout/breadcrumb.php';
                 <form id="form-maintenance">
                     <div class="card custom-card mt-3">
                         <div class="card-header border-0">
-                            <h3 class="card-title text-uppercase font-weight-bold">
-                                BẢO TRÌ HỆ THỐNG
-                            </h3>
+                            <h3 class="card-title text-uppercase font-weight-bold">BẢO TRÌ HỆ THỐNG</h3>
                         </div>
                         <div class="card-body pt-0">
                             <div class="form-group mb-3">
@@ -386,7 +449,7 @@ require_once __DIR__ . '/layout/breadcrumb.php';
                                     <input type="checkbox" class="custom-control-input" id="maintenance_enabled"
                                         name="maintenance_enabled" value="1" <?= !empty($maintenanceConfig['enabled']) ? 'checked' : '' ?>>
                                     <label class="custom-control-label font-weight-bold text-uppercase small"
-                                        for="maintenance_enabled">BẬT CHẾ ĐỘ BẢO TRÌ</label>
+                                        for="maintenance_enabled">Bật chế độ bảo trì</label>
                                 </div>
                             </div>
 
@@ -394,29 +457,29 @@ require_once __DIR__ . '/layout/breadcrumb.php';
                                 value="<?= (int) ($maintenanceConfig['notice_minutes'] ?? 5) ?>">
                             <div id="maintenanceRuntimeCard" class="border rounded p-3 mb-3 bg-light">
                                 <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
-                                    <div class="font-weight-bold text-uppercase small">STATUS BAO TRI (REALTIME)</div>
-                                    <span id="maintenanceStatusBadge" class="badge badge-secondary px-2 py-1">Dang tai...</span>
+                                    <div class="font-weight-bold text-uppercase small">Trạng thái bảo trì
+                                    </div>
+                                    <span id="maintenanceStatusBadge" class="badge badge-secondary px-2 py-1">Đang
+                                        tải...</span>
                                 </div>
-                                <div id="maintenanceStatusText" class="small text-muted mb-2">Dang dong bo trang thai...</div>
                                 <div class="row">
                                     <div class="col-md-6 mb-2">
-                                        <div class="small text-muted text-uppercase font-weight-bold">Dem nguoc toi bat dau</div>
+                                        <div class="small text-muted text-uppercase font-weight-bold">Đếm ngược tới bắt
+                                            đầu</div>
                                         <div id="maintenanceCountdownStart" class="font-weight-bold">--:--:--</div>
                                     </div>
+
                                     <div class="col-md-6 mb-2">
-                                        <div class="small text-muted text-uppercase font-weight-bold">Countdown canh bao (5 phut)</div>
-                                        <div id="maintenanceCountdownNotice" class="font-weight-bold">--:--:--</div>
-                                    </div>
-                                    <div class="col-md-6 mb-2">
-                                        <div class="small text-muted text-uppercase font-weight-bold">Thoi gian con lai</div>
+                                        <div class="small text-muted text-uppercase font-weight-bold">Thời gian còn lại
+                                        </div>
                                         <div id="maintenanceCountdownEnd" class="font-weight-bold">--:--:--</div>
                                     </div>
                                     <div class="col-md-6 mb-2">
-                                        <div class="small text-muted text-uppercase font-weight-bold">Time hoat dong</div>
+                                        <div class="small text-muted text-uppercase font-weight-bold">Thời gian hoạt
+                                            động</div>
                                         <div id="maintenanceElapsed" class="font-weight-bold">--:--:--</div>
                                     </div>
                                 </div>
-                                <div class="small text-muted mt-1" id="maintenanceSyncMeta">Nguon: cau hinh hien tai</div>
                             </div>
 
                             <div class="row">
@@ -424,14 +487,18 @@ require_once __DIR__ . '/layout/breadcrumb.php';
                                     <div class="form-group">
                                         <label class="font-weight-bold small text-uppercase">Bắt đầu</label>
                                         <input type="datetime-local" class="form-control" name="maintenance_start_at"
-                                            value="<?= htmlspecialchars(str_replace(' ', 'T', $maintenanceConfig['start_at'] ?? '')) ?>">
+                                            value="<?= htmlspecialchars((string) ($maintenanceStartInput ?? '')) ?>">
+                                        <small class="text-muted">Nếu bỏ trống và bật bảo trì, hệ thống sẽ tự bắt đầu
+                                            sau 5 phút countdown.</small>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <label class="font-weight-bold small text-uppercase">Thời lượng (phút)</label>
-                                        <input type="number" class="form-control" name="maintenance_duration_minutes"
-                                            value="<?= (int) ($maintenanceConfig['duration_minutes'] ?? 60) ?>">
+                                        <label class="font-weight-bold small text-uppercase">Kết thúc</label>
+                                        <input type="datetime-local" class="form-control" name="maintenance_end_at"
+                                            value="<?= htmlspecialchars((string) ($maintenanceEndInput ?? '')) ?>">
+                                        <small class="text-muted">Nếu bỏ trống, mặc định kết thúc sau 1 giờ kể từ bắt
+                                            đầu.</small>
                                     </div>
                                 </div>
                                 <div class="col-md-12">
@@ -447,11 +514,11 @@ require_once __DIR__ . '/layout/breadcrumb.php';
                             <button type="button" id="btn-clear-maintenance"
                                 class="btn btn-outline-danger shadow-sm mr-2 font-weight-bold"
                                 style="border-radius: 8px;">
-                                <i class="fas fa-times mr-1"></i> TẮT NGAY
+                                <i class="fas fa-times mr-1"></i> Tắt ngay
                             </button>
                             <button type="submit" class="btn btn-primary shadow-sm px-4 font-weight-bold"
                                 style="border-radius: 8px;">
-                                <i class="fas fa-save mr-1"></i> LƯU LỊCH
+                                <i class="fas fa-save mr-1"></i> Lưu lịch
                             </button>
                         </div>
                     </div>
@@ -462,6 +529,7 @@ require_once __DIR__ . '/layout/breadcrumb.php';
 </section>
 
 <?php require_once __DIR__ . '/layout/foot.php'; ?>
+<script src="<?= asset('assets/js/maintenance-runtime.js') ?>"></script>
 
 <script>
     $(document).ready(function () {
@@ -513,14 +581,11 @@ require_once __DIR__ . '/layout/breadcrumb.php';
         handleFormSubmit('form-general', 'update_general');
         handleFormSubmit('form-smtp', 'update_smtp');
         handleFormSubmit('form-notification', 'update_notification');
+        handleFormSubmit('form-telegram', 'update_telegram');
         handleFormSubmit('form-bank', 'update_bank');
         handleFormSubmit('form-maintenance', 'update_maintenance', () => setTimeout(() => location.reload(), 700));
 
         (function initMaintenanceStatusRealtime() {
-            const $enabled = $('#maintenance_enabled');
-            const $startAt = $('input[name="maintenance_start_at"]');
-            const $duration = $('input[name="maintenance_duration_minutes"]');
-            const $notice = $('input[name="maintenance_notice_minutes"]');
             const $badge = $('#maintenanceStatusBadge');
             const $statusText = $('#maintenanceStatusText');
             const $start = $('#maintenanceCountdownStart');
@@ -528,24 +593,6 @@ require_once __DIR__ . '/layout/breadcrumb.php';
             const $end = $('#maintenanceCountdownEnd');
             const $elapsed = $('#maintenanceElapsed');
             const $meta = $('#maintenanceSyncMeta');
-
-            let apiSnapshot = null;
-            let apiFetchedAtMs = 0;
-
-            function parseLocalDateTime(v) {
-                const raw = String(v || '').trim();
-                if (!raw) return null;
-                const normalized = raw.length === 16 ? raw + ':00' : raw;
-                const d = new Date(normalized);
-                return Number.isNaN(d.getTime()) ? null : d;
-            }
-
-            function parseServerDateTime(v) {
-                const raw = String(v || '').trim();
-                if (!raw) return null;
-                const d = new Date(raw.replace(' ', 'T'));
-                return Number.isNaN(d.getTime()) ? null : d;
-            }
 
             function fmt(sec) {
                 const n = Math.max(0, Math.floor(Number(sec || 0)));
@@ -556,99 +603,102 @@ require_once __DIR__ . '/layout/breadcrumb.php';
             }
 
             function setCountdown($el, seconds, fallback) {
-                if (seconds === null || seconds === undefined || !Number.isFinite(Number(seconds))) {
+                if (!Number.isFinite(Number(seconds))) {
                     $el.text(fallback || '--:--:--');
                     return;
                 }
                 $el.text(fmt(seconds));
             }
 
-            function setBadge(statusKey, text) {
-                let cls = 'badge-secondary';
-                if ((statusKey || '').indexOf('active') === 0) cls = 'badge-danger';
-                else if (statusKey === 'notice') cls = 'badge-warning';
-                else if ((statusKey || '').indexOf('scheduled') === 0 || (statusKey || '').indexOf('waiting') === 0) cls = 'badge-info';
-                $badge.removeClass('badge-secondary badge-danger badge-warning badge-info badge-success').addClass(cls).text(text);
-            }
-
-            function computePreviewState() {
-                const enabled = $enabled.is(':checked');
-                const startDt = parseLocalDateTime($startAt.val());
-                const durationMin = Math.max(1, parseInt($duration.val(), 10) || 60);
-                const noticeMin = Math.max(1, parseInt($notice.val(), 10) || 5);
-                const nowMs = Date.now();
-                const startMs = startDt ? startDt.getTime() : null;
-                const durationSec = durationMin * 60;
-                const noticeSec = noticeMin * 60;
-
-                const secondsUntilStartRaw = startMs !== null ? Math.floor((startMs - nowMs) / 1000) : null;
-                const active = enabled && (startMs === null || secondsUntilStartRaw <= 0);
-                const secondsUntilStart = (!active && secondsUntilStartRaw !== null) ? Math.max(0, secondsUntilStartRaw) : (active ? 0 : null);
-                const noticeLeft = (!active && secondsUntilStart !== null && secondsUntilStart <= noticeSec) ? secondsUntilStart : null;
-                const secondsUntilEnd = (active && startMs !== null) ? Math.max(0, Math.floor(((startMs + durationSec * 1000) - nowMs) / 1000)) : null;
-                const elapsedSeconds = (active && startMs !== null) ? Math.max(0, Math.floor((nowMs - startMs) / 1000)) : (active ? 0 : null);
-
-                return {
-                    source: 'form',
-                    status_key: active ? 'active_preview' : (enabled ? 'scheduled_preview' : 'idle'),
-                    status_text: active ? 'Đang bảo trì (theo cấu hình form)' : (enabled ? 'Đã bật, chờ tới giờ bắt đầu' : 'Chưa bật bảo trì'),
-                    start_at: startDt ? startDt.toLocaleString('vi-VN') : null,
-                    duration_minutes: durationMin,
-                    notice_minutes: noticeMin,
-                    active: active,
-                    seconds_until_start: secondsUntilStart,
-                    notice_seconds_left: noticeLeft,
-                    seconds_until_end: secondsUntilEnd,
-                    elapsed_seconds: elapsedSeconds
+            function setBadge(phase) {
+                const map = {
+                    off: { cls: 'badge-secondary', text: 'TẮT' },
+                    scheduled: { cls: 'badge-info', text: 'ĐÃ LÊN LỊCH' },
+                    countdown: { cls: 'badge-warning', text: 'COUNTDOWN 5 PHÚT' },
+                    active: { cls: 'badge-danger', text: 'ĐANG BẢO TRÌ' },
+                    finished: { cls: 'badge-success', text: 'ĐÃ KẾT THÚC' }
                 };
+                const chosen = map[phase] || map.off;
+                $badge.removeClass('badge-secondary badge-danger badge-warning badge-info badge-success').addClass(chosen.cls).text(chosen.text);
             }
 
-            function computeState() {
-                if (!apiSnapshot) return computePreviewState();
-                const dec = Math.floor((Date.now() - apiFetchedAtMs) / 1000);
-                const s = Object.assign({ source: 'api' }, apiSnapshot);
-                ['seconds_until_start', 'notice_seconds_left', 'seconds_until_end'].forEach(function (k) {
-                    if (Number.isFinite(Number(s[k]))) s[k] = Math.max(0, Number(s[k]) - dec);
-                });
-                const startDt = parseServerDateTime(s.start_at);
-                s.elapsed_seconds = (s.active && startDt) ? Math.max(0, Math.floor((Date.now() - startDt.getTime()) / 1000)) : null;
-                return s;
+            function inferPhase(state) {
+                if (!state) return 'off';
+                if (state.phase) return String(state.phase);
+                if (state.active) return 'active';
+                if (state.notice_active) return 'countdown';
+                if (state.scheduled) return 'scheduled';
+                return 'off';
             }
 
-            function render() {
-                const s = computeState();
-                setBadge(String(s.status_key || ''), s.active ? 'ĐANG BẢO TRÌ' : (s.notice_active ? 'ĐẾM NGƯỢC 5P' : (s.enabled || s.scheduled ? 'ĐÃ ĐẶT LỊCH' : 'TẮT')));
-                $statusText.text(String(s.status_text || 'Không có dữ liệu'));
+            function render(snapshot) {
+                const state = snapshot && snapshot.state ? snapshot.state : null;
+                if (!state) {
+                    setBadge('off');
+                    $statusText.text('Không có dữ liệu trạng thái bảo trì.');
+                    setCountdown($start, null, 'Chưa có lịch');
+                    setCountdown($noticeCd, null, 'Chưa có countdown');
+                    setCountdown($end, null, 'Chưa chạy');
+                    setCountdown($elapsed, null, 'Chưa chạy');
+                    return;
+                }
 
-                setCountdown($start, s.seconds_until_start, s.active ? 'Đã bắt đầu' : 'Chưa đặt lịch');
-                setCountdown($noticeCd, s.notice_seconds_left, s.active ? 'Đã vào bảo trì' : 'Chưa vào 5 phút cảnh báo');
-                setCountdown($end, s.seconds_until_end, s.active ? 'Không có giờ kết thúc' : 'Chưa chạy');
-                setCountdown($elapsed, s.elapsed_seconds, s.active ? '00:00:00' : 'Chưa chạy');
+                const phase = inferPhase(state);
+                const secondsUntilStart = Number.isFinite(Number(snapshot.secondsUntilStart))
+                    ? Number(snapshot.secondsUntilStart)
+                    : (Number.isFinite(Number(state.seconds_until_start)) ? Number(state.seconds_until_start) : null);
+                const noticeLeft = Number.isFinite(Number(snapshot.noticeSecondsLeft))
+                    ? Number(snapshot.noticeSecondsLeft)
+                    : (Number.isFinite(Number(state.notice_seconds_left)) ? Number(state.notice_seconds_left) : null);
+                const secondsUntilEnd = Number.isFinite(Number(snapshot.secondsUntilEnd))
+                    ? Number(snapshot.secondsUntilEnd)
+                    : (Number.isFinite(Number(state.seconds_until_end)) ? Number(state.seconds_until_end) : null);
+
+                const nowTs = Number.isFinite(Number(snapshot.serverNowTs))
+                    ? Number(snapshot.serverNowTs)
+                    : Math.floor(Date.now() / 1000);
+                const startTs = Number.isFinite(Number(state.start_at_ts)) ? Number(state.start_at_ts) : null;
+                const elapsed = (phase === 'active' && Number.isFinite(startTs)) ? Math.max(0, nowTs - startTs) : null;
+
+                setBadge(phase);
+                $statusText.text(String(state.status_text || 'Không có trạng thái'));
+
+                setCountdown($start, secondsUntilStart, phase === 'active' ? 'Đã bắt đầu' : 'Chưa có lịch');
+                setCountdown($noticeCd, noticeLeft, phase === 'active' ? 'Đã vào bảo trì' : 'Chưa vào 5 phút cảnh báo');
+                setCountdown($end, secondsUntilEnd, phase === 'active' ? 'Không có thời lượng kết thúc' : 'Chưa chạy');
+                setCountdown($elapsed, elapsed, phase === 'active' ? '00:00:00' : 'Chưa chạy');
 
                 const meta = [];
-                meta.push('Nguồn: ' + (s.source === 'api' ? 'API runtime' : 'Cấu hình form'));
-                if (s.start_at) meta.push('Bắt đầu: ' + s.start_at);
-                meta.push('Notice: ' + (s.notice_minutes || (parseInt($notice.val(), 10) || 5)) + ' phút');
-                if (s.duration_minutes) meta.push('Thời lượng: ' + s.duration_minutes + ' phút');
+                meta.push('Trạng thái: ' + phase.toUpperCase());
+                if (state.start_at_display) meta.push('Bắt đầu: ' + state.start_at_display);
+                if (state.end_at_display) meta.push('Kết thúc: ' + state.end_at_display);
+                meta.push('Notice: ' + (state.notice_minutes || 5) + ' phút');
                 $meta.text(meta.join(' | '));
             }
 
-            function syncApi() {
-                $.getJSON(MAINTENANCE_STATUS_URL, function (res) {
-                    if (!res || !res.success || !res.maintenance) return;
-                    apiSnapshot = res.maintenance;
-                    apiFetchedAtMs = Date.now();
-                    render();
+            if (typeof window.KaiMaintenanceRuntime === 'function') {
+                const runtime = new window.KaiMaintenanceRuntime({
+                    statusUrl: MAINTENANCE_STATUS_URL,
+                    pollMs: 10000
                 });
+                runtime.onUpdate(render);
+                runtime.start();
+            } else {
+                function pollOnce() {
+                    $.getJSON(MAINTENANCE_STATUS_URL, function (res) {
+                        if (!res || !res.success || !res.maintenance) return;
+                        render({
+                            state: res.maintenance,
+                            secondsUntilStart: res.maintenance.seconds_until_start,
+                            secondsUntilEnd: res.maintenance.seconds_until_end,
+                            noticeSecondsLeft: res.maintenance.notice_seconds_left,
+                            serverNowTs: res.maintenance.server_time_ts
+                        });
+                    });
+                }
+                pollOnce();
+                setInterval(pollOnce, 10000);
             }
-
-            [$enabled, $startAt, $duration, $notice].forEach(function ($el) {
-                $el.on('change input', render);
-            });
-            render();
-            syncApi();
-            setInterval(render, 1000);
-            setInterval(syncApi, 15000);
         })();
 
         $('#btn-clear-maintenance').on('click', function () {

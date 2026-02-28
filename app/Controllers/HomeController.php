@@ -16,14 +16,12 @@ class HomeController extends Controller
 
         $categoryModel = new Category();
         $productModel = new Product();
-        $stockModel = new ProductStock();
+        $inventoryService = new ProductInventoryService();
 
         $categories = $categoryModel->getActive();
         $allProducts = $productModel->getAvailable();
 
-        // Fetch stock stats for all products
-        $productIds = array_map(fn($p) => (int) $p['id'], $allProducts);
-        $stockStats = $stockModel->getStatsForProducts($productIds);
+        $stockStats = $inventoryService->getStatsForProducts($allProducts);
 
         // Group products by category ID
         $productsByCategory = [];
@@ -49,7 +47,7 @@ class HomeController extends Controller
 
         $categoryModel = new Category();
         $productModel = new Product();
-        $stockModel = new ProductStock();
+        $inventoryService = new ProductInventoryService();
 
         $categoryData = $categoryModel->findBySlug($slug);
 
@@ -74,8 +72,7 @@ class HomeController extends Controller
             'status' => 'ON'
         ]);
 
-        $productIds = array_map(fn($p) => (int) $p['id'], $allProducts);
-        $stockStats = empty($productIds) ? [] : $stockModel->getStatsForProducts($productIds);
+        $stockStats = $inventoryService->getStatsForProducts($allProducts);
 
         $productsByCategory = [];
         foreach ($allProducts as $product) {

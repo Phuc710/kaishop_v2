@@ -1842,13 +1842,45 @@
     border-collapse: separate;
     border-spacing: 0;
     margin: 0;
+    font-family: 'Signika', sans-serif;
+    font-size: 13px;
 }
 
 .user-history-table-wrap {
     border: 1px solid #e2e8f0;
     border-radius: 12px;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #6d6d6d #f1f5f9;
     background: #fff;
+}
+
+.user-history-table-wrap::-webkit-scrollbar {
+    height: 5px;
+}
+
+.user-history-table-wrap::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+}
+
+.user-history-table-wrap::-webkit-scrollbar-thumb {
+    background: #ff6900;
+    border-radius: 10px;
+}
+
+.user-history-table-wrap::-webkit-scrollbar-thumb:hover {
+    background: #e85f00;
+}
+
+#order-history-table {
+    min-width: 1060px;
+}
+
+#history-table {
+    min-width: 980px;
 }
 
 .user-history-table thead th {
@@ -1868,6 +1900,16 @@
     vertical-align: middle;
 }
 
+.user-history-table thead th,
+.user-history-table tbody td,
+.user-history-table tbody td span,
+.user-history-table tbody td div,
+.user-history-table tbody td a,
+.user-history-table tbody td button {
+    font-family: 'Signika', sans-serif !important;
+    font-size: 13px !important;
+}
+
 .user-history-table tbody tr:hover td {
     background: #f8fbff;
 }
@@ -1878,8 +1920,8 @@
 }
 
 .user-time-plain {
-    color: #0f172a;
-    font-size: 13px;
+    color: #000 !important;
+    font-size: 13px !important;
     font-weight: 500;
     white-space: nowrap;
     cursor: help;
@@ -1914,7 +1956,7 @@
     color: #475569;
     padding: 0;
     font-weight: 700;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-family: 'Signika', sans-serif;
     font-size: 13px;
     cursor: pointer;
 }
@@ -1943,6 +1985,70 @@
     color: #334155;
     border-color: #cbd5e1;
     text-decoration: none;
+}
+
+.user-order-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 12px;
+    border-radius: 99px;
+    border: 1px solid #dbe3ee;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.user-order-status.is-pending {
+    border-color: #facc15;
+    background: #fffbeb;
+    color: #b45309;
+}
+
+.user-order-status.is-completed {
+    border-color: #86efac;
+    background: #f0fdf4;
+    color: #16a34a;
+}
+
+.user-order-status.is-processing {
+    border-color: #7dd3fc;
+    background: #f0f9ff;
+    color: #0369a1;
+}
+
+.user-order-status.is-cancelled {
+    border-color: #fca5a5;
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.user-order-detail__value .user-order-status {
+    font-size: 12px;
+}
+
+/* Fallback: support old history markup (<div class="small" style="color:#00ad5c">...) */
+.user-history-table tbody td .small {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 12px;
+    border-radius: 99px;
+    border: 1px solid #facc15;
+    background: #fffbeb;
+    color: #b45309 !important;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.user-history-table tbody td .small[style*="#00ad5c"],
+.user-history-table tbody td .small[style*="#00AD5C"] {
+    border-color: #86efac;
+    background: #f0fdf4;
+    color: #16a34a !important;
 }
 
 .user-order-detail {

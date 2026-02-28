@@ -8,37 +8,33 @@ class Product extends Model
 {
     protected $table = 'products';
     private ?array $columnMap = null;
+    private const WRITABLE_COLUMNS = [
+        'name',
+        'slug',
+        'product_type',
+        'price_vnd',
+        'source_link',
+        'manual_stock',
+        'min_purchase_qty',
+        'max_purchase_qty',
+        'badge_text',
+        'category_id',
+        'display_order',
+        'status',
+        'image',
+        'gallery',
+        'description',
+        'seo_description',
+        'requires_info',
+        'info_instructions',
+        'created_at',
+        'updated_at',
+    ];
 
     public function __construct()
     {
         parent::__construct();
         $this->ensureColumns();
-    }
-
-    /**
-     * Auto-migrate: ensure new columns exist on live DB
-     */
-    private function ensureColumns(): void
-    {
-        $cols = [
-            'product_type' => "ALTER TABLE {$this->table} ADD COLUMN product_type ENUM('account','link') NOT NULL DEFAULT 'account' AFTER slug",
-            'source_link' => "ALTER TABLE {$this->table} ADD COLUMN source_link TEXT DEFAULT NULL AFTER price_vnd",
-            'min_purchase_qty' => "ALTER TABLE {$this->table} ADD COLUMN min_purchase_qty INT NOT NULL DEFAULT 1 AFTER source_link",
-            'max_purchase_qty' => "ALTER TABLE {$this->table} ADD COLUMN max_purchase_qty INT NOT NULL DEFAULT 0 AFTER min_purchase_qty",
-            'requires_info' => "ALTER TABLE {$this->table} ADD COLUMN requires_info TINYINT(1) NOT NULL DEFAULT 0 AFTER seo_description",
-            'info_instructions' => "ALTER TABLE {$this->table} ADD COLUMN info_instructions TEXT DEFAULT NULL AFTER requires_info",
-        ];
-        foreach ($cols as $col => $sql) {
-            $stmt = $this->db->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND COLUMN_NAME=?");
-            $stmt->execute([$this->table, $col]);
-            if ((int) $stmt->fetchColumn() === 0) {
-                try {
-                    $this->db->exec($sql);
-                } catch (Throwable $e) {
-                    // Fallback path: create()/update() will drop unknown columns on older schemas.
-                }
-            }
-        }
     }
 
     public function create($data)
@@ -83,13 +79,41 @@ class Product extends Model
         ");
         $stmt->execute([$this->table]);
 
+        $dbColumns = array_fill_keys($stmt->fetchAll(PDO::FETCH_COLUMN), true);
         $map = [];
-        foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $columnName) {
-            $map[(string) $columnName] = true;
+        foreach (self::WRITABLE_COLUMNS as $columnName) {
+            if (isset($dbColumns[$columnName])) {
+                $map[$columnName] = true;
+            }
         }
 
         $this->columnMap = $map;
         return $this->columnMap;
+    }
+
+    private function ensureColumns(): void
+    {
+        $columns = [
+            'manual_stock' => "ALTER TABLE {$this->table} ADD COLUMN manual_stock INT NOT NULL DEFAULT 0 AFTER source_link",
+        ];
+
+        foreach ($columns as $name => $sql) {
+            $stmt = $this->db->prepare("
+                SELECT COUNT(*)
+                FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?
+            ");
+            $stmt->execute([$this->table, $name]);
+            if ((int) $stmt->fetchColumn() > 0) {
+                continue;
+            }
+
+            try {
+                $this->db->exec($sql);
+            } catch (Throwable $e) {
+                // Leave schema changes to manual migration if ALTER is not allowed.
+            }
+        }
     }
 
     /**
@@ -292,16 +316,66 @@ class Product extends Model
         ];
     }
 
-    private function hydrateProductRow(array $row): array
+    public static function resolveDeliveryMode(array $row): string
+    {
+        $productType = (string) ($row['product_type'] ?? 'account');
+        $requiresInfo = (int) ($row['requires_info'] ?? 0) === 1;
+
+        if ($productType === 'link') {
+            return 'source_link';
+        }
+
+        if ($requiresInfo) {
+            return 'manual_info';
+        }
+
+        return 'account_stock';
+    }
+
+    public static function isStockManagedProduct(array $row): bool
+    {
+        return self::resolveDeliveryMode($row) !== 'source_link';
+    }
+
+    public static function usesAccountStock(array $row): bool
+    {
+        return self::resolveDeliveryMode($row) === 'account_stock';
+    }
+
+    public static function usesManualStock(array $row): bool
+    {
+        return self::resolveDeliveryMode($row) === 'manual_info';
+    }
+
+    public static function normalizeRuntimeRow(array $row): array
     {
         $row['product_type'] = $row['product_type'] ?? 'account';
         $row['source_link'] = $row['source_link'] ?? null;
+        $row['manual_stock'] = max(0, (int) ($row['manual_stock'] ?? 0));
         $row['min_purchase_qty'] = max(1, (int) ($row['min_purchase_qty'] ?? 1));
         $row['max_purchase_qty'] = max(0, (int) ($row['max_purchase_qty'] ?? 0));
         $row['requires_info'] = (int) ($row['requires_info'] ?? 0);
         $row['info_instructions'] = $row['info_instructions'] ?? null;
+
+        if ((string) $row['product_type'] === 'link') {
+            $row['min_purchase_qty'] = 1;
+            $row['max_purchase_qty'] = 1;
+            $row['requires_info'] = 0;
+            $row['info_instructions'] = null;
+        }
+
+        $row['delivery_mode'] = self::resolveDeliveryMode($row);
+        $row['stock_managed'] = self::isStockManagedProduct($row);
+
+        return $row;
+    }
+
+    private function hydrateProductRow(array $row): array
+    {
+        $row = self::normalizeRuntimeRow($row);
         $row['gallery_arr'] = $this->decodeJsonArray($row['gallery'] ?? null);
         $row['category_slug'] = trim((string) ($row['category_slug'] ?? ''));
+        $row['delivery_label'] = self::getDeliveryModeLabel($row['delivery_mode'] ?? '');
         $row['public_path'] = $this->buildPublicPath(
             $row['category_slug'],
             (string) ($row['slug'] ?? ''),
@@ -311,10 +385,24 @@ class Product extends Model
         return $row;
     }
 
+    public static function getDeliveryModeLabel(string $mode): string
+    {
+        switch ($mode) {
+            case 'account_stock':
+                return 'Tài Khoản';
+            case 'manual_info':
+                return 'Yêu cầu thông tin';
+            case 'source_link':
+                return 'Unlimited';
+            default:
+                return 'Khác';
+        }
+    }
+
     private function buildPublicPath(string $categorySlug, string $productSlug, int $productId): string
     {
-        $categorySlug = trim($categorySlug);
-        $productSlug = trim($productSlug);
+        $categorySlug = trim($categorySlug, " /|");
+        $productSlug = trim($productSlug, " /|");
 
         if ($categorySlug !== '' && $productSlug !== '') {
             return $categorySlug . '/' . $productSlug;

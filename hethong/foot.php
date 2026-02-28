@@ -75,7 +75,34 @@
         }
     });
 </script>
-<script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
+<script>
+    (function () {
+        var loaded = false;
+        function loadGTranslate() {
+            if (loaded) return;
+            loaded = true;
+            var script = document.createElement('script');
+            script.src = 'https://cdn.gtranslate.net/widgets/latest/float.js';
+            script.defer = true;
+            script.async = true;
+            document.body.appendChild(script);
+        }
+
+        function scheduleLoad() {
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(loadGTranslate, { timeout: 2500 });
+            } else {
+                setTimeout(loadGTranslate, 1200);
+            }
+        }
+
+        if (document.readyState === 'complete') {
+            scheduleLoad();
+        } else {
+            window.addEventListener('load', scheduleLoad, { once: true });
+        }
+    })();
+</script>
 
 <?php include_once(__DIR__ . '/popup.php'); ?>
 
@@ -357,10 +384,10 @@ $loadInteractiveBundle = !empty($pageAssetFlagsResolved['interactive_bundle']);
 
             if (!banner || !noticeText) return;
 
-            let pollTimerId = null;
             let tickTimerId = null;
             let localSecondsLeft = 0;
             let noticeActive = false;
+            let runtime = null;
 
             function normalizedPath(value) {
                 const raw = String(value || '/').replace(/\/+$/, '');
@@ -423,33 +450,48 @@ $loadInteractiveBundle = !empty($pageAssetFlagsResolved['interactive_bundle']);
                 }
             }
 
-            function schedulePoll(delay) {
-                window.clearTimeout(pollTimerId);
-                pollTimerId = window.setTimeout(pollStatus, delay);
+            function applyState(payload) {
+                const m = payload && payload.state ? payload.state : null;
+                if (!m) { hideBanner(); return; }
+
+                if (m.active) { hideBanner(); redirectMaintenance(); return; }
+
+                const noticeSeconds = payload.noticeSecondsLeft;
+                const shouldShow = Number.isFinite(Number(noticeSeconds)) && Number(noticeSeconds) > 0;
+                if (shouldShow) {
+                    showBanner(Number(noticeSeconds));
+                } else {
+                    hideBanner();
+                }
             }
 
-            function pollStatus() {
-                fetch(statusUrl, { credentials: 'same-origin', cache: 'no-store' })
-                    .then(function (r) { return r.json(); })
-                    .then(function (data) {
-                        const m = data && data.maintenance ? data.maintenance : null;
-                        if (!m) { hideBanner(); schedulePoll(20000); return; }
-
-                        if (m.active) { hideBanner(); redirectMaintenance(); return; }
-
-                        if (m.notice_active) {
-                            // Sync from server every poll; local tick fills the gap between polls
-                            showBanner(m.notice_seconds_left || 0);
-                            schedulePoll(10000);
-                        } else {
-                            hideBanner();
-                            schedulePoll(20000);
-                        }
-                    })
-                    .catch(function () { schedulePoll(20000); });
+            if (typeof window.KaiMaintenanceRuntime === 'function') {
+                runtime = new window.KaiMaintenanceRuntime({
+                    statusUrl: statusUrl,
+                    pollMs: 10000
+                });
+                runtime.onUpdate(applyState);
+                runtime.start();
+            } else {
+                // Lightweight fallback when runtime bundle is unavailable
+                const pollFallback = function () {
+                    fetch(statusUrl, { credentials: 'same-origin', cache: 'no-store' })
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) {
+                            const m = data && data.maintenance ? data.maintenance : null;
+                            if (!m) { hideBanner(); return; }
+                            if (m.active) { hideBanner(); redirectMaintenance(); return; }
+                            if (m.notice_active && Number(m.notice_seconds_left) > 0) {
+                                showBanner(Number(m.notice_seconds_left));
+                            } else {
+                                hideBanner();
+                            }
+                        })
+                        .catch(function () { });
+                };
+                pollFallback();
+                window.setInterval(pollFallback, 10000);
             }
-
-            pollStatus();
         })();
     </script>
 <?php endif; ?>

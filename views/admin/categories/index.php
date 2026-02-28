@@ -37,7 +37,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                     </div>
                     <div class="col-md-2 mb-2 text-center">
                         <button type="button" id="btn-clear" class="btn btn-danger btn-sm shadow-sm w-100">
-                            <i class="fas fa-trash"></i> Xóa Lọc
+                            Xóa Lọc
                         </button>
                     </div>
                     <div class="col-md-2 mb-2 text-right">
@@ -50,7 +50,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                 <!-- Dropdown Line -->
                 <div class="top-filter mb-2">
                     <div class="filter-show">
-                        <span class="filter-label">SHOW :</span>
+                        <span class="filter-label">HIỂN THỊ :</span>
                         <select id="f-length" class="filter-select flex-grow-1">
                             <option value="10">10</option>
                             <option value="20" selected>20</option>
@@ -63,18 +63,17 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
 
             <div class="card-body pt-3">
                 <div class="table-responsive table-wrapper mb-3">
-                    <table id="categoryTable" class="table text-nowrap table-hover table-bordered admin-table">
+                    <table id="categoryTable" class="table table-hover table-bordered admin-table">
                         <thead>
                             <tr>
                                 <th class="text-center font-weight-bold align-middle" style="width:60px">THỨ TỰ</th>
                                 <th class="text-center font-weight-bold align-middle" style="width:60px">ICON</th>
                                 <th class="text-center font-weight-bold align-middle">TÊN DANH MỤC</th>
-                                <th class="text-center font-weight-bold align-middle">SLUG</th>
+                                <th class="text-center font-weight-bold align-middle">ĐƯỜNG DẪN (SLUG)</th>
                                 <th class="text-center font-weight-bold align-middle">SỐ SẢN PHẨM</th>
                                 <th class="text-center font-weight-bold align-middle">TRẠNG THÁI</th>
                                 <th class="text-center font-weight-bold align-middle">NGÀY TẠO</th>
-                                <th class="text-center font-weight-bold align-middle" style="width:120px">THAO TÁC
-                                </th>
+                                <th class="text-center font-weight-bold align-middle" style="width:130px">THAO TÁC</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -108,27 +107,26 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                         </td>
                                         <td class="text-center align-middle">
                                             <?php if ($row['status'] == 'ON'): ?>
-                                                <span class="badge badge-success">ON</span>
+                                                <span class="badge badge-success">Bật</span>
                                             <?php else: ?>
-                                                <span class="badge badge-danger">OFF</span>
+                                                <span class="badge badge-danger">Tắt</span>
                                             <?php endif; ?>
                                         </td>
                                         <td class="text-center align-middle"
                                             data-time-ts="<?= (int) ($row['list_time_ts'] ?? 0) ?>"
                                             data-time-iso="<?= htmlspecialchars((string) ($row['list_time_iso'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                                             data-order="<?= (int) ($row['list_time_ts'] ?? 0) ?>">
-                                            <?= FormatHelper::eventTime(
-                                                $row['list_time_display'] ?? ($row['created_at'] ?? ''),
-                                                $row['created_at'] ?? ($row['time'] ?? '')
-                                            ) ?>
+                                            <span class="badge date-badge">
+                                                <?= htmlspecialchars((string) ($row['list_time_display'] ?? ($row['created_at'] ?? '—'))) ?>
+                                            </span>
                                         </td>
                                         <td class="text-center align-middle">
                                             <div class="btn-group">
                                                 <a href="<?= url('admin/categories/edit/' . $row['id']) ?>"
-                                                    class="btn btn-search-dt btn-sm" title="Sửa">
+                                                    class="btn btn-search-dt btn-sm" title="Sửa danh mục">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
-                                                <button type="button" class="btn btn-danger btn-sm ml-1" title="Xóa"
+                                                <button type="button" class="btn btn-danger btn-sm ml-1" title="Xóa danh mục"
                                                     onclick="deleteCategory(<?= $row['id'] ?>)">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
@@ -174,12 +172,12 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             ],
             language: {
                 sLengthMenu: 'Hiển thị _MENU_ mục',
-                sZeroRecords: 'Không tìm thấy dữ liệu',
-                sInfo: 'Xem _START_–_END_ / _TOTAL_ mục',
-                sInfoEmpty: 'Xem 0-0 / 0 mục',
-                sInfoFiltered: '(lọc từ _MAX_)',
-                sSearch: 'Tìm nhanh:',
-                oPaginate: { sPrevious: '&lsaquo;', sNext: '&rsaquo;' }
+                sZeroRecords: '<div class="text-center w-100 font-weight-bold py-3">Không tìm thấy dữ liệu</div>',
+                sInfo: 'Xem _START_–_END_ / _TOTAL_ danh mục',
+                sInfoEmpty: 'Không có dữ liệu',
+                sInfoFiltered: '(lọc từ _MAX_ danh mục)',
+                sSearch: 'Tìm kiếm:',
+                oPaginate: { sPrevious: '&lsaquo; Trước', sNext: 'Tiếp &rsaquo;' }
             }
         });
 

@@ -215,11 +215,11 @@ body.sidebar-collapsed .animated-arrow span::after {
 
 /* Brand / Logo area */
 .admin-sidebar .sidebar-brand {
-    height: 72px;
+    height: 82px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 8px 12px;
+    padding: 8px 10px;
     color: var(--sidebar-brand-color);
     border-bottom: 1px solid var(--sidebar-border);
     overflow: hidden;
@@ -227,10 +227,10 @@ body.sidebar-collapsed .animated-arrow span::after {
 
 .admin-sidebar .sidebar-brand img {
     display: block;
-    width: auto !important;
-    height: auto !important;
-    max-width: 180px;
-    max-height: 52px;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 220px;
+    max-height: 66px;
     object-fit: contain;
     object-position: center;
 }
@@ -529,31 +529,30 @@ body.sidebar-collapsed .admin-sidebar {
 .table-responsive {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #878787 #f1f1f1;
 }
 
 .table-responsive::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 5px;
+    height: 5px;
 }
 
 .table-responsive::-webkit-scrollbar-track {
     background: #f1f1f1;
+    border-radius: 10px;
 }
 
 .table-responsive::-webkit-scrollbar-thumb {
-    background: #999;
-    border-radius: 20px;
+    background: #878787;
+    border-radius: 10px;
 }
 
 .table-responsive::-webkit-scrollbar-thumb:hover {
-    background: #666;
+    background: #777777;
 }
 
 /* Table wrapper — vertical scroll with sticky header/footer */
-.table-wrapper {
-    max-height: 700px;
-    overflow-y: auto;
-}
 
 .table-wrapper table {
     width: 100%;
@@ -829,4 +828,19 @@ a.side-menu__item::before,
 .main-sidebar a.side-menu__item::before {
     content: none !important;
     display: none !important;
+}
+
+/* Strong override: keep admin brand logo readable even with external theme rules */
+.admin-sidebar .sidebar-brand {
+    min-height: 82px !important;
+}
+
+.admin-sidebar .sidebar-brand img {
+    display: block !important;
+    width: 140px !important;
+    height: 70px !important;
+    max-width: calc(var(--sidebar-width) - 20px) !important;
+    max-height: 70px !important;
+    object-fit: contain !important;
+    object-position: center !important;
 }

@@ -68,6 +68,8 @@ if (!class_exists('Config')) {
                 'bank_account' => '09696969690',
                 'bank_owner' => 'NGUYEN THANH PHUC',
                 'sepay_api_key' => '',
+                'telegram_bot_token' => '',
+                'telegram_chat_id' => '',
                 'tele_admin' => 'https://t.me/kaishop25',
                 'youtube_admin' => 'https://www.youtube.com/@KaiOfficial-0x',
                 'tiktok_admin' => 'https://www.tiktok.com/@kai_01s.',
@@ -138,6 +140,49 @@ if (!function_exists('myip')) {
     function myip(): string
     {
         return (string) ($_SERVER['HTTP_CLIENT_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+    }
+}
+
+if (!function_exists('telegram_service')) {
+    function telegram_service()
+    {
+        static $service = null;
+        static $loaded = false;
+
+        if ($loaded) {
+            return $service;
+        }
+
+        $loaded = true;
+        if (!class_exists('TelegramService')) {
+            $telegramServicePath = BASE_PATH . '/app/Services/TelegramService.php';
+            if (file_exists($telegramServicePath)) {
+                require_once $telegramServicePath;
+            }
+        }
+
+        if (class_exists('TelegramService')) {
+            $service = new TelegramService();
+        }
+
+        return $service;
+    }
+}
+
+if (!function_exists('sendTele')) {
+    function sendTele($message): bool
+    {
+        $service = telegram_service();
+        if (!$service) {
+            return false;
+        }
+
+        try {
+            return (bool) $service->send((string) $message);
+        } catch (Throwable $e) {
+            error_log('sendTele failed: ' . $e->getMessage());
+            return false;
+        }
     }
 }
 

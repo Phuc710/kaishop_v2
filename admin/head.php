@@ -16,6 +16,8 @@ if (empty($_SESSION['admin'])) {
 <?php
 $adminNeedsFlatpickr = !empty($adminNeedsFlatpickr);
 $adminNeedsSummernote = !empty($adminNeedsSummernote);
+$adminCssVersion = (string) @filemtime(dirname(__DIR__) . '/assets/css/admin.css');
+$adminPagesCssVersion = (string) @filemtime(dirname(__DIR__) . '/assets/css/admin-pages.css');
 ?>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap">
 <link rel="stylesheet"
@@ -43,5 +45,5 @@ $adminNeedsSummernote = !empty($adminNeedsSummernote);
 
 <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet"
     crossorigin="anonymous">
-<link rel="stylesheet" href="<?= asset('assets/css/admin.css') ?>">
-<link rel="stylesheet" href="<?= asset('assets/css/admin-pages.css') ?>">
+<link rel="stylesheet" href="<?= asset('assets/css/admin.css') ?>?v=<?= urlencode($adminCssVersion) ?>">
+<link rel="stylesheet" href="<?= asset('assets/css/admin-pages.css') ?>?v=<?= urlencode($adminPagesCssVersion) ?>">

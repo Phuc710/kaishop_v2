@@ -122,6 +122,12 @@ class AdminJournal extends Model
             $params['s_code'] = $search;
         }
 
+        $orderStatus = trim((string) ($filters['order_status'] ?? ''));
+        if ($orderStatus !== '' && in_array($orderStatus, ['pending', 'processing', 'completed', 'cancelled'], true)) {
+            $conditions[] = 'o.status = :order_status';
+            $params['order_status'] = $orderStatus;
+        }
+
         $this->appendDateConditions($conditions, $params, $timeExpr, $filters);
 
         $hasQuantity = $this->hasColumn('orders', 'quantity');
