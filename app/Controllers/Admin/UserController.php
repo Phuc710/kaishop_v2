@@ -2,13 +2,14 @@
 
 /**
  * Admin User Controller
- * Handles admin user management
+ * Handles admin user management.
  */
 class UserController extends Controller
 {
     private $authService;
     private $userModel;
     private $fingerprintModel;
+    private $banService;
     private $timeService;
 
     public function __construct()
@@ -16,25 +17,26 @@ class UserController extends Controller
         $this->authService = new AuthService();
         $this->userModel = new User();
         $this->fingerprintModel = new UserFingerprint();
+        $this->banService = new BanService();
         $this->timeService = class_exists('TimeService') ? TimeService::instance() : null;
     }
 
     /**
-     * Check admin access
+     * Check admin access.
      */
     private function requireAdmin()
     {
         $this->authService->requireAuth();
         $user = $this->authService->getCurrentUser();
 
-        if (!isset($user['level']) || $user['level'] != 9) {
+        if (!isset($user['level']) || (int) $user['level'] !== 9) {
             http_response_code(403);
-            die('Truy cập bị từ chối - Chỉ dành cho quản trị viên');
+            die('Truy cap bi tu choi - Chi danh cho quan tri vien');
         }
     }
 
     /**
-     * Show user list
+     * Show user list.
      */
     public function index()
     {
@@ -42,7 +44,16 @@ class UserController extends Controller
         global $chungapi;
 
         $users = $this->userModel->all();
+        $fingerprintMap = $this->fingerprintModel->getLatestMapByUserIds(array_column($users, 'id'));
+
         foreach ($users as &$userRow) {
+            $latestFingerprint = $fingerprintMap[(int) ($userRow['id'] ?? 0)] ?? null;
+            if (is_array($latestFingerprint)) {
+                $userRow['fingerprint'] = (string) ($latestFingerprint['fingerprint_hash'] ?? '');
+                $userRow['ip_address'] = (string) ($latestFingerprint['ip_address'] ?? ($userRow['ip_address'] ?? ''));
+                $userRow['user_agent'] = (string) ($latestFingerprint['user_agent'] ?? ($userRow['user_agent'] ?? ''));
+            }
+
             $userRow = $this->attachListTimeMeta($userRow, ['created_at', 'time']);
         }
         unset($userRow);
@@ -52,10 +63,12 @@ class UserController extends Controller
         $adminUsers = 0;
 
         foreach ($users as $u) {
-            if ($u['bannd'] == 1)
+            if ((int) ($u['bannd'] ?? 0) === 1) {
                 $bannedUsers++;
-            if ($u['level'] == 9)
+            }
+            if ((int) ($u['level'] ?? 0) === 9) {
                 $adminUsers++;
+            }
         }
 
         $this->view('admin/users/index', [
@@ -63,135 +76,152 @@ class UserController extends Controller
             'users' => $users,
             'totalUsers' => $totalUsers,
             'bannedUsers' => $bannedUsers,
-            'adminUsers' => $adminUsers
+            'adminUsers' => $adminUsers,
         ]);
     }
 
     /**
-     * Show edit user form
+     * Show edit user form.
      */
     public function edit($username)
     {
         $this->requireAdmin();
         global $chungapi, $connection;
 
-        $user = $connection->query("SELECT * FROM `users` WHERE `username` = '$username'")->fetch_assoc();
+        $safeUsername = $connection->real_escape_string((string) $username);
+        $user = $connection->query("SELECT * FROM `users` WHERE `username` = '{$safeUsername}' LIMIT 1")->fetch_assoc();
 
         if (!$user) {
-            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Lỗi', 'message' => 'Thành viên không tồn tại'];
+            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Loi', 'message' => 'Thanh vien khong ton tai'];
             $this->redirect(url('admin/users'));
         }
 
         $fingerprints = $this->fingerprintModel->getByUserId($user['id'], 20);
+        $latestFingerprint = $fingerprints[0] ?? null;
+        if (is_array($latestFingerprint)) {
+            $user['fingerprint'] = (string) ($latestFingerprint['fingerprint_hash'] ?? '');
+            $user['ip_address'] = (string) ($latestFingerprint['ip_address'] ?? ($user['ip_address'] ?? ''));
+            $user['user_agent'] = (string) ($latestFingerprint['user_agent'] ?? ($user['user_agent'] ?? ''));
+        }
 
         $this->view('admin/users/edit', [
             'chungapi' => $chungapi,
             'toz_user' => $user,
-            'fingerprints' => $fingerprints
+            'fingerprints' => $fingerprints,
         ]);
     }
 
     /**
-     * Update user details
+     * Update user details.
      */
     public function update($username)
     {
         $this->requireAdmin();
         global $connection;
 
-        $email = $this->post('email');
-        $level = $this->post('level');
-        $bannd = $this->post('bannd');
-        $new_username = $this->post('username');
+        $email = (string) $this->post('email');
+        $level = (string) $this->post('level');
+        $bannd = (string) $this->post('bannd');
+        $newUsername = (string) $this->post('username');
 
-        $sql = "UPDATE `users` SET 
-                `username` = '$new_username',
-                `email` = '$email',
-                `bannd` = '$bannd',
-                `level` = '$level' 
-                WHERE `username` = '$username'";
+        $safeOldUsername = $connection->real_escape_string((string) $username);
+        $safeNewUsername = $connection->real_escape_string($newUsername);
+        $safeEmail = $connection->real_escape_string($email);
+        $safeLevel = $connection->real_escape_string($level);
+        $safeBannd = $connection->real_escape_string($bannd);
+
+        $sql = "UPDATE `users` SET
+                `username` = '{$safeNewUsername}',
+                `email` = '{$safeEmail}',
+                `bannd` = '{$safeBannd}',
+                `level` = '{$safeLevel}'
+                WHERE `username` = '{$safeOldUsername}'";
 
         if ($connection->query($sql)) {
-            $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thành Công', 'message' => 'Cập nhật thành công'];
+            $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thanh Cong', 'message' => 'Cap nhat thanh cong'];
         } else {
-            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Lỗi', 'message' => 'Có lỗi xảy ra: ' . $connection->error];
+            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Loi', 'message' => 'Co loi xay ra: ' . $connection->error];
         }
 
-        $this->redirect(url('admin/users/edit/' . $new_username));
+        $this->redirect(url('admin/users/edit/' . $newUsername));
     }
 
     /**
-     * Add money to user
+     * Add money to user.
      */
     public function addMoney($username)
     {
         $this->requireAdmin();
         global $connection;
 
-        $amount = $this->post('tien_cong');
-        $reason = $this->post('rs_cong');
+        $safeUsername = $connection->real_escape_string((string) $username);
+        $amount = (string) $this->post('tien_cong');
+        $reason = (string) $this->post('rs_cong');
+        $safeAmount = $connection->real_escape_string($amount);
+        $safeReason = $connection->real_escape_string($reason);
         $now = time();
 
-        $create = $connection->query("UPDATE `users` SET `money` = `money` + '$amount', `tong_nap` = `tong_nap` + '$amount' WHERE `username` = '$username'");
+        $create = $connection->query("UPDATE `users` SET `money` = `money` + '{$safeAmount}', `tong_nap` = `tong_nap` + '{$safeAmount}' WHERE `username` = '{$safeUsername}'");
 
         if ($create) {
-            $connection->query("INSERT INTO `history_nap_bank` SET 
+            $connection->query("INSERT INTO `history_nap_bank` SET
                 `trans_id` = NULL,
-                `username` = '$username',
-                `type` = 'Hệ thống',
-                `ctk` = '$reason',
+                `username` = '{$safeUsername}',
+                `type` = 'He thong',
+                `ctk` = '{$safeReason}',
                 `stk` = NULL,
-                `thucnhan` = '$amount',
+                `thucnhan` = '{$safeAmount}',
                 `status` = 'hoantat',
-                `time` = '$now'");
+                `time` = '{$now}'");
 
-            Logger::info('Billing', 'admin_add_money', "Admin cộng tiền cho {$username}", ['amount' => $amount, 'reason' => $reason]);
-
-            $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thành Công', 'message' => 'Cộng tiền thành công'];
+            Logger::info('Billing', 'admin_add_money', "Admin cong tien cho {$username}", ['amount' => $amount, 'reason' => $reason]);
+            $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thanh Cong', 'message' => 'Cong tien thanh cong'];
         } else {
-            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Lỗi', 'message' => 'Có lỗi xảy ra'];
+            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Loi', 'message' => 'Co loi xay ra'];
         }
 
         $this->redirect(url('admin/users/edit/' . $username));
     }
 
     /**
-     * Subtract money from user
+     * Subtract money from user.
      */
     public function subMoney($username)
     {
         $this->requireAdmin();
         global $connection;
 
-        $amount = $this->post('tien_tru');
-        $reason = $this->post('rs_tru');
+        $safeUsername = $connection->real_escape_string((string) $username);
+        $amount = (string) $this->post('tien_tru');
+        $reason = (string) $this->post('rs_tru');
+        $safeAmount = $connection->real_escape_string($amount);
+        $safeReason = $connection->real_escape_string($reason);
         $now = time();
 
-        $create = $connection->query("UPDATE `users` SET `money` = `money` - '$amount', `tong_nap` = `tong_nap` - '$amount' WHERE `username` = '$username'");
+        $create = $connection->query("UPDATE `users` SET `money` = `money` - '{$safeAmount}', `tong_nap` = `tong_nap` - '{$safeAmount}' WHERE `username` = '{$safeUsername}'");
 
         if ($create) {
-            $connection->query("INSERT INTO `history_nap_bank` SET 
+            $connection->query("INSERT INTO `history_nap_bank` SET
                 `trans_id` = NULL,
-                `username` = '$username',
-                `type` = 'Hệ thống',
-                `ctk` = '$reason',
+                `username` = '{$safeUsername}',
+                `type` = 'He thong',
+                `ctk` = '{$safeReason}',
                 `stk` = NULL,
-                `thucnhan` = '-$amount',
+                `thucnhan` = '-{$safeAmount}',
                 `status` = 'hoantat',
-                `time` = '$now'");
+                `time` = '{$now}'");
 
-            Logger::info('Billing', 'admin_sub_money', "Admin trừ tiền của {$username}", ['amount' => $amount, 'reason' => $reason]);
-
-            $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thành Công', 'message' => 'Trừ tiền thành công'];
+            Logger::info('Billing', 'admin_sub_money', "Admin tru tien cua {$username}", ['amount' => $amount, 'reason' => $reason]);
+            $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thanh Cong', 'message' => 'Tru tien thanh cong'];
         } else {
-            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Lỗi', 'message' => 'Có lỗi xảy ra'];
+            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Loi', 'message' => 'Co loi xay ra'];
         }
 
         $this->redirect(url('admin/users/edit/' . $username));
     }
 
     /**
-     * Delete user
+     * Delete user.
      */
     public function delete()
     {
@@ -200,107 +230,116 @@ class UserController extends Controller
         $userId = $this->post('user_id');
         $this->userModel->delete($userId);
 
-        return $this->json(['success' => true, 'message' => 'Xóa thành công']);
+        return $this->json(['success' => true, 'message' => 'Xoa thanh cong']);
     }
 
     /**
-     * Ban user with reason (AJAX)
+     * Ban user with reason.
      */
     public function banUser($username)
     {
         $this->requireAdmin();
-        global $connection;
 
-        $reason = trim($this->post('reason', ''));
+        $reason = trim((string) $this->post('reason', ''));
         if ($reason === '') {
-            return $this->json(['success' => false, 'message' => 'Vui lòng nhập lý do ban.']);
-        }
-
-        $safeUser = $connection->real_escape_string($username);
-        $safeReason = $connection->real_escape_string($reason);
-
-        $result = $connection->query("UPDATE `users` SET `bannd` = 1, `ban_reason` = '{$safeReason}' WHERE `username` = '{$safeUser}'");
-
-        if ($result) {
-            Logger::warning('Admin', 'ban_user', "Admin ban user: {$username}", [
-                'username' => $username,
-                'reason' => $reason
-            ]);
-            return $this->json(['success' => true, 'message' => 'Đã khóa tài khoản ' . $username]);
-        }
-
-        return $this->json(['success' => false, 'message' => 'Có lỗi xảy ra.']);
-    }
-
-    /**
-     * Ban Device with reason (AJAX)
-     */
-    public function banDevice($username)
-    {
-        $this->requireAdmin();
-        global $connection;
-
-        $reason = trim($this->post('reason', ''));
-        if ($reason === '') {
-            return $this->json(['success' => false, 'message' => 'Vui lòng nhập lý do khóa.']);
+            return $this->json(['success' => false, 'message' => 'Vui long nhap ly do ban.']);
         }
 
         $user = $this->userModel->findByUsername($username);
         if (!$user) {
-            return $this->json(['success' => false, 'message' => 'Người dùng không tồn tại.']);
+            return $this->json(['success' => false, 'message' => 'Nguoi dung khong ton tai.']);
         }
 
-        if (empty($user['fingerprint'])) {
-            return $this->json(['success' => false, 'message' => 'Chưa có dữ liệu Fingerprint của người dùng này để khóa thiết bị.']);
+        $durationKey = (string) $this->post('duration', '');
+        $duration = $this->banService->normalizeDuration($durationKey);
+        $adminName = (string) ($_SESSION['admin'] ?? 'Admin');
+        $result = $this->banService->applyAccountBan($user, $reason, $durationKey, $adminName);
+
+        if ($result) {
+            Logger::warning('Admin', 'ban_user', "Admin ban user: {$username}", [
+                'username' => $username,
+                'reason' => $reason,
+                'duration' => $duration['label'],
+            ]);
+            return $this->json([
+                'success' => true,
+                'message' => 'Da khoa tai khoan ' . $username . ' - ' . $duration['label'],
+            ]);
         }
 
-        $fpHash = mysqli_real_escape_string($connection, $user['fingerprint']);
-        $safeReason = mysqli_real_escape_string($connection, $reason);
-        $adminName = mysqli_real_escape_string($connection, $_SESSION['admin'] ?? 'Admin');
-
-        // Insert into banned_fingerprints
-        $sql = "INSERT INTO `banned_fingerprints` (`fingerprint_hash`, `reason`, `banned_by`) 
-                VALUES ('$fpHash', '$safeReason', '$adminName') 
-                ON DUPLICATE KEY UPDATE `reason` = '$safeReason', `banned_by` = '$adminName'";
-        $connection->query($sql);
-
-        // Also ban the account simultaneously for double protection
-        $safeUser = $connection->real_escape_string($username);
-        $connection->query("UPDATE `users` SET `bannd` = 1, `ban_reason` = '{$safeReason}' WHERE `username` = '{$safeUser}'");
-
-        Logger::warning('Admin', 'ban_device', 'Khóa thiết bị Fingerprint: ' . $username, ['fingerprint' => $fpHash]);
-
-        return $this->json(['success' => true, 'message' => 'Đã khóa tài khoản và thiết bị của ' . $username]);
+        return $this->json(['success' => false, 'message' => 'Co loi xay ra.']);
     }
 
     /**
-     * Unban user (AJAX)
+     * Ban user device by latest known fingerprint.
+     */
+    public function banDevice($username)
+    {
+        $this->requireAdmin();
+
+        $reason = trim((string) $this->post('reason', ''));
+        if ($reason === '') {
+            return $this->json(['success' => false, 'message' => 'Vui long nhap ly do khoa.']);
+        }
+
+        $user = $this->userModel->findByUsername($username);
+        if (!$user) {
+            return $this->json(['success' => false, 'message' => 'Nguoi dung khong ton tai.']);
+        }
+
+        $latestFingerprint = $this->fingerprintModel->getLatestByUserId((int) ($user['id'] ?? 0));
+        if (!$latestFingerprint || empty($latestFingerprint['fingerprint_hash'])) {
+            return $this->json(['success' => false, 'message' => 'Chua co du lieu Fingerprint cua nguoi dung nay de khoa thiet bi.']);
+        }
+
+        $durationKey = (string) $this->post('duration', '');
+        $duration = $this->banService->normalizeDuration($durationKey);
+        $adminName = (string) ($_SESSION['admin'] ?? 'Admin');
+        $fpHash = (string) $latestFingerprint['fingerprint_hash'];
+        $deviceBanResult = $this->banService->applyDeviceBan($user, $fpHash, $reason, $durationKey, $adminName);
+        $accountBanResult = $this->banService->applyAccountBan($user, $reason, $durationKey, $adminName);
+
+        if ($deviceBanResult && $accountBanResult) {
+            Logger::warning('Admin', 'ban_device', 'Khoa thiet bi Fingerprint: ' . $username, [
+                'fingerprint' => $fpHash,
+                'reason' => $reason,
+                'duration' => $duration['label'],
+            ]);
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Da khoa tai khoan va thiet bi cua ' . $username . ' - ' . $duration['label'],
+            ]);
+        }
+
+        return $this->json(['success' => false, 'message' => 'Khong the khoa thiet bi luc nay.']);
+    }
+
+    /**
+     * Unban user and latest known fingerprint if present.
      */
     public function unbanUser($username)
     {
         $this->requireAdmin();
-        global $connection;
+        $adminName = (string) ($_SESSION['admin'] ?? 'Admin');
+        $result = $this->banService->releaseAccountBan((string) $username, $adminName);
 
-        $safeUser = $connection->real_escape_string($username);
-
-        $result = $connection->query("UPDATE `users` SET `bannd` = 0, `ban_reason` = NULL WHERE `username` = '{$safeUser}'");
-
-        // Also Unban Device if they have one currently banned
         $user = $this->userModel->findByUsername($username);
-        if ($user && !empty($user['fingerprint'])) {
-            $fpHash = $connection->real_escape_string($user['fingerprint']);
-            $connection->query("DELETE FROM `banned_fingerprints` WHERE `fingerprint_hash` = '{$fpHash}'");
+        $latestFingerprint = $user ? $this->fingerprintModel->getLatestByUserId((int) ($user['id'] ?? 0)) : null;
+        if ($latestFingerprint && !empty($latestFingerprint['fingerprint_hash'])) {
+            $this->banService->releaseDeviceBan((string) $latestFingerprint['fingerprint_hash'], $adminName);
         }
 
         if ($result) {
-            Logger::info('Admin', 'unban_user', "Admin mở khóa user & thiết bị: {$username}", [
-                'username' => $username
+            Logger::info('Admin', 'unban_user', "Admin mo khoa user va thiet bi: {$username}", [
+                'username' => $username,
             ]);
-            return $this->json(['success' => true, 'message' => 'Đã mở khóa tài khoản ' . $username]);
+            return $this->json(['success' => true, 'message' => 'Da mo khoa tai khoan ' . $username]);
         }
 
-        return $this->json(['success' => false, 'message' => 'Có lỗi xảy ra.']);
+        return $this->json(['success' => false, 'message' => 'Co loi xay ra.']);
     }
+
     /**
      * @param array<string,mixed> $row
      * @param array<int,string> $candidates
@@ -338,6 +377,7 @@ class UserController extends Controller
         if ($raw === '') {
             return ['ts' => null, 'iso' => '', 'iso_utc' => '', 'display' => ''];
         }
+
         $ts = strtotime($raw);
         if ($ts === false) {
             return ['ts' => null, 'iso' => '', 'iso_utc' => '', 'display' => $raw];

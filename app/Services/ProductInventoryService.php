@@ -18,7 +18,7 @@ class ProductInventoryService
 
     public function usesWarehouseStock(array $product): bool
     {
-        return Product::isStockManagedProduct($product);
+        return Product::usesAccountStock($product);
     }
 
     public function getAvailableStock(array $product): ?int
@@ -36,8 +36,6 @@ class ProductInventoryService
         if ($deliveryMode === 'account_stock') {
             return $this->stockModel->countAvailable((int) ($product['id'] ?? 0));
         }
-
-        return 0;
 
         return 0;
     }
@@ -106,16 +104,6 @@ class ProductInventoryService
 
             $deliveryMode = Product::resolveDeliveryMode($product);
 
-            if ($deliveryMode === 'source_link') {
-                $result[$productId] = [
-                    'available' => 0,
-                    'sold' => $ordersSold[$productId] ?? 0,
-                    'unlimited' => true,
-                    'is_manual_queue' => false
-                ];
-                continue;
-            }
-
             if ($deliveryMode === 'manual_info') {
                 $pCounts = $this->getPendingAndCompletedCounts($productId);
                 $result[$productId] = [
@@ -172,6 +160,13 @@ class ProductInventoryService
             return [
                 'stock_id' => $firstStockId,
                 'delivery_content' => implode(PHP_EOL, $items),
+            ];
+        }
+
+        if (Product::resolveDeliveryMode($product) === 'manual_info') {
+            return [
+                'stock_id' => null,
+                'delivery_content' => '',
             ];
         }
 

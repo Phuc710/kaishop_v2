@@ -1,8 +1,7 @@
 <?php
 
 /**
- * TelegramService
- * Dedicated OOP service for Telegram bot notifications.
+ * Telegram Bot API low-level wrapper.
  */
 class TelegramService
 {
@@ -10,141 +9,233 @@ class TelegramService
     private string $chatId;
     private int $timeoutSeconds;
 
-    public function __construct(?string $botToken = null, ?string $chatId = null, int $timeoutSeconds = 10)
+    public function __construct(?string $botToken = null, ?string $chatId = null, int $timeoutSeconds = 0)
     {
-        $this->botToken = trim((string) ($botToken ?? $this->readConfig('TELEGRAM_BOT_TOKEN', 'telegram_bot_token')));
-        $this->chatId = trim((string) ($chatId ?? $this->readConfig('TELEGRAM_CHAT_ID', 'telegram_chat_id')));
-        $this->timeoutSeconds = max(3, $timeoutSeconds);
+        $this->botToken = trim((string) ($botToken ?? TelegramConfig::botToken()));
+        $this->chatId = trim((string) ($chatId ?? (string) TelegramConfig::primaryAdminId()));
+        $this->timeoutSeconds = $timeoutSeconds > 0 ? $timeoutSeconds : TelegramConfig::CURL_TIMEOUT;
     }
 
     public function isConfigured(): bool
     {
-        return $this->botToken !== '' && $this->chatId !== '';
+        return $this->botToken !== '';
     }
 
+    /**
+     * Legacy send method. Sends to the default admin chat.
+     */
     public function send(string $message, array $options = []): bool
     {
-        $text = trim($message);
-        if ($text === '' || !$this->isConfigured()) {
+        if ($this->chatId === '') {
             return false;
         }
 
+        return $this->sendTo($this->chatId, $message, $options);
+    }
+
+    /**
+     * Send a message to a specific chat ID.
+     */
+    public function sendTo(string $chatId, string $message, array $options = []): bool
+    {
         $payload = [
-            'chat_id' => $this->chatId,
-            'text' => $text,
+            'chat_id' => $chatId,
+            'text' => trim($message),
+            'parse_mode' => $options['parse_mode'] ?? 'HTML',
             'disable_web_page_preview' => !empty($options['disable_web_page_preview']) ? 'true' : 'false',
         ];
 
-        if (!empty($options['parse_mode'])) {
-            $payload['parse_mode'] = (string) $options['parse_mode'];
+        if (!empty($options['reply_markup'])) {
+            $payload['reply_markup'] = is_string($options['reply_markup'])
+                ? $options['reply_markup']
+                : json_encode($options['reply_markup'], JSON_UNESCAPED_UNICODE);
         }
 
         if (!empty($options['disable_notification'])) {
             $payload['disable_notification'] = 'true';
         }
 
-        return $this->postSendMessage($payload);
+        $result = $this->apiCall('sendMessage', $payload);
+        return !empty($result['ok']);
     }
 
-    private function postSendMessage(array $payload): bool
+    /**
+     * Edit an existing message.
+     *
+     * @param mixed $keyboard
+     */
+    public function editMessage(string $chatId, int $messageId, string $text, $keyboard = null): bool
     {
-        $url = 'https://api.telegram.org/bot' . $this->botToken . '/sendMessage';
+        $payload = [
+            'chat_id' => $chatId,
+            'message_id' => $messageId,
+            'text' => trim($text),
+            'parse_mode' => 'HTML',
+        ];
+
+        if ($keyboard !== null) {
+            $payload['reply_markup'] = is_string($keyboard)
+                ? $keyboard
+                : json_encode($keyboard, JSON_UNESCAPED_UNICODE);
+        }
+
+        $result = $this->apiCall('editMessageText', $payload);
+        return !empty($result['ok']);
+    }
+
+    /**
+     * Delete a message.
+     */
+    public function deleteMessage(string $chatId, int $messageId): bool
+    {
+        $result = $this->apiCall('deleteMessage', [
+            'chat_id' => $chatId,
+            'message_id' => $messageId,
+        ]);
+
+        return !empty($result['ok']);
+    }
+
+    /**
+     * Remove callback loading spinner on button click.
+     */
+    public function answerCallbackQuery(string $callbackId, string $text = '', bool $showAlert = false): bool
+    {
+        $result = $this->apiCall('answerCallbackQuery', [
+            'callback_query_id' => $callbackId,
+            'text' => $text,
+            'show_alert' => $showAlert ? 'true' : 'false',
+        ]);
+
+        return !empty($result['ok']);
+    }
+
+    /**
+     * Set the bot webhook.
+     */
+    public function setWebhook(string $url, ?string $secretToken = null): array
+    {
+        $payload = ['url' => $url];
+
+        if ($secretToken !== null && $secretToken !== '') {
+            $payload['secret_token'] = $secretToken;
+        }
+
+        return $this->apiCall('setWebhook', $payload);
+    }
+
+    /**
+     * Wrapper for general system notifications.
+     */
+    public function sendNotification(string $chatId, string $text): bool
+    {
+        return $this->sendTo($chatId, "<b>SYSTEM NOTIFICATION</b>\n\n" . $text);
+    }
+
+    /**
+     * Get basic bot information.
+     */
+    public function getMe(): array
+    {
+        $cacheKey = 'tg_me_' . md5($this->botToken ?: 'no_token');
+        $cached = AppCache::get($cacheKey, TelegramConfig::CACHE_TTL_GET_ME);
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $response = $this->apiCall('getMe');
+        if (!empty($response['ok'])) {
+            AppCache::set($cacheKey, $response);
+        }
+
+        return $response;
+    }
+
+    /**
+     * Get current webhook information.
+     */
+    public function getWebhookInfo(): array
+    {
+        $cacheKey = 'tg_webhook_' . md5($this->botToken ?: 'no_token');
+        $cached = AppCache::get($cacheKey, TelegramConfig::CACHE_TTL_WEBHOOK);
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $response = $this->apiCall('getWebhookInfo');
+        if (!empty($response['ok'])) {
+            AppCache::set($cacheKey, $response);
+        }
+
+        return $response;
+    }
+
+    /**
+     * Remove webhook integration.
+     */
+    public function deleteWebhook(bool $dropPendingUpdates = false): array
+    {
+        $params = [];
+        if ($dropPendingUpdates) {
+            $params['drop_pending_updates'] = 'true';
+        }
+
+        return $this->apiCall('deleteWebhook', $params);
+    }
+
+    public function apiCall(string $method, array $params = []): array
+    {
+        if (!$this->isConfigured()) {
+            return ['ok' => false, 'description' => 'Bot token not configured'];
+        }
 
         if (!function_exists('curl_init')) {
-            error_log('TelegramService: cURL extension is not available.');
-            return false;
+            error_log('TelegramService: cURL extension not available.');
+            return ['ok' => false, 'description' => 'cURL extension not available'];
         }
 
+        $url = 'https://api.telegram.org/bot' . $this->botToken . '/' . $method;
         $ch = curl_init($url);
+
         if ($ch === false) {
-            return false;
+            return ['ok' => false, 'description' => 'Could not initialize cURL'];
         }
 
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($payload));
-        curl_setopt($ch, CURLOPT_TIMEOUT, $this->timeoutSeconds);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => http_build_query($params),
+            CURLOPT_TIMEOUT => $this->timeoutSeconds,
+            CURLOPT_CONNECTTIMEOUT => TelegramConfig::CURL_CONNECT_TIMEOUT,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
 
         $raw = curl_exec($ch);
-        $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
         curl_close($ch);
 
         if ($raw === false) {
-            error_log('TelegramService: request failed. ' . $curlError);
-            return false;
+            error_log('TelegramService cURL error: ' . $curlError . ' (method=' . $method . ')');
+            return ['ok' => false, 'description' => 'cURL error: ' . $curlError];
         }
 
         $response = json_decode((string) $raw, true);
-        if ($httpCode >= 200 && $httpCode < 300 && is_array($response) && !empty($response['ok'])) {
-            return true;
+        if (!is_array($response)) {
+            return ['ok' => false, 'description' => 'Invalid JSON response'];
         }
 
-        $description = '';
-        if (is_array($response)) {
-            $description = (string) ($response['description'] ?? '');
+        if (empty($response['ok'])) {
+            error_log('TelegramService API error [' . $method . ']: ' . ($response['description'] ?? 'unknown'));
         }
 
-        error_log('TelegramService: send failed. HTTP ' . $httpCode . ($description !== '' ? (' - ' . $description) : ''));
-        return false;
+        return $response;
     }
 
-    private function readConfig(string $envKey, string $settingKey): string
+    /**
+     * Inline keyboard builder.
+     */
+    public static function buildInlineKeyboard(array $rows): array
     {
-        if (function_exists('get_setting')) {
-            $fromSetting = trim((string) get_setting($settingKey, ''));
-            if ($fromSetting !== '') {
-                return $fromSetting;
-            }
-
-            $legacySettingMap = [
-                'telegram_bot_token' => ['tele_bot_token', 'bot_token', 'apikey'],
-                'telegram_chat_id' => ['tele_chat_id', 'chat_id', 'id_tele'],
-            ];
-            foreach (($legacySettingMap[$settingKey] ?? []) as $legacySettingKey) {
-                $legacySettingValue = trim((string) get_setting($legacySettingKey, ''));
-                if ($legacySettingValue !== '') {
-                    return $legacySettingValue;
-                }
-            }
-        }
-
-        $value = $this->readEnv($envKey);
-        if ($value !== '') {
-            return $value;
-        }
-
-        $legacyEnvMap = [
-            'TELEGRAM_BOT_TOKEN' => ['TELE_BOT_TOKEN', 'BOT_TOKEN'],
-            'TELEGRAM_CHAT_ID' => ['TELE_CHAT_ID', 'CHAT_ID'],
-        ];
-
-        foreach (($legacyEnvMap[$envKey] ?? []) as $legacyKey) {
-            $legacyValue = $this->readEnv($legacyKey);
-            if ($legacyValue !== '') {
-                return $legacyValue;
-            }
-        }
-
-        return '';
-    }
-
-    private function readEnv(string $key): string
-    {
-        if (class_exists('EnvHelper')) {
-            $value = trim((string) EnvHelper::get($key, ''));
-            if ($value !== '') {
-                return $value;
-            }
-        }
-
-        $fromEnv = trim((string) ($_ENV[$key] ?? ''));
-        if ($fromEnv !== '') {
-            return $fromEnv;
-        }
-
-        return trim((string) getenv($key));
+        return ['inline_keyboard' => $rows];
     }
 }

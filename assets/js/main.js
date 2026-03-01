@@ -80,7 +80,28 @@
     QuillExist();
 
     // Nice Select
-    $(".select-dropdown").niceSelect();
+    function initNiceSelect(attempt) {
+        var tries = typeof attempt === "number" ? attempt : 0;
+        if (!$(".select-dropdown").length) return;
+
+        if ($.fn && typeof $.fn.niceSelect === "function") {
+            $(".select-dropdown").niceSelect();
+            return;
+        }
+
+        if (tries >= 10) return;
+        window.setTimeout(function () {
+            initNiceSelect(tries + 1);
+        }, 150);
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", function () {
+            initNiceSelect();
+        });
+    } else {
+        initNiceSelect();
+    }
 
     function createSwiperIfExists(selector, options) {
         if (typeof Swiper !== "function") return null;

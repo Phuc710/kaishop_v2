@@ -104,6 +104,11 @@ return [
     ['POST', '/admin/finance/giftcodes/delete/{id}', 'Admin\\FinanceController@deleteGiftcode'],
     ['GET', '/admin/finance/giftcodes/log/{id}', 'Admin\\FinanceController@giftcodeLog'],
 
+    // Admin Blacklist
+    ['GET', '/admin/blacklist', 'Admin\\BlacklistController@index'],
+    ['POST', '/admin/blacklist/unban', 'Admin\\BlacklistController@unban'],
+    ['POST', '/admin/blacklist/clear-expired', 'Admin\\BlacklistController@clearExpired'],
+
     // Admin Products
     ['GET', '/admin/products', 'Admin\\AdminProductController@index'],
     ['GET', '/admin/products/add', 'Admin\\AdminProductController@add'],
@@ -129,7 +134,28 @@ return [
     // ========== SEPAY WEBHOOK (API) ==========
     ['POST', '/api/sepay/webhook', 'Api\\SepayWebhookController@handle'],
 
+    // ========== TELEGRAM BOT ==========
+    ['POST', '/api/telegram/webhook', 'TelegramBotController@handleWebhook'],
+    ['POST', '/api/telegram/generate-link', 'ProfileController@generateTelegramLink'],
+    ['POST', '/api/telegram/unlink', 'ProfileController@unlinkTelegram'],
+
+    // ========== ADMIN TELEGRAM ==========
+    ['GET', '/admin/telegram', 'Admin\\TelegramAdminController@index'],
+    ['GET', '/admin/telegram/settings', 'Admin\\TelegramAdminController@settings'],
+    ['POST', '/admin/telegram/settings/update', 'Admin\\TelegramAdminController@updateSettings'],
+    ['POST', '/admin/telegram/webhook/set', 'Admin\\TelegramAdminController@setWebhookAction'],
+    ['POST', '/admin/telegram/webhook/delete', 'Admin\\TelegramAdminController@deleteWebhookAction'],
+    ['POST', '/admin/telegram/test', 'Admin\\TelegramAdminController@testNotification'],
+    ['GET', '/admin/telegram/links', 'Admin\\TelegramAdminController@links'],
+    ['POST', '/admin/telegram/links/unlink', 'Admin\\TelegramAdminController@unlinkAction'],
+    ['GET', '/admin/telegram/outbox', 'Admin\\TelegramAdminController@outbox'],
+    ['POST', '/admin/telegram/outbox/retry', 'Admin\\TelegramAdminController@outboxRetry'],
+    ['POST', '/admin/telegram/outbox/delete', 'Admin\\TelegramAdminController@outboxDelete'],
+    ['GET', '/admin/telegram/logs', 'Admin\\TelegramAdminController@logs'],
+    ['GET', '/admin/telegram/orders', 'Admin\\TelegramAdminController@orders'],
+
     // ========== CANONICAL PRODUCT SLUG ROUTE ==========
     // Keep this near the end to avoid catching admin/api routes like /admin/users
     ['GET', '/{categorySlug}/{productSlug}', 'ProductController@showBySlug'],
 ];
+

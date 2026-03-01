@@ -176,8 +176,8 @@ class AdminProductController extends Controller
 
         $id = (int) $id;
         $product = $this->productModel->find($id);
-        if (!$product || !Product::isStockManagedProduct($product)) {
-            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Loi', 'message' => 'San pham nay khong su dung kho.'];
+        if (!$product) {
+            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Lỗi', 'message' => 'Sản phẩm không tồn tại.'];
             $this->redirect(url('admin/products'));
         }
 
@@ -189,10 +189,29 @@ class AdminProductController extends Controller
         ];
 
         $stats = $this->inventoryService->getStats($product);
-        $isManualQueue = !empty($stats['is_manual_queue']);
+        $deliveryMode = (string) ($product['delivery_mode'] ?? '');
+        $isSourceHistory = $deliveryMode === 'source_link';
+        $isManualQueue = !empty($stats['is_manual_queue']) || $isSourceHistory;
 
         if ($isManualQueue) {
             $items = $this->orderModel->getProductOrdersQueue($id, $filters);
+            if ($isSourceHistory) {
+                $sourceStats = [
+                    'total' => count($items),
+                    'available' => 0,
+                    'sold' => 0,
+                    'is_manual_queue' => true,
+                ];
+                foreach ($items as $sourceItem) {
+                    $status = (string) ($sourceItem['status'] ?? '');
+                    if ($status === 'completed') {
+                        $sourceStats['sold']++;
+                    } elseif ($status === 'pending' || $status === 'processing') {
+                        $sourceStats['available']++;
+                    }
+                }
+                $stats = array_merge($stats, $sourceStats);
+            }
         } else {
             $items = $this->stockModel->getByProduct($id, $filters);
         }
@@ -214,6 +233,7 @@ class AdminProductController extends Controller
                 'items' => $items,
                 'stats' => $stats,
                 'isManualQueue' => $isManualQueue,
+                'isSourceHistory' => $isSourceHistory,
             ]);
         }
 
@@ -227,6 +247,7 @@ class AdminProductController extends Controller
             'dateFilter' => $filters['date_filter'],
             'limit' => $filters['limit'],
             'isManualQueue' => $isManualQueue,
+            'isSourceHistory' => $isSourceHistory,
         ]);
     }
 
@@ -236,7 +257,7 @@ class AdminProductController extends Controller
         $id = (int) $id;
         $product = $this->productModel->find($id);
         if (!$product || !Product::isStockManagedProduct($product)) {
-            return $this->json(['success' => false, 'message' => 'San pham khong hop le'], 400);
+            return $this->json(['success' => false, 'message' => 'Sản phẩm không hợp lệ hoặc không dùng kho'], 400);
         }
 
         $rawText = trim((string) $this->post('content', ''));
@@ -275,7 +296,7 @@ class AdminProductController extends Controller
             return $this->json(['success' => false, 'message' => 'Sản phẩm không tồn tại'], 404);
 
         if (!Product::isStockManagedProduct($product)) {
-            return $this->json(['success' => false, 'message' => 'San pham nay khong su dung kho de don.'], 400);
+            return $this->json(['success' => false, 'message' => 'Sản phẩm này không dùng kho để dọn.'], 400);
         }
 
         $count = $this->stockModel->deleteAllAvailable($id);
@@ -343,8 +364,9 @@ class AdminProductController extends Controller
             $errors[] = 'Giá bán phải lớn hơn 0';
         if ($catId <= 0)
             $errors[] = 'Vui long chon danh muc cho san pham';
-        if ($productType === 'link' && $sourceLink === '')
+        if ($productType === 'link' && $sourceLink === '') {
             $errors[] = 'Vui lòng nhập link download cho sản phẩm loại Source Link';
+        }
 
         if ($productType === 'link') {
             $requiresInfo = 0;

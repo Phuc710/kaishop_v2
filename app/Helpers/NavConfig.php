@@ -83,6 +83,44 @@ class NavConfig
                     ],
                 ],
             ],
+            [
+                'type' => 'tree',
+                'icon' => 'fab fa-telegram-plane',
+                'label' => 'Telegram Bot',
+                'children' => [
+                    [
+                        'href' => self::buildUrl('admin/telegram'),
+                        'label' => 'Dashboard',
+                        'active_prefixes' => ['admin/telegram'],
+                        'active_patterns' => ['#^/admin/telegram/?$#'],
+                    ],
+                    [
+                        'href' => self::buildUrl('admin/telegram/settings'),
+                        'label' => 'Cấu hình Bot',
+                        'active_prefixes' => ['admin/telegram/settings'],
+                    ],
+                    [
+                        'href' => self::buildUrl('admin/telegram/links'),
+                        'label' => 'User Links',
+                        'active_prefixes' => ['admin/telegram/links'],
+                    ],
+                    [
+                        'href' => self::buildUrl('admin/telegram/outbox'),
+                        'label' => 'Outbox & Worker',
+                        'active_prefixes' => ['admin/telegram/outbox'],
+                    ],
+                    [
+                        'href' => self::buildUrl('admin/telegram/logs'),
+                        'label' => 'Nhật ký',
+                        'active_prefixes' => ['admin/telegram/logs'],
+                    ],
+                    [
+                        'href' => self::buildUrl('admin/telegram/orders'),
+                        'label' => 'Đơn hàng Bot',
+                        'active_prefixes' => ['admin/telegram/orders'],
+                    ],
+                ],
+            ],
             ['type' => 'header', 'label' => 'QUẢN LÝ'],
             [
                 'type' => 'link',
@@ -98,7 +136,15 @@ class NavConfig
                 'label' => 'Mã giảm giá',
                 'active_prefixes' => ['admin/finance/giftcodes'],
             ],
+            [
+                'type' => 'link',
+                'href' => self::buildUrl('admin/blacklist'),
+                'icon' => 'fas fa-ban',
+                'label' => 'Blacklist',
+                'active_prefixes' => ['admin/blacklist'],
+            ],
             ['type' => 'header', 'label' => 'HỆ THỐNG'],
+
             [
                 'type' => 'link',
                 'href' => self::buildUrl('admin/setting'),
@@ -106,6 +152,7 @@ class NavConfig
                 'label' => 'Cài đặt',
                 'active_prefixes' => ['admin/setting'],
             ],
+
             [
                 'type' => 'logout',
                 'href' => self::buildUrl('logout'),
@@ -272,6 +319,13 @@ class NavConfig
                 'href' => self::buildUrl('password'),
                 'icon' => 'fas fa-key',
                 'label' => 'Thay đổi mật khẩu',
+            ],
+            [
+                'type' => 'link',
+                'active_key' => 'telegram',
+                'href' => self::buildUrl('profile?section=telegram'),
+                'icon' => 'fab fa-telegram-plane',
+                'label' => 'Liên kết Telegram',
             ],
             [
                 'type' => 'logout',

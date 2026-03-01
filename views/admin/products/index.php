@@ -144,9 +144,10 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                 <?php foreach ($products as $p):
                                     $isAccount = ($p['product_type'] ?? 'account') === 'account';
                                     $isManualRequest = (($p['delivery_mode'] ?? '') === 'manual_info');
+                                    $isSourceProduct = (($p['delivery_mode'] ?? '') === 'source_link');
                                     $isStockManaged = !empty($p['stock_managed']);
                                     $pid = (int) $p['id'];
-                                    $st = $stockStats[$pid] ?? ['available' => 0, 'sold' => 0];
+                                    $st = $stockStats[$pid] ?? ['available' => 0, 'sold' => 0, 'unlimited' => false];
                                     ?>
                                     <tr id="row-<?= $pid ?>">
                                         <td class="text-center align-middle">
@@ -184,7 +185,12 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                             <?= number_format((int) $p['price_vnd']) ?>đ
                                         </td>
                                         <td class="text-center align-middle">
-                                            <?php if ($isStockManaged): ?>
+                                            <?php if ($isSourceProduct || !empty($st['unlimited'])): ?>
+                                                <span class="badge badge-light text-muted"><i
+                                                        class="fas fa-infinity mr-1"></i>Unlimited</span>
+                                                <span class="text-muted"> / </span>
+                                                <span class="text-danger font-weight-bold"><?= (int) ($st['sold'] ?? 0) ?></span>
+                                            <?php elseif ($isStockManaged): ?>
                                                 <span class="text-success font-weight-bold"><?= $st['available'] ?></span>
                                                 <span class="text-muted"> / </span>
                                                 <span class="text-danger font-weight-bold"><?= $st['sold'] ?></span>

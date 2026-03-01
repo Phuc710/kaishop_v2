@@ -34,6 +34,25 @@ class AuthService {
         return (string) ($_SESSION['session'] ?? '');
     }
 
+    private function enforceActiveUser(?array $user): ?array
+    {
+        if (!is_array($user) || $user === []) {
+            return null;
+        }
+
+        $authSecurity = $this->authSecurity();
+        if (!$authSecurity) {
+            return $user;
+        }
+
+        $validatedUser = $authSecurity->enforceActiveUser($user);
+        if ($validatedUser === null) {
+            $this->clearUserCache();
+        }
+
+        return $validatedUser;
+    }
+
     private function loadUserFromSessionCache(): ?array
     {
         $session = $this->currentSessionToken();
@@ -48,10 +67,10 @@ class AuthService {
             return self::$cachedUser;
         }
 
-        $user = $this->userModel->findBySession($session);
+        $user = $this->enforceActiveUser($this->userModel->findBySession($session) ?: null);
         self::$userCacheLoaded = true;
         self::$cachedSessionToken = $session;
-        self::$cachedUser = $user ?: null;
+        self::$cachedUser = $user;
 
         return self::$cachedUser;
     }

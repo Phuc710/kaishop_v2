@@ -43,6 +43,52 @@ class UserFingerprint extends Model
     }
 
     /**
+     * Get the latest fingerprint record for a specific user.
+     */
+    public function getLatestByUserId($userId): ?array
+    {
+        $sql = "SELECT * FROM `{$this->table}` WHERE `user_id` = ? ORDER BY `id` DESC LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$userId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    /**
+     * Get latest fingerprint row for each user ID.
+     *
+     * @param array<int,int|string> $userIds
+     * @return array<int,array<string,mixed>>
+     */
+    public function getLatestMapByUserIds(array $userIds): array
+    {
+        $userIds = array_values(array_filter(array_map('intval', $userIds), static fn($id) => $id > 0));
+        if ($userIds === []) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+        $sql = "SELECT uf.*
+                FROM `{$this->table}` uf
+                INNER JOIN (
+                    SELECT `user_id`, MAX(`id`) AS `latest_id`
+                    FROM `{$this->table}`
+                    WHERE `user_id` IN ({$placeholders})
+                    GROUP BY `user_id`
+                ) latest ON latest.`latest_id` = uf.`id`";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($userIds);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $mapped = [];
+        foreach ($rows as $row) {
+            $mapped[(int) ($row['user_id'] ?? 0)] = $row;
+        }
+
+        return $mapped;
+    }
+
+    /**
      * Find users sharing the same fingerprint hash.
      */
     public function findByHash($hash)

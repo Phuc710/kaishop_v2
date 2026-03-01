@@ -8,6 +8,10 @@
 require_once dirname(__DIR__) . '/app/Helpers/EnvHelper.php';
 EnvHelper::load(dirname(__DIR__) . '/.env');
 
+if (!defined('APP_DIR')) {
+    define('APP_DIR', (string) EnvHelper::get('APP_DIR', ''));
+}
+
 // Start session with safer cookie flags
 if (session_status() === PHP_SESSION_NONE) {
     $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
@@ -34,7 +38,16 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Base URL configuration
 define('BASE_PATH', dirname(__DIR__));
-define('BASE_URL', (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER["HTTP_HOST"] . EnvHelper::get('APP_DIR', ''));
+
+if (PHP_SAPI === 'cli') {
+    $baseUrl = (string) EnvHelper::get('BASE_URL', 'http://localhost');
+} else {
+    $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http");
+    $host = $_SERVER["HTTP_HOST"] ?? 'localhost';
+    $baseUrl = $protocol . "://" . $host . APP_DIR;
+}
+define('BASE_URL', $baseUrl);
+
 if (!defined('APP_KEY')) {
     define('APP_KEY', (string) EnvHelper::get('APP_KEY', ''));
 }
@@ -98,10 +111,11 @@ if ($isAllowedOrigin && !headers_sent()) {
     header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-CSRF-TOKEN, Accept");
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code($isAllowedOrigin ? 200 : 403);
     exit();
 }
+
 
 // Baseline security headers (avoid CSP here due legacy inline scripts)
 if (!headers_sent()) {
@@ -212,6 +226,32 @@ spl_autoload_register(function ($class) {
         }
     }
 });
+
+if (!function_exists('telegram_service')) {
+    /**
+     * Lazy-load a shared TelegramService instance for legacy call sites.
+     */
+    function telegram_service()
+    {
+        static $service;
+        static $resolved = false;
+
+        if ($resolved) {
+            return $service;
+        }
+
+        $resolved = true;
+        if (!class_exists('TelegramService')) {
+            $service = null;
+            return null;
+        }
+
+        $instance = new TelegramService();
+        $service = $instance->isConfigured() ? $instance : null;
+
+        return $service;
+    }
+}
 
 // Load helper functions
 require_once BASE_PATH . '/hethong/config.php';

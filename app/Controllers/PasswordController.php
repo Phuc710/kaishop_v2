@@ -75,9 +75,13 @@ class PasswordController extends Controller
         $teleMessage = $username . ' da doi mat khau thanh cong';
         if ($this->telegramService instanceof TelegramService) {
             $this->telegramService->send($teleMessage);
-        } elseif (function_exists('sendTele')) {
-            @sendTele($teleMessage);
+        } else {
+            $service = telegram_service();
+            if ($service) {
+                $service->send($teleMessage);
+            }
         }
+
 
         return $this->json([
             'success' => true,

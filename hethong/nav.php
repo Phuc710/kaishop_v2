@@ -143,7 +143,8 @@ foreach ($authNavPaths as $p) {
         <nav class="navbar navbar-expand-xl justify-content-between">
             <a href="<?= url('') ?>">
                 <?php global $chungapi; ?>
-                <img src="<?= $chungapi['logo']; ?>" width="150" alt="dailycode.vn" decoding="async" fetchpriority="high" />
+                <img src="<?= $chungapi['logo']; ?>" width="150" alt="dailycode.vn" decoding="async"
+                    fetchpriority="high" />
             </a>
 
             <div class="collapse navbar-collapse" id="navbarNav">
@@ -151,7 +152,8 @@ foreach ($authNavPaths as $p) {
                     <li class="d-block d-xl-none">
                         <div class="logo">
                             <a href="<?= url('') ?>">
-                                <img src="<?= $chungapi['logo']; ?>" width="150" alt="dailycode.vn" decoding="async" fetchpriority="high" />
+                                <img src="<?= $chungapi['logo']; ?>" width="150" alt="dailycode.vn" decoding="async"
+                                    fetchpriority="high" />
                             </a>
                         </div>
                     </li>
@@ -171,7 +173,8 @@ foreach ($authNavPaths as $p) {
                                     <?php if ($navMobileIcon !== ''): ?><i
                                             class="<?= $navMobileIcon ?> me-2 d-xl-none"></i><?php endif; ?><?= $navLabel ?>
                                     <?php if ($embedImg !== ''): ?>
-                                        <img src="<?= htmlspecialchars($embedImg, ENT_QUOTES, 'UTF-8') ?>" alt="icon" loading="lazy" decoding="async" fetchpriority="low"
+                                        <img src="<?= htmlspecialchars($embedImg, ENT_QUOTES, 'UTF-8') ?>" alt="icon" loading="lazy"
+                                            decoding="async" fetchpriority="low"
                                             style="height: 22px; margin-left: 4px; vertical-align: middle; margin-top: -2px;">
                                     <?php endif; ?>
                                 </a>
@@ -190,7 +193,8 @@ foreach ($authNavPaths as $p) {
                                                     <span class="d-flex align-items-center justify-content-center me-2"
                                                         style="width: 30px;">
                                                         <?php if ($childImg !== ''): ?>
-                                                            <img src="<?= htmlspecialchars($childImg, ENT_QUOTES, 'UTF-8') ?>" alt="icon" loading="lazy" decoding="async" fetchpriority="low"
+                                                            <img src="<?= htmlspecialchars($childImg, ENT_QUOTES, 'UTF-8') ?>" alt="icon"
+                                                                loading="lazy" decoding="async" fetchpriority="low"
                                                                 style="height: <?= $isBinance ? '25px' : '18px' ?>; width: auto; max-width: 28px; vertical-align: middle;">
                                                         <?php elseif ($childIcon !== ''): ?>
                                                             <i class="<?= htmlspecialchars($childIcon, ENT_QUOTES, 'UTF-8') ?> <?= $isBinance ? 'is-binance' : '' ?>"
@@ -212,7 +216,8 @@ foreach ($authNavPaths as $p) {
                                     <?php if ($navMobileIcon !== ''): ?><i
                                             class="<?= $navMobileIcon ?> me-2 d-xl-none"></i><?php endif; ?><?= $navLabel ?>
                                     <?php if ($embedImg !== ''): ?>
-                                        <img src="<?= htmlspecialchars($embedImg, ENT_QUOTES, 'UTF-8') ?>" alt="icon" loading="lazy" decoding="async" fetchpriority="low"
+                                        <img src="<?= htmlspecialchars($embedImg, ENT_QUOTES, 'UTF-8') ?>" alt="icon" loading="lazy"
+                                            decoding="async" fetchpriority="low"
                                             style="height: 22px; margin-left: 4px; vertical-align: middle; margin-top: -4px;">
                                     <?php endif; ?>
                                 </a>
@@ -239,8 +244,7 @@ foreach ($authNavPaths as $p) {
                                     $userAvatar = asset('assets/images/avt.png');
                                 }
                                 ?>
-                                <img src="<?= htmlspecialchars($userAvatar, ENT_QUOTES, 'UTF-8') ?>"
-                                    decoding="async"
+                                <img src="<?= htmlspecialchars($userAvatar, ENT_QUOTES, 'UTF-8') ?>" decoding="async"
                                     class="rounded-circle w-40" style="margin-right: 8px;" alt="">
                                 <span class="text-center">
                                     <p class="text-uppercase"
@@ -282,22 +286,20 @@ foreach ($authNavPaths as $p) {
                 </div>
                 <?php
             } else {
-                if (!$isAuthNavPage) {
-                    $guestHeaderActions = NavConfig::publicGuestActions();
-                    ?>
-                    <div class="navbar-right d-flex align-items-center gap-2">
-                        <div class="gtranslate_wrapper"></div>
-                        <div class="align-items-center">
-                            <?php foreach ($guestHeaderActions as $guestAction): ?>
-                                <a href="<?= htmlspecialchars((string) ($guestAction['href'] ?? '#'), ENT_QUOTES, 'UTF-8') ?>"
-                                    class="<?= htmlspecialchars((string) ($guestAction['class'] ?? 'btn btn-primary me-1'), ENT_QUOTES, 'UTF-8') ?>">
-                                    <?= htmlspecialchars((string) ($guestAction['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
-                                </a>
-                            <?php endforeach; ?>
-                        </div>
+                $guestHeaderActions = NavConfig::publicGuestActions();
+                ?>
+                <div class="navbar-right d-flex align-items-center gap-2">
+                    <div class="gtranslate_wrapper"></div>
+                    <div class="align-items-center">
+                        <?php foreach ($guestHeaderActions as $guestAction): ?>
+                            <a href="<?= htmlspecialchars((string) ($guestAction['href'] ?? '#'), ENT_QUOTES, 'UTF-8') ?>"
+                                class="<?= htmlspecialchars((string) ($guestAction['class'] ?? 'btn btn-primary me-1'), ENT_QUOTES, 'UTF-8') ?>">
+                                <?= htmlspecialchars((string) ($guestAction['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+                            </a>
+                        <?php endforeach; ?>
                     </div>
-                    <?php
-                }
+                </div>
+                <?php
             }
             ?>
 

@@ -128,9 +128,49 @@ $ogType = isset($seoOgType) && trim((string) $seoOgType) !== '' ? trim((string) 
     <meta name="twitter:image" content="<?= htmlspecialchars($seoImageValue, ENT_QUOTES, 'UTF-8') ?>">
 <?php endif; ?>
 
-<?php $cleanFavicon = trim(preg_replace('/\s+/', '', (string) ($chungapi['favicon'] ?? ''))); ?>
-<link rel="shortcut icon"
-    href="<?= htmlspecialchars($cleanFavicon !== '' ? (str_starts_with($cleanFavicon, 'http') ? $cleanFavicon : asset(ltrim($cleanFavicon, '/'))) : asset('assets/images/favicon.png'), ENT_QUOTES, 'UTF-8') ?>">
+<?php
+$resolveSiteIconUrl = static function ($path): string {
+    $cleanPath = trim(preg_replace('/\s+/', '', (string) $path));
+    if ($cleanPath === '') {
+        return '';
+    }
+
+    if (preg_match('~^(?:https?:)?//|^(?:data|blob):~i', $cleanPath)) {
+        return $cleanPath;
+    }
+
+    return asset(ltrim($cleanPath, '/'));
+};
+
+$appendIconVersion = static function (string $href, string $version): string {
+    if ($href === '' || $version === '') {
+        return $href;
+    }
+
+    return $href . (str_contains($href, '?') ? '&' : '?') . 'v=' . rawurlencode($version);
+};
+
+$faviconHref = '';
+$faviconVersion = trim((string) ($chungapi['updated_at'] ?? time()));
+foreach (
+    [
+        (string) ($chungapi['favicon'] ?? ''),
+        (string) ($chungapi['logo'] ?? ''),
+        'assets/images/header_logo.gif',
+    ] as $iconCandidate
+) {
+    if (trim($iconCandidate) === '')
+        continue;
+    $resolvedIcon = $resolveSiteIconUrl($iconCandidate);
+    if ($resolvedIcon !== '') {
+        $faviconHref = $resolvedIcon;
+        break;
+    }
+}
+$faviconHref = $appendIconVersion($faviconHref, (string) $faviconVersion);
+?>
+<link rel="icon" href="<?= htmlspecialchars($faviconHref, ENT_QUOTES, 'UTF-8') ?>">
+<link rel="shortcut icon" href="<?= htmlspecialchars($faviconHref, ENT_QUOTES, 'UTF-8') ?>">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -152,7 +192,7 @@ $ogType = isset($seoOgType) && trim((string) $seoOgType) !== '' ? trim((string) 
 <link href="<?= asset('assets/css/job_post.css') ?>" rel="stylesheet">
 <link href="<?= asset('assets/css/responsive.css') ?>" rel="stylesheet">
 <link rel="stylesheet" href="<?= asset('assets/css/styles.css') ?>">
-<link rel="stylesheet" href="<?= asset('assets/css/divineshop.css') ?>">
+<link rel="stylesheet" href="<?= asset('assets/css/home.css') ?>">
 <link rel="stylesheet" href="<?= asset('assets/css/user-pages.css') ?>">
 <link rel="stylesheet" href="<?= asset('assets/css/notify.css') ?>" media="print" onload="this.media='all'">
 

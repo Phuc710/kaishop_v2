@@ -19,6 +19,7 @@ class MaintenanceController extends Controller
             'maintenanceState' => $state,
             'siteName' => (string) ($chungapi['ten_web'] ?? 'KaiShop'),
             'siteFavicon' => (string) ($chungapi['favicon'] ?? ''),
+            'siteFaviconVersion' => (string) ($chungapi['updated_at'] ?? ''),
         ]);
     }
 }

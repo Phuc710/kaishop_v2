@@ -1,24 +1,27 @@
 <?php
 
 /**
- * AntiFloodService — Smart Anti-Bot / Anti-Scraping / Rate Limiting + Device Ban
+ * AntiFloodService — Smart Anti-Bot / Anti-Scraping + Device Ban
  *
- * Thuật toán: Sliding Window Counter + Progressive Penalty + Auto IP & Device Blacklist
+ * Thuật toán: Burst detection + suspicion tracking + auto IP/device blacklist
  *
  * Cơ chế hoạt động:
  * 1. Check device fingerprint ban (ks_dv cookie → banned_fingerprints) — TRƯỚC IP
  * 2. Check IP blacklist (ip_blacklist table + file cache)
  * 3. Honeypot: route ẩn → ban IP + device ngay
  * 4. Suspicious header detection → ghi nhận suspicion
- * 5. Rate limit per route group (sliding window)
- * 6. Burst detection (15 req / 5s)
- * 7. Khi bị ban → redirect tới banned.php (không show lý do)
- * 8. Khi device bị ban >= 3 IP khác nhau → ban device vĩnh viễn
+ * 5. Extreme burst detection (default env: 60 req / 5s, auto-ban only when vượt x3)
+ * 6. Khi bị ban → redirect tới banned.php (không show lý do)
+ * 7. Khi device bị ban >= 3 IP khác nhau → ban device vĩnh viễn
+ *
+ * Notes:
+ * - Mặc định IP chỉ bị auto-ban 30 phút; device ban vẫn là thủ công/escalation.
  */
 class AntiFloodService
 {
     private string $storageDir;
     private ?PDO $db = null;
+    private ?BanService $banService = null;
 
     // ─── Configurable Thresholds ───────────────────────────
     /** @var array<string, array{window: int, softLimit: int, hardLimit: int}> */
@@ -31,8 +34,8 @@ class AntiFloodService
     ];
 
     private int $burstWindow = 5;
-    private int $burstLimit = 15;
-    private int $autoBanHours = 24;
+    private int $burstLimit = 60; // 60 req/5s; only ban on extreme burst (>180 req/5s)
+    private int $autoBanMinutes = 30;
 
     // Device ban threshold: if same device gets banned from N different IPs → permanent device ban
     private int $deviceBanIpThreshold = 3;
@@ -55,18 +58,23 @@ class AntiFloodService
         }
 
         if (class_exists('EnvHelper')) {
-            $publicSoft = (int) EnvHelper::get('ANTIFLOOD_PUBLIC_SOFT', 0);
-            if ($publicSoft > 0) {
-                $this->profiles['public']['softLimit'] = $publicSoft;
-            }
             $apiBurstLimit = (int) EnvHelper::get('ANTIFLOOD_BURST_LIMIT', 0);
             if ($apiBurstLimit > 0) {
                 $this->burstLimit = $apiBurstLimit;
             }
-            $banHours = (int) EnvHelper::get('ANTIFLOOD_BAN_HOURS', 0);
-            if ($banHours > 0) {
-                $this->autoBanHours = $banHours;
+            $banMinutes = (int) EnvHelper::get('ANTIFLOOD_BAN_MINUTES', 0);
+            if ($banMinutes > 0) {
+                $this->autoBanMinutes = $banMinutes;
+            } else {
+                $banHours = (int) EnvHelper::get('ANTIFLOOD_BAN_HOURS', 0);
+                if ($banHours > 0) {
+                    $this->autoBanMinutes = $banHours * 60;
+                }
             }
+        }
+
+        if (class_exists('BanService')) {
+            $this->banService = new BanService();
         }
     }
 
@@ -76,12 +84,16 @@ class AntiFloodService
 
     public function inspect(string $requestPath, string $method): void
     {
-        // Skip static assets and banned page itself
-        if ($this->isStaticAsset($requestPath) || $requestPath === '/banned') {
+        // Skip: static assets, banned page, admin routes (admin đã có auth riêng)
+        if ($this->isStaticAsset($requestPath) || $requestPath === '/banned' || strpos($requestPath, '/admin') === 0) {
             return;
         }
 
         $ip = $this->clientIp();
+        if ($this->isLocalDevelopmentIp($ip)) {
+            return;
+        }
+
         $deviceHash = $this->getDeviceHash();
 
         // 1. DEVICE BAN CHECK — Stronger than IP, can't be bypassed by VPN
@@ -104,39 +116,17 @@ class AntiFloodService
             return;
         }
 
-        // 4. SUSPICIOUS HEADERS
+        // 4. SUSPICIOUS HEADERS (bot detection)
         if ($this->hasSuspiciousHeaders()) {
             $this->recordSuspicion($ip, $deviceHash, 'suspicious_headers', $requestPath);
         }
 
-        // 5. RATE LIMIT
-        $profileKey = $this->resolveProfile($requestPath, $method);
-        $profile = $this->profiles[$profileKey] ?? $this->profiles['global'];
-        $counts = $this->recordHit($ip, $profileKey, $profile['window']);
-
-        // 6. BURST DETECTION
+        // 5. EXTREME BURST ONLY — chỉ ban khi flood cực đoan (bot cào data)
         $burstCount = $this->getBurstCount($ip);
-        if ($burstCount > $this->burstLimit) {
-            $this->recordSuspicion($ip, $deviceHash, 'burst_detected', $requestPath);
-            if ($burstCount > $this->burstLimit * 3) {
-                $this->autoBlacklist($ip, $deviceHash, "Burst flood: {$burstCount} req/{$this->burstWindow}s on {$requestPath}");
-                $this->redirectToBannedPage();
-                return;
-            }
-            $this->blockWith429($profile['window']);
-            return;
-        }
-
-        // 7. HARD LIMIT → auto-ban IP + track device
-        if ($counts >= $profile['hardLimit']) {
-            $this->autoBlacklist($ip, $deviceHash, "Hard limit: {$counts}/{$profile['hardLimit']} [{$profileKey}] on {$requestPath}");
+        if ($burstCount > $this->burstLimit * 3) {
+            // >180 requests / 5 seconds = almost certainly automated abuse
+            $this->autoBlacklist($ip, $deviceHash, "Burst flood: {$burstCount} req/{$this->burstWindow}s on {$requestPath}");
             $this->redirectToBannedPage();
-            return;
-        }
-
-        // 8. SOFT LIMIT → 429
-        if ($counts >= $profile['softLimit']) {
-            $this->blockWith429($profile['window']);
             return;
         }
     }
@@ -184,11 +174,12 @@ class AntiFloodService
             if (!$db) {
                 return false;
             }
-            $stmt = $db->prepare("SELECT id FROM banned_fingerprints WHERE fingerprint_hash = ? LIMIT 1");
+            $stmt = $db->prepare("SELECT id, expires_at FROM banned_fingerprints WHERE fingerprint_hash = ? AND (expires_at IS NULL OR expires_at > NOW()) LIMIT 1");
             $stmt->execute([$deviceHash]);
-            if ($stmt->fetchColumn()) {
-                // Cache for 24 hours
-                @file_put_contents($cacheFile, (string) (time() + 86400), LOCK_EX);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+            if ($row) {
+                $expiresTs = !empty($row['expires_at']) ? (strtotime((string) $row['expires_at']) ?: (time() + 3600)) : (time() + 86400 * 365);
+                @file_put_contents($cacheFile, (string) $expiresTs, LOCK_EX);
                 return true;
             }
         } catch (Throwable $e) {
@@ -215,14 +206,18 @@ class AntiFloodService
             }
 
             // Check if already banned
-            $stmt = $db->prepare("SELECT id FROM banned_fingerprints WHERE fingerprint_hash = ? LIMIT 1");
+            $stmt = $db->prepare("SELECT id FROM banned_fingerprints WHERE fingerprint_hash = ? AND (expires_at IS NULL OR expires_at > NOW()) LIMIT 1");
             $stmt->execute([$deviceHash]);
             if ($stmt->fetchColumn()) {
                 return; // Already banned
             }
 
-            $stmt = $db->prepare("INSERT INTO banned_fingerprints (fingerprint_hash, reason, banned_by, created_at) VALUES (?, ?, 'antiflood_system', NOW())");
+            $stmt = $db->prepare("INSERT INTO banned_fingerprints (fingerprint_hash, reason, banned_by, created_at, expires_at, source) VALUES (?, ?, 'antiflood_system', NOW(), NULL, 'antiflood')");
             $stmt->execute([$deviceHash, mb_substr($reason, 0, 500)]);
+
+            if ($this->banService) {
+                $this->banService->recordAutoDeviceBan($deviceHash, mb_substr($reason, 0, 500));
+            }
 
             // File cache
             $cacheFile = $this->storageDir . '/devban_' . substr($deviceHash, 0, 16) . '.flag';
@@ -309,25 +304,35 @@ class AntiFloodService
                 return;
             }
 
+            // Generate REF hash (same as banned.php uses for display)
+            $refHash = substr(hash('sha256', $ip . '|' . $this->userAgent()), 0, 12);
+
             $stmt = $db->prepare("SELECT id FROM ip_blacklist WHERE ip_address = ? LIMIT 1");
             $stmt->execute([$ip]);
             if ($stmt->fetchColumn()) {
-                $stmt = $db->prepare("UPDATE ip_blacklist SET reason = ?, expires_at = DATE_ADD(NOW(), INTERVAL ? HOUR), updated_at = NOW(), hit_count = hit_count + 1 WHERE ip_address = ?");
-                $stmt->execute([mb_substr($reason, 0, 500), $this->autoBanHours, $ip]);
+                $stmt = $db->prepare("UPDATE ip_blacklist SET reason = ?, expires_at = DATE_ADD(NOW(), INTERVAL ? MINUTE), updated_at = NOW(), hit_count = hit_count + 1, ref_hash = ?, source = 'antiflood', banned_by = 'antiflood_system' WHERE ip_address = ?");
+                $stmt->execute([mb_substr($reason, 0, 500), $this->autoBanMinutes, $refHash, $ip]);
             } else {
-                $stmt = $db->prepare("INSERT INTO ip_blacklist (ip_address, reason, banned_at, expires_at, hit_count, user_agent, created_at, updated_at) VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL ? HOUR), 1, ?, NOW(), NOW())");
-                $stmt->execute([$ip, mb_substr($reason, 0, 500), $this->autoBanHours, mb_substr($this->userAgent(), 0, 1000)]);
+                $stmt = $db->prepare("INSERT INTO ip_blacklist (ip_address, reason, banned_at, expires_at, hit_count, user_agent, ref_hash, created_at, updated_at, source, banned_by) VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL ? MINUTE), 1, ?, ?, NOW(), NOW(), 'antiflood', 'antiflood_system')");
+                $stmt->execute([$ip, mb_substr($reason, 0, 500), $this->autoBanMinutes, mb_substr($this->userAgent(), 0, 1000), $refHash]);
+            }
+
+            if ($this->banService) {
+                $expiresAt = (new DateTimeImmutable('now', new DateTimeZone(function_exists('app_db_timezone') ? app_db_timezone() : date_default_timezone_get())))
+                    ->modify('+' . $this->autoBanMinutes . ' minutes')
+                    ->format('Y-m-d H:i:s');
+                $this->banService->recordAutoIpBan($ip, mb_substr($reason, 0, 500), $expiresAt, $refHash, mb_substr($this->userAgent(), 0, 1000));
             }
 
             $cacheFile = $this->storageDir . '/blacklist_' . md5($ip) . '.flag';
-            @file_put_contents($cacheFile, (string) (time() + $this->autoBanHours * 3600), LOCK_EX);
+            @file_put_contents($cacheFile, (string) (time() + $this->autoBanMinutes * 60), LOCK_EX);
 
             // Track device → escalate to device ban if needed
             $this->checkDeviceBanEscalation($deviceHash, $ip);
 
             $this->log('ip_auto_banned', $ip, [
                 'reason' => $reason,
-                'ban_hours' => $this->autoBanHours,
+                'ban_minutes' => $this->autoBanMinutes,
                 'device_hash' => $deviceHash,
             ]);
         } catch (Throwable $e) {
@@ -465,10 +470,12 @@ class AntiFloodService
     private function hasSuspiciousHeaders(): bool
     {
         $ua = trim((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
-        if ($ua === '' || strlen($ua) < 15) {
-            return true;
+        // Chỉ flag bot khi UA chứa dấu hiệu automation rõ ràng
+        // KHÔNG flag: UA rỗng hoặc ngắn (nhiều tool hợp lệ cũng vậy)
+        if ($ua === '') {
+            return false; // Bỏ qua, không ban vì thiếu UA
         }
-        $botMarkers = ['headlesschrome', 'phantomjs', 'slimerjs', 'puppeteer', 'selenium', 'webdriver', 'httpclient'];
+        $botMarkers = ['headlesschrome', 'phantomjs', 'slimerjs', 'puppeteer', 'selenium', 'webdriver'];
         $uaLower = strtolower($ua);
         foreach ($botMarkers as $marker) {
             if (strpos($uaLower, $marker) !== false) {
@@ -506,7 +513,8 @@ class AntiFloodService
 
         @file_put_contents($file, json_encode($data, JSON_UNESCAPED_UNICODE), LOCK_EX);
 
-        if ($recentCount >= 10) {
+        if ($recentCount >= 50) {
+            // 50+ bot markers trong 1 giờ = chắc chắn bot, không ban nhầm
             $this->autoBlacklist($ip, $deviceHash, "Suspicion accumulated: {$recentCount}/1h (latest: {$type} on {$path})");
         }
     }
@@ -546,6 +554,11 @@ class AntiFloodService
     private function userAgent(): string
     {
         return (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
+    }
+
+    private function isLocalDevelopmentIp(string $ip): bool
+    {
+        return in_array($ip, ['127.0.0.1', '::1'], true);
     }
 
     private function getDb(): ?PDO

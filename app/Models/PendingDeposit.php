@@ -93,6 +93,9 @@ class PendingDeposit extends Model
      */
     public function markComplete(int $id, int $sepayTransId): bool
     {
+        // One last check for expiration
+        $this->markExpired();
+
         $stmt = $this->db->prepare("
             UPDATE `{$this->table}` 
             SET `status` = 'completed', `sepay_transaction_id` = :sid, `completed_at` = NOW()
@@ -160,5 +163,19 @@ class PendingDeposit extends Model
     public function getPendingTtlSeconds(): int
     {
         return self::PENDING_TTL_SECONDS;
+    }
+
+    /**
+     * Check if a deposit record is logically expired based on created_at and TTL.
+     */
+    public function isLogicallyExpired(array $deposit): bool
+    {
+        if (($deposit['status'] ?? '') !== 'pending') {
+            return ($deposit['status'] ?? '') === 'expired';
+        }
+        $createdAt = strtotime((string) ($deposit['created_at'] ?? ''));
+        if (!$createdAt)
+            return true;
+        return (time() - $createdAt) >= $this->getPendingTtlSeconds();
     }
 }

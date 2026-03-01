@@ -72,26 +72,28 @@ const SwalHelper = {
     },
 
     // ============ CONFIRM ============
-    confirm(title, text, onConfirm, onCancel = null) {
-        Swal.fire({
+    confirm(title, text, onConfirm = null, onCancel = null) {
+        return Swal.fire({
             title: title,
-            text: text,
+            html: text,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33'
         }).then((result) => {
             if (result.isConfirmed) {
-                onConfirm();
-            } else if (onCancel) {
-                onCancel();
+                if (typeof onConfirm === 'function') onConfirm();
+                return true;
+            } else {
+                if (typeof onCancel === 'function') onCancel();
+                return false;
             }
         });
     },
 
     // ============ CONFIRM DELETE ============
     confirmDelete(onConfirm) {
-        Swal.fire({
+        return Swal.fire({
             title: 'Xác nhận xóa?',
             text: 'Hành động này không thể hoàn tác!',
             icon: 'warning',
@@ -100,10 +102,13 @@ const SwalHelper = {
             cancelButtonColor: '#6c757d'
         }).then((result) => {
             if (result.isConfirmed) {
-                onConfirm();
+                if (typeof onConfirm === 'function') onConfirm();
+                return true;
             }
+            return false;
         });
     },
+
 
     // ============ CONFIRM LOGOUT ============
     confirmLogout(logoutUrl) {
@@ -293,8 +298,8 @@ const SwalHelper = {
             '.ks-order-modal__content{width:100%;height:140px;margin:0;padding:16px;border-radius:16px;border:1.5px solid #e2e8f0;background:#fff;color:#0f172a;font-size:14px;line-height:1.7;resize:none;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Courier New",monospace;box-shadow:0 2px 4px rgba(0,0,0,0.02);outline:none;transition:border-color .2s ease;}',
             '.ks-order-modal__content:focus{border-color:#3b82f6;}',
             '.ks-order-modal__pending-note{margin:14px 0 0;padding:12px 18px;border-radius:14px;border:1px solid #fcd34d;background:#fffbeb;color:#92400e;font-size:14px;font-weight:600;line-height:1.6;box-shadow:0 1px 2px rgba(0,0,0,0.05);}',
-            '.ks-order-modal__actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:24px;}',
-            '.ks-order-modal__btn{height:48px;border:0;border-radius:14px;font-size:15px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .2s ease;box-shadow:0 2px 4px rgba(0,0,0,0.05);}',
+            '.ks-order-modal__actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px;}',
+            '.ks-order-modal__btn{flex:1 1 0;min-width:140px;height:48px;border:0;border-radius:14px;font-size:15px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .2s ease;box-shadow:0 2px 4px rgba(0,0,0,0.05);}',
             '.ks-order-modal__btn:hover{filter:brightness(.95);transform:translateY(-2px);box-shadow:0 4px 6px rgba(0,0,0,0.1);}',
             '.ks-order-modal__btn.copy{background:#2563eb;color:#fff;}',
             '.ks-order-modal__btn.detail{background:#0891b2;color:#fff;}',
@@ -338,7 +343,7 @@ const SwalHelper = {
         const titleText = isPending ? 'Đặt hàng thành công!' : 'Thanh toán thành công!';
         const swalIcon = isPending ? 'warning' : 'success';
         const codeClass = isPending ? 'pending' : 'success';
-        const statusText = isPending ? 'Yêu cầu mới' : 'Hoàn tất';
+        const statusText = isPending ? 'Đang xử lý' : 'Hoàn tất';
 
         let contentSection = '';
         if (hasContent) {
@@ -373,7 +378,7 @@ const SwalHelper = {
             + pendingNote
             + '<div class="ks-order-modal__actions">'
             + copyBtn
-            + '<button type="button" class="ks-order-modal__btn detail js-order-modal-detail"><i class="far fa-file-alt"></i> Xem chi tiết đơn hàng</button>'
+            + '<button type="button" class="ks-order-modal__btn detail js-order-modal-detail"><i class="far fa-file-alt"></i> Xem chi tiết</button>'
             + '<button type="button" class="ks-order-modal__btn more js-order-modal-buy-more"><i class="fas fa-cart-plus"></i> Mua thêm</button>'
             + '</div>'
             + '</div>';

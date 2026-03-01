@@ -101,7 +101,8 @@ class SepayWebhookController extends Controller
             return $this->json(['success' => true, 'message' => 'No deposit code matched']);
         }
 
-        // 6. Find pending deposit
+        // 6. Find pending deposit (and expire old ones first)
+        $this->depositModel->markExpired();
         $deposit = $this->depositModel->findByCode($depositCode);
 
         if (!$deposit) {
@@ -111,6 +112,16 @@ class SepayWebhookController extends Controller
                 'amount' => $transferAmount,
             ]);
             return $this->json(['success' => true, 'message' => 'Deposit code not found']);
+        }
+
+        if ($deposit['status'] === 'expired') {
+            Logger::warning('Billing', 'webhook_expired_deposit', 'SePay webhook: Payment received for EXPIRED deposit', [
+                'sepay_id' => $sepayId,
+                'deposit_code' => $depositCode,
+                'amount' => $transferAmount,
+                'user_id' => $deposit['user_id'],
+            ]);
+            return $this->json(['success' => true, 'message' => 'Deposit expired, please contact support']);
         }
 
         if ($deposit['status'] !== 'pending') {
@@ -141,6 +152,29 @@ class SepayWebhookController extends Controller
         $db = Database::getInstance()->getConnection();
         $stmt = $db->prepare("UPDATE `users` SET `money` = `money` + ?, `tong_nap` = `tong_nap` + ? WHERE `id` = ?");
         $stmt->execute([$totalCredit, $transferAmount, $userId]);
+
+        // Enqueue Telegram notification if user is linked
+        try {
+            if (class_exists('UserTelegramLink') && class_exists('TelegramOutbox')) {
+                $linkModel = new UserTelegramLink();
+                $link = $linkModel->findByUserId($userId);
+                if ($link) {
+                    $outbox = new TelegramOutbox();
+                    $notifMsg = "💰 <b>NẠP TIỀN THÀNH CÔNG</b>\n\n";
+                    $notifMsg .= "Số tiền: <b>" . number_format($transferAmount) . "đ</b>\n";
+                    if ($bonusAmount > 0) {
+                        $notifMsg .= "Khuyến mãi: <b>" . number_format($bonusAmount) . "đ</b>\n";
+                    }
+                    $notifMsg .= "Thực nhận: <b>" . number_format($totalCredit) . "đ</b>\n";
+                    $notifMsg .= "Số dư hiện tại: <b>" . number_format($db->query("SELECT money FROM users WHERE id = $userId")->fetchColumn()) . "đ</b>";
+
+                    $outbox->enqueue((int) $link['telegram_id'], $notifMsg);
+                }
+            }
+        } catch (Throwable $teleErr) {
+            // Non-blocking
+        }
+
 
         // 10. Mark deposit as completed
         $this->depositModel->markComplete((int) $deposit['id'], $sepayId);

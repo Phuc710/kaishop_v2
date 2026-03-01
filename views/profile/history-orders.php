@@ -72,13 +72,12 @@ require __DIR__ . '/layout/header.php';
             <table id="order-history-table" class="table table-hover align-middle w-100 mb-0 user-history-table">
                 <thead class="table-light">
                     <tr>
-
-                        <th class="py-3 text-nowrap text-center">SẢN PHẨM</th>
-                        <th class="py-3 text-nowrap text-center">TÌNH TRẠNG</th>
-                        <th class="py-3 text-nowrap text-center">SL</th>
-                        <th class="py-3 text-nowrap text-center">THANH TOÁN</th>
-                        <th class="py-3 text-nowrap text-center">THỜI GIAN</th>
-                        <th class="py-3 text-nowrap text-center">THAO TÁC</th>
+                        <th class="py-3 text-nowrap">SẢN PHẨM</th>
+                        <th class="py-3 text-nowrap text-center" style="width: 1%;">TÌNH TRẠNG</th>
+                        <th class="py-3 text-nowrap text-center" style="width: 1%;">SL</th>
+                        <th class="py-3 text-nowrap text-center" style="width: 1%;">THANH TOÁN</th>
+                        <th class="py-3 text-nowrap text-center" style="width: 1%;">THỜI GIAN</th>
+                        <th class="py-3 text-nowrap text-center" style="width: 1%;">THAO TÁC</th>
                     </tr>
                 </thead>
                 <tbody></tbody>

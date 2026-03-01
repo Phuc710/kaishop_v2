@@ -314,6 +314,17 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                         ${hasFp ? '<option value="device">Khóa thiết bị (Fingerprint)</option>' : ''}
                     </select>
                 </div>
+                <div class="form-group mb-2 text-left">
+                    <label class="font-weight-bold text-primary" style="font-size:13px;">
+                        <i class="fas fa-clock mr-1"></i>Thời hạn
+                    </label>
+                    <select id="swal-ban-duration" class="form-control" style="border:1px solid #ddd;border-radius:8px;font-size:14px;">
+                        <option value="">Vĩnh viễn</option>
+                        <option value="30m">30 phút</option>
+                        <option value="3d">3 ngày</option>
+                        <option value="7d">7 ngày</option>
+                    </select>
+                </div>
                 <textarea id="swal-ban-reason" class="form-control" rows="3"
                     placeholder="Nhập lý do (bắt buộc)..."
                     style="border:1px solid #ddd;border-radius:8px;font-size:14px;"></textarea>
@@ -328,20 +339,21 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             preConfirm: () => {
                 const reason = document.getElementById('swal-ban-reason').value.trim();
                 const type = document.getElementById('swal-ban-type').value;
+                const duration = document.getElementById('swal-ban-duration').value;
                 if (!reason) {
                     Swal.showValidationMessage('Vui lòng nhập lý do!');
                     return false;
                 }
-                return { reason, type };
+                return { reason, type, duration };
             }
         }).then((result) => {
             if (!result.isConfirmed) return;
-            const { reason, type } = result.value;
+            const { reason, type, duration } = result.value;
             const endpoint = type === 'device'
                 ? '<?= url('admin/users/ban-device') ?>/'
                 : '<?= url('admin/users/ban') ?>/';
 
-            $.post(endpoint + encodeURIComponent(username), { reason },
+            $.post(endpoint + encodeURIComponent(username), { reason, duration },
                 function (res) {
                     if (res.success) {
                         SwalHelper.toast(res.message, 'success');

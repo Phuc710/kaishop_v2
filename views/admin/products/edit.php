@@ -205,7 +205,7 @@ $productType = $product['product_type'] ?? 'account';
                                             <?= $currentMode === 'source_link' ? 'checked' : '' ?>>
                                         <div class="mode-card-title"><i class="fas fa-link mr-1 text-info"></i>
                                             Source / Link</div>
-                                        <div class="mode-card-desc">Trả link cố định.</div>
+                                        <div class="mode-card-desc">Bán từ kho source.</div>
                                     </label>
                                     <label class="mode-card <?= $currentMode === 'manual_info' ? 'active' : '' ?>"
                                         data-mode="manual_info">
@@ -239,11 +239,12 @@ $productType = $product['product_type'] ?? 'account';
                                         <div id="section-link"
                                             style="<?= $currentMode !== 'source_link' ? 'display: none;' : '' ?>">
                                             <h6 class="font-weight-bold mb-2 text-info small"><i
-                                                    class="fas fa-link mr-1"></i> CẤU HÌNH LINK SOURCE</h6>
+                                                    class="fas fa-link mr-1"></i> CẤU HÌNH LINK</h6>
                                             <input type="text" class="form-control form-control-sm" name="source_link"
                                                 id="source_link"
-                                                value="<?= htmlspecialchars($product['source_link'] ?? '') ?>"
-                                                placeholder="https://..." <?= $currentMode === 'source_link' ? 'required' : 'disabled' ?>>
+                                                value="<?= htmlspecialchars((string) ($product['source_link'] ?? '')) ?>"
+                                                placeholder="https://..."
+                                                <?= $currentMode === 'source_link' ? '' : 'disabled' ?>>
                                         </div>
 
                                         <!-- Section Manual Info -->
@@ -288,7 +289,7 @@ $productType = $product['product_type'] ?? 'account';
                                             <input type="number" class="form-control form-control-sm"
                                                 name="manual_stock" id="stockPreviewInput"
                                                 data-account-stock="<?= (int) ($accountStockCount ?? 0) ?>"
-                                                value="<?= $currentMode === 'manual_info' ? (int) ($product['manual_stock'] ?? 0) : ($currentMode === 'source_link' ? '0' : (int) ($accountStockCount ?? 0)) ?>"
+                                                value="<?= $currentMode === 'manual_info' ? (int) ($product['manual_stock'] ?? 0) : ($currentMode === 'source_link' ? 'Unlimited' : (int) ($accountStockCount ?? 0)) ?>"
                                                 <?= $currentMode === 'manual_info' ? '' : 'readonly' ?>>
                                         </div>
                                     </div>
@@ -492,6 +493,10 @@ $productType = $product['product_type'] ?? 'account';
                 return;
             }
 
+            if (currentMode === 'manual_info') {
+                return;
+            }
+
             stockInput.val(String(accountStock));
         }
 
@@ -522,13 +527,8 @@ $productType = $product['product_type'] ?? 'account';
                 $('#section-stock-info').slideUp();
             }
 
-            if (mode === 'source_link') {
-                $('#section-link').slideDown();
-                $('#source_link').prop('required', true).prop('disabled', false);
-            } else {
-                $('#section-link').slideUp();
-                $('#source_link').prop('required', false).prop('disabled', true);
-            }
+            $('#section-link').toggle(mode === 'source_link');
+            $('#source_link').prop('required', mode === 'source_link').prop('disabled', mode !== 'source_link');
 
             if (mode === 'manual_info') {
                 $('#section-info').slideDown();
@@ -546,7 +546,7 @@ $productType = $product['product_type'] ?? 'account';
             } else if (mode === 'manual_info') {
                 $('input[name="max_purchase_qty"]').prop('readonly', false).css('background-color', '');
                 $('#stockPreviewInput').prop('readonly', false).css('background-color', '');
-                $('#stockLabel').text('Số lượng Stock');
+                $('#stockLabel').text('Số lượng kho');
             } else {
                 var accountStock = Number($('#stockPreviewInput').data('accountStock') || 0);
                 $('input[name="max_purchase_qty"]').prop('readonly', false).css('background-color', '');

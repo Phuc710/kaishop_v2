@@ -278,6 +278,11 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                     <div>
                                         <strong>Tài khoản bị khóa</strong><br>
                                         <span>Lý do: <?= htmlspecialchars($toz_user['ban_reason']) ?></span>
+                                        <?php if (!empty($toz_user['ban_expires_at'])): ?>
+                                            <br><span>Hết hạn: <?= htmlspecialchars((string) $toz_user['ban_expires_at']) ?></span>
+                                        <?php else: ?>
+                                            <br><span>Thời hạn: Vĩnh viễn</span>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             <?php endif; ?>
@@ -338,6 +343,13 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             html: `
                 <p class="mb-2 text-danger"><i class="fas fa-exclamation-triangle"></i> Bạn đang khóa toàn bộ thiết bị của <b>${username}</b></p>
                 <p class="text-muted" style="font-size: 13px;">Hành động này sẽ cấm thiết bị hiện tại truy cập vào hệ thống, bất kể họ dùng tài khoản nào.</p>
+                <select id="swal-bandevice-duration" class="form-control mb-2"
+                    style="border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                    <option value="">Vĩnh viễn</option>
+                    <option value="30m">30 phút</option>
+                    <option value="3d">3 ngày</option>
+                    <option value="7d">7 ngày</option>
+                </select>
                 <textarea id="swal-bandevice-reason" class="form-control" rows="3" 
                     placeholder="Nhập lý do ban thiết bị (bắt buộc)..."
                     style="border: 1px solid #ddd; border-radius: 8px; font-size: 14px;"></textarea>
@@ -351,16 +363,17 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             focusConfirm: false,
             preConfirm: () => {
                 const reason = document.getElementById('swal-bandevice-reason').value.trim();
+                const duration = document.getElementById('swal-bandevice-duration').value;
                 if (!reason) {
                     Swal.showValidationMessage('Vui lòng nhập lý do ban thiết bị!');
                     return false;
                 }
-                return reason;
+                return { reason, duration };
             }
         }).then((result) => {
             if (result.isConfirmed) {
                 $.post('<?= url("admin/users/ban-device") ?>/' + encodeURIComponent(username),
-                    { reason: result.value },
+                    { reason: result.value.reason, duration: result.value.duration },
                     function (res) {
                         if (res.success) {
                             SwalHelper.toast(res.message, 'success');

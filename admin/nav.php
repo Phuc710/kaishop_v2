@@ -20,10 +20,18 @@ $adminQuickActions = NavConfig::adminHeaderQuickActions();
 <nav class="admin-sidebar" id="adminSidebar">
     <div class="sidebar-brand">
         <?php if ($sidebarLogoUrl !== ''): ?>
-            <img src="<?= htmlspecialchars($sidebarLogoUrl, ENT_QUOTES, 'UTF-8') ?>"
-                alt="<?= htmlspecialchars($sidebarLogoAlt, ENT_QUOTES, 'UTF-8') ?>">
+            <a href="<?= url('admin') ?>" class="d-flex align-items-center justify-content-center">
+                <img src="<?= str_starts_with($sidebarLogoUrl, 'http') ? htmlspecialchars($sidebarLogoUrl, ENT_QUOTES, 'UTF-8') : asset(ltrim($sidebarLogoUrl, '/')) ?>"
+                    alt="<?= htmlspecialchars($sidebarLogoAlt, ENT_QUOTES, 'UTF-8') ?>"
+                    style="max-height: 40px; width: auto; object-fit: contain;">
+            </a>
         <?php else: ?>
-            <span><?= htmlspecialchars($sidebarLogoAlt, ENT_QUOTES, 'UTF-8') ?></span>
+            <a href="<?= url('admin') ?>" class="d-flex align-items-center justify-content-center text-white"
+                style="text-decoration: none;">
+                <i class="fas fa-shield-alt mr-2" style="font-size: 1.2rem; color: #845adf;"></i>
+                <span
+                    style="font-weight: 800; letter-spacing: 1px; text-transform: uppercase; font-size: 1.1rem;"><?= htmlspecialchars($sidebarLogoAlt, ENT_QUOTES, 'UTF-8') ?></span>
+            </a>
         <?php endif; ?>
     </div>
     <ul>
@@ -84,7 +92,8 @@ $adminQuickActions = NavConfig::adminHeaderQuickActions();
                 }
                 $quickIcon = htmlspecialchars(trim($quickIcon), ENT_QUOTES, 'UTF-8');
                 ?>
-                <a href="<?= $quickHref ?>"<?= $quickKey === 'home' ? ' target="_blank"' : '' ?> title="<?= $quickTitle ?>" aria-label="<?= $quickAria ?>"
+                <a href="<?= $quickHref ?>" <?= $quickKey === 'home' ? ' target="_blank"' : '' ?> title="<?= $quickTitle ?>"
+                    aria-label="<?= $quickAria ?>"
                     style="display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:10px; border:1px solid #e7e8f0; background:#fff; color:<?= $quickColor ?>; text-decoration:none; box-shadow:0 2px 8px rgba(17,28,67,.06);">
                     <i class="<?= $quickIcon ?>"></i>
                 </a>

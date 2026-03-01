@@ -119,10 +119,6 @@ class PurchaseService
             }
 
             $totalPrice = max(0, $subtotalPrice - $discountAmount);
-            if ((int) ($user['money'] ?? 0) < $totalPrice) {
-                throw new RuntimeException('Số dư không đủ để thanh toán.');
-            }
-
             $orderCode = $this->orderModel->generateOrderCode();
 
             $orderStatus = $requiresInfo ? 'pending' : 'processing';
@@ -135,6 +131,8 @@ class PurchaseService
                 'price',
                 'status',
                 'payment_method',
+                'source',
+                'telegram_id',
                 'ip_address',
                 'user_agent',
                 'quantity',
@@ -149,6 +147,8 @@ class PurchaseService
                 $totalPrice,
                 $orderStatus,
                 'wallet',
+                (string) ($options['source'] ?? 'web'),
+                isset($options['telegram_id']) ? (int) $options['telegram_id'] : null,
                 (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
                 (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''),
                 $requestedQty,
@@ -221,6 +221,31 @@ class PurchaseService
             ]);
 
             $this->db->commit();
+
+            // Enqueue Telegram notification if user is linked
+            try {
+                if (class_exists('UserTelegramLink') && class_exists('TelegramOutbox')) {
+                    $linkModel = new UserTelegramLink();
+                    $link = $linkModel->findByUserId($userId);
+                    if ($link) {
+                        $outbox = new TelegramOutbox();
+                        $notifMsg = "🛍 <b>ĐƠN HÀNG THÀNH CÔNG</b>\n\n";
+                        $notifMsg .= "Mã đơn: <code>{$orderCode}</code>\n";
+                        $notifMsg .= "Sản phẩm: <b>" . ($product['name'] ?? '') . "</b>\n";
+                        $notifMsg .= "Tổng tiền: <b>" . number_format($totalPrice) . "đ</b>\n";
+
+                        if ($requiresInfo) {
+                            $notifMsg .= "\n⏳ Đang chờ xử lý. Admin sẽ giao hàng sớm cho bạn.";
+                        } else if (!empty($deliveredPlain)) {
+                            $notifMsg .= "\n🔑 Nội dung:\n<code>{$deliveredPlain}</code>";
+                        }
+
+                        $outbox->enqueue((int) $link['telegram_id'], $notifMsg);
+                    }
+                }
+            } catch (Throwable $teleErr) {
+                // Non-blocking
+            }
 
             Logger::info('Billing', 'product_purchase_success', "Mua san pham thanh cong: {$username}", [
                 'order_code' => $orderCode,

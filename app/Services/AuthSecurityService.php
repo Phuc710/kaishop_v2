@@ -13,6 +13,7 @@ use App\Helpers\UserAgentParser;
 class AuthSecurityService
 {
     private PDO $db;
+    private BanService $banService;
 
     private const ACCESS_COOKIE = 'ks_at';
     private const REFRESH_COOKIE = 'ks_rt';
@@ -28,6 +29,7 @@ class AuthSecurityService
     public function __construct()
     {
         $this->db = Database::getInstance()->getConnection();
+        $this->banService = new BanService();
         $this->maybePruneExpiredAuthData();
     }
 
@@ -324,8 +326,10 @@ class AuthSecurityService
             $stmt->execute([(string) $_SESSION['session']]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
             if ($user) {
+                $user = $this->enrichUserBanContext($user);
                 if ($this->isUserBanned($user)) {
                     $this->kickBannedUser($user);
+                    $this->renderBannedResponse($user);
                     return null;
                 }
                 $_SESSION['username'] = $user['username'] ?? null;
@@ -479,9 +483,10 @@ class AuthSecurityService
         }
 
         // Block banned accounts and banned devices at every token restore path
+        $user = $this->enrichUserBanContext($user);
         if ($this->isUserBanned($user)) {
-            $this->revokeSessionById((int) $row['id'], 'banned');
             $this->kickBannedUser($user);
+            $this->renderBannedResponse($user);
             return null;
         }
 
@@ -499,6 +504,22 @@ class AuthSecurityService
         }
 
         return $user;
+    }
+
+    public function enforceActiveUser(?array $user): ?array
+    {
+        if (!is_array($user) || $user === []) {
+            return null;
+        }
+
+        $user = $this->enrichUserBanContext($user);
+        if (!$this->isUserBanned($user)) {
+            return $user;
+        }
+
+        $this->kickBannedUser($user);
+        $this->renderBannedResponse($user);
+        return null;
     }
 
     private function rotateSessionTokens(int $sessionId, bool $rememberMe): void
@@ -628,22 +649,86 @@ class AuthSecurityService
      */
     private function isUserBanned(array $user): bool
     {
-        // Account ban
-        if (!empty($user['bannd']) && (int) $user['bannd'] !== 0) {
+        $accountBan = $this->banService->getActiveAccountBanByUserId((int) ($user['id'] ?? 0));
+        if ($accountBan) {
+            $user['ban_reason'] = (string) ($accountBan['ban_reason'] ?? ($user['ban_reason'] ?? ''));
+            $user['ban_expires_at'] = (string) ($accountBan['ban_expires_at'] ?? ($user['ban_expires_at'] ?? ''));
+            $user['ban_source'] = (string) ($accountBan['ban_source'] ?? ($user['ban_source'] ?? ''));
+            $user['banned_by'] = (string) ($accountBan['banned_by'] ?? ($user['banned_by'] ?? ''));
             return true;
         }
 
-        // Device fingerprint ban
         $fp = (string) ($user['fingerprint'] ?? '');
         if ($fp !== '') {
-            $stmt = $this->db->prepare("SELECT id FROM banned_fingerprints WHERE fingerprint_hash = ? LIMIT 1");
-            $stmt->execute([$fp]);
-            if ($stmt->fetchColumn()) {
+            $deviceBan = $this->banService->getActiveDeviceBan($fp);
+            if ($deviceBan) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private function enrichUserBanContext(array $user): array
+    {
+        $userId = (int) ($user['id'] ?? 0);
+        if ($userId <= 0) {
+            return $user;
+        }
+
+        if ((string) ($user['fingerprint'] ?? '') === '') {
+            $fingerprint = $this->findLatestFingerprintForUser($userId);
+            if ($fingerprint !== '') {
+                $user['fingerprint'] = $fingerprint;
+            }
+        }
+
+        $accountBan = $this->banService->getActiveAccountBanByUserId($userId);
+        if ($accountBan) {
+            $user['bannd'] = 1;
+            if (((string) ($user['ban_reason'] ?? '')) === '') {
+                $user['ban_reason'] = (string) ($accountBan['ban_reason'] ?? '');
+            }
+            $user['ban_expires_at'] = (string) ($accountBan['ban_expires_at'] ?? '');
+            $user['ban_source'] = (string) ($accountBan['ban_source'] ?? '');
+            $user['banned_by'] = (string) ($accountBan['banned_by'] ?? '');
+            $user['banned_at'] = (string) ($accountBan['banned_at'] ?? '');
+            return $user;
+        }
+
+        $fp = (string) ($user['fingerprint'] ?? '');
+        if ($fp !== '') {
+            $deviceBan = $this->banService->getActiveDeviceBan($fp);
+            if ($deviceBan) {
+                $user['ban_reason'] = (string) ($deviceBan['reason'] ?? ($user['ban_reason'] ?? ''));
+                $user['ban_expires_at'] = (string) ($deviceBan['expires_at'] ?? '');
+                $user['ban_source'] = (string) ($deviceBan['source'] ?? 'admin');
+                $user['banned_by'] = (string) ($deviceBan['banned_by'] ?? '');
+                $user['banned_scope'] = 'device';
+                $user['banned_at'] = (string) ($deviceBan['created_at'] ?? '');
+            }
+        }
+
+        return $user;
+    }
+
+    private function findLatestFingerprintForUser(int $userId): string
+    {
+        $stmt = $this->db->prepare("SELECT fingerprint_hash FROM user_fingerprints WHERE user_id = ? AND fingerprint_hash <> '' ORDER BY id DESC LIMIT 1");
+        $stmt->execute([$userId]);
+        $fingerprint = (string) ($stmt->fetchColumn() ?: '');
+        if ($fingerprint !== '') {
+            return $fingerprint;
+        }
+
+        $legacySession = (string) ($_SESSION['session'] ?? '');
+        if ($legacySession !== '') {
+            $stmt = $this->db->prepare("SELECT device_fingerprint FROM auth_sessions WHERE user_id = ? AND legacy_session_token = ? AND device_fingerprint <> '' ORDER BY id DESC LIMIT 1");
+            $stmt->execute([$userId, $legacySession]);
+            return (string) ($stmt->fetchColumn() ?: '');
+        }
+
+        return '';
     }
 
     /**
@@ -654,6 +739,23 @@ class AuthSecurityService
     {
         $banReason = (string) ($user['ban_reason'] ?? 'Tài khoản/thiết bị bị khoá');
         $_SESSION['banned_reason'] = $banReason;
+        $_SESSION['banned_meta'] = [
+            'reason' => $banReason,
+            'expires_at' => (string) ($user['ban_expires_at'] ?? ''),
+            'source' => (string) ($user['ban_source'] ?? ''),
+            'scope' => (string) ($user['banned_scope'] ?? (!empty($user['bannd']) ? 'account' : 'device')),
+            'banned_by' => (string) ($user['banned_by'] ?? ''),
+            'banned_at' => (string) ($user['banned_at'] ?? ''),
+        ];
+        $userId = (int) ($user['id'] ?? 0);
+        if ($userId > 0) {
+            try {
+                $this->revokeAllSessionsForUser($userId);
+                $this->db->prepare("UPDATE users SET session = '' WHERE id = ?")->execute([$userId]);
+            } catch (Throwable $e) {
+                // non-blocking
+            }
+        }
         unset($_SESSION['session'], $_SESSION['username']);
         $this->clearAuthCookies();
 
@@ -662,6 +764,35 @@ class AuthSecurityService
             'username' => (string) ($user['username'] ?? ''),
             'ip' => $this->clientIp(),
         ]);
+    }
+
+    private function renderBannedResponse(array $user): void
+    {
+        $reason = (string) ($_SESSION['banned_reason'] ?? $user['ban_reason'] ?? 'Tai khoan/thiet bi bi khoa');
+        if (empty($_SESSION['banned_meta'])) {
+            $_SESSION['banned_meta'] = [
+                'reason' => $reason,
+                'expires_at' => (string) ($user['ban_expires_at'] ?? ''),
+                'source' => (string) ($user['ban_source'] ?? ''),
+                'scope' => (string) ($user['banned_scope'] ?? (!empty($user['bannd']) ? 'account' : 'device')),
+                'banned_by' => (string) ($user['banned_by'] ?? ''),
+                'banned_at' => (string) ($user['banned_at'] ?? ''),
+            ];
+        }
+
+        if (function_exists('display_banned_page')) {
+            display_banned_page($reason);
+        }
+
+        $baseUrl = defined('BASE_URL') ? rtrim((string) BASE_URL, '/') : '';
+        if ($baseUrl !== '') {
+            header('Location: ' . $baseUrl . '/banned.php');
+            exit;
+        }
+
+        http_response_code(403);
+        echo $reason;
+        exit;
     }
 
     private function maybePruneExpiredAuthData(): void

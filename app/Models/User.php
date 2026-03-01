@@ -12,7 +12,7 @@ class User extends Model
      * Count total users
      * @return int
      */
-    public function count()
+    public function count(): int
     {
         return (int) $this->query("SELECT COUNT(*) FROM `{$this->table}`")->fetchColumn();
     }

@@ -50,7 +50,7 @@ if (empty($galleryImages)) {
 }
 
 $displayMaxQty = $purchaseMaxQty;
-if ($productType === 'link') {
+if ($deliveryMode === 'source_link') {
     $displayMaxQty = 1;
 } elseif ($stockManaged && is_int($availableStock)) {
     $displayMaxQty = $purchaseMaxQty > 0 ? min($purchaseMaxQty, $availableStock) : $availableStock;
@@ -601,10 +601,7 @@ if ($rawDescHtml !== '') {
                                     <img id="pdMainImage"
                                         src="<?= htmlspecialchars((string) ($galleryImages[0] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                                         alt="<?= htmlspecialchars($productName, ENT_QUOTES, 'UTF-8') ?>"
-                                        class="pd-gallery-main"
-                                        loading="eager"
-                                        decoding="async"
-                                        fetchpriority="high">
+                                        class="pd-gallery-main" loading="eager" decoding="async" fetchpriority="high">
                                 </button>
 
                                 <div class="pd-gallery-counter" id="pdGalleryCounter">
@@ -620,10 +617,8 @@ if ($rawDescHtml !== '') {
                                             data-img="<?= htmlspecialchars($img, ENT_QUOTES, 'UTF-8') ?>"
                                             aria-label="Ảnh sản phẩm <?= $idx + 1 ?>">
                                             <img src="<?= htmlspecialchars($img, ENT_QUOTES, 'UTF-8') ?>"
-                                                alt="<?= htmlspecialchars($productName, ENT_QUOTES, 'UTF-8') ?>"
-                                                loading="lazy"
-                                                decoding="async"
-                                                fetchpriority="low">
+                                                alt="<?= htmlspecialchars($productName, ENT_QUOTES, 'UTF-8') ?>" loading="lazy"
+                                                decoding="async" fetchpriority="low">
                                         </button>
                                     <?php endforeach; ?>
                                 </div>
@@ -654,15 +649,15 @@ if ($rawDescHtml !== '') {
                         <div class="pd-chips">
                             <?php if ($deliveryMode === 'account_stock'): ?>
                                 <span class="pd-chip success"><i class="fas fa-user-shield"></i> Tài Khoản</span>
+                            <?php elseif ($deliveryMode === 'source_link' || $productType === 'link'): ?>
+                                <span class="pd-chip info"><i class="fas fa-link"></i> Source</span>
                             <?php elseif ($deliveryMode === 'manual_info'): ?>
                                 <span class="pd-chip warn"><i class="fas fa-keyboard"></i> Yêu cầu thông tin</span>
-                            <?php else: ?>
-                                <span class="pd-chip info"><i class="fas fa-link"></i> Source</span>
                             <?php endif; ?>
                             <?php if ($requiresInfo && $deliveryMode !== 'manual_info'): ?>
                                 <span class="pd-chip warn"><i class="fas fa-keyboard"></i> Yêu cầu thông tin</span>
                             <?php endif; ?>
-                            <?php if ($productType === 'link'): ?>
+                            <?php if ($deliveryMode === 'source_link'): ?>
                                 <span class="pd-chip info"><i class="fas fa-arrow-up-1-9"></i> Max 1</span>
                             <?php else: ?>
                                 <?php if ($purchaseMinQty > 1): ?>
@@ -672,7 +667,7 @@ if ($rawDescHtml !== '') {
                                 <?php if ($displayMaxQty > 0): ?>
                                     <span class="pd-chip info"><i class="fas fa-arrow-up-1-9"></i> Max
                                         <?= $displayMaxQty ?></span>
-                                <?php elseif ($productType !== 'link' && !$isOutOfStock): ?>
+                                <?php elseif ($deliveryMode !== 'source_link' && !$isOutOfStock): ?>
                                     <span class="pd-chip info"><i class="fas fa-infinity"></i> Max không giới hạn</span>
                                 <?php endif; ?>
                             <?php endif; ?>
@@ -710,7 +705,7 @@ if ($rawDescHtml !== '') {
                                 <input type="number" id="purchaseQty" class="pd-qty-input"
                                     min="<?= (int) $purchaseMinQty ?>" value="<?= (int) $purchaseMinQty ?>" step="1"
                                     <?= $displayMaxQty > 0 ? 'max="' . (int) $displayMaxQty . '"' : '' ?>
-                                    <?= $productType === 'link' ? 'readonly' : '' ?>>
+                                    <?= $deliveryMode === 'source_link' ? 'readonly' : '' ?>>
                                 <button type="button" class="pd-qty-btn" id="qtyPlusBtn" aria-label="Tăng">+</button>
                             </div>
 
@@ -769,6 +764,7 @@ if ($rawDescHtml !== '') {
             availableStock: <?= is_int($availableStock) ? (int) $availableStock : 'null' ?>,
             stockManaged: <?= ($stockManaged && is_int($availableStock)) ? 'true' : 'false' ?>,
             requiresInfo: <?= $requiresInfo ? 'true' : 'false' ?>,
+            deliveryMode: <?= json_encode($deliveryMode, JSON_UNESCAPED_UNICODE) ?>,
             productType: <?= json_encode($productType, JSON_UNESCAPED_UNICODE) ?>,
             canPurchase: <?= $canPurchase ? 'true' : 'false' ?>,
             quoteUrl: <?= json_encode(url('product/' . $productId . '/quote'), JSON_UNESCAPED_UNICODE) ?>,
@@ -794,7 +790,7 @@ if ($rawDescHtml !== '') {
         }
 
         function computeDisplayMaxFromState() {
-            if (PRODUCT_DETAIL.productType === 'link') {
+            if (PRODUCT_DETAIL.deliveryMode === 'source_link') {
                 return 1;
             }
 
@@ -896,7 +892,7 @@ if ($rawDescHtml !== '') {
             if (!Number.isFinite(qty)) qty = PRODUCT_DETAIL.minQty;
             qty = Math.floor(qty);
 
-            if (PRODUCT_DETAIL.productType === 'link') {
+            if (PRODUCT_DETAIL.deliveryMode === 'source_link') {
                 qty = 1;
             }
 
@@ -1114,6 +1110,44 @@ if ($rawDescHtml !== '') {
                 return;
             }
 
+            // Confirmation before purchase
+            let totalToPay = qty * PRODUCT_DETAIL.price;
+            if (APPLIED_GIFTCODE_PREVIEW && Number(APPLIED_GIFTCODE_PREVIEW.quantity) === qty) {
+                totalToPay = Number(APPLIED_GIFTCODE_PREVIEW.total_price);
+            }
+
+            const productNameText = document.querySelector('.pd-title') ? document.querySelector('.pd-title').textContent.trim() : 'sản phẩm';
+            const confirmMsg = `
+                <div class="text-start">
+                    <div class="p-2 border rounded bg-light mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span>Sản phẩm:</span>
+                            <span class="fw-bold text-end">${productNameText}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Số lượng:</span>
+                            <span class="fw-bold">x${qty}</span>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">Tổng thanh toán:</span>
+                        <span class="fs-5 fw-bold text-success">${fmtMoney(totalToPay)}</span>
+                    </div>
+                </div>
+            `;
+
+            if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.confirm === 'function') {
+                SwalHelper.confirm('Xác nhận mua hàng', confirmMsg, () => {
+                    executePurchase(qty, customerInput, giftcode);
+                });
+            } else {
+                if (confirm(confirmMsg.replace(/<[^>]*>/g, ''))) {
+                    executePurchase(qty, customerInput, giftcode);
+                }
+            }
+        }
+
+        function executePurchase(qty, customerInput, giftcode) {
             const formData = new FormData();
             formData.append('quantity', String(qty));
             formData.append('customer_input', customerInput);

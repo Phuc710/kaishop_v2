@@ -21,7 +21,10 @@
     max-width: 1300px;
     margin: 0 auto;
 }
-
+* {
+    font-family: 'Signika', sans-serif;
+    letter-spacing: 0.5px;
+}
 /* ── PAGE SHELL ──────────────────────────────────────── */
 .user-page-main {
     min-height: 60vh;
@@ -109,12 +112,10 @@
 }
 
 .profile-card-header {
-    padding: 18px 24px;
+    padding: 24px 24px 0 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #fff;
-    gap: 12px;
 }
 
 .profile-card-header h4,
@@ -128,7 +129,9 @@
 .profile-card-body {
     padding: 24px;
 }
-
+.pt-0 {
+    padding-top: 0 !important;
+}
 /* ── STAT BOXES (Ví của tôi) ─────────────────────────── */
 .stat-box {
     padding: 20px;

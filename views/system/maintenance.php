@@ -2,6 +2,7 @@
 $message = (string) ($maintenanceState['message'] ?? 'Hệ thống đang bảo trì để nâng cấp dịch vụ. Vui lòng quay lại sau.');
 $siteName = isset($siteName) ? (string) $siteName : 'KaiShop';
 $siteFavicon = isset($siteFavicon) ? (string) $siteFavicon : '';
+$siteFaviconVersion = isset($siteFaviconVersion) ? trim((string) $siteFaviconVersion) : '';
 $maintenanceJson = json_encode(
     $maintenanceState ?? [],
     JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
@@ -18,9 +19,45 @@ $maintenanceJson = json_encode(
         content="Hệ thống <?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?> đang bảo trì. Vui lòng quay lại sau.">
     <meta name="robots" content="noindex, nofollow">
     <link rel="canonical" href="<?= htmlspecialchars(url(''), ENT_QUOTES, 'UTF-8') ?>">
-    <?php $cleanSiteFavicon = trim(preg_replace('/\s+/', '', (string) ($siteFavicon ?? ''))); ?>
-    <link rel="shortcut icon"
-        href="<?= htmlspecialchars($cleanSiteFavicon !== '' ? (str_starts_with($cleanSiteFavicon, 'http') ? $cleanSiteFavicon : asset(ltrim($cleanSiteFavicon, '/'))) : asset('assets/images/favicon.png'), ENT_QUOTES, 'UTF-8') ?>">
+    <?php
+    $resolveSiteIconUrl = static function ($path): string {
+        $cleanPath = trim(preg_replace('/\s+/', '', (string) $path));
+        if ($cleanPath === '') {
+            return '';
+        }
+
+        if (preg_match('~^(?:https?:)?//|^(?:data|blob):~i', $cleanPath)) {
+            return $cleanPath;
+        }
+
+        return asset(ltrim($cleanPath, '/'));
+    };
+
+    $appendIconVersion = static function (string $href, string $version): string {
+        if ($href === '' || $version === '') {
+            return $href;
+        }
+
+        return $href . (str_contains($href, '?') ? '&' : '?') . 'v=' . rawurlencode($version);
+    };
+
+    $faviconHref = '';
+    foreach (
+        [
+            (string) ($siteFavicon ?? ''),
+            'assets/images/header_logo.gif',
+        ] as $iconCandidate
+    ) {
+        $resolvedIcon = $resolveSiteIconUrl($iconCandidate);
+        if ($resolvedIcon !== '') {
+            $faviconHref = $resolvedIcon;
+            break;
+        }
+    }
+    $faviconHref = $appendIconVersion($faviconHref, $siteFaviconVersion);
+    ?>
+    <link rel="icon" href="<?= htmlspecialchars($faviconHref, ENT_QUOTES, 'UTF-8') ?>">
+    <link rel="shortcut icon" href="<?= htmlspecialchars($faviconHref, ENT_QUOTES, 'UTF-8') ?>">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="<?= asset('assets/css/error-pages.css') ?>">
     <style>

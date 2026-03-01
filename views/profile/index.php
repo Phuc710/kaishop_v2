@@ -100,6 +100,308 @@ require __DIR__ . '/layout/header.php';
         </div>
     </div>
 
+    <?php
+    $linkModel = new UserTelegramLink();
+    $tgLink = $linkModel->findByUserId($user['id']);
+    $isTelegramSection = ($profileSection === 'telegram');
+    ?>
+    <div class="profile-card mt-4 <?= $isTelegramSection ? 'border-primary shadow-sm' : '' ?>" id="telegram-link-section">
+        <div class="profile-card-header">
+            <div>
+                <h5 class="text-dark mb-1">LIÊN KẾT TELEGRAM BOT</h5>
+            </div>
+        </div>
+        <div class="profile-card-body p-4">
+            <?php if ($tgLink): ?>
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="fab fa-telegram fa-3x" style="color: #0088cc;"></i>
+                        </div>
+                        <div>
+                            <div class="user-label">Đang liên kết với:</div>
+                            <div class="fw-bold text-dark">
+                                <?= htmlspecialchars((string) ($tgLink['telegram_username'] ?? $tgLink['first_name'] ?? 'Người dùng Telegram'), ENT_QUOTES, 'UTF-8'); ?>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" onclick="unlinkTelegram()" class="btn btn-outline-danger btn-sm rounded-pill px-3">Hủy
+                        liên kết</button>
+                </div>
+            <?php else: ?>
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <p class="mb-0 text-muted">Liên kết tài khoản với Telegram Bot để nhận thông báo nạp tiền, mua hàng và
+                            truy cập các tính năng nhanh ngay trên Telegram.</p>
+                    </div>
+                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                        <button type="button" id="btn-generate-tg" onclick="generateTelegramLink()"
+                            class="btn btn-save-green w-100 w-md-auto">Tạo mã liên kết</button>
+                    </div>
+                </div>
+                <div id="tg-otp-display" class="mt-3 p-4 bg-light rounded-3 border text-center"
+                    style="display: none; border-style: dashed !important;">
+                    <div class="user-label mb-2">Mã liên kết của bạn là:</div>
+                    <div class="display-5 fw-bold text-success mb-2" id="tg-otp-code" style="letter-spacing: 5px;">000000</div>
+                    <div class="small text-muted">
+                        Vui lòng gửi lệnh bên dưới cho Bot <a
+                            href="https://t.me/<?= trim((string) get_setting('telegram_bot_user', 'KaiShopBot')); ?>"
+                            target="_blank"
+                            class="fw-bold text-primary">@<?= htmlspecialchars((string) get_setting('telegram_bot_user', 'KaiShopBot')); ?></a>
+                        <div class="mt-2 p-2 bg-white border rounded">
+                            <code>/link <span id="tg-otp-code-val">000000</span></code>
+                        </div>
+                        <div class="mt-3 d-flex flex-column flex-sm-row justify-content-center align-items-center gap-2">
+                            <button type="button" id="tg-copy-command" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-copy me-1"></i> Sao chép lệnh
+                            </button>
+                            <div class="text-danger">
+                                <i class="fas fa-clock me-1"></i> Hết hạn sau <strong id="tg-countdown">05:00</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <script>
+        // Auto-scroll to telegram section if requested
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.location.search.includes('section=telegram')) {
+                const section = document.getElementById('telegram-link-section');
+                if (section) {
+                    section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+    </script>
+
+    <script>
+        /**
+         * TelegramLinkManager (OOP)
+         * Quản lý liên kết tài khoản với Telegram Bot
+         */
+        class TelegramLinkManager {
+            constructor(config) {
+                this.apiUrl = config.apiUrl;
+                this.unlinkUrl = config.unlinkUrl;
+                this.activeOtp = config.activeOtp || null;
+
+                // Elements
+                this.btnGenerate = document.getElementById('btn-generate-tg');
+                this.displayContainer = document.getElementById('tg-otp-display');
+                this.otpText = document.getElementById('tg-otp-code');
+                this.otpValSnippet = document.getElementById('tg-otp-code-val');
+                this.countdownText = document.getElementById('tg-countdown');
+                this.copyButton = document.getElementById('tg-copy-command');
+
+                this.timer = null;
+                this.init();
+            }
+
+            init() {
+                this.bindEvents();
+
+                if (this.activeOtp && this.activeOtp.code) {
+                    this.showOtp(this.activeOtp.code, this.activeOtp.expires_at);
+                }
+            }
+
+            bindEvents() {
+                if (!this.copyButton) return;
+
+                this.copyButton.addEventListener('click', () => {
+                    this.copyCommand();
+                });
+            }
+
+            async generate() {
+                if (!this.btnGenerate) return;
+
+                this.btnGenerate.disabled = true;
+                this.btnGenerate.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang tạo...';
+
+                try {
+                    const response = await fetch(this.apiUrl, { method: 'POST' });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Update bot link if dynamic username provided
+                        if (data.bot_username) {
+                            this.updateBotLink(data.bot_username);
+                        }
+
+                        this.showOtp(data.code, data.expires_at || null, true);
+                        this.btnGenerate.innerHTML = '<i class="fas fa-check"></i> Đã tạo mã';
+                    } else {
+                        SwalHelper.error(data.message || 'Không thể tạo mã');
+                        this.resetButton();
+                    }
+                } catch (e) {
+                    SwalHelper.error('Có lỗi xảy ra');
+                    this.resetButton();
+                }
+            }
+
+            updateBotLink(username) {
+                const linkEl = this.displayContainer ? this.displayContainer.querySelector('a') : null;
+                if (linkEl) {
+                    linkEl.href = `https://t.me/${username}`;
+                    linkEl.innerText = `@${username}`;
+                }
+            }
+
+            showOtp(code, expiresAt = null, shouldFocus = false) {
+                if (!this.displayContainer || !this.otpText) return;
+
+                this.otpText.innerText = code;
+                if (this.otpValSnippet) this.otpValSnippet.innerText = code;
+                this.displayContainer.style.display = 'block';
+                if (shouldFocus) {
+                    this.displayContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+
+                // Handle auto-expiration UI
+                if (expiresAt) {
+                    const expiryTs = this.parseExpiry(expiresAt);
+                    this.startExpirationTimer(expiryTs);
+                }
+            }
+
+            parseExpiry(expiresAt) {
+                if (typeof expiresAt === 'number') return expiresAt;
+                if (expiresAt instanceof Date) return expiresAt.getTime();
+
+                const raw = String(expiresAt || '').trim();
+                if (!raw) return Date.now() + (5 * 60 * 1000);
+
+                const normalized = raw.replace(' ', 'T');
+                const parsed = Date.parse(normalized);
+                if (!Number.isNaN(parsed)) return parsed;
+
+                const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/);
+                if (!match) return Date.now() + (5 * 60 * 1000);
+
+                const [, year, month, day, hour, minute, second] = match;
+                return new Date(
+                    Number(year),
+                    Number(month) - 1,
+                    Number(day),
+                    Number(hour),
+                    Number(minute),
+                    Number(second)
+                ).getTime();
+            }
+
+            startExpirationTimer(expiryTs) {
+                if (this.timer) clearInterval(this.timer);
+
+                const update = () => {
+                    const now = new Date().getTime();
+                    const diff = expiryTs - now;
+
+                    if (diff <= 0) {
+                        this.onOtpExpired();
+                        clearInterval(this.timer);
+                        return;
+                    }
+
+                    if (this.countdownText) {
+                        const minutes = Math.floor(diff / 60000);
+                        const seconds = Math.floor((diff % 60000) / 1000);
+                        this.countdownText.innerText = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                    }
+                };
+
+                this.timer = setInterval(update, 1000);
+                update();
+            }
+
+            onOtpExpired() {
+                if (this.timer) {
+                    clearInterval(this.timer);
+                    this.timer = null;
+                }
+
+                if (this.displayContainer) {
+                    this.displayContainer.style.transition = 'opacity 0.5s';
+                    this.displayContainer.style.opacity = '0';
+                    setTimeout(() => {
+                        this.displayContainer.style.display = 'none';
+                        this.displayContainer.style.opacity = '1';
+                        this.resetButton();
+                        if (this.countdownText) this.countdownText.innerText = '05:00';
+                    }, 500);
+                }
+            }
+
+            resetButton() {
+                if (this.btnGenerate) {
+                    this.btnGenerate.disabled = false;
+                    this.btnGenerate.innerHTML = 'Tạo mã liên kết';
+                }
+            }
+
+            async copyCommand() {
+                const code = this.otpValSnippet ? this.otpValSnippet.innerText.trim() : '';
+                if (!code || code === '000000') {
+                    SwalHelper.error('Chưa có mã liên kết để sao chép');
+                    return;
+                }
+
+                const command = `/link ${code}`;
+
+                try {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        await navigator.clipboard.writeText(command);
+                    } else {
+                        const tempInput = document.createElement('input');
+                        tempInput.value = command;
+                        document.body.appendChild(tempInput);
+                        tempInput.select();
+                        document.execCommand('copy');
+                        tempInput.remove();
+                    }
+
+                    SwalHelper.toast('Đã sao chép lệnh liên kết', 'success');
+                } catch (e) {
+                    SwalHelper.error('Không thể sao chép lệnh liên kết');
+                }
+            }
+
+            async unlink() {
+                const confirmed = await SwalHelper.confirm('Bạn có chắc muốn hủy liên kết Telegram?', 'Hành động này sẽ ngắt kết nối với Bot.');
+                if (!confirmed) return;
+
+                try {
+                    const response = await fetch(this.unlinkUrl, { method: 'POST' });
+                    const data = await response.json();
+                    if (data.success) {
+                        SwalHelper.toast(data.message, 'success');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        SwalHelper.error(data.message);
+                    }
+                } catch (e) {
+                    SwalHelper.error('Có lỗi xảy ra');
+                }
+            }
+        }
+
+        // Initialize Manager
+        const tgManager = new TelegramLinkManager({
+            apiUrl: '<?= url('api/telegram/generate-link') ?>',
+            unlinkUrl: '<?= url('api/telegram/unlink') ?>',
+            activeOtp: <?= json_encode($activeTgOtp ?? null) ?>
+        });
+
+        // Wrapper functions for HTML onclick
+        function generateTelegramLink() { tgManager.generate(); }
+        function unlinkTelegram() { tgManager.unlink(); }
+    </script>
+
+
     <script>
         (function () {
             let editMode = false;

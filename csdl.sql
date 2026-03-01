@@ -2,7 +2,7 @@
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 -- Production recommendation: keep DB/session timezone in UTC.
 -- App/UI will convert by APP_DISPLAY_TIMEZONE (e.g. Asia/Ho_Chi_Minh).
-SET time_zone = "+00:00";
+SET time_zone = "+07:00";
 SET NAMES utf8mb4;
 
 START TRANSACTION;
@@ -31,6 +31,11 @@ CREATE TABLE `banned_fingerprints` (
   `reason` text NULL,
   `banned_by` varchar(100) DEFAULT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
+  `expires_at` datetime DEFAULT NULL,
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `source` varchar(32) DEFAULT NULL,
+  `target_user_id` int(11) DEFAULT NULL,
+  `target_username` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_bf_hash` (`fingerprint_hash`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -107,6 +112,8 @@ CREATE TABLE IF NOT EXISTS `orders` (
   `payment_method` varchar(50) NOT NULL DEFAULT 'wallet',
   `ip_address` varchar(45) DEFAULT NULL,
   `user_agent` text NULL,
+  `source` varchar(20) DEFAULT 'web' COMMENT 'web, telegram',
+  `telegram_id` bigint(20) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
@@ -161,10 +168,26 @@ CREATE TABLE `lich_su_hoat_dong` (
   `hoatdong` varchar(255) NOT NULL,
   `gia` bigint(20) DEFAULT 0,
   `time` varchar(100) DEFAULT NULL,
+  `ip` varchar(45) DEFAULT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `idx_lshd_username` (`username`),
   KEY `idx_lshd_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `lich_su_bien_dong_so_du` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `username` varchar(100) DEFAULT NULL,
+  `before_balance` bigint(20) DEFAULT 0,
+  `change_amount` bigint(20) DEFAULT 0,
+  `after_balance` bigint(20) DEFAULT 0,
+  `reason` text DEFAULT NULL,
+  `time` varchar(100) DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_lsbd_username` (`username`),
+  KEY `idx_lsbd_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `users` (
@@ -183,6 +206,10 @@ CREATE TABLE `users` (
   `session` varchar(100) DEFAULT NULL,
   `bannd` tinyint(1) NOT NULL DEFAULT 0,
   `ban_reason` text DEFAULT NULL,
+  `banned_at` datetime DEFAULT NULL,
+  `ban_expires_at` datetime DEFAULT NULL,
+  `ban_source` varchar(32) DEFAULT NULL,
+  `banned_by` varchar(100) DEFAULT NULL,
   `ip_address` varchar(45) DEFAULT NULL,
   `user_agent` text DEFAULT NULL,
   `fingerprint` varchar(64) DEFAULT NULL,
@@ -332,6 +359,9 @@ CREATE TABLE `setting` (
   `sepay_api_key` varchar(255) DEFAULT NULL,
   `telegram_bot_token` varchar(255) DEFAULT NULL,
   `telegram_chat_id` varchar(64) DEFAULT NULL,
+  `telegram_webhook_secret` varchar(255) DEFAULT NULL,
+  `telegram_bot_user` varchar(100) DEFAULT 'KaiShopBot',
+  `telegram_last_update_id` bigint(20) DEFAULT 0,
   `bonus_1_amount` bigint(20) DEFAULT 100000,
   `bonus_1_percent` int(11) DEFAULT 10,
   `bonus_2_amount` bigint(20) DEFAULT 200000,
@@ -343,6 +373,9 @@ CREATE TABLE `setting` (
   `maintenance_end_at` datetime DEFAULT NULL,
   `maintenance_notice_minutes` int(11) NOT NULL DEFAULT 5,
   `maintenance_message` text DEFAULT NULL,
+  `telegram_admin_ids` TEXT NULL COMMENT 'Nhiều Admin Telegram ID, phân cách dấu phẩy',
+  `telegram_order_cooldown` INT NOT NULL DEFAULT 10 COMMENT 'Cooldown giữa 2 lần mua (giây)',
+  `last_cron_run` DATETIME NULL COMMENT 'Timestamp lần cuối cron.php chạy (Worker Health)',
   `created_at` datetime DEFAULT current_timestamp(),
   `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`)
@@ -353,7 +386,8 @@ INSERT INTO `setting` (
   `id`, `ten_web`, `logo`, `logo_footer`, `banner`, `favicon`, `key_words`, `mo_ta`, `fb_admin`, `sdt_admin`, `tele_admin`, `tiktok_admin`, `youtube_admin`,
   `email_auto`, `pass_mail_auto`, `ten_nguoi_gui`,
   `email_cf`, `contact_page_title`, `contact_page_subtitle`, `contact_email_label`, `contact_phone_label`, `contact_support_note`, `policy_page_title`, `policy_page_subtitle`, `policy_content_html`, `policy_notice_text`, `terms_page_title`, `terms_page_subtitle`, `terms_content_html`, `terms_notice_text`, `apikey`, `thongbao`, `license`,
-  `bank_name`, `bank_account`, `bank_owner`, `sepay_api_key`, `telegram_bot_token`, `telegram_chat_id`,
+  `bank_name`, `bank_account`, `bank_owner`, `sepay_api_key`,  `telegram_bot_token`, `telegram_chat_id`, `telegram_webhook_secret`, `telegram_bot_user`, `telegram_last_update_id`,
+  `telegram_admin_ids`, `telegram_order_cooldown`, `last_cron_run`,
   `bonus_1_amount`, `bonus_1_percent`, `bonus_2_amount`, `bonus_2_percent`, `bonus_3_amount`, `bonus_3_percent`,
   `maintenance_enabled`, `maintenance_start_at`, `maintenance_end_at`, `maintenance_notice_minutes`, `maintenance_message`
 ) VALUES (
@@ -367,13 +401,11 @@ INSERT INTO `setting` (
   <b>Phiên bản: v1.1</b><br>
   <span>Khi dùng dịch vụ chính hãng, bạn được hỗ trợ tốt hơn và nâng cấp tính năng với chi phí tối ưu.</span>
 </div>', '',
-  'MB Bank', '', '', '', '', '',
+  'MB Bank', '', '', '', '', '', '', 'KaiShopBot', 0,
+  NULL, 10, NULL,
   100000, 10, 200000, 15, 500000, 20,
   0, NULL, NULL, 5, 'Hệ thống đang bảo trì để nâng cấp dịch vụ. Vui lòng quay lại sau ít phút.'
 );
-
-SET FOREIGN_KEY_CHECKS = 1;
-COMMIT;
 
 CREATE TABLE IF NOT EXISTS `system_logs` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -461,7 +493,6 @@ CREATE TABLE IF NOT EXISTS `history_nap_bank` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- AntiFlood: IP Blacklist table
--- Run this SQL to create the ip_blacklist table for auto-banning
 
 CREATE TABLE IF NOT EXISTS `ip_blacklist` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -471,8 +502,87 @@ CREATE TABLE IF NOT EXISTS `ip_blacklist` (
     `expires_at` DATETIME DEFAULT NULL COMMENT 'NULL = permanent ban',
     `hit_count` INT UNSIGNED NOT NULL DEFAULT 1,
     `user_agent` VARCHAR(1000) DEFAULT NULL,
+    `ref_hash` VARCHAR(32) DEFAULT NULL,
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `source` VARCHAR(32) DEFAULT NULL,
+    `banned_by` VARCHAR(100) DEFAULT NULL,
     UNIQUE KEY `uniq_ip` (`ip_address`),
     KEY `idx_expires` (`expires_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `ban_history` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `scope` VARCHAR(20) NOT NULL,
+    `target_user_id` INT NULL,
+    `target_username` VARCHAR(100) NULL,
+    `target_ip` VARCHAR(45) NULL,
+    `target_fingerprint` VARCHAR(64) NULL,
+    `reason` TEXT NULL,
+    `source` VARCHAR(32) NOT NULL DEFAULT 'admin',
+    `banned_by` VARCHAR(100) NULL,
+    `ref_hash` VARCHAR(32) NULL,
+    `started_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `expires_at` DATETIME NULL,
+    `ended_at` DATETIME NULL,
+    `ended_by` VARCHAR(100) NULL,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'active',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_ban_history_source` (`source`),
+    KEY `idx_ban_history_scope` (`scope`),
+    KEY `idx_ban_history_status` (`status`),
+    KEY `idx_ban_history_user` (`target_username`),
+    KEY `idx_ban_history_ip` (`target_ip`),
+    KEY `idx_ban_history_fingerprint` (`target_fingerprint`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- Telegram Bot Integration Tables
+-- ============================================================
+
+-- Mapping user web ↔ Telegram Chat ID
+CREATE TABLE IF NOT EXISTS `user_telegram_links` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT NOT NULL,
+  `telegram_id` BIGINT NOT NULL,
+  `telegram_username` VARCHAR(64) NULL,
+  `first_name` VARCHAR(255) NULL,
+  `linked_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `last_active` DATETIME NULL,
+  UNIQUE KEY `uniq_user` (`user_id`),
+  UNIQUE KEY `uniq_tg` (`telegram_id`),
+  KEY `idx_tg` (`telegram_id`),
+  KEY `idx_last_active` (`last_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- OTP codes dùng cho flow liên kết tài khoản Web ↔ Telegram
+CREATE TABLE IF NOT EXISTS `telegram_link_codes` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT NOT NULL,
+  `code` VARCHAR(32) NOT NULL,
+  `expires_at` DATETIME NOT NULL,
+  `used_at` DATETIME NULL,
+  UNIQUE KEY `uniq_code` (`code`),
+  KEY `idx_user` (`user_id`),
+  KEY `idx_expires` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Outbox pattern: hàng đợi push notifications async
+CREATE TABLE IF NOT EXISTS `telegram_outbox` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `telegram_id` BIGINT NOT NULL,
+  `message` TEXT NOT NULL,
+  `parse_mode` VARCHAR(20) DEFAULT 'HTML',
+  `status` ENUM('pending','sent','fail') DEFAULT 'pending',
+  `try_count` INT DEFAULT 0,
+  `last_error` TEXT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `sent_at` DATETIME NULL,
+  KEY `idx_status_created` (`status`, `created_at`),
+  KEY `idx_status_trycount` (`status`, `try_count`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET FOREIGN_KEY_CHECKS = 1;
+COMMIT;

@@ -365,12 +365,18 @@ $loadInteractiveBundle = !empty($pageAssetFlagsResolved['interactive_bundle']);
 </script>
 
 <script>
-    var o = new ClipboardJS(".copy");
-    o.on("success", function (e) {
-        SwalHelper.toast('Sao chép thành công', 'success');
-    });
-    o.on("error", function (e) {
-        SwalHelper.toast('Sao chép thất bại', 'error');
+    document.addEventListener("DOMContentLoaded", function () {
+        if (typeof ClipboardJS !== "function" || !document.querySelector(".copy")) {
+            return;
+        }
+
+        var clipboard = new ClipboardJS(".copy");
+        clipboard.on("success", function () {
+            SwalHelper.toast('Sao chép thành công', 'success');
+        });
+        clipboard.on("error", function () {
+            SwalHelper.toast('Sao chép thất bại', 'error');
+        });
     });
 </script>
 
