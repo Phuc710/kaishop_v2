@@ -97,6 +97,8 @@ class OrderHistoryController extends Controller
                 'time_iso' => (string) ($timeMeta['iso'] ?? ''),
                 'time_iso_utc' => (string) ($timeMeta['iso_utc'] ?? ''),
                 'time_ago' => $timeAgo,
+                'fulfilled_at' => (string) ($row['fulfilled_at'] ?? ''),
+                'fulfilled_at_display' => !empty($row['fulfilled_at']) ? TimeService::instance()->formatDisplay($row['fulfilled_at']) : '',
             ];
         }
 
@@ -140,6 +142,8 @@ class OrderHistoryController extends Controller
                 'customer_input' => (string) ($order['customer_input'] ?? ''),
                 'delivery_content' => ((string) ($order['status'] ?? '') === 'pending') ? '' : (string) ($order['stock_content_plain'] ?? ''),
                 'cancel_reason' => (string) ($order['cancel_reason'] ?? ''),
+                'fulfilled_at' => (string) ($order['fulfilled_at'] ?? ''),
+                'fulfilled_at_display' => !empty($order['fulfilled_at']) ? TimeService::instance()->formatDisplay($order['fulfilled_at']) : '',
             ],
         ]);
     }

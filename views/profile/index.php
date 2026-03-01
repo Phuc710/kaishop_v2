@@ -152,9 +152,7 @@ require __DIR__ . '/layout/header.php';
                             <code>/link <span id="tg-otp-code-val">000000</span></code>
                         </div>
                         <div class="mt-3 d-flex flex-column flex-sm-row justify-content-center align-items-center gap-2">
-                            <button type="button" id="tg-copy-command" class="btn btn-outline-primary btn-sm">
-                                <i class="fas fa-copy me-1"></i> Sao chép lệnh
-                            </button>
+                           
                             <div class="text-danger">
                                 <i class="fas fa-clock me-1"></i> Hết hạn sau <strong id="tg-countdown">05:00</strong>
                             </div>
@@ -204,7 +202,12 @@ require __DIR__ . '/layout/header.php';
                 this.bindEvents();
 
                 if (this.activeOtp && this.activeOtp.code) {
-                    this.showOtp(this.activeOtp.code, this.activeOtp.expires_at);
+                    this.showOtp(
+                        this.activeOtp.code,
+                        this.activeOtp.expires_at,
+                        false,
+                        this.activeOtp.expires_at_ts ?? null
+                    );
                 }
             }
 
@@ -232,7 +235,12 @@ require __DIR__ . '/layout/header.php';
                             this.updateBotLink(data.bot_username);
                         }
 
-                        this.showOtp(data.code, data.expires_at || null, true);
+                        this.showOtp(
+                            data.code,
+                            data.expires_at || null,
+                            true,
+                            data.expires_at_ts ?? null
+                        );
                         this.btnGenerate.innerHTML = '<i class="fas fa-check"></i> Đã tạo mã';
                     } else {
                         SwalHelper.error(data.message || 'Không thể tạo mã');
@@ -252,7 +260,7 @@ require __DIR__ . '/layout/header.php';
                 }
             }
 
-            showOtp(code, expiresAt = null, shouldFocus = false) {
+            showOtp(code, expiresAt = null, shouldFocus = false, expiresAtTs = null) {
                 if (!this.displayContainer || !this.otpText) return;
 
                 this.otpText.innerText = code;
@@ -263,13 +271,20 @@ require __DIR__ . '/layout/header.php';
                 }
 
                 // Handle auto-expiration UI
-                if (expiresAt) {
-                    const expiryTs = this.parseExpiry(expiresAt);
+                if (expiresAt || expiresAtTs) {
+                    const expiryTs = this.parseExpiry(expiresAt, expiresAtTs);
                     this.startExpirationTimer(expiryTs);
                 }
             }
 
-            parseExpiry(expiresAt) {
+            parseExpiry(expiresAt, expiresAtTs = null) {
+                if (typeof expiresAtTs === 'number' && Number.isFinite(expiresAtTs)) {
+                    return expiresAtTs > 9999999999 ? expiresAtTs : (expiresAtTs * 1000);
+                }
+                if (typeof expiresAtTs === 'string' && expiresAtTs.trim() !== '' && !Number.isNaN(Number(expiresAtTs))) {
+                    const parsedTs = Number(expiresAtTs);
+                    return parsedTs > 9999999999 ? parsedTs : (parsedTs * 1000);
+                }
                 if (typeof expiresAt === 'number') return expiresAt;
                 if (expiresAt instanceof Date) return expiresAt.getTime();
 
@@ -277,7 +292,8 @@ require __DIR__ . '/layout/header.php';
                 if (!raw) return Date.now() + (5 * 60 * 1000);
 
                 const normalized = raw.replace(' ', 'T');
-                const parsed = Date.parse(normalized);
+                const hasTimezone = /(?:Z|[+\-]\d{2}:\d{2})$/i.test(normalized);
+                const parsed = Date.parse(hasTimezone ? normalized : (normalized + 'Z'));
                 if (!Number.isNaN(parsed)) return parsed;
 
                 const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/);

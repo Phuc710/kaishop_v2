@@ -190,10 +190,19 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                                         class="fas fa-infinity mr-1"></i>Unlimited</span>
                                                 <span class="text-muted"> / </span>
                                                 <span class="text-danger font-weight-bold"><?= (int) ($st['sold'] ?? 0) ?></span>
-                                            <?php elseif ($isStockManaged): ?>
-                                                <span class="text-success font-weight-bold"><?= $st['available'] ?></span>
+                                            <?php elseif ($isManualRequest): ?>
+                                                <span class="text-success font-weight-bold"
+                                                    title="Cần giao (Kho)"><?= $st['available'] ?></span>
                                                 <span class="text-muted"> / </span>
-                                                <span class="text-danger font-weight-bold"><?= $st['sold'] ?></span>
+                                                <span class="text-warning font-weight-bold"
+                                                    title="Chờ xử lý"><?= $st['pending'] ?? 0 ?></span>
+                                                <span class="text-muted"> / </span>
+                                                <span class="text-danger font-weight-bold" title="Đã bán"><?= $st['sold'] ?></span>
+                                            <?php elseif ($isStockManaged): ?>
+                                                <span class="text-success font-weight-bold"
+                                                    title="Sẵn có"><?= $st['available'] ?></span>
+                                                <span class="text-muted"> / </span>
+                                                <span class="text-danger font-weight-bold" title="Đã bán"><?= $st['sold'] ?></span>
                                             <?php else: ?>
                                                 <span class="badge badge-light text-muted"><i
                                                         class="fas fa-infinity mr-1"></i>Unlimited</span>

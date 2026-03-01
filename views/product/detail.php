@@ -713,14 +713,11 @@ if ($rawDescHtml !== '') {
 
                         <?php if ($requiresInfo): ?>
                             <div class="mb-3">
-                                <div class="pd-label">Thông tin khách cần nhập</div>
+                                <div class="pd-label">
+                                    <?= $infoInstructions !== '' ? nl2br(htmlspecialchars($infoInstructions, ENT_QUOTES, 'UTF-8')) : 'Thông tin khách cần nhập' ?>
+                                </div>
                                 <textarea id="customerInput" class="form-control" rows="4"
                                     placeholder="Nhập thông tin theo yêu cầu sản phẩm..."></textarea>
-                                <?php if ($infoInstructions !== ''): ?>
-                                    <div class="pd-note mt-1">
-                                        <?= nl2br(htmlspecialchars($infoInstructions, ENT_QUOTES, 'UTF-8')) ?>
-                                    </div>
-                                <?php endif; ?>
                             </div>
                         <?php endif; ?>
 

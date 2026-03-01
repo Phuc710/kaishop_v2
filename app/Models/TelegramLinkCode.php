@@ -8,6 +8,12 @@ class TelegramLinkCode extends Model
 {
     protected $table = 'telegram_link_codes';
 
+    private function nowDbSql(): string
+    {
+        $time = TimeService::instance();
+        return $time->nowSql($time->getDbTimezone());
+    }
+
     public function createCode(int $userId): string
     {
         // Clean up old codes for this user
@@ -29,7 +35,7 @@ class TelegramLinkCode extends Model
 
     public function verifyCode(string $code): ?int
     {
-        $now = TimeService::instance()->nowSql();
+        $now = $this->nowDbSql();
 
         $sql = "SELECT `user_id` FROM `{$this->table}` 
                 WHERE `code` = ? AND `expires_at` > ? AND `used_at` IS NULL 
@@ -54,21 +60,30 @@ class TelegramLinkCode extends Model
 
     public function getActiveCode(int $userId): ?array
     {
-        $now = TimeService::instance()->nowSql();
+        $now = $this->nowDbSql();
 
         $sql = "SELECT `code`, `expires_at` FROM `{$this->table}` 
                 WHERE `user_id` = ? AND `expires_at` > ? AND `used_at` IS NULL 
+                ORDER BY `expires_at` DESC, `id` DESC
                 LIMIT 1";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$userId, $now]);
 
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $row ?: null;
+        if (!$row) {
+            return null;
+        }
+
+        $time = TimeService::instance();
+        $expiresAtTs = $time->toTimestamp((string) ($row['expires_at'] ?? ''), $time->getDbTimezone());
+        $row['expires_at_ts'] = $expiresAtTs ?? null;
+
+        return $row;
     }
 
     public function cleanExpired(): int
     {
-        $now = TimeService::instance()->nowSql();
+        $now = $this->nowDbSql();
 
         $sql = "DELETE FROM `{$this->table}` WHERE `expires_at` < ? OR `used_at` IS NOT NULL";
         $stmt = $this->db->prepare($sql);

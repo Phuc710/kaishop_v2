@@ -139,6 +139,15 @@ class Order extends Model
             $params[] = '%' . $search . '%';
         }
 
+        $dateFilter = trim((string) ($filters['date_filter'] ?? ''));
+        if ($dateFilter !== '' && $dateFilter !== 'all') {
+            $days = (int) $dateFilter;
+            if ($days > 0) {
+                $where[] = "`created_at` >= DATE_SUB(NOW(), INTERVAL ? DAY)";
+                $params[] = $days;
+            }
+        }
+
         $limit = max(1, min(500, (int) ($filters['limit'] ?? 20)));
         $whereSql = 'WHERE ' . implode(' AND ', $where);
 
@@ -243,21 +252,22 @@ class Order extends Model
             }
 
             $status = (string) ($order['status'] ?? '');
-            if (!in_array($status, ['pending', 'processing'], true)) {
-                throw new RuntimeException('Don hang nay khong o trang thai cho xu ly.');
+            if (!in_array($status, ['pending', 'processing', 'completed'], true)) {
+                throw new RuntimeException('Don hang nay khong the cap nhat noi dung.');
             }
 
             $storedContent = ($this->crypto instanceof CryptoService && $this->crypto->isEnabled())
                 ? $this->crypto->encryptString($deliveryContent)
                 : $deliveryContent;
 
+            $nowSql = TimeService::instance()->nowSql();
             $sets = [
                 "`status` = 'completed'",
                 "`stock_content` = ?",
                 "`fulfilled_by` = ?",
-                "`fulfilled_at` = NOW()",
+                "`fulfilled_at` = ?",
             ];
-            $params = [$storedContent, $adminUsername, $id];
+            $params = [$storedContent, $adminUsername, $nowSql, $id];
             $sql = "UPDATE `{$this->table}` SET " . implode(', ', $sets) . " WHERE `id` = ? LIMIT 1";
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
@@ -266,7 +276,10 @@ class Order extends Model
                 $this->db->commit();
             }
 
-            return ['success' => true, 'message' => 'Da giao noi dung va hoan tat don hang.'];
+            return [
+                'success' => true,
+                'message' => ($status === 'completed' ? 'Da cap nhat noi dung bao hanh.' : 'Da giao noi dung va hoan tat don hang.')
+            ];
         } catch (Throwable $e) {
             if ($started && $this->db->inTransaction()) {
                 $this->db->rollBack();

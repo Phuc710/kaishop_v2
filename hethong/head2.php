@@ -1,5 +1,6 @@
 <?php
-require_once('config.php');
+require_once __DIR__ . '/config.php';
+global $chungapi;
 
 $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
 $isLocalHost = $host === 'localhost'
@@ -147,6 +148,14 @@ $appendIconVersion = static function (string $href, string $version): string {
         return $href;
     }
 
+    $parsedHref = parse_url($href);
+    if (is_array($parsedHref) && !empty($parsedHref['query'])) {
+        parse_str((string) $parsedHref['query'], $queryParams);
+        if (array_key_exists('v', $queryParams)) {
+            return $href;
+        }
+    }
+
     return $href . (str_contains($href, '?') ? '&' : '?') . 'v=' . rawurlencode($version);
 };
 
@@ -154,6 +163,7 @@ $faviconHref = '';
 $faviconVersion = trim((string) ($chungapi['updated_at'] ?? time()));
 foreach (
     [
+        'assets/images/kaishop_favicon.png',
         (string) ($chungapi['favicon'] ?? ''),
         (string) ($chungapi['logo'] ?? ''),
         'assets/images/header_logo.gif',
@@ -168,9 +178,30 @@ foreach (
     }
 }
 $faviconHref = $appendIconVersion($faviconHref, (string) $faviconVersion);
+$fallbackFaviconHref = asset('assets/images/kaishop_favicon.png');
+if ($faviconHref === '') {
+    $faviconHref = $fallbackFaviconHref;
+}
 ?>
 <link rel="icon" href="<?= htmlspecialchars($faviconHref, ENT_QUOTES, 'UTF-8') ?>">
 <link rel="shortcut icon" href="<?= htmlspecialchars($faviconHref, ENT_QUOTES, 'UTF-8') ?>">
+<script>
+    (function () {
+        const primaryHref = '<?= htmlspecialchars($faviconHref, ENT_QUOTES, 'UTF-8') ?>';
+        const fallbackHref = '<?= htmlspecialchars($fallbackFaviconHref, ENT_QUOTES, 'UTF-8') ?>';
+        if (!primaryHref || !fallbackHref || primaryHref === fallbackHref) {
+            return;
+        }
+
+        const iconLoader = new Image();
+        iconLoader.onerror = function () {
+            document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]').forEach(function (el) {
+                el.setAttribute('href', fallbackHref);
+            });
+        };
+        iconLoader.src = primaryHref;
+    })();
+</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

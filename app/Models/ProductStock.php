@@ -39,12 +39,12 @@ class ProductStock extends Model
             $params[] = '%' . $search . '%';
         }
 
-        if ($dateFilter === '7days') {
-            $sql .= " AND t.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
-        } elseif ($dateFilter === '14days') {
-            $sql .= " AND t.created_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)";
-        } elseif ($dateFilter === '30days') {
-            $sql .= " AND t.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        if ($dateFilter !== '' && $dateFilter !== 'all') {
+            $days = (int) $dateFilter;
+            if ($days > 0) {
+                $sql .= " AND t.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)";
+                $params[] = $days;
+            }
         }
 
         $sql .= " ORDER BY t.id DESC LIMIT " . (int) $limit;

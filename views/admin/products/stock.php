@@ -64,9 +64,9 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
             <!-- Filter Bar -->
             <div class="dt-filters">
                 <div class="row g-2 mb-3">
-                    <div class="col-md-<?= !empty($isManualQueue) ? '9' : '5' ?> mb-2">
+                    <div class="col-md-<?= !empty($isManualQueue) ? '7' : '5' ?> mb-2">
                         <input id="searchTerm" class="form-control form-control-sm"
-                            placeholder="<?= !empty($isManualQueue) ? 'Tìm mã đơn, tên khách, nội dung...' : 'Tim noi dung trong kho...' ?>"
+                            placeholder="<?= !empty($isManualQueue) ? 'Tìm mã đơn, tên khách, nội dung...' : 'Tìm nội dung trong kho...' ?>"
                             value="<?= htmlspecialchars($search ?? '') ?>">
                     </div>
                     <div class="col-md-3 mb-2 text-center">
@@ -84,6 +84,33 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
                                 <option value="sold" <?= $statusFilter === 'sold' ? 'selected' : '' ?>>ĐÃ BÁN</option>
                             <?php endif; ?>
                         </select>
+                    </div>
+
+                    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap mt-2">
+                        <div class="filter-show d-flex align-items-center mb-2">
+                            <span class="filter-label mr-2">HIỂN THỊ :</span>
+                            <select id="filterLimit" class="form-control form-control-sm" style="width: 80px;">
+                                <option value="10" <?= ($limit ?? 20) == 10 ? 'selected' : '' ?>>10</option>
+                                <option value="20" <?= ($limit ?? 20) == 20 ? 'selected' : '' ?>>20</option>
+                                <option value="50" <?= ($limit ?? 20) == 50 ? 'selected' : '' ?>>50</option>
+                                <option value="100" <?= ($limit ?? 20) == 100 ? 'selected' : '' ?>>100</option>
+                                <option value="500" <?= ($limit ?? 20) == 500 ? 'selected' : '' ?>>500</option>
+                            </select>
+                        </div>
+                        <div class="filter-short d-flex align-items-center mb-2">
+                            <span class="filter-label mr-2">LỌC THEO NGÀY:</span>
+                            <select id="filterDate" class="form-control form-control-sm" style="width: 150px;">
+                                <option value="all" <?= ($dateFilter ?? '') === 'all' ? 'selected' : '' ?>>Tất cả</option>
+                                <option value="7" <?= ($dateFilter ?? '') === '7' ? 'selected' : '' ?>>7 ngày qua</option>
+                                <option value="15" <?= ($dateFilter ?? '') === '15' ? 'selected' : '' ?>>15 ngày qua</option>
+                                <option value="30" <?= ($dateFilter ?? '') === '30' ? 'selected' : '' ?>>30 ngày qua</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-2 text-center">
+                        <button type="button" id="btnClearFilters" class="btn btn-secondary btn-sm shadow-sm w-100">
+                            <i class="fas fa-times-circle mr-1"></i> Xóa Lọc
+                        </button>
                     </div>
                     <?php if (empty($isManualQueue)): ?>
                         <div class="col-md-2 mb-2 text-center">
@@ -113,7 +140,8 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
                                     <th class="text-center font-weight-bold align-middle">YÊU CẦU / NỘI DUNG</th>
                                     <th class="text-center font-weight-bold align-middle" style="width:120px">TRẠNG THÁI
                                     </th>
-                                    <th class="text-center font-weight-bold align-middle" style="width:150px">THỜI GIAN</th>
+                                    <th class="text-center font-weight-bold align-middle" style="width:140px">NGÀY ĐẶT</th>
+                                    <th class="text-center font-weight-bold align-middle" style="width:140px">NGÀY GIAO</th>
                                     <th class="text-center font-weight-bold align-middle" style="width:120px">THAO TÁC</th>
                                 <?php else: ?>
                                     <th class="text-center font-weight-bold align-middle">NOI DUNG KHO</th>
@@ -127,7 +155,7 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
                         <tbody id="stockBody">
                             <?php if (empty($items)): ?>
                                 <tr>
-                                    <td colspan="<?= !empty($isManualQueue) ? '6' : '5' ?>"
+                                    <td colspan="<?= !empty($isManualQueue) ? '7' : '5' ?>"
                                         class="text-center text-muted py-4">
                                         <i class="fas fa-box-open fa-2x mb-2 d-block opacity-50"></i>
                                         <?= !empty($isManualQueue) ? 'Không có đơn hàng nào cần giải' : 'Kho hiện đang trống' ?>
@@ -175,15 +203,38 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
                                                 ?>
                                             </td>
                                             <td class="text-center align-middle">
-                                                <?= FormatHelper::eventTime($item['created_at_display'] ?? $item['created_at'], $item['created_at']) ?>
+                                                <div class="small text-nowrap"><?= FormatHelper::eventTime($item['created_at_display'] ?? $item['created_at'], $item['created_at']) ?></div>
+                                            </td>
+                                            <td class="text-center align-middle">
+                                                <?php if ($item['status'] === 'completed' && !empty($item['fulfilled_at'])): ?>
+                                                    <div class="small text-nowrap"><?= FormatHelper::eventTime($item['fulfilled_at_display'] ?? $item['fulfilled_at'], $item['fulfilled_at']) ?></div>
+                                                <?php else: ?>
+                                                    <span class="text-muted small">—</span>
+                                                <?php endif; ?>
                                             </td>
                                             <td class="text-center align-middle">
                                                 <?php if ($item['status'] === 'pending'): ?>
-                                                    <button class="btn btn-success btn-sm btn-fulfill" data-id="<?= $item['id'] ?>"
+                                                    <div class="btn-group">
+                                                        <button class="btn btn-success btn-sm btn-fulfill" data-id="<?= $item['id'] ?>"
+                                                            data-code="<?= htmlspecialchars($item['order_code_short'] ?: $item['order_code']) ?>"
+                                                            data-input="<?= htmlspecialchars($item['customer_input'] ?: '') ?>"
+                                                            title="Giao đơn (Gửi thông tin)">
+                                                            <i class="fas fa-paper-plane mr-1"></i> Giao
+                                                        </button>
+                                                        <button class="btn btn-danger btn-sm btn-cancel-order"
+                                                            data-id="<?= $item['id'] ?>"
+                                                            data-code="<?= htmlspecialchars($item['order_code_short'] ?: $item['order_code']) ?>"
+                                                            title="Hủy đơn + Hoàn tiền">
+                                                            Hủy
+                                                        </button>
+                                                    </div>
+                                                <?php elseif ($item['status'] === 'completed'): ?>
+                                                    <button class="btn btn-info btn-sm btn-fulfill" data-id="<?= $item['id'] ?>"
                                                         data-code="<?= htmlspecialchars($item['order_code_short'] ?: $item['order_code']) ?>"
                                                         data-input="<?= htmlspecialchars($item['customer_input'] ?: '') ?>"
-                                                        title="Giải đơn (Gửi thông tin)">
-                                                        <i class="fas fa-paper-plane mr-1"></i> Giải
+                                                        data-content="<?= htmlspecialchars($item['stock_content_plain'] ?: '') ?>"
+                                                        title="Sửa nội dung (Bảo hành)">
+                                                        <i class="fas fa-edit mr-1"></i> Sửa
                                                     </button>
                                                 <?php else: ?>
                                                     <button class="btn btn-light btn-sm text-muted" disabled>
@@ -261,45 +312,89 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
     </div>
 </section>
 
-    <!-- FULFILL MODAL -->
-    <div class="modal fade" id="fulfillModal" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content" style="border-radius: 12px; border: none;">
-                <div class="modal-header bg-success text-white" style="border-top-left-radius: 12px; border-top-right-radius: 12px;">
-                    <h5 class="modal-title font-weight-bold"><i class="fas fa-paper-plane mr-2"></i>GIẢI ĐƠN HÀNG: <span id="fulfillCode"></span></h5>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body p-4">
-                    <form id="fulfillForm">
-                        <input type="hidden" name="order_id" id="fulfillOrderId">
-                        
-                        <div class="info-callout bg-light p-3 rounded mb-4 border-left" style="border-left-width: 4px !important; border-left-color: #28a745 !important;">
-                            <div class="small font-weight-bold text-uppercase text-muted mb-1">Thông tin khách yêu cầu:</div>
-                            <div id="fulfillCustomerInput" class="text-dark font-weight-bold" style="white-space: pre-wrap;"></div>
-                        </div>
+<!-- FULFILL MODAL -->
+<div class="modal fade" id="fulfillModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content" style="border-radius: 12px; border: none;">
+            <div class="modal-header bg-success text-white"
+                style="border-top-left-radius: 12px; border-top-right-radius: 12px;">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-paper-plane mr-2"></i>GIAO ĐƠN HÀNG: <span
+                        id="fulfillCode"></span></h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="fulfillForm">
+                    <input type="hidden" name="order_id" id="fulfillOrderId">
 
-                        <div class="form-group">
-                            <label class="font-weight-bold text-dark"><i class="fas fa-reply mr-1"></i> Nội dung bàn giao:</label>
-                            <textarea name="delivery_content" id="deliveryContent" class="form-control" rows="6" 
-                                placeholder="Nhập nội dung/tài khoản/thông tin để gửi cho khách..." required></textarea>
-                            <small class="form-text text-muted italic">Nội dung này sẽ hiển thị trong lịch sử mua hàng của khách.</small>
+                    <div class="info-callout bg-light p-3 rounded mb-4 border-left"
+                        style="border-left-width: 4px !important; border-left-color: #28a745 !important;">
+                        <div class="small font-weight-bold text-uppercase text-muted mb-1">Thông tin khách yêu cầu:
                         </div>
-                    </form>
-                </div>
-                <div class="modal-footer bg-light px-4 py-3" style="border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
-                    <button type="button" class="btn btn-secondary px-4" data-dismiss="modal">Đóng</button>
-                    <button type="button" id="btnConfirmFulfill" class="btn btn-success px-5 font-weight-bold">
-                        <i class="fas fa-check-circle mr-1"></i> XÁC NHẬN GIẢI ĐƠN
-                    </button>
-                </div>
+                        <div id="fulfillCustomerInput" class="text-dark font-weight-bold"
+                            style="white-space: pre-wrap;"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold text-dark"><i class="fas fa-reply mr-1"></i> Nội dung bàn
+                            giao:</label>
+                        <textarea name="delivery_content" id="deliveryContent" class="form-control" rows="6"
+                            placeholder="Nhập nội dung/tài khoản/thông tin để gửi cho khách..." required></textarea>
+                        <small class="form-text text-muted italic">Nội dung này sẽ hiển thị trong lịch sử mua hàng của
+                            khách.</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light px-4 py-3"
+                style="border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
+                <button type="button" class="btn btn-secondary px-4" data-dismiss="modal">Đóng</button>
+                <button type="button" id="btnConfirmFulfill" class="btn btn-success px-5 font-weight-bold">
+                    <i class="fas fa-check-circle mr-1"></i> XÁC NHẬN GIAO ĐƠN
+                </button>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- MODAL IMPORT -->
-    <div class="modal fade" id="importModal" tabindex="-1" role="dialog" aria-hidden="true">
+<!-- CANCEL MODAL -->
+<div class="modal fade" id="cancelModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content" style="border-radius: 12px; border: none;">
+            <div class="modal-header bg-danger text-white"
+                style="border-top-left-radius: 12px; border-top-right-radius: 12px;">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-times-circle mr-2"></i>HỦY ĐƠN HÀNG: <span
+                        id="cancelCode"></span></h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="cancelForm">
+                    <input type="hidden" id="cancelOrderId">
+                    <div class="form-group">
+                        <label class="font-weight-bold text-dark"><i class="fas fa-comment-dots mr-1"></i> Lý do hủy
+                            (gửi khách):</label>
+                        <textarea id="cancelReason" class="form-control" rows="4"
+                            placeholder="VD: Sản phẩm hiện đang bảo trì, vui lòng quay lại sau..." required></textarea>
+                        <small class="form-text text-danger italic"><i class="fas fa-info-circle mr-1"></i> Đơn hàng này
+                            sẽ được HOÀN TIỀN tự động cho người mua.</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light px-4 py-3"
+                style="border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
+                <button type="button" class="btn btn-secondary px-4" data-dismiss="modal">Đóng</button>
+                <button type="button" id="btnConfirmCancel" class="btn btn-danger px-5 font-weight-bold">
+                    <i class="fas fa-check-circle mr-1"></i> XÁC NHẬN HỦY & HOÀN TIỀN
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL IMPORT -->
+<div class="modal fade" id="importModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-primary text-white p-3">
@@ -492,12 +587,16 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
             searchTimer = setTimeout(() => {
                 const status = $('#filterStatus').val();
                 const search = $('#searchTerm').val().trim();
+                const limit = $('#filterLimit').val();
+                const dateFilter = $('#filterDate').val();
 
                 $('#stockBody').css('opacity', '0.5');
 
                 $.get(window.location.href, {
                     status_filter: status,
-                    search: search
+                    search: search,
+                    limit: limit,
+                    date_filter: dateFilter
                 }, function (res) {
                     $('#stockBody').css('opacity', '1');
                     if (res.success) {
@@ -508,11 +607,24 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
             }, 300);
         }
 
+        // Listeners for new filters
+        $('#filterStatus, #filterLimit, #filterDate').on('change', smartSearch);
+        $('#searchTerm').on('input', smartSearch);
+
+        $('#btnClearFilters').on('click', function() {
+            $('#searchTerm').val('');
+            $('#filterStatus').val('');
+            $('#filterLimit').val('20');
+            $('#filterDate').val('all');
+            smartSearch();
+        });
+
         function renderStockTable(items, isManualQueue) {
             let html = '';
             if (!items || items.length === 0) {
                 const emptyMsg = isManualQueue ? 'Không có đơn hàng nào' : 'Kho hiện đang trống';
-                html = `<tr><td colspan="5" class="text-center text-muted py-4"><i class="fas fa-box-open fa-2x mb-2 d-block opacity-50"></i>${emptyMsg}</td></tr>`;
+                const colCount = isManualQueue ? 7 : 5;
+                html = `<tr><td colspan="${colCount}" class="text-center text-muted py-4"><i class="fas fa-box-open fa-2x mb-2 d-block opacity-50"></i>${emptyMsg}</td></tr>`;
             } else {
                 items.forEach(item => {
                     if (isManualQueue) {
@@ -528,15 +640,38 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
 
                         let actionHtml = '';
                         if (item.status === 'pending') {
-                            actionHtml = `<button class="btn btn-success btn-sm btn-fulfill" 
+                            actionHtml = `<div class="btn-group">
+                                            <button class="btn btn-success btn-sm btn-fulfill" 
                                                 data-id="${item.id}" 
                                                 data-code="${escapeHtml(item.order_code_short || item.order_code)}"
                                                 data-input="${escapeHtml(item.customer_input || '')}"
-                                                title="Giải đơn (Gửi thông tin)">
-                                            <i class="fas fa-paper-plane mr-1"></i> Giải
-                                        </button>`;
+                                                title="Giao đơn (Gửi thông tin)">
+                                                <i class="fas fa-paper-plane mr-1"></i> Giao
+                                            </button>
+                                            <button class="btn btn-danger btn-sm btn-cancel-order"
+                                                data-id="${item.id}"
+                                                data-code="${escapeHtml(item.order_code_short || item.order_code)}"
+                                                title="Hủy đơn + Hoàn tiền">
+                                                Hủy
+                                            </button>
+                                          </div>`;
+                        } else if (item.status === 'completed') {
+                            actionHtml = `<button class="btn btn-info btn-sm btn-fulfill" 
+                                                data-id="${item.id}" 
+                                                data-code="${escapeHtml(item.order_code_short || item.order_code)}"
+                                                data-input="${escapeHtml(item.customer_input || '')}"
+                                                data-content="${escapeHtml(item.stock_content_plain || '')}"
+                                                title="Sửa nội dung (Bảo hành)">
+                                                <i class="fas fa-edit mr-1"></i> Sửa
+                                            </button>`;
                         } else {
                             actionHtml = `<button class="btn btn-light btn-sm text-muted" disabled><i class="fas fa-check"></i></button>`;
+                        }
+
+                        let orderDate = item.created_at_display || item.created_at || '—';
+                        let deliveryDateHtml = '<span class="text-muted small">—</span>';
+                        if (item.status === 'completed' && item.fulfilled_at) {
+                            deliveryDateHtml = `<div class="small text-nowrap">${escapeHtml(item.fulfilled_at_display || item.fulfilled_at)}</div>`;
                         }
 
                         html += `<tr>
@@ -551,7 +686,8 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
                                 ${deliveryHtml}
                             </td>
                             <td class="text-center align-middle">${statusBadge}</td>
-                            <td class="text-center align-middle">${escapeHtml(item.created_at_display || item.created_at)}</td>
+                            <td class="text-center align-middle"><div class="small text-nowrap">${escapeHtml(orderDate)}</div></td>
+                            <td class="text-center align-middle">${deliveryDateHtml}</td>
                             <td class="text-center align-middle">${actionHtml}</td>
                         </tr>`;
                         return;
@@ -620,11 +756,22 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
             const id = $(this).data('id');
             const code = $(this).data('code');
             const input = $(this).data('input');
+            const content = $(this).data('content') || '';
 
             $('#fulfillOrderId').val(id);
             $('#fulfillCode').text(code);
             $('#fulfillCustomerInput').text(input || 'Không có thông tin yêu cầu.');
-            $('#deliveryContent').val('');
+            $('#deliveryContent').val(content);
+
+            const isEdit = content !== '';
+            $('#fulfillModal .modal-header').toggleClass('bg-success', !isEdit).toggleClass('bg-info', isEdit);
+            $('#fulfillModal .modal-title').html(isEdit
+                ? `<i class="fas fa-edit mr-2"></i>SỬA NỘI DUNG (BẢO HÀNH): ${code}`
+                : `<i class="fas fa-paper-plane mr-2"></i>GIAO ĐƠN HÀNG: ${code}`
+            );
+            $('#btnConfirmFulfill').toggleClass('btn-success', !isEdit).toggleClass('btn-info', isEdit)
+                .html(isEdit ? '<i class="fas fa-check-circle mr-1"></i> CẬP NHẬT BẢO HÀNH' : '<i class="fas fa-check-circle mr-1"></i> XÁC NHẬN GIAO ĐƠN');
+
             $('#fulfillModal').modal('show');
         });
 
@@ -643,16 +790,58 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
                 order_id: $('#fulfillOrderId').val(),
                 delivery_content: content
             }, function (res) {
-                btn.prop('disabled', false).html('<i class="fas fa-check-circle mr-1"></i> XÁC NHẬN GIẢI ĐƠN');
+                btn.prop('disabled', false).html('<i class="fas fa-check-circle mr-1"></i> XÁC NHẬN GIAO ĐƠN');
                 if (res.success) {
                     $('#fulfillModal').modal('hide');
                     Swal.fire({
                         icon: 'success',
                         title: 'Thành công',
-                        text: 'Đã giải đơn hàng thành công!',
+                        text: res.message || 'Đã xử lý đơn hàng thành công!',
                         timer: 1500
                     });
-                    loadStockData(); // Refresh table
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    Swal.fire('Lỗi', res.message || 'Có lỗi xảy ra', 'error');
+                }
+            }, 'json');
+        });
+
+        // OPEN CANCEL MODAL
+        $(document).on('click', '.btn-cancel-order', function () {
+            const id = $(this).data('id');
+            const code = $(this).data('code');
+
+            $('#cancelOrderId').val(id);
+            $('#cancelCode').text(code);
+            $('#cancelReason').val('');
+            $('#cancelModal').modal('show');
+        });
+
+        // CONFIRM CANCEL
+        $('#btnConfirmCancel').click(function () {
+            const reason = $('#cancelReason').val().trim();
+            if (!reason) {
+                Swal.fire('Lỗi', 'Vui lòng nhập lý do hủy đơn!', 'error');
+                return;
+            }
+
+            const btn = $(this);
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Đang xử lý...');
+
+            $.post('<?= url('admin/logs/buying/cancel') ?>', {
+                order_id: $('#cancelOrderId').val(),
+                cancel_reason: reason
+            }, function (res) {
+                btn.prop('disabled', false).html('<i class="fas fa-check-circle mr-1"></i> XÁC NHẬN HỦY & HOÀN TIỀN');
+                if (res.success) {
+                    $('#cancelModal').modal('hide');
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Đã hủy đơn',
+                        text: 'Đơn hàng đã được hủy và hoàn tiền thành công!',
+                        timer: 1500
+                    });
+                    setTimeout(() => location.reload(), 1500);
                 } else {
                     Swal.fire('Lỗi', res.message || 'Có lỗi xảy ra', 'error');
                 }

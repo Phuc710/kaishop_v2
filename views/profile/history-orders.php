@@ -69,7 +69,7 @@ require __DIR__ . '/layout/header.php';
         </div>
 
         <div class="table-responsive user-history-table-wrap">
-            <table id="order-history-table" class="table table-hover align-middle w-100 mb-0 user-history-table">
+            <table id="order-history-table" class="table table-hover align-middle mb-0 user-history-table">
                 <thead class="table-light">
                     <tr>
                         <th class="py-3 text-nowrap">SẢN PHẨM</th>
@@ -143,6 +143,22 @@ require __DIR__ . '/layout/header.php';
         font-size: 11px !important;
         font-weight: 700;
         line-height: 1.2;
+    }
+
+    /* Auto-scaling table */
+    #order-history-page .user-history-table-wrap {
+        overflow-x: auto;
+    }
+
+    #order-history-page #order-history-table {
+        width: auto !important;
+        min-width: max-content;
+        table-layout: auto !important;
+    }
+
+    #order-history-page #order-history-table th,
+    #order-history-page #order-history-table td {
+        white-space: nowrap !important;
     }
 </style>
 
@@ -386,7 +402,8 @@ require __DIR__ . '/layout/header.php';
                 + '<div><div class="user-order-detail__label">Số lượng</div><div class="user-order-detail__value">' + escapeHtml(order.quantity || 0) + '</div></div>'
                 + '<div><div class="user-order-detail__label">Mã đơn hàng</div><div class="user-order-detail__value">' + escapeHtml(order.order_code_short || order.order_code || '') + '</div></div>'
                 + '<div><div class="user-order-detail__label">Trạng thái</div><div class="user-order-detail__value">' + renderOrderStatusBadge(order.status_label || order.status || '', order.status) + '</div></div>'
-                + '<div><div class="user-order-detail__label">Thời gian</div><div class="user-order-detail__value">' + escapeHtml(order.created_at_display || order.created_at || '') + '</div></div>'
+                + '<div><div class="user-order-detail__label">Ngày đặt</div><div class="user-order-detail__value">' + escapeHtml(order.created_at_display || order.created_at || '') + '</div></div>'
+                + (order.fulfilled_at_display ? '<div><div class="user-order-detail__label">Ngày giao</div><div class="user-order-detail__value">' + escapeHtml(order.fulfilled_at_display) + '</div></div>' : '')
                 + '<div><div class="user-order-detail__label">Thanh toán</div><div class="user-order-detail__value text-success fw-bold">' + fmtMoney(order.price || 0) + '</div></div>'
                 + '</div>'
                 + (order.customer_input && order.customer_input.trim() !== '' && order.customer_input.trim().toLowerCase() !== 'không có' ?

@@ -137,6 +137,7 @@ class PurchaseService
                 'user_agent',
                 'quantity',
                 'customer_input',
+                'created_at',
             ];
             $orderValues = [
                 $orderCode,
@@ -153,6 +154,7 @@ class PurchaseService
                 (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''),
                 $requestedQty,
                 $customerInput !== '' ? $customerInput : null,
+                TimeService::instance()->nowSql(),
             ];
 
             $insertFields = '`' . implode('`, `', $orderColumns) . '`';
@@ -423,19 +425,19 @@ class PurchaseService
         if ($stockId !== null && $stockId > 0) {
             $stmt = $this->db->prepare("
                 UPDATE `orders`
-                SET `status` = 'completed', `stock_id` = ?, `stock_content` = ?
+                SET `status` = 'completed', `stock_id` = ?, `stock_content` = ?, `fulfilled_at` = ?
                 WHERE `id` = ? LIMIT 1
             ");
-            $stmt->execute([$stockId, $stored, $orderId]);
+            $stmt->execute([$stockId, $stored, TimeService::instance()->nowSql(), $orderId]);
             return;
         }
 
         $stmt = $this->db->prepare("
             UPDATE `orders`
-            SET `status` = 'completed', `stock_content` = ?
+            SET `status` = 'completed', `stock_content` = ?, `fulfilled_at` = ?
             WHERE `id` = ? LIMIT 1
         ");
-        $stmt->execute([$stored, $orderId]);
+        $stmt->execute([$stored, TimeService::instance()->nowSql(), $orderId]);
     }
 
     private function linkStockToPendingOrder(int $orderId, ?int $stockId, string $deliveryContentPlain): void

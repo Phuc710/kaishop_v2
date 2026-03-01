@@ -122,7 +122,10 @@ class ProfileController extends Controller
             return $this->json(['success' => false, 'message' => 'Bạn chưa đăng nhập'], 401);
         }
 
-        $userId = $this->authService->getUserId();
+        $userId = (int) $this->authService->getUserId();
+        if ($userId <= 0) {
+            return $this->json(['success' => false, 'message' => 'Phiên đăng nhập không hợp lệ, vui lòng đăng nhập lại.'], 401);
+        }
         $otpModel = new TelegramLinkCode();
         $code = $otpModel->createCode($userId);
 
@@ -135,6 +138,7 @@ class ProfileController extends Controller
             'code' => $code,
             'bot_username' => get_setting('telegram_bot_user', 'KaiShopBot'),
             'expires_at' => $activeOtp['expires_at'] ?? null,
+            'expires_at_ts' => isset($activeOtp['expires_at_ts']) ? (int) $activeOtp['expires_at_ts'] : null,
             'expires_in_minutes' => 5
         ]);
     }

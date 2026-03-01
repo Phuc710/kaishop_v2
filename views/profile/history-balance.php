@@ -69,7 +69,7 @@ require __DIR__ . '/layout/header.php';
         </div>
 
         <div class="table-responsive user-history-table-wrap">
-            <table id="history-table" class="table table-hover align-middle w-100 mb-0 user-history-table">
+            <table id="history-table" class="table table-hover align-middle mb-0 user-history-table">
                 <thead class="table-light">
                     <tr>
                         <th class="py-3 text-nowrap text-center">THỜI GIAN</th>
@@ -84,6 +84,30 @@ require __DIR__ . '/layout/header.php';
         </div>
     </div>
 </div>
+
+<style>
+    /* Auto-scaling table */
+    .user-history-table-wrap {
+        overflow-x: auto;
+    }
+
+    #history-table {
+        width: auto !important;
+        min-width: max-content;
+        table-layout: auto !important;
+    }
+
+    #history-table th,
+    #history-table td {
+        white-space: nowrap !important;
+    }
+
+    /* Content column can wrap if it's too long but still prefers expansion */
+    #history-table td:last-child {
+        white-space: normal !important;
+        min-width: 300px;
+    }
+</style>
 
 <script>
     $(document).ready(function () {
@@ -156,7 +180,6 @@ require __DIR__ . '/layout/header.php';
             columns: [
                 {
                     data: null,
-                    width: '15%',
                     className: 'text-center',
                     render: function (row) {
                         return renderSharedTimeCell(row);
@@ -164,23 +187,20 @@ require __DIR__ . '/layout/header.php';
                 },
                 {
                     data: null,
-                    width: '15%',
                     className: 'text-center text-nowrap',
                     render: function (row) { return renderBalanceMoney(row.before_amount, 'before'); }
                 },
                 {
                     data: null,
-                    width: '15%',
                     className: 'text-center text-nowrap',
                     render: function (row) { return renderBalanceMoney(row.change_amount, 'change'); }
                 },
                 {
                     data: null,
-                    width: '15%',
                     className: 'text-center text-nowrap',
                     render: function (row) { return renderBalanceMoney(row.after_amount, 'after'); }
                 },
-                { data: 'reason', width: '40%', className: 'text-start text-wrap' }
+                { data: 'reason', className: 'text-start text-wrap' }
             ],
             order: [],
             ordering: false,

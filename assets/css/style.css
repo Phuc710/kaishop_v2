@@ -83,7 +83,6 @@ body {
     .container-xl,
     .container-xxl {
         max-width: 1440px;
-        padding: 0 20px;
     }
 }
 
