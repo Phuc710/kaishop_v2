@@ -124,6 +124,10 @@ foreach ($authNavPaths as $p) {
         transition: none;
         transform: none;
     }
+
+    .header-primary {
+        box-shadow: rgba(0, 0, 0, 0.15) 0px 5px 15px 0px;
+    }
 </style>
 
 <div class="loader-wrapper">

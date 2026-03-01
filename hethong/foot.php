@@ -106,161 +106,139 @@
 
 <?php include_once(__DIR__ . '/popup.php'); ?>
 
+
+<style>
+    :root {
+        --secondary-color: #64748B;
+    }
+    .text-decoration-none  {
+        color: var(--secondary-color);
+        font-weight: 400;
+        
+    }
+</style>
+
 <!-- Footer -->
-<footer class="footer">
-    <div class="container">
-        <div class="footer-top">
-            <div class="row">
-                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12 text-center">
-                    <div class="footer-widget">
-                        <?php global $chungapi; ?>
-                        <a href="<?= url('') ?>" class="d-block mb-3">
-                            <img src="<?= $chungapi['logo_footer'] ?? $chungapi['logo']; ?>" width="150" alt="KaiShop"
-                                style="margin: 0 auto; display: block;">
+<footer class="kai-glass-footer">
+    <!-- Top CTA Banner -->
+    
+
+    <div class="container footer-main-content">
+        <div class="row">
+            <!-- Column 1: Brand -->
+            <div class="col-12 col-md-6 col-lg-3 footer-col mb-4 mb-lg-0">
+                <a href="<?= url('') ?>" class="d-inline-block mb-3 footer-logo">
+                    <img src="<?= $chungapi['logo_footer'] ?? $chungapi['logo']; ?>" height="40" alt="KaiShop">
+                </a>
+                <p class="footer-about-text mb-3">
+                    <?= !empty($chungapi['mo_ta']) ? htmlspecialchars($chungapi['mo_ta']) : 'Empowering global brands through high-end technology, innovative strategy, and creative design excellence.'; ?>
+                </p>
+                <div class="footer-social-icons">
+                    <?php if (!empty($chungapi['fb_admin'])): ?>
+                        <a href="<?= htmlspecialchars($chungapi['fb_admin']); ?>" target="_blank" class="social-icon" aria-label="Facebook">
+                            <i class="fa-brands fa-facebook-f"></i>
                         </a>
-                        <p class="mx-auto" style="max-width: 320px;">
-                            <?= !empty($chungapi['mo_ta']) ? htmlspecialchars($chungapi['mo_ta']) : 'Hệ thống cung cấp Source Code, Tài khoản MMO, Công cụ và Dịch vụ chất lượng cao.'; ?>
-                        </p>
-                        <h6 class="mt-3"
-                            style="background-color: rgba(255, 105, 0, 0.05); border-radius: 99px; padding: 8px 16px; display: inline-block; color: #ff6900; font-size: 14px; border: 1px solid rgba(255, 105, 0, 0.2);">
-                            Thanh toán tự động &bull; Hỗ trợ 24/7</h6>
-                        <div class="kai-footer-social mt-3">
-                            <div class="social-buttons d-flex justify-content-center">
-                                <?php if (!empty($chungapi['fb_admin'])): ?>
-                                    <a href="<?= htmlspecialchars($chungapi['fb_admin']); ?>" target="_blank"
-                                        class="social-btn facebook" aria-label="Facebook">
-                                        <i class="fa-brands fa-facebook"></i>
-                                    </a>
-                                <?php endif; ?>
-                                <?php if (!empty($chungapi['tele_admin'])): ?>
-                                    <a href="<?= htmlspecialchars($chungapi['tele_admin']); ?>" target="_blank"
-                                        class="social-btn telegram" aria-label="Telegram">
-                                        <i class="fab fa-telegram-plane"></i>
-                                    </a>
-                                <?php endif; ?>
-                                <?php if (!empty($chungapi['tiktok_admin'])): ?>
-                                    <a href="<?= htmlspecialchars($chungapi['tiktok_admin']); ?>" target="_blank"
-                                        class="social-btn tiktok" aria-label="TikTok">
-                                        <i class="fab fa-tiktok"></i>
-                                    </a>
-                                <?php endif; ?>
-                                <?php if (!empty($chungapi['youtube_admin'])): ?>
-                                    <a href="<?= htmlspecialchars($chungapi['youtube_admin']); ?>" target="_blank"
-                                        class="social-btn youtube" aria-label="YouTube">
-                                        <i class="fab fa-youtube"></i>
-                                    </a>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-
-                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6">
-                    <div class="footer-widget">
-                        <h3>Danh mục nổi bật</h3>
-                        <div class="row">
-                            <div class="col-md-12">
-                                <ul class="menu-items">
-                                    <?php
-                                    $footer_categories = [];
-                                    try {
-                                        $db = class_exists('Database') ? Database::getInstance()->getConnection() : null;
-                                        if ($db instanceof PDO) {
-                                            $stmt = $db->prepare("SELECT * FROM categories WHERE status = ? ORDER BY display_order ASC, id ASC LIMIT 5");
-                                            $stmt->execute(['ON']);
-                                            $footer_categories = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-                                        } else {
-                                            global $connection;
-                                            $footer_categories = $connection->query("SELECT * FROM categories WHERE status = 'ON' LIMIT 5")->fetch_all(MYSQLI_ASSOC);
-                                        }
-                                    } catch (Throwable $e) {
-                                        $footer_categories = [];
-                                    }
-                                    if (count($footer_categories) > 0) {
-                                        foreach ($footer_categories as $cat):
-                                            ?>
-                                            <li><a
-                                                    href="<?= url('category/' . xoadau($cat['name'])) ?>"><?= htmlspecialchars($cat['name']); ?></a>
-                                            </li>
-                                            <?php
-                                        endforeach;
-                                    } else {
-                                        echo '<li><a href="javascript:void(0)">Đang cập nhật...</a></li>';
-                                    }
-                                    ?>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6">
-                    <div class="footer-widget">
-                        <h3>Hỗ trợ khách hàng</h3>
-                        <ul class="menu-items">
-                            <li><a href="<?= url('chinh-sach') ?>">Chính sách & Quy định</a></li>
-                            <li><a href="<?= url('dieu-khoan') ?>">Điều khoản sử dụng</a></li>
-                            <li><a href="<?= !empty($chungapi['tele_admin']) ? htmlspecialchars($chungapi['tele_admin']) : 'javascript:void(0)' ?>"
-                                    target="_blank">Liên hệ với chúng tôi</a></li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6">
-                    <div class="footer-widget">
-                        <h3>Dịch vụ chuyên nghiệp</h3>
-                        <ul class="menu-items">
-                            <li><a href="javascript:void(0)">Cung cấp Mã Nguồn</a></li>
-                            <li><a href="javascript:void(0)">Thiết kế Website</a></li>
-                            <li><a href="javascript:void(0)">Dịch vụ MMO</a></li>
-                        </ul>
-                    </div>
+                    <?php endif; ?>
+                    <?php if (!empty($chungapi['tele_admin'])): ?>
+                        <a href="<?= htmlspecialchars($chungapi['tele_admin']); ?>" target="_blank" class="social-icon" aria-label="Telegram">
+                            <i class="fab fa-telegram-plane"></i>
+                        </a>
+                    <?php endif; ?>
+                    <?php if (!empty($chungapi['tiktok_admin'])): ?>
+                        <a href="<?= htmlspecialchars($chungapi['tiktok_admin']); ?>" target="_blank" class="social-icon" aria-label="TikTok">
+                            <i class="fab fa-tiktok"></i>
+                        </a>
+                    <?php endif; ?>
+                    <?php if (!empty($chungapi['youtube_admin'])): ?>
+                        <a href="<?= htmlspecialchars($chungapi['youtube_admin']); ?>" target="_blank" class="social-icon" aria-label="YouTube">
+                            <i class="fab fa-youtube"></i>
+                        </a>
+                    <?php endif; ?>
                 </div>
             </div>
 
-            <div class="contact-widget">
-                <div class="row align-items-center">
-                    <div class="col-xl-9">
-                        <ul class="location-list">
-                            <li>
-                                <span><i class="fa-solid fa-phone"></i></span>
-                                <div class="location-info">
-                                    <h6>Phone</h6>
-                                    <p><?= $chungapi['sdt_admin']; ?></p>
-                                </div>
-                            </li>
-                            <li>
-                                <span><i class="fa-regular fa-envelope"></i></span>
-                                <div class="location-info">
-                                    <h6>Email</h6>
-                                    <p><?= $chungapi['email_cf']; ?></p>
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="col-xl-3 text-xl-end"></div>
-                </div>
+            <!-- Column 2: Core Services -->
+            <div class="col-12 col-md-6 col-lg-3 footer-col mb-4 mb-lg-0">
+                <h4 class="footer-col-title">Core Services</h4>
+                <ul class="footer-links">
+                    <?php
+                    $footer_categories = [];
+                    try {
+                        $db = class_exists('Database') ? Database::getInstance()->getConnection() : null;
+                        if ($db instanceof PDO) {
+                            $stmt = $db->prepare("SELECT * FROM categories WHERE status = ? ORDER BY display_order ASC, id ASC LIMIT 5");
+                            $stmt->execute(['ON']);
+                            $footer_categories = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                        } else {
+                            global $connection;
+                            $footer_categories = $connection->query("SELECT * FROM categories WHERE status = 'ON' LIMIT 5")->fetch_all(MYSQLI_ASSOC);
+                        }
+                    } catch (Throwable $e) {
+                        $footer_categories = [];
+                    }
+                    if (count($footer_categories) > 0) {
+                        foreach ($footer_categories as $cat):
+                            ?>
+                            <li><a href="<?= url('category/' . xoadau($cat['name'])) ?>">
+                                <i class="fas fa-check-circle me-2 icon-accent"></i><?= htmlspecialchars($cat['name']); ?>
+                            </a></li>
+                            <?php
+                        endforeach;
+                    } else {
+                        echo '<li><a href="javascript:void(0)"><i class="fas fa-check-circle me-2 icon-accent"></i>Đang cập nhật...</a></li>';
+                    }
+                    ?>
+                </ul>
             </div>
 
+            <!-- Column 3: Company -->
+            <div class="col-12 col-md-6 col-lg-3 footer-col mb-4 mb-lg-0">
+                <h4 class="footer-col-title">Company</h4>
+                <ul class="footer-links">
+                    <li><a href="<?= url('chinh-sach') ?>"><span class="dot-accent"></span> Chính sách & Quy định</a></li>
+                    <li><a href="<?= url('dieu-khoan') ?>"><span class="dot-accent"></span> Điều khoản sử dụng</a></li>
+                    <li><a href="<?= !empty($chungapi['tele_admin']) ? htmlspecialchars($chungapi['tele_admin']) : 'javascript:void(0)' ?>" target="_blank"><span class="dot-accent"></span> Liên hệ với chúng tôi</a></li>
+                </ul>
+            </div>
+
+            <!-- Column 4: Get in Touch -->
+            <div class="col-12 col-md-6 col-lg-3 footer-col">
+                <h4 class="footer-col-title">Get in Touch</h4>
+                <div class="contact-pills-container mt-3">
+                    <a href="mailto:<?= htmlspecialchars($chungapi['email_cf']); ?>" class="contact-pill">
+                        <div class="contact-icon"><i class="fas fa-envelope"></i></div>
+                        <div class="contact-text">
+                            <span class="d-block small text-muted-blue">Email Us</span>
+                            <strong><?= htmlspecialchars($chungapi['email_cf']); ?></strong>
+                        </div>
+                    </a>
+                    <a href="tel:<?= htmlspecialchars($chungapi['sdt_admin']); ?>" class="contact-pill mt-3">
+                        <div class="contact-icon"><i class="fas fa-phone-alt"></i></div>
+                        <div class="contact-text">
+                            <span class="d-block small text-muted-blue">Call Us</span>
+                            <strong><?= htmlspecialchars($chungapi['sdt_admin']); ?></strong>
+                        </div>
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="footer-bottom">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-6">
-                    <div class="copy-right">
-                        <p>&copy; <?= date('Y') ?> <?= htmlspecialchars($chungapi['ten_web'] ?? 'KaiShop'); ?>.
-                            All rights reserved.</p>
-                    </div>
+    <!-- Bottom Bar -->
+    <div class="footer-bottom-bar">
+        <div class="container border-top-glass">
+            <div class="row pt-4 pb-4 align-items-center">
+                <div class="col-md-5 text-center text-md-start mb-3 mb-md-0">
+                    <p class="mb-0 " style="color: var(--secondary-color);">&copy; <?= date('Y') ?> <?= htmlspecialchars($chungapi['ten_web'] ?? 'KaiShop'); ?></p>
                 </div>
-                <div class="col-lg-6">
-                    <div class="footer-bottom-links">
-                        <ul>
-                            <li><a href="<?= url('chinh-sach') ?>">Chính sách</a></li>
-                            <li><a href="<?= url('dieu-khoan') ?>">Điều khoản & Điều kiện</a></li>
-                        </ul>
+                <div class="col-md-7">
+                    <div class="d-flex flex-wrap justify-content-center justify-content-md-end align-items-center gap-3 gap-md-4">
+                        <a href="<?= url('chinh-sach') ?>" class="text-decoration-none ">Privacy Policy</a>
+                        <a href="<?= url('dieu-khoan') ?>" class="text-decoration-none ">Cookie Policy</a>
+                        <!-- <div class="system-status d-flex align-items-center gap-2">
+                            <span class="status-indicator"></span>
+                            <span class="small">Systems Operational</span>
+                        </div> -->
                     </div>
                 </div>
             </div>

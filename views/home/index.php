@@ -26,11 +26,41 @@
         .category-section-wrapper.d-none {
             display: none !important;
         }
+        .category-title {
+            text-transform: capitalize;
+            position: relative;
+            width: fit-content;
+        }
+        .category-title::before {
+            content: "";
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 80%;
+            height: 3px;
+            background-color: var(--primary-color);
+            border-radius: 2px;
+        }
+        :root {
+            --primary-color: #F97316;
+        }
+    </style>
+    <!-- r3 -->
+    <style>
+        @media screen and (max-width: 549px) {
+            .header-primary {
+                position: absolute;
+                top: 0;
+            }
+            .container.py-4.home-main-content {
+                margin-top: 30px;
+            }
+        }
     </style>
 </head>
 
 <body> <?php require __DIR__ . '/../../hethong/nav.php'; ?>
-    <main class="pb-5">
+    <main class="pb-5 pt-3" style="background: #f5f6f7">
         <div class="container py-4 home-main-content">
             <!-- Premium Hero Banner -->
             <div class="home-hero-banner mb-5">
@@ -48,11 +78,11 @@
             <div class="category-nav-container">
                 <div class="category-nav-scroll">
                     <?php if (isset($is_category_page) && $is_category_page): ?>
-                        <a href="<?= url('') ?>" class="category-pill">
+                        <a href="<?= url('') ?>" class="kai-pill">
                             <i class="fas fa-border-all"></i> Tất cả
                         </a>
                     <?php else: ?>
-                        <a href="#" class="category-pill active" data-filter="all">
+                        <a href="#" class="kai-pill active" data-filter="all">
                             <i class="fas fa-border-all"></i> Tất cả
                         </a>
                     <?php endif; ?>
@@ -60,9 +90,9 @@
                     <?php if (!empty($categories)): ?>
                         <?php foreach ($categories as $cat): ?>
                             <a href="#cat-<?= $cat['id'] ?>"
-                                class="category-pill <?= (isset($is_category_page) && $is_category_page) ? 'active' : '' ?>"
+                                class="kai-pill <?= (isset($is_category_page) && $is_category_page) ? 'active' : '' ?>"
                                 data-filter="cat-wrap-<?= $cat['id'] ?>">
-                                <i class="fas fa-tags"></i> <?= htmlspecialchars($cat['name']) ?>
+                                <?= htmlspecialchars($cat['name']) ?>
                             </a>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -75,9 +105,9 @@
                     <?php foreach ($categories as $category): ?>
                         <?php if (!empty($productsByCategory[$category['id']])): ?>
                             <div class="category-section-wrapper" id="cat-wrap-<?= $category['id'] ?>">
-                                <div id="cat-<?= $category['id'] ?>" class="ds-section-header mt-5 mb-4">
-                                    <div class="d-flex align-items-center justify-content-center">
-                                        <h3 class="ds-category-title mb-0"><?= htmlspecialchars($category['name']) ?></h3>
+                                <div id="cat-<?= $category['id'] ?>" class="ds-section-header  mb-4">
+                                    <div class="category-title">
+                                        <h3 class=" mb-0"><?= htmlspecialchars($category['name']) ?></h3>
                                     </div>
                                 </div>
 
@@ -106,51 +136,37 @@
                                             $badge_text = $badge ? ucfirst($badge) : '';
                                         ?>
                                         <a href="<?= url($product['public_path'] ?? ('product/' . $product['id'])) ?>"
-                                            class="ds-card <?= $is_offline ? 'offline' : '' ?>">
-                                            <div class="ds-card-img-wrap">
-                                                <img src="<?= $product['image'] ?>" class="ds-card-img" alt="<?= $product['name'] ?>"
-                                                    loading="lazy"
-                                                    decoding="async"
-                                                    fetchpriority="low">
+                                            class="kai-card <?= $is_offline ? 'offline' : '' ?>">
+                                            <div class="kai-card-img-wrap">
+                                                <img src="<?= $product['image'] ?>" class="kai-card-img" alt="<?= $product['name'] ?>"
+                                                    loading="lazy" fetchpriority="low">
                                                 <?php if ($badge_text): ?>
-                                                    <div class="ds-badge <?= $badge ?>"><?= htmlspecialchars($badge_text) ?></div>
+                                                    <div class="kai-badge <?= $badge ?>"><?= htmlspecialchars($badge_text) ?></div>
                                                 <?php endif; ?>
                                                 <?php if ($is_offline): ?>
-                                                    <div class="ds-status-badge">Tạm hết</div>
+                                                    <div class="kai-status-badge">Tạm hết</div>
                                                 <?php endif; ?>
                                             </div>
-                                            <div class="ds-card-body">
-                                                <h4 class="ds-card-title"><?= htmlspecialchars($product['name']) ?></h4>
+                                            <div class="kai-card-body">
+                                                <h4 class="kai-card-title"><?= htmlspecialchars($product['name']) ?></h4>
                                                 <?php
                                                 $delivery_mode = $product['delivery_mode'] ?? 'account_stock';
-                                                $delivery_label = $product['delivery_label'] ?? 'Tài Khoản';
-
-                                                if ($delivery_mode === 'account_stock') {
-                                                    $stock_display = '<i class="fas fa-box me-1"></i> Tồn kho: <strong class="text-primary">' . number_format($availableCount) . '</strong>';
-                                                } elseif ($delivery_mode === 'manual_info') {
-                                                    $stock_display = '<i class="fas fa-bolt me-1"></i> ' . (($availableCount > 0) ? '<strong class="text-warning">Sẵn hàng</strong>' : '<strong class="text-danger">Hết hàng</strong>');
-                                                } else {
-                                                    $stock_display = '<i class="fas fa-infinity me-1"></i> ' . $delivery_label . ': <strong class="text-info">Unlimited</strong>';
-                                                }
                                                 $sold_count = number_format($stats['sold']);
                                                 ?>
-                                                <div class="ds-stock-row">
+                                                <div class="kai-stock-row">
                                                     <?php if ($delivery_mode === 'source_link'): ?>
-                                                        <span><i class="fas fa-box me-1"></i> Stock: <strong
-                                                                class="ds-stock-infinity text-primary">∞</strong></span>
+                                                        <span><i class="fas fa-box me-1"></i> Stock: <strong>∞</strong></span>
                                                     <?php else: ?>
-                                                        <span><i class="fas fa-box me-1"></i> Stock: <strong
-                                                                class="text-primary"><?= number_format($availableCount) ?></strong></span>
+                                                        <span><i class="fas fa-box me-1"></i> Stock: <strong><?= number_format($availableCount) ?></strong></span>
                                                     <?php endif; ?>
-                                                    <span><i class="fas fa-shopping-cart me-1"></i> Đã bán: <strong
-                                                            class="text-success"><?= $sold_count ?></strong></span>
+                                                    <span class="sold-info"><i class="fas fa-shopping-cart me-1"></i> Đã bán: <strong><?= $sold_count ?></strong></span>
                                                 </div>
-                                                <div class="ds-price-row">
-                                                    <div class="ds-price"><?= number_format($product['price_vnd']) ?>đ</div>
+                                                <div class="kai-price-row mt-3">
+                                                    <div class="kai-price"><?= number_format($product['price_vnd']) ?>đ</div>
                                                     <?php if ($discount > 0): ?>
-                                                        <div class="ds-old-price"><?= number_format($product['old_price']) ?>đ</div>
-                                                        <div class="ds-discount">-<?= $discount ?>%</div>
+                                                        <div class="kai-old-price"><?= number_format($product['old_price']) ?>đ</div>
                                                     <?php endif; ?>
+                                                    <div class="kai-action-btn"><i class="fa-solid fa-arrow-right"></i></div>
                                                 </div>
                                             </div>
                                         </a>
@@ -173,7 +189,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const pills = document.querySelectorAll('.category-pill');
+            const pills = document.querySelectorAll('.kai-pill');
             const sections = document.querySelectorAll('.category-section-wrapper');
 
             // Handle Active State on Click
