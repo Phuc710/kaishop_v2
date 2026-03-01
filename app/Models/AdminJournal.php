@@ -8,6 +8,13 @@ class AdminJournal extends Model
 {
     private $tableExistsCache = [];
     private $tableColumnsCache = [];
+    protected ?TimeService $timeService = null;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->timeService = class_exists('TimeService') ? TimeService::instance() : null;
+    }
 
     /**
      * Get activity logs with shared filters.
@@ -169,11 +176,21 @@ class AdminJournal extends Model
      */
     public function getBalanceChangeLogs(array $filters): array
     {
+        $dedicatedRows = [];
         if ($this->tableExists('lich_su_bien_dong_so_du')) {
-            return $this->getBalanceLogsFromDedicatedTable($filters);
+            $dedicatedRows = $this->getBalanceLogsFromDedicatedTable($filters);
         }
 
-        return $this->getBalanceLogsFromBankHistory($filters);
+        $bankRows = $this->getBalanceLogsFromBankHistory($filters);
+
+        if (empty($dedicatedRows)) {
+            return $bankRows;
+        }
+        if (empty($bankRows)) {
+            return $dedicatedRows;
+        }
+
+        return $this->mergeBalanceRows($dedicatedRows, $bankRows);
     }
 
     /**
@@ -257,11 +274,12 @@ class AdminJournal extends Model
         ";
 
         $stmt = $this->db->prepare($sql);
+        $timeValue = $this->timeService ? (string) $this->timeService->nowTs() : (string) time();
         $stmt->execute([
             'username' => $username,
             'activity' => $activity,
             'amount' => (string) $this->parseAmount($amount),
-            'time' => date('H:i d-m-Y'),
+            'time' => $timeValue,
         ]);
     }
 
@@ -433,15 +451,26 @@ class AdminJournal extends Model
         $dateFilter = (string) ($filters['date_filter'] ?? 'all');
         $rangeDate = trim((string) ($filters['time_range'] ?? ''));
 
+        if ($this->timeService) {
+            $now = $this->timeService->nowDateTime($this->timeService->getDbTimezone());
+            $todayStart = $now->setTime(0, 0, 0)->format('Y-m-d H:i:s');
+            $last7Days = $now->modify('-7 days')->format('Y-m-d H:i:s');
+            $last30Days = $now->modify('-30 days')->format('Y-m-d H:i:s');
+        } else {
+            $todayStart = date('Y-m-d 00:00:00');
+            $last7Days = date('Y-m-d H:i:s', strtotime('-7 days'));
+            $last30Days = date('Y-m-d H:i:s', strtotime('-30 days'));
+        }
+
         if ($dateFilter === 'today') {
             $conditions[] = "{$timeExpr} >= :df_today";
-            $params['df_today'] = date('Y-m-d 00:00:00');
+            $params['df_today'] = $todayStart;
         } elseif ($dateFilter === '7days') {
             $conditions[] = "{$timeExpr} >= :df_7days";
-            $params['df_7days'] = date('Y-m-d H:i:s', strtotime('-7 days'));
+            $params['df_7days'] = $last7Days;
         } elseif ($dateFilter === '30days') {
             $conditions[] = "{$timeExpr} >= :df_30days";
-            $params['df_30days'] = date('Y-m-d H:i:s', strtotime('-30 days'));
+            $params['df_30days'] = $last30Days;
         }
 
         // Specific range: Từ ngày -> Đến ngày
@@ -590,5 +619,80 @@ class AdminJournal extends Model
         }
 
         return $sign * (int) $digits;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $dedicatedRows
+     * @param array<int, array<string, mixed>> $bankRows
+     * @return array<int, array<string, mixed>>
+     */
+    private function mergeBalanceRows(array $dedicatedRows, array $bankRows): array
+    {
+        $merged = [];
+        $seen = [];
+
+        foreach ([$dedicatedRows, $bankRows] as $rows) {
+            foreach ($rows as $row) {
+                $key = $this->buildBalanceRowKey($row);
+                if (isset($seen[$key])) {
+                    continue;
+                }
+                $seen[$key] = true;
+                $merged[] = $row;
+            }
+        }
+
+        usort($merged, function (array $a, array $b): int {
+            $ta = $this->extractBalanceRowTimestamp($a);
+            $tb = $this->extractBalanceRowTimestamp($b);
+            if ($ta === $tb) {
+                return ((int) ($b['id'] ?? 0)) <=> ((int) ($a['id'] ?? 0));
+            }
+            return $tb <=> $ta;
+        });
+
+        return $merged;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function buildBalanceRowKey(array $row): string
+    {
+        $username = strtolower(trim((string) ($row['username'] ?? '')));
+        $rawTime = trim((string) ($row['raw_time'] ?? ''));
+        if ($rawTime === '') {
+            $rawTime = trim((string) ($row['event_time'] ?? ''));
+        }
+        $change = (string) $this->parseAmount($row['change_amount'] ?? ($row['raw_change'] ?? 0));
+        return $username . '|' . $rawTime . '|' . $change;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function extractBalanceRowTimestamp(array $row): int
+    {
+        $eventTime = trim((string) ($row['event_time'] ?? ''));
+        if ($eventTime !== '') {
+            $ts = $this->timeService
+                ? ($this->timeService->toTimestamp($eventTime, $this->timeService->getDbTimezone()) ?? 0)
+                : (strtotime($eventTime) ?: 0);
+            if ($ts > 0) {
+                return $ts;
+            }
+        }
+
+        $rawTime = trim((string) ($row['raw_time'] ?? ''));
+        if ($rawTime === '') {
+            return 0;
+        }
+        if (ctype_digit($rawTime)) {
+            return (int) $rawTime;
+        }
+
+        return $this->timeService
+            ? (int) ($this->timeService->toTimestamp($rawTime, $this->timeService->getDbTimezone()) ?? 0)
+            : (int) (strtotime($rawTime) ?: 0);
     }
 }

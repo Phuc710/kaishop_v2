@@ -174,13 +174,10 @@ $summary = $summary ?? [
                                             <span class="badge badge-success px-2 py-1"
                                                 style="background-color: #8b5cf6;"><?= (int) $row['giamgia'] ?>%</span>
                                         </td>
-                                        <td class="text-center align-middle"
-                                            data-time-ts="<?= (int) ($row['time_ts'] ?? 0) ?>"
+                                        <td class="text-center align-middle" data-time-ts="<?= (int) ($row['time_ts'] ?? 0) ?>"
                                             data-time-iso="<?= htmlspecialchars((string) ($row['time_iso'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                                             data-raw-datetime="<?= htmlspecialchars((string) ($row['time_display'] ?? ($row['time'] ?? '')), ENT_QUOTES, 'UTF-8') ?>">
-                                            <span class="date-badge">
-                                                <?= FormatHelper::eventTime($row['time_display'] ?? $row['time'], $row['time'] ?? ($row['time_display'] ?? null)) ?>
-                                            </span>
+                                            <?= FormatHelper::eventTime($row['time_display'] ?? $row['time'], $row['time'] ?? ($row['time_display'] ?? null)) ?>
                                             <span style="display:none;"><?= (string) ($row['time_ts'] ?? '') ?></span>
                                         </td>
                                         <td class="text-center align-middle">

@@ -49,9 +49,10 @@ class GiftCode extends Model
      */
     public function store($data)
     {
+        $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
         $sql = "INSERT INTO {$this->table} 
                 (giftcode, giamgia, type, product_ids, min_order, max_order, soluong, dadung, status, time) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'ON', NOW())";
+                VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'ON', ?)";
 
         $this->query($sql, [
             $data['giftcode'],
@@ -61,6 +62,7 @@ class GiftCode extends Model
             (int) ($data['min_order'] ?? 0),
             (int) ($data['max_order'] ?? 0),
             (int) ($data['soluong'] ?? 1),
+            $nowSql
         ]);
 
         return $this->db->lastInsertId();
@@ -145,7 +147,8 @@ class GiftCode extends Model
             return false;
         if ($code['soluong'] > 0 && $code['dadung'] >= $code['soluong'])
             return false;
-        if (!empty($code['expired_at']) && strtotime($code['expired_at']) < time())
+        $ts = $this->timeService ? $this->timeService->nowTs() : time();
+        if (!empty($code['expired_at']) && strtotime($code['expired_at']) < $ts)
             return false;
         return true;
     }

@@ -3,11 +3,15 @@
 class BanService
 {
     private PDO $db;
+    private ?TimeService $timeService = null;
     private static bool $expiredStateSynced = false;
 
     public function __construct()
     {
         $this->db = Database::getInstance()->getConnection();
+        if (class_exists('TimeService')) {
+            $this->timeService = TimeService::instance();
+        }
         $this->syncExpiredState();
     }
 
@@ -18,20 +22,24 @@ class BanService
         }
         self::$expiredStateSynced = true;
 
+        $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
         try {
-            $this->db->exec("UPDATE `users` SET `bannd` = 0, `ban_reason` = NULL, `banned_at` = NULL, `ban_expires_at` = NULL, `ban_source` = NULL, `banned_by` = NULL WHERE `bannd` = 1 AND `ban_expires_at` IS NOT NULL AND `ban_expires_at` <= NOW()");
+            $this->db->prepare("UPDATE `users` SET `bannd` = 0, `ban_reason` = NULL, `banned_at` = NULL, `ban_expires_at` = NULL, `ban_source` = NULL, `banned_by` = NULL WHERE `bannd` = 1 AND `ban_expires_at` IS NOT NULL AND `ban_expires_at` <= ?")
+                ->execute([$nowSql]);
         } catch (Throwable $e) {
             // non-blocking
         }
 
         try {
-            $this->db->exec("DELETE FROM `banned_fingerprints` WHERE `expires_at` IS NOT NULL AND `expires_at` <= NOW()");
+            $this->db->prepare("DELETE FROM `banned_fingerprints` WHERE `expires_at` IS NOT NULL AND `expires_at` <= ?")
+                ->execute([$nowSql]);
         } catch (Throwable $e) {
             // non-blocking
         }
 
         try {
-            $this->db->exec("UPDATE `ban_history` SET `status` = 'expired', `ended_at` = COALESCE(`ended_at`, `expires_at`, NOW()), `ended_by` = COALESCE(`ended_by`, 'system') WHERE `status` = 'active' AND `expires_at` IS NOT NULL AND `expires_at` <= NOW()");
+            $this->db->prepare("UPDATE `ban_history` SET `status` = 'expired', `ended_at` = COALESCE(`ended_at`, `expires_at`, ?), `ended_by` = COALESCE(`ended_by`, 'system') WHERE `status` = 'active' AND `expires_at` IS NOT NULL AND `expires_at` <= ?")
+                ->execute([$nowSql, $nowSql]);
         } catch (Throwable $e) {
             // non-blocking
         }
@@ -225,15 +233,17 @@ class BanService
 
     public function getActiveIpBan(string $ip): ?array
     {
-        $stmt = $this->db->prepare("SELECT * FROM `ip_blacklist` WHERE `ip_address` = ? AND (`expires_at` IS NULL OR `expires_at` > NOW()) ORDER BY `id` DESC LIMIT 1");
-        $stmt->execute([$ip]);
+        $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+        $stmt = $this->db->prepare("SELECT * FROM `ip_blacklist` WHERE `ip_address` = ? AND (`expires_at` IS NULL OR `expires_at` > ?) ORDER BY `id` DESC LIMIT 1");
+        $stmt->execute([$ip, $nowSql]);
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
     public function getActiveDeviceBan(string $fingerprintHash): ?array
     {
-        $stmt = $this->db->prepare("SELECT * FROM `banned_fingerprints` WHERE `fingerprint_hash` = ? AND (`expires_at` IS NULL OR `expires_at` > NOW()) ORDER BY `id` DESC LIMIT 1");
-        $stmt->execute([$fingerprintHash]);
+        $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+        $stmt = $this->db->prepare("SELECT * FROM `banned_fingerprints` WHERE `fingerprint_hash` = ? AND (`expires_at` IS NULL OR `expires_at` > ?) ORDER BY `id` DESC LIMIT 1");
+        $stmt->execute([$fingerprintHash, $nowSql]);
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
@@ -242,9 +252,26 @@ class BanService
         if ($userId <= 0) {
             return null;
         }
-        $stmt = $this->db->prepare("SELECT `id`, `username`, `ban_reason`, `banned_at`, `ban_expires_at`, `ban_source`, `banned_by` FROM `users` WHERE `id` = ? AND `bannd` = 1 AND (`ban_expires_at` IS NULL OR `ban_expires_at` > NOW()) LIMIT 1");
-        $stmt->execute([$userId]);
+        $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+        $stmt = $this->db->prepare("SELECT `id`, `username`, `ban_reason`, `banned_at`, `ban_expires_at`, `ban_source`, `banned_by` FROM `users` WHERE `id` = ? AND `bannd` = 1 AND (`ban_expires_at` IS NULL OR `ban_expires_at` > ?) LIMIT 1");
+        $stmt->execute([$userId, $nowSql]);
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    public function isAccountBanned(string $username): bool
+    {
+        $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM `users` WHERE `username` = ? AND `bannd` = 1 AND (`ban_expires_at` IS NULL OR `ban_expires_at` > ?)");
+        $stmt->execute([$username, $nowSql]);
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
+    public function isDeviceBanned(string $fingerprintHash): bool
+    {
+        $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM `banned_fingerprints` WHERE `fingerprint_hash` = ? AND (`expires_at` IS NULL OR `expires_at` > ?)");
+        $stmt->execute([$fingerprintHash, $nowSql]);
+        return (int) $stmt->fetchColumn() > 0;
     }
 
     public function getAdminHistory(string $search = ''): array
@@ -396,6 +423,9 @@ class BanService
 
     private function dbNow(): DateTimeImmutable
     {
+        if ($this->timeService) {
+            return $this->timeService->nowDateTime();
+        }
         $timezone = function_exists('app_db_timezone') ? app_db_timezone() : date_default_timezone_get();
         return new DateTimeImmutable('now', new DateTimeZone($timezone));
     }

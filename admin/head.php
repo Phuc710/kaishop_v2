@@ -1,5 +1,6 @@
 <?php require_once dirname(__DIR__) . '/hethong/config.php'; ?>
 <?php
+global $chungapi, $user;
 if (empty($_SESSION['admin'])) {
     $alertIp = $GLOBALS['ip_address'] ?? ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
     if ($alertIp != '1.1.1.1' && $alertIp != '::1') {

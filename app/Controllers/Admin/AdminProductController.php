@@ -48,7 +48,7 @@ class AdminProductController extends Controller
 
         $products = $this->productModel->getFiltered($filters);
         foreach ($products as &$productRow) {
-            $productRow = $this->attachTimeMeta($productRow, 'created_at');
+            $productRow = FormatHelper::attachTimeMeta($productRow, 'created_at');
         }
         unset($productRow);
         $categories = $this->productModel->getCategories();
@@ -185,70 +185,44 @@ class AdminProductController extends Controller
             'status_filter' => $this->get('status_filter', ''),
             'search' => $this->get('search', ''),
             'date_filter' => $this->get('date_filter', ''),
+            'start_date' => $this->get('start_date', ''),
+            'end_date' => $this->get('end_date', ''),
             'limit' => $this->get('limit', 20),
         ];
 
-        $stats = $this->inventoryService->getStats($product);
-        $deliveryMode = (string) ($product['delivery_mode'] ?? '');
-        $isSourceHistory = $deliveryMode === 'source_link';
-        $isManualQueue = !empty($stats['is_manual_queue']) || $isSourceHistory;
+        try {
+            $handler = $this->inventoryService->getHandler($product);
+            $items = $handler->getItems($filters);
+            $stats = $handler->getStats();
+            $partialView = $handler->getPartialView();
 
-        if ($isManualQueue) {
-            $items = $this->orderModel->getProductOrdersQueue($id, $filters);
-            if ($isSourceHistory) {
-                $sourceStats = [
-                    'total' => count($items),
-                    'available' => 0,
-                    'sold' => 0,
-                    'is_manual_queue' => true,
-                ];
-                foreach ($items as $sourceItem) {
-                    $status = (string) ($sourceItem['status'] ?? '');
-                    if ($status === 'completed') {
-                        $sourceStats['sold']++;
-                    } elseif ($status === 'pending' || $status === 'processing') {
-                        $sourceStats['available']++;
-                    }
-                }
-                $stats = array_merge($stats, $sourceStats);
+            if ($this->isAjax()) {
+                return $this->json([
+                    'success' => true,
+                    'items' => $items,
+                    'stats' => $stats,
+                    'isManualQueue' => !empty($stats['is_manual_queue']),
+                    'isSourceHistory' => !empty($stats['is_source_link']),
+                ]);
             }
-        } else {
-            $items = $this->stockModel->getByProduct($id, $filters);
-        }
 
-        foreach ($items as &$item) {
-            $item = $this->attachTimeMeta($item, 'created_at');
-            if (isset($item['sold_at'])) {
-                $item = $this->attachTimeMeta($item, 'sold_at');
-            }
-            if (isset($item['fulfilled_at'])) {
-                $item = $this->attachTimeMeta($item, 'fulfilled_at');
-            }
-        }
-        unset($item);
-
-        if ($this->isAjax()) {
-            return $this->json([
-                'success' => true,
+            $this->view('admin/products/stock', [
+                'chungapi' => $chungapi,
+                'product' => $product,
                 'items' => $items,
                 'stats' => $stats,
-                'isManualQueue' => $isManualQueue,
-                'isSourceHistory' => $isSourceHistory,
+                'statusFilter' => $filters['status_filter'],
+                'search' => $filters['search'],
+                'dateFilter' => $filters['date_filter'],
+                'limit' => $filters['limit'],
+                'isManualQueue' => !empty($stats['is_manual_queue']),
+                'isSourceHistory' => !empty($stats['is_source_link']),
+                'partialView' => $partialView
             ]);
+        } catch (Exception $e) {
+            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Lỗi', 'message' => $e->getMessage()];
+            $this->redirect(url('admin/products'));
         }
-
-        $this->view('admin/products/stock', [
-            'chungapi' => $chungapi,
-            'product' => $product,
-            'items' => $items,
-            'stats' => $stats,
-            'statusFilter' => $filters['status_filter'],
-            'search' => $filters['search'],
-            'dateFilter' => $filters['date_filter'],
-            'limit' => $filters['limit'],
-            'isManualQueue' => $isManualQueue,
-            'isSourceHistory' => $isSourceHistory,
-        ]);
     }
 
     public function stockImport($id)
@@ -256,72 +230,59 @@ class AdminProductController extends Controller
         $this->requireAdmin();
         $id = (int) $id;
         $product = $this->productModel->find($id);
-        if (!$product || !Product::isStockManagedProduct($product)) {
-            return $this->json(['success' => false, 'message' => 'Sản phẩm không hợp lệ hoặc không dùng kho'], 400);
+        if (!$product) {
+            return $this->json(['success' => false, 'message' => 'Sản phẩm không tồn tại'], 404);
         }
 
-        $rawText = trim((string) $this->post('content', ''));
-        if ($rawText === '') {
-            return $this->json(['success' => false, 'message' => 'Nội dung trống'], 400);
+        try {
+            $handler = $this->inventoryService->getHandler($product);
+            $result = $handler->handleImport($this->post('content', ''));
+
+            if ($result['success'] && isset($result['added'])) {
+                $result['message'] = "Đã nhập {$result['added']} item. Bỏ qua " . ($result['skipped'] ?? 0) . " trùng lặp.";
+            }
+
+            return $this->json($result);
+        } catch (Exception $e) {
+            return $this->json(['success' => false, 'message' => $e->getMessage()], 400);
+        }
+    }
+
+    public function stockAction($productId)
+    {
+        $this->requireAdmin();
+        $productId = (int) $productId;
+        $product = $this->productModel->find($productId);
+        if (!$product) {
+            return $this->json(['success' => false, 'message' => 'Sản phẩm không tồn tại'], 404);
         }
 
-        $result = $this->stockModel->importBulk($id, $rawText);
-        return $this->json([
-            'success' => true,
-            'message' => "Đã nhập {$result['added']} item. Bỏ qua {$result['skipped']} trùng lặp.",
-            'added' => $result['added'],
-            'skipped' => $result['skipped'],
-        ]);
+        $action = (string) $this->post('action', '');
+        $id = (int) $this->post('id', 0); // Item ID or Order ID
+
+        if ($id <= 0) {
+            return $this->json(['success' => false, 'message' => 'Thiếu ID mục tiêu'], 400);
+        }
+
+        $handler = $this->inventoryService->getHandler($product);
+
+        $params = $_POST;
+        // Add admin username for order-related actions
+        $user = $this->authService->getCurrentUser();
+        $params['admin_username'] = trim((string) ($user['username'] ?? 'admin')) ?: 'admin';
+
+        $result = $handler->handleAction($action, $id, $params);
+        return $this->json($result, ($result['success'] ?? false) ? 200 : 400);
     }
 
     public function stockDelete()
     {
-        $this->requireAdmin();
-        $id = (int) $this->post('id', 0);
-        if ($id <= 0)
-            return $this->json(['success' => false, 'message' => 'Thiếu ID'], 400);
-
-        if ($this->stockModel->deleteAvailable($id)) {
-            return $this->json(['success' => true, 'message' => 'Đã xóa item']);
-        }
-        return $this->json(['success' => false, 'message' => 'Không thể xóa (đã bán hoặc không tồn tại)'], 400);
-    }
-
-    public function stockClean($id)
-    {
-        $this->requireAdmin();
-        $id = (int) $id;
-        $product = $this->productModel->find($id);
-        if (!$product)
-            return $this->json(['success' => false, 'message' => 'Sản phẩm không tồn tại'], 404);
-
-        if (!Product::isStockManagedProduct($product)) {
-            return $this->json(['success' => false, 'message' => 'Sản phẩm này không dùng kho để dọn.'], 400);
-        }
-
-        $count = $this->stockModel->deleteAllAvailable($id);
-        return $this->json([
-            'success' => true,
-            'message' => "Đã xóa toàn bộ {$count} tài khoản chưa bán.",
-            'count' => $count
-        ]);
-    }
-
-    public function stockUpdate()
-    {
-        $this->requireAdmin();
-        $id = (int) $this->post('id', 0);
-        $content = trim((string) $this->post('content', ''));
-
-        if ($id <= 0)
-            return $this->json(['success' => false, 'message' => 'Thiếu ID'], 400);
-        if ($content === '')
-            return $this->json(['success' => false, 'message' => 'Nội dung không được để trống'], 400);
-
-        if ($this->stockModel->updateContent($id, $content)) {
-            return $this->json(['success' => true, 'message' => 'Đã cập nhật']);
-        }
-        return $this->json(['success' => false, 'message' => 'Không thể cập nhật (đã bán hoặc lỗi)'], 400);
+        // For backward compatibility or internal redirects
+        $id = (int) $this->post('id');
+        // We need the product ID to get the handler, but old stockDelete didn't pass it.
+        // For Account, we can still use the old model if we want, or just update the JS.
+        // Let's just update the JS and keep this as a simple wrapper for Account type if possible.
+        return $this->json(['success' => false, 'message' => 'Vui lòng sử dụng stockAction'], 400);
     }
 
     // ==================== BUILD SAVE PAYLOAD ====================
@@ -363,7 +324,7 @@ class AdminProductController extends Controller
         if ($priceVnd <= 0)
             $errors[] = 'Giá bán phải lớn hơn 0';
         if ($catId <= 0)
-            $errors[] = 'Vui long chon danh muc cho san pham';
+            $errors[] = 'Vui lòng chọn danh mục cho sản phẩm';
         if ($productType === 'link' && $sourceLink === '') {
             $errors[] = 'Vui lòng nhập link download cho sản phẩm loại Source Link';
         }
@@ -379,9 +340,9 @@ class AdminProductController extends Controller
         }
 
         if ($minPurchaseQty < 1)
-            $errors[] = 'So luong mua toi thieu phai tu 1';
+            $errors[] = 'Số lượng mua tối thiểu phải từ 1';
         if ($maxPurchaseQty > 0 && $maxPurchaseQty < $minPurchaseQty)
-            $errors[] = 'So luong mua toi da phai >= toi thieu hoac = 0';
+            $errors[] = 'Số lượng mua tối đa phải >= tối thiểu hoặc = 0';
 
         $slug = $slug === '' ? $this->productModel->generateSlug($name, $excludeId) : $this->productModel->generateSlug($slug, $excludeId);
 
@@ -407,7 +368,7 @@ class AdminProductController extends Controller
         ];
 
         if ($excludeId === null) {
-            $data['created_at'] = date('Y-m-d H:i:s');
+            $data['created_at'] = $this->timeService ? $this->timeService->nowSql() : date('Y-m-d H:i:s');
         }
 
         return [$data, $errors];
@@ -426,46 +387,5 @@ class AdminProductController extends Controller
         return json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     }
 
-    /**
-     * @param array<string,mixed> $row
-     * @return array<string,mixed>
-     */
-    private function attachTimeMeta(array $row, string $field): array
-    {
-        $meta = $this->normalizeTimeMeta($row[$field] ?? null);
-        $row[$field . '_ts'] = $meta['ts'];
-        $row[$field . '_iso'] = $meta['iso'];
-        $row[$field . '_iso_utc'] = $meta['iso_utc'];
-        $row[$field . '_display'] = $meta['display'];
-        $row[$field . '_ago'] = ($meta['ts'] !== null) ? FormatHelper::timeAgo($meta['ts']) : '';
-        return $row;
-    }
-
-    /**
-     * @return array{ts:int|null,iso:string,iso_utc:string,display:string}
-     */
-    private function normalizeTimeMeta($value): array
-    {
-        if ($this->timeService) {
-            return $this->timeService->normalizeApiTime($value);
-        }
-
-        $raw = trim((string) ($value ?? ''));
-        if ($raw === '') {
-            return ['ts' => null, 'iso' => '', 'iso_utc' => '', 'display' => ''];
-        }
-
-        $ts = strtotime($raw);
-        if ($ts === false) {
-            return ['ts' => null, 'iso' => '', 'iso_utc' => '', 'display' => $raw];
-        }
-
-        return [
-            'ts' => $ts,
-            'iso' => date('c', $ts),
-            'iso_utc' => gmdate('c', $ts),
-            'display' => date('Y-m-d H:i:s', $ts),
-        ];
-    }
 }
 

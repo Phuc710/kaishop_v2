@@ -132,7 +132,7 @@ if (empty($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token']) || str
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 if (empty($_SESSION['csrf_token_created_at'])) {
-    $_SESSION['csrf_token_created_at'] = time();
+    $_SESSION['csrf_token_created_at'] = class_exists('TimeService') ? TimeService::instance()->nowTs() : time();
 }
 
 if (!function_exists('csrf_token')) {
@@ -153,7 +153,7 @@ if (!function_exists('csrf_regenerate')) {
     function csrf_regenerate(): string
     {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-        $_SESSION['csrf_token_created_at'] = time();
+        $_SESSION['csrf_token_created_at'] = class_exists('TimeService') ? TimeService::instance()->nowTs() : time();
         return (string) $_SESSION['csrf_token'];
     }
 }
@@ -217,6 +217,8 @@ spl_autoload_register(function ($class) {
         BASE_PATH . '/app/Validators/' . $class . '.php',
         BASE_PATH . '/app/Middlewares/' . $class . '.php',
         BASE_PATH . '/app/Helpers/' . $class . '.php',
+        BASE_PATH . '/app/Interfaces/' . $class . '.php',
+        BASE_PATH . '/app/Handlers/Inventory/' . $class . '.php',
     ];
 
     foreach ($paths as $path) {
@@ -265,6 +267,31 @@ function normalizedRequestPathForSecurity(): string
     }
 
     return $requestPath !== '' ? $requestPath : '/';
+}
+
+function isTelegramWebhookPathForSecurity(string $path): bool
+{
+    $normalized = '/' . ltrim($path, '/');
+    $knownWebhookPaths = [
+        '/api/telegram/webhook',
+    ];
+
+    if (class_exists('TelegramConfig')) {
+        $segment = trim((string) TelegramConfig::WEBHOOK_PATH_SEGMENT, '/');
+        if ($segment !== '') {
+            $knownWebhookPaths[] = '/api/' . $segment;
+            $knownWebhookPaths[] = '/api/' . $segment . '/index.php';
+        }
+    }
+
+    foreach ($knownWebhookPaths as $webhookPath) {
+        $prefix = rtrim($webhookPath, '/');
+        if ($normalized === $prefix || strpos($normalized, $prefix . '/') === 0) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 function resolveInputSecurityProfile(string $path, string $method): ?array
@@ -378,13 +405,16 @@ if ($securityProfile !== null) {
 // ─── AntiFlood / Anti-Bot Protection ───────────────────
 // Runs on every request: rate limit, burst detection, honeypot, IP blacklist
 try {
-    require_once BASE_PATH . '/app/Services/AntiFloodService.php';
-    $antiFlood = new AntiFloodService();
-    $antiFlood->inspect($securityPath, $securityMethod);
+    $shouldSkipAntiFlood = $securityMethod === 'POST' && isTelegramWebhookPathForSecurity($securityPath);
+    if (!$shouldSkipAntiFlood) {
+        require_once BASE_PATH . '/app/Services/AntiFloodService.php';
+        $antiFlood = new AntiFloodService();
+        $antiFlood->inspect($securityPath, $securityMethod);
 
-    // Probabilistic cleanup (~1% of requests)
-    if (random_int(1, 100) <= 1) {
-        $antiFlood->cleanup();
+        // Probabilistic cleanup (~1% of requests)
+        if (random_int(1, 100) <= 1) {
+            $antiFlood->cleanup();
+        }
     }
 } catch (Throwable $antiFloodError) {
     // Non-blocking: never let anti-flood crash the app

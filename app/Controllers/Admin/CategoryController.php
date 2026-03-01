@@ -96,7 +96,7 @@ class CategoryController extends Controller
         // Check if slug already exists
         $existing = $this->categoryModel->findBySlug($slug);
         if ($existing) {
-            $slug = $slug . '-' . time();
+            $slug = $slug . '-' . ($this->timeService ? $this->timeService->nowTs() : time());
         }
 
         $this->categoryModel->create([
@@ -106,10 +106,10 @@ class CategoryController extends Controller
             'description' => $description,
             'display_order' => $displayOrder,
             'status' => $status,
-            'created_at' => date('Y-m-d H:i:s'),
+            'created_at' => $this->timeService ? $this->timeService->nowSql() : date('Y-m-d H:i:s'),
         ]);
 
-        $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thành Công', 'message' => 'Thêm danh mục thành công'];
+        $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thành công', 'message' => 'Thêm danh mục thành công'];
         $this->redirect(url('admin/categories'));
     }
 
@@ -168,7 +168,7 @@ class CategoryController extends Controller
         // Check unique slug ignore self
         $existing = $this->categoryModel->findBySlug($slug);
         if ($existing && $existing['id'] != $id) {
-            $slug = $slug . '-' . time();
+            $slug = $slug . '-' . ($this->timeService ? $this->timeService->nowTs() : time());
         }
 
         $this->categoryModel->update((int) $id, [
@@ -180,7 +180,7 @@ class CategoryController extends Controller
             'status' => $status,
         ]);
 
-        $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thành Công', 'message' => 'Cập nhật thành công'];
+        $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thành công', 'message' => 'Cập nhật danh mục thành công'];
         $this->redirect(url('admin/categories'));
     }
 
@@ -211,7 +211,7 @@ class CategoryController extends Controller
             return $this->json(['success' => true, 'message' => 'Xóa danh mục thành công']);
         }
 
-        return $this->json(['success' => false, 'message' => 'Lỗi máy chủ']);
+        return $this->json(['success' => false, 'message' => 'Lỗi máy chủ khi xóa']);
     }
     /**
      * @param array<string,mixed> $row

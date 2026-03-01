@@ -91,12 +91,12 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                             <?php endif; ?>
                                         </td>
                                         <td class="text-center small text-muted">
-                                            <?= date('H:i d/m/Y', strtotime($row['linked_at'])) ?>
+                                            <?= FormatHelper::eventTime($row['linked_at'] ?? null, $row['linked_at'] ?? null) ?>
                                         </td>
                                         <td class="text-center small">
                                             <?php if ($row['last_active']): ?>
                                                 <span class="text-success font-weight-bold">
-                                                    <?= date('H:i d/m/Y', strtotime($row['last_active'])) ?>
+                                                    <?= FormatHelper::eventTime($row['last_active'] ?? null, $row['last_active'] ?? null) ?>
                                                 </span>
                                             <?php else: ?>
                                                 <span class="text-muted">—</span>

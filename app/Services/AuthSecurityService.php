@@ -14,6 +14,7 @@ class AuthSecurityService
 {
     private PDO $db;
     private BanService $banService;
+    private ?TimeService $timeService = null;
 
     private const ACCESS_COOKIE = 'ks_at';
     private const REFRESH_COOKIE = 'ks_rt';
@@ -30,6 +31,9 @@ class AuthSecurityService
     {
         $this->db = Database::getInstance()->getConnection();
         $this->banService = new BanService();
+        if (class_exists('TimeService')) {
+            $this->timeService = TimeService::instance();
+        }
         $this->maybePruneExpiredAuthData();
     }
 
@@ -62,7 +66,8 @@ class AuthSecurityService
     public function recordLoginAttempt(string $action, string $usernameOrEmail, bool $success, string $reason = ''): void
     {
         try {
-            $stmt = $this->db->prepare("INSERT INTO auth_login_attempts (action, username_or_email, ip_address, success, reason, user_agent, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())");
+            $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+            $stmt = $this->db->prepare("INSERT INTO auth_login_attempts (action, username_or_email, ip_address, success, reason, user_agent, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([
                 $action,
                 mb_substr($usernameOrEmail, 0, 190),
@@ -70,6 +75,7 @@ class AuthSecurityService
                 $success ? 1 : 0,
                 mb_substr($reason, 0, 190),
                 mb_substr($this->userAgent(), 0, 1000),
+                $nowSql,
             ]);
         } catch (Throwable $e) {
             // non-blocking
@@ -80,16 +86,18 @@ class AuthSecurityService
     {
         // IP burst: 10 attempts / 15 minutes
         $ip = $this->clientIp();
-        $stmt = $this->db->prepare("SELECT COUNT(*) c FROM auth_login_attempts WHERE action = ? AND ip_address = ? AND created_at >= (NOW() - INTERVAL 15 MINUTE)");
-        $stmt->execute([$action, $ip]);
+        $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+        $stmt = $this->db->prepare("SELECT COUNT(*) c FROM auth_login_attempts WHERE action = ? AND ip_address = ? AND created_at >= (? - INTERVAL 15 MINUTE)");
+        $stmt->execute([$action, $ip, $nowSql]);
         $ipCount = (int) $stmt->fetchColumn();
         if ($ipCount >= 10) {
             return ['blocked' => true, 'message' => 'Bạn thao tác quá nhanh. Vui lòng thử lại sau 15 phút.'];
         }
 
         if ($usernameOrEmail !== '') {
-            $stmt = $this->db->prepare("SELECT COUNT(*) c FROM auth_login_attempts WHERE action = ? AND username_or_email = ? AND ip_address = ? AND success = 0 AND created_at >= (NOW() - INTERVAL 15 MINUTE)");
-            $stmt->execute([$action, mb_substr($usernameOrEmail, 0, 190), $ip]);
+            $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+            $stmt = $this->db->prepare("SELECT COUNT(*) c FROM auth_login_attempts WHERE action = ? AND username_or_email = ? AND ip_address = ? AND success = 0 AND created_at >= (? - INTERVAL 15 MINUTE)");
+            $stmt->execute([$action, mb_substr($usernameOrEmail, 0, 190), $ip, $nowSql]);
             $failCount = (int) $stmt->fetchColumn();
             if ($failCount >= 5) {
                 // Send email warning on first lockout trigger
@@ -200,9 +208,10 @@ class AuthSecurityService
         $otpCode = (string) random_int(100000, 999999);
         $codeHash = hash('sha256', $challengeId . '|' . $otpCode . '|' . (string) ($user['id'] ?? 0));
 
+        $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
         $stmt = $this->db->prepare(
             "INSERT INTO auth_otp_codes (challenge_id, user_id, purpose, email, code_hash, attempts, max_attempts, expires_at, ip_address, user_agent, device_hash, metadata_json, created_at)
-             VALUES (?, ?, ?, ?, ?, 0, 5, DATE_ADD(NOW(), INTERVAL ? SECOND), ?, ?, ?, ?, NOW())"
+             VALUES (?, ?, ?, ?, ?, 0, 5, DATE_ADD(?, INTERVAL ? SECOND), ?, ?, ?, ?, ?)"
         );
         $stmt->execute([
             $challengeId,
@@ -210,11 +219,13 @@ class AuthSecurityService
             $purpose,
             (string) ($user['email'] ?? ''),
             $codeHash,
+            $nowSql,
             $ttlSeconds,
             (string) $device['ip_address'],
             mb_substr((string) $device['user_agent'], 0, 1000),
             (string) $device['device_hash'],
             json_encode($meta, JSON_UNESCAPED_UNICODE),
+            $nowSql,
         ]);
 
         $this->sendOtpEmail((string) $user['email'], (string) ($user['username'] ?? ''), $otpCode, $purpose, $ttlSeconds);
@@ -278,12 +289,28 @@ class AuthSecurityService
 
         $stmt = $this->db->prepare(
             "INSERT INTO auth_sessions (
-                user_id, session_selector, access_token_hash, refresh_token_hash,
-                legacy_session_token, access_expires_at, refresh_expires_at,
-                ip_address, user_agent, device_fingerprint, device_hash, device_os, device_browser, device_type,
-                remember_me, status, last_rotated_at, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW(), NOW(), NOW())"
+                user_id,
+                session_selector,
+                access_token_hash,
+                refresh_token_hash,
+                legacy_session_token,
+                access_expires_at,
+                refresh_expires_at,
+                ip_address,
+                user_agent,
+                device_fingerprint,
+                device_hash,
+                device_os,
+                device_browser,
+                device_type,
+                remember_me,
+                status,
+                last_rotated_at,
+                created_at,
+                updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)"
         );
+        $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
         $stmt->execute([
             (int) $user['id'],
             $selector,
@@ -300,10 +327,14 @@ class AuthSecurityService
             (string) $device['browser'],
             (string) $device['device_type'],
             $rememberMe ? 1 : 0,
+            $nowSql,
+            $nowSql,
+            $nowSql,
         ]);
 
-        $this->db->prepare("UPDATE users SET session = ?, ip_address = ?, user_agent = ?, last_login = NOW() WHERE id = ?")
-            ->execute([$legacySession, (string) $device['ip_address'], (string) $device['user_agent'], (int) $user['id']]);
+        $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+        $this->db->prepare("UPDATE users SET session = ?, ip_address = ?, user_agent = ?, last_login = ? WHERE id = ?")
+            ->execute([$legacySession, (string) $device['ip_address'], (string) $device['user_agent'], $nowSql, (int) $user['id']]);
 
         $this->trustDevice((int) $user['id'], $device, self::TRUSTED_DEVICE_DAYS);
         $this->setAuthCookies($selector, $accessToken, $refreshToken, $refreshTtl);
@@ -414,19 +445,23 @@ class AuthSecurityService
         $stmt->execute([$userId, $deviceHash]);
         $existingId = $stmt->fetchColumn();
 
+        $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
         if ($existingId) {
-            $stmt = $this->db->prepare("UPDATE user_trusted_devices SET ip_address = ?, user_agent = ?, os = ?, browser = ?, device_type = ?, trusted_until = DATE_ADD(NOW(), INTERVAL ? DAY), last_seen_at = NOW(), updated_at = NOW() WHERE id = ?");
+            $stmt = $this->db->prepare("UPDATE user_trusted_devices SET ip_address = ?, user_agent = ?, os = ?, browser = ?, device_type = ?, trusted_until = DATE_ADD(?, INTERVAL ? DAY), last_seen_at = ?, updated_at = ? WHERE id = ?");
             $stmt->execute([
                 $device['ip_address'] ?? '',
                 mb_substr((string) ($device['user_agent'] ?? ''), 0, 1000),
                 $device['os'] ?? '',
                 $device['browser'] ?? '',
                 $device['device_type'] ?? '',
+                $nowSql,
                 $days,
+                $nowSql,
+                $nowSql,
                 (int) $existingId,
             ]);
         } else {
-            $stmt = $this->db->prepare("INSERT INTO user_trusted_devices (user_id, device_hash, ip_address, user_agent, os, browser, device_type, trusted_until, last_seen_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? DAY), NOW(), NOW(), NOW())");
+            $stmt = $this->db->prepare("INSERT INTO user_trusted_devices (user_id, device_hash, ip_address, user_agent, os, browser, device_type, trusted_until, last_seen_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, DATE_ADD(?, INTERVAL ? DAY), ?, ?, ?)");
             $stmt->execute([
                 $userId,
                 $deviceHash,
@@ -435,7 +470,11 @@ class AuthSecurityService
                 $device['os'] ?? '',
                 $device['browser'] ?? '',
                 $device['device_type'] ?? '',
+                $nowSql,
                 $days,
+                $nowSql,
+                $nowSql,
+                $nowSql,
             ]);
         }
     }
@@ -528,12 +567,15 @@ class AuthSecurityService
         $refreshToken = bin2hex(random_bytes(48));
         $refreshTtl = $rememberMe ? self::REFRESH_TTL_REMEMBER : self::REFRESH_TTL_DEFAULT;
 
-        $stmt = $this->db->prepare("UPDATE auth_sessions SET access_token_hash = ?, refresh_token_hash = ?, access_expires_at = ?, refresh_expires_at = ?, last_rotated_at = NOW(), updated_at = NOW() WHERE id = ? AND status = 'active'");
+        $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+        $stmt = $this->db->prepare("UPDATE auth_sessions SET access_token_hash = ?, refresh_token_hash = ?, access_expires_at = ?, refresh_expires_at = ?, last_rotated_at = ?, updated_at = ? WHERE id = ? AND status = 'active'");
         $stmt->execute([
             hash('sha256', $accessToken),
             hash('sha256', $refreshToken),
             date('Y-m-d H:i:s', time() + self::ACCESS_TTL),
             date('Y-m-d H:i:s', time() + $refreshTtl),
+            $nowSql,
+            $nowSql,
             $sessionId,
         ]);
 
@@ -545,14 +587,16 @@ class AuthSecurityService
 
     private function revokeAllSessionsForUser(int $userId): void
     {
-        $stmt = $this->db->prepare("UPDATE auth_sessions SET status = 'revoked', revoked_at = NOW(), revoke_reason = 'new_login', updated_at = NOW() WHERE user_id = ? AND status = 'active'");
-        $stmt->execute([$userId]);
+        $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+        $stmt = $this->db->prepare("UPDATE auth_sessions SET status = 'revoked', revoked_at = ?, revoke_reason = 'new_login', updated_at = ? WHERE user_id = ? AND status = 'active'");
+        $stmt->execute([$nowSql, $nowSql, $userId]);
     }
 
     private function revokeSessionById(int $id, string $reason): void
     {
-        $stmt = $this->db->prepare("UPDATE auth_sessions SET status = 'revoked', revoked_at = NOW(), revoke_reason = ?, updated_at = NOW() WHERE id = ?");
-        $stmt->execute([$reason, $id]);
+        $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+        $stmt = $this->db->prepare("UPDATE auth_sessions SET status = 'revoked', revoked_at = ?, revoke_reason = ?, updated_at = ? WHERE id = ?");
+        $stmt->execute([$nowSql, $reason, $nowSql, $id]);
     }
 
     private function findSessionBySelector(string $selector): ?array

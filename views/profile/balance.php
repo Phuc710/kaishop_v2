@@ -142,7 +142,7 @@ if (!is_file($balanceMethodPartialPath)) {
         json_encode([
             'baseUrl' => rtrim((string) url(''), '/'),
             'csrfToken' => function_exists('csrf_token') ? (string) csrf_token() : '',
-            'serverNowTs' => time(),
+            'serverNowTs' => TimeService::instance()->nowTs(),
             'storageKey' => 'ks_balance_bank_' . md5((string) ($username ?? 'guest')),
             'endpoints' => [
                 'create' => (string) url('deposit/create'),

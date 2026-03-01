@@ -606,6 +606,19 @@ body.sidebar-collapsed .admin-sidebar {
     background: rgba(132, 90, 223, 0.04);
 }
 
+.date-badge {
+    background-color: #ede9fe !important;
+    color: #5b21b6 !important;
+    padding: 2px 8px;
+    font-weight: 600;
+    border-radius: 50px;
+    font-size: 11px;
+    border: none;
+    transition: all 0.2s ease;
+    display: inline-block;
+}
+
+
 /* Badges */
 .badge {
     padding: 0.35em 0.65em;
@@ -630,7 +643,7 @@ body.sidebar-collapsed .admin-sidebar {
     background: #f1f4f9;
     color: #334155;
     font-weight: 600;
-    padding: 4px 10px;
+    padding: 2px 8px;
     border-radius: 6px;
     cursor: help;
     border: 1px solid #e2e8f0;

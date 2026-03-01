@@ -25,7 +25,8 @@ $telegram = new TelegramService();
 $outboxModel = new TelegramOutbox();
 $botLogic = new TelegramBotService($telegram);
 
-echo '[' . date('Y-m-d H:i:s') . '] KaiShop Telegram Worker (' . ($isPollMode ? 'POLLING' : 'CRON') . ")\n";
+$timeService = TimeService::instance();
+echo '[' . $timeService->nowSql() . '] KaiShop Telegram Worker (' . ($isPollMode ? 'POLLING' : 'CRON') . ")\n";
 
 // =========================================================
 //  1. Gửi Outbox — PARALLEL via curl_multi
@@ -107,7 +108,8 @@ function processOutboxParallel(TelegramOutbox $outboxModel, string $botToken): v
 function cleanupOldData(TelegramOutbox $outboxModel): void
 {
     // Chỉ cleanup 1 lần/ngày (giờ 03:xx)
-    if ((int) date('G') !== 3)
+    $timeService = TimeService::instance();
+    if ((int) $timeService->nowDateTime()->format('G') !== 3)
         return;
 
     $deletedOutbox = $outboxModel->cleanOldSent(7);
@@ -124,14 +126,15 @@ function cleanupOldData(TelegramOutbox $outboxModel): void
     // Cleanup rate-limit files cũ quá 10 phút
     $rlDir = '/tmp/kaishop_tg_rl';
     if (is_dir($rlDir)) {
-        $cutoff = time() - 600;
+        $timeService = TimeService::instance();
+        $cutoff = $timeService->nowTs() - 600;
         foreach (glob($rlDir . '/*.json') ?: [] as $file) {
             if (@filemtime($file) < $cutoff)
                 @unlink($file);
         }
         // Cleanup cooldown files > 1h
         if (is_dir($rlDir . '/cooldown')) {
-            $cutoffCooldown = time() - 3600;
+            $cutoffCooldown = $timeService->nowTs() - 3600;
             foreach (glob($rlDir . '/cooldown/*.ts') ?: [] as $file) {
                 if (@filemtime($file) < $cutoffCooldown)
                     @unlink($file);
@@ -243,5 +246,6 @@ if ($isPollMode) {
         echo '  [Error] ' . $e->getMessage() . "\n";
     }
 
-    echo '[' . date('Y-m-d H:i:s') . "] Done.\n";
+    $timeService = TimeService::instance();
+    echo '[' . $timeService->nowSql() . "] Done.\n";
 }

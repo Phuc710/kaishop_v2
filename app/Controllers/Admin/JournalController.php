@@ -11,6 +11,7 @@ class JournalController extends Controller
     private $journalModel;
     private $systemLogModel;
     private $orderModel;
+    private $productModel;
     private $timeService;
 
     public function __construct()
@@ -19,6 +20,7 @@ class JournalController extends Controller
         $this->journalModel = new AdminJournal();
         $this->systemLogModel = new SystemLog();
         $this->orderModel = new Order();
+        $this->productModel = new Product();
         $this->timeService = class_exists('TimeService') ? TimeService::instance() : null;
     }
 
@@ -81,11 +83,24 @@ class JournalController extends Controller
 
         $createdMeta = $this->normalizeTimeMeta($order['created_at'] ?? null);
         $fulfilledMeta = $this->normalizeTimeMeta($order['fulfilled_at'] ?? null);
+        $productId = (int) ($order['product_id'] ?? 0);
+        $product = $productId > 0 ? $this->productModel->find($productId) : null;
+        $orderCodeShort = (string) ($order['order_code_short'] ?? '');
+        $orderCodeRaw = (string) ($order['order_code'] ?? '');
+        $stockSearchCode = $orderCodeShort !== '' ? $orderCodeShort : $orderCodeRaw;
+        $stockUrl = '';
+        if ($productId > 0 && !empty($product)) {
+            $stockUrl = url('admin/products/stock/' . $productId);
+            if ($stockSearchCode !== '') {
+                $stockUrl .= '?search=' . urlencode($stockSearchCode);
+            }
+        }
 
         return $this->json([
             'success' => true,
             'order' => [
                 'id' => (int) ($order['id'] ?? 0),
+                'product_id' => $productId,
                 'order_code' => (string) ($order['order_code'] ?? ''),
                 'order_code_short' => (string) ($order['order_code_short'] ?? ''),
                 'username' => (string) ($order['username'] ?? ''),
@@ -107,6 +122,16 @@ class JournalController extends Controller
                 'created_at_iso' => $createdMeta['iso'],
                 'created_at_iso_utc' => $createdMeta['iso_utc'],
                 'created_at_display' => $createdMeta['display'],
+                'stock_url' => $stockUrl,
+                'product' => [
+                    'id' => $productId,
+                    'product_type' => (string) ($product['product_type'] ?? ''),
+                    'delivery_mode' => (string) ($product['delivery_mode'] ?? ''),
+                    'delivery_label' => (string) ($product['delivery_label'] ?? ''),
+                    'requires_info' => (int) ($product['requires_info'] ?? 0),
+                    'info_instructions' => (string) ($product['info_instructions'] ?? ''),
+                    'source_link' => (string) ($product['source_link'] ?? ''),
+                ],
             ],
         ]);
     }
@@ -344,18 +369,13 @@ class JournalController extends Controller
                 $statusLabel = '<span class="badge bg-secondary">' . htmlspecialchars($status) . '</span>';
             }
             $price = (int) ($row['price'] ?? 0);
-            $priceFormatted = '<span class="font-weight-bold" style="color:#000000;">-' . number_format($price, 0, '.', ',') . 'đ</span>';
+            $priceFormatted = '<span class="font-weight-bold" style="color:#000000;">' . number_format($price, 0, '.', ',') . 'đ</span>';
             $quantity = max(1, (int) ($row['quantity'] ?? 1));
             $orderId = (int) ($row['id'] ?? 0);
             $rawOrderCode = (string) ($row['order_code'] ?? '--');
             $shortOrderCode = $this->shortOrderCode($rawOrderCode);
 
-            $actionButtons = '<div class="btn-group btn-group-sm" role="group">'
-                . '<button type="button" class="btn btn-info btn-xs px-2 js-order-view" data-order-id="' . $orderId . '" title="Xem chi tiết"><i class="fas fa-eye"></i></button>';
-            if ($status === 'pending') {
-                $actionButtons .= '<button type="button" class="btn btn-danger btn-xs px-2 js-order-cancel" data-order-id="' . $orderId . '" title="Hủy đơn + hoàn tiền"><i class="fas fa-times"></i></button>';
-            }
-            $actionButtons .= '</div>';
+            $actionButtons = '<button type="button" class="btn btn-info btn-xs px-2 js-order-view" data-order-id="' . $orderId . '" title="Xem chi tiết"><i class="fas fa-eye mr-1"></i>Xem</button>';
 
             $output[] = [
                 'time' => $this->formatTimeCell($row['event_time'] ?? null, $row['raw_time'] ?? null),

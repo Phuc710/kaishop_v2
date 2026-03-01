@@ -11,6 +11,7 @@ class UserController extends Controller
     private $fingerprintModel;
     private $banService;
     private $timeService;
+    private ?BalanceChangeService $balanceChangeService = null;
 
     public function __construct()
     {
@@ -19,6 +20,7 @@ class UserController extends Controller
         $this->fingerprintModel = new UserFingerprint();
         $this->banService = new BanService();
         $this->timeService = class_exists('TimeService') ? TimeService::instance() : null;
+        $this->balanceChangeService = class_exists('BalanceChangeService') ? new BalanceChangeService() : null;
     }
 
     /**
@@ -31,7 +33,7 @@ class UserController extends Controller
 
         if (!isset($user['level']) || (int) $user['level'] !== 9) {
             http_response_code(403);
-            die('Truy cap bi tu choi - Chi danh cho quan tri vien');
+            die('Truy cập bị từ chối - Chỉ dành cho quản trị viên');
         }
     }
 
@@ -92,7 +94,7 @@ class UserController extends Controller
         $user = $connection->query("SELECT * FROM `users` WHERE `username` = '{$safeUsername}' LIMIT 1")->fetch_assoc();
 
         if (!$user) {
-            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Loi', 'message' => 'Thanh vien khong ton tai'];
+            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Lỗi', 'message' => 'Thành viên không tồn tại'];
             $this->redirect(url('admin/users'));
         }
 
@@ -138,9 +140,9 @@ class UserController extends Controller
                 WHERE `username` = '{$safeOldUsername}'";
 
         if ($connection->query($sql)) {
-            $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thanh Cong', 'message' => 'Cap nhat thanh cong'];
+            $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thành công', 'message' => 'Cập nhật thành công'];
         } else {
-            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Loi', 'message' => 'Co loi xay ra: ' . $connection->error];
+            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Lỗi', 'message' => 'Có lỗi xảy ra: ' . $connection->error];
         }
 
         $this->redirect(url('admin/users/edit/' . $newUsername));
@@ -155,29 +157,55 @@ class UserController extends Controller
         global $connection;
 
         $safeUsername = $connection->real_escape_string((string) $username);
-        $amount = (string) $this->post('tien_cong');
-        $reason = (string) $this->post('rs_cong');
-        $safeAmount = $connection->real_escape_string($amount);
+        $amountRaw = (string) $this->post('tien_cong');
+        $amount = $this->normalizeMoneyAmount($amountRaw);
+        $reason = trim((string) $this->post('rs_cong'));
         $safeReason = $connection->real_escape_string($reason);
-        $now = time();
+        if ($amount <= 0) {
+            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Lỗi', 'message' => 'Số tiền cộng không hợp lệ'];
+            return $this->redirect(url('admin/users/edit/' . $username));
+        }
 
-        $create = $connection->query("UPDATE `users` SET `money` = `money` + '{$safeAmount}', `tong_nap` = `tong_nap` + '{$safeAmount}' WHERE `username` = '{$safeUsername}'");
+        $userRes = $connection->query("SELECT `id`, `money` FROM `users` WHERE `username` = '{$safeUsername}' LIMIT 1");
+        $userRow = $userRes ? $userRes->fetch_assoc() : null;
+        if (!$userRow) {
+            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Lỗi', 'message' => 'Không tìm thấy tài khoản'];
+            return $this->redirect(url('admin/users'));
+        }
+
+        $userId = (int) ($userRow['id'] ?? 0);
+        $beforeBalance = (int) ($userRow['money'] ?? 0);
+        $afterBalance = $beforeBalance + $amount;
+        $now = $this->timeService ? $this->timeService->nowTs() : time();
+
+        $create = $connection->query("UPDATE `users` SET `money` = `money` + {$amount}, `tong_nap` = `tong_nap` + {$amount} WHERE `username` = '{$safeUsername}'");
 
         if ($create) {
             $connection->query("INSERT INTO `history_nap_bank` SET
                 `trans_id` = NULL,
                 `username` = '{$safeUsername}',
-                `type` = 'He thong',
+                `type` = 'Hệ thống',
                 `ctk` = '{$safeReason}',
                 `stk` = NULL,
-                `thucnhan` = '{$safeAmount}',
+                `thucnhan` = '{$amount}',
                 `status` = 'hoantat',
                 `time` = '{$now}'");
 
-            Logger::info('Billing', 'admin_add_money', "Admin cong tien cho {$username}", ['amount' => $amount, 'reason' => $reason]);
-            $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thanh Cong', 'message' => 'Cong tien thanh cong'];
+            if ($this->balanceChangeService) {
+                $this->balanceChangeService->record(
+                    $userId,
+                    (string) $username,
+                    $beforeBalance,
+                    $amount,
+                    $afterBalance,
+                    'Admin cộng tiền' . ($reason !== '' ? ': ' . $reason : '')
+                );
+            }
+
+            Logger::info('Billing', 'admin_add_money', "Admin cộng tiền cho {$username}", ['amount' => $amount, 'reason' => $reason]);
+            $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thành Công', 'message' => 'Cộng tiền thành công'];
         } else {
-            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Loi', 'message' => 'Co loi xay ra'];
+            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Lỗi', 'message' => 'Có lỗi xảy ra'];
         }
 
         $this->redirect(url('admin/users/edit/' . $username));
@@ -192,29 +220,55 @@ class UserController extends Controller
         global $connection;
 
         $safeUsername = $connection->real_escape_string((string) $username);
-        $amount = (string) $this->post('tien_tru');
-        $reason = (string) $this->post('rs_tru');
-        $safeAmount = $connection->real_escape_string($amount);
+        $amountRaw = (string) $this->post('tien_tru');
+        $amount = $this->normalizeMoneyAmount($amountRaw);
+        $reason = trim((string) $this->post('rs_tru'));
         $safeReason = $connection->real_escape_string($reason);
-        $now = time();
+        if ($amount <= 0) {
+            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Lỗi', 'message' => 'Số tiền trừ không hợp lệ'];
+            return $this->redirect(url('admin/users/edit/' . $username));
+        }
 
-        $create = $connection->query("UPDATE `users` SET `money` = `money` - '{$safeAmount}', `tong_nap` = `tong_nap` - '{$safeAmount}' WHERE `username` = '{$safeUsername}'");
+        $userRes = $connection->query("SELECT `id`, `money` FROM `users` WHERE `username` = '{$safeUsername}' LIMIT 1");
+        $userRow = $userRes ? $userRes->fetch_assoc() : null;
+        if (!$userRow) {
+            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Lỗi', 'message' => 'Không tìm thấy tài khoản'];
+            return $this->redirect(url('admin/users'));
+        }
+
+        $userId = (int) ($userRow['id'] ?? 0);
+        $beforeBalance = (int) ($userRow['money'] ?? 0);
+        $afterBalance = $beforeBalance - $amount;
+        $now = $this->timeService ? $this->timeService->nowTs() : time();
+
+        $create = $connection->query("UPDATE `users` SET `money` = `money` - {$amount}, `tong_nap` = `tong_nap` - {$amount} WHERE `username` = '{$safeUsername}'");
 
         if ($create) {
             $connection->query("INSERT INTO `history_nap_bank` SET
                 `trans_id` = NULL,
                 `username` = '{$safeUsername}',
-                `type` = 'He thong',
+                `type` = 'Hệ thống',
                 `ctk` = '{$safeReason}',
                 `stk` = NULL,
-                `thucnhan` = '-{$safeAmount}',
+                `thucnhan` = '-{$amount}',
                 `status` = 'hoantat',
                 `time` = '{$now}'");
 
-            Logger::info('Billing', 'admin_sub_money', "Admin tru tien cua {$username}", ['amount' => $amount, 'reason' => $reason]);
-            $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thanh Cong', 'message' => 'Tru tien thanh cong'];
+            if ($this->balanceChangeService) {
+                $this->balanceChangeService->record(
+                    $userId,
+                    (string) $username,
+                    $beforeBalance,
+                    -$amount,
+                    $afterBalance,
+                    'Admin trừ tiền' . ($reason !== '' ? ': ' . $reason : '')
+                );
+            }
+
+            Logger::info('Billing', 'admin_sub_money', "Admin trừ tiền của {$username}", ['amount' => $amount, 'reason' => $reason]);
+            $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thành Công', 'message' => 'Trừ tiền thành công'];
         } else {
-            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Loi', 'message' => 'Co loi xay ra'];
+            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Lỗi', 'message' => 'Có lỗi xảy ra'];
         }
 
         $this->redirect(url('admin/users/edit/' . $username));
@@ -230,7 +284,7 @@ class UserController extends Controller
         $userId = $this->post('user_id');
         $this->userModel->delete($userId);
 
-        return $this->json(['success' => true, 'message' => 'Xoa thanh cong']);
+        return $this->json(['success' => true, 'message' => 'Xóa thành công']);
     }
 
     /**
@@ -242,12 +296,12 @@ class UserController extends Controller
 
         $reason = trim((string) $this->post('reason', ''));
         if ($reason === '') {
-            return $this->json(['success' => false, 'message' => 'Vui long nhap ly do ban.']);
+            return $this->json(['success' => false, 'message' => 'Vui lòng nhập lý do khóa.']);
         }
 
         $user = $this->userModel->findByUsername($username);
         if (!$user) {
-            return $this->json(['success' => false, 'message' => 'Nguoi dung khong ton tai.']);
+            return $this->json(['success' => false, 'message' => 'Người dùng không tồn tại.']);
         }
 
         $durationKey = (string) $this->post('duration', '');
@@ -263,11 +317,11 @@ class UserController extends Controller
             ]);
             return $this->json([
                 'success' => true,
-                'message' => 'Da khoa tai khoan ' . $username . ' - ' . $duration['label'],
+                'message' => 'Đã khóa tài khoản ' . $username . ' - ' . $duration['label'],
             ]);
         }
 
-        return $this->json(['success' => false, 'message' => 'Co loi xay ra.']);
+        return $this->json(['success' => false, 'message' => 'Có lỗi xảy ra.']);
     }
 
     /**
@@ -279,17 +333,17 @@ class UserController extends Controller
 
         $reason = trim((string) $this->post('reason', ''));
         if ($reason === '') {
-            return $this->json(['success' => false, 'message' => 'Vui long nhap ly do khoa.']);
+            return $this->json(['success' => false, 'message' => 'Vui lòng nhập lý do khóa.']);
         }
 
         $user = $this->userModel->findByUsername($username);
         if (!$user) {
-            return $this->json(['success' => false, 'message' => 'Nguoi dung khong ton tai.']);
+            return $this->json(['success' => false, 'message' => 'Người dùng không tồn tại.']);
         }
 
         $latestFingerprint = $this->fingerprintModel->getLatestByUserId((int) ($user['id'] ?? 0));
         if (!$latestFingerprint || empty($latestFingerprint['fingerprint_hash'])) {
-            return $this->json(['success' => false, 'message' => 'Chua co du lieu Fingerprint cua nguoi dung nay de khoa thiet bi.']);
+            return $this->json(['success' => false, 'message' => 'Chưa có dữ liệu Fingerprint của người dùng này để khóa thiết bị.']);
         }
 
         $durationKey = (string) $this->post('duration', '');
@@ -300,7 +354,7 @@ class UserController extends Controller
         $accountBanResult = $this->banService->applyAccountBan($user, $reason, $durationKey, $adminName);
 
         if ($deviceBanResult && $accountBanResult) {
-            Logger::warning('Admin', 'ban_device', 'Khoa thiet bi Fingerprint: ' . $username, [
+            Logger::warning('Admin', 'ban_device', 'Khóa thiết bị Fingerprint: ' . $username, [
                 'fingerprint' => $fpHash,
                 'reason' => $reason,
                 'duration' => $duration['label'],
@@ -308,11 +362,11 @@ class UserController extends Controller
 
             return $this->json([
                 'success' => true,
-                'message' => 'Da khoa tai khoan va thiet bi cua ' . $username . ' - ' . $duration['label'],
+                'message' => 'Đã khóa tài khoản và thiết bị của ' . $username . ' - ' . $duration['label'],
             ]);
         }
 
-        return $this->json(['success' => false, 'message' => 'Khong the khoa thiet bi luc nay.']);
+        return $this->json(['success' => false, 'message' => 'Không thể khóa thiết bị lúc này.']);
     }
 
     /**
@@ -331,13 +385,19 @@ class UserController extends Controller
         }
 
         if ($result) {
-            Logger::info('Admin', 'unban_user', "Admin mo khoa user va thiet bi: {$username}", [
+            Logger::info('Admin', 'unban_user', "Admin mở khóa user và thiết bị: {$username}", [
                 'username' => $username,
             ]);
-            return $this->json(['success' => true, 'message' => 'Da mo khoa tai khoan ' . $username]);
+            return $this->json(['success' => true, 'message' => 'Đã mở khóa tài khoản ' . $username]);
         }
 
-        return $this->json(['success' => false, 'message' => 'Co loi xay ra.']);
+        return $this->json(['success' => false, 'message' => 'Có lỗi xảy ra.']);
+    }
+
+    private function normalizeMoneyAmount(string $raw): int
+    {
+        $clean = preg_replace('/\D+/', '', $raw) ?? '';
+        return (int) $clean;
     }
 
     /**

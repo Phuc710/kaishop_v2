@@ -3,6 +3,11 @@
 /**
  * Profile Controller
  * Handles user profile operations + embedded deposit panel
+<?php
+
+/**
+ * Profile Controller
+ * Handles user profile operations + embedded deposit panel
  */
 class ProfileController extends Controller
 {
@@ -10,6 +15,7 @@ class ProfileController extends Controller
     private AuthService $authService;
     private UserValidator $validator;
     private DepositService $depositService;
+    private TelegramAccountService $accService;
 
     public function __construct()
     {
@@ -17,6 +23,7 @@ class ProfileController extends Controller
         $this->authService = new AuthService();
         $this->validator = new UserValidator();
         $this->depositService = new DepositService();
+        $this->accService = new TelegramAccountService();
     }
 
     /**
@@ -152,14 +159,26 @@ class ProfileController extends Controller
             return $this->json(['success' => false, 'message' => 'Bạn chưa đăng nhập'], 401);
         }
 
-        $userId = $this->authService->getUserId();
-        $linkModel = new UserTelegramLink();
-        $success = $linkModel->unlinkUser($userId);
+        $userId = (int) $this->authService->getUserId();
 
-        if ($success) {
-            return $this->json(['success' => true, 'message' => 'Đã hủy liên kết Telegram']);
+        // Find the telegram link for this user
+        $linkModel = new UserTelegramLink();
+        $link = $linkModel->findByUserId($userId);
+        if (!$link) {
+            return $this->json(['success' => false, 'message' => 'Tài khoản của bạn chưa liên kết Telegram nào.']);
         }
 
-        return $this->json(['success' => false, 'message' => 'Không thể hủy liên kết lúc này']);
+        $dest = trim((string) $this->post('destination', 'web')); // 'web' or 'bot'
+        if (!in_array($dest, ['web', 'bot'], true)) {
+            $dest = 'web';
+        }
+
+        $res = $this->accService->unlinkWithChoice((int) $link['telegram_id'], $dest);
+
+        if ($res['success']) {
+            return $this->json(['success' => true, 'message' => $res['message']]);
+        }
+
+        return $this->json(['success' => false, 'message' => $res['message']]);
     }
 }

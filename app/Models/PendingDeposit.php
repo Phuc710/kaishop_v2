@@ -8,6 +8,15 @@ class PendingDeposit extends Model
 {
     protected $table = 'pending_deposits';
     private const PENDING_TTL_SECONDS = 300;
+    protected ?TimeService $timeService = null;
+
+    public function __construct()
+    {
+        parent::__construct();
+        if (class_exists('TimeService')) {
+            $this->timeService = TimeService::instance();
+        }
+    }
 
     /**
      * Generate a unique deposit code: "kai" + random alphanumeric.
@@ -36,7 +45,7 @@ class PendingDeposit extends Model
         $this->markExpired();
 
         $code = $this->generateCode();
-        $now = date('Y-m-d H:i:s');
+        $now = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
 
         $stmt = $this->db->prepare("
             INSERT INTO `{$this->table}` 
@@ -96,12 +105,13 @@ class PendingDeposit extends Model
         // One last check for expiration
         $this->markExpired();
 
+        $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
         $stmt = $this->db->prepare("
-            UPDATE `{$this->table}` 
-            SET `status` = 'completed', `sepay_transaction_id` = :sid, `completed_at` = NOW()
-            WHERE `id` = :id AND `status` = 'pending'
-        ");
-        return $stmt->execute(['id' => $id, 'sid' => $sepayTransId]);
+                UPDATE `{$this->table}` 
+                SET `status` = 'completed', `sepay_transaction_id` = :sid, `completed_at` = :now
+                WHERE `id` = :id AND `status` = 'pending'
+            ");
+        return $stmt->execute(['id' => $id, 'sid' => $sepayTransId, 'now' => $nowSql]);
     }
 
     /**
@@ -134,7 +144,8 @@ class PendingDeposit extends Model
      */
     public function markExpired(): void
     {
-        $cutoff = date('Y-m-d H:i:s', time() - $this->getPendingTtlSeconds());
+        $ts = $this->timeService ? $this->timeService->nowTs() : time();
+        $cutoff = date('Y-m-d H:i:s', $ts - $this->getPendingTtlSeconds());
         $stmt = $this->db->prepare("
             UPDATE `{$this->table}` SET `status` = 'expired'
             WHERE `status` = 'pending' AND `created_at` < :cutoff

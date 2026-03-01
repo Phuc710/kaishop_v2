@@ -113,7 +113,7 @@ $filterMode = $filterMode ?? 'none';
                                             <span class="badge <?= $badge ?> px-3 py-1"><?= strtoupper($st) ?></span>
                                         </td>
                                         <td class="text-right pr-4 text-muted small">
-                                            <?= date('H:i d/m/Y', strtotime($o['created_at'])) ?>
+                                            <?= FormatHelper::eventTime($o['created_at'] ?? null, $o['created_at'] ?? null) ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>

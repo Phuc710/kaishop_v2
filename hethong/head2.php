@@ -160,7 +160,7 @@ $appendIconVersion = static function (string $href, string $version): string {
 };
 
 $faviconHref = '';
-$faviconVersion = trim((string) ($chungapi['updated_at'] ?? time()));
+$faviconVersion = trim((string) ($chungapi['updated_at'] ?? TimeService::instance()->nowTs()));
 foreach (
     [
         'assets/images/kaishop_favicon.png',

@@ -26,6 +26,15 @@ Options -Indexes
 RewriteCond %{HTTP_USER_AGENT} (curl|wget|python|scrapy|httpclient|java|libwww|mechanize|phantom|headless|sqlmap|nikto|nmap|masscan) [NC]
 RewriteRule ^ - [F,L]
 
+# ─── SECURITY: Anti-hotlink for images (block other domains embedding your images) ───
+# Note: This protects against hotlinking/copy-link usage, not screenshots/manual downloads.
+RewriteCond %{REQUEST_URI} \.(?:jpe?g|png|gif|webp|svg)$ [NC]
+RewriteCond %{HTTP_REFERER} !^$ [NC]
+RewriteCond %{HTTP_REFERER} !^https?://(www\.)?localhost(?::[0-9]+)?/ [NC]
+RewriteCond %{HTTP_REFERER} !^https?://(www\.)?127\.0\.0\.1(?::[0-9]+)?/ [NC]
+RewriteCond %{HTTP_REFERER} !^https?://(www\.)?kaishop\.id\.vn/ [NC]
+RewriteRule \.(?:jpe?g|png|gif|webp|svg)$ - [F,NC,L]
+
 # Compression for text assets (faster first load over network)
 <IfModule mod_deflate.c>
     AddOutputFilterByType DEFLATE text/plain text/html text/xml text/css application/xml application/xhtml+xml application/rss+xml application/javascript application/x-javascript application/json image/svg+xml

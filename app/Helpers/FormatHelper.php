@@ -88,36 +88,20 @@ class FormatHelper
                     );
                 }
             } catch (Throwable $e) {
-                // Fallback to legacy normalization below.
+                // Fallback
             }
         }
 
-        $normalized = trim((string) $eventTime);
+        $normalized = trim((string) ($eventTime ?? ''));
         if ($normalized === '' || $normalized === '0000-00-00 00:00:00') {
-            $raw = trim((string) $rawTime);
-            if ($raw === '') {
+            $raw = trim((string) ($rawTime ?? ''));
+            if ($raw === '')
                 return '--';
-            }
-            if (ctype_digit($raw)) {
-                $normalized = date('Y-m-d H:i:s', (int) $raw);
-            } else {
-                $formats = ['H:i d-m-Y', 'Y-m-d H:i:s', 'd-m-Y H:i:s', 'd/m/Y H:i:s'];
-                foreach ($formats as $format) {
-                    $date = DateTime::createFromFormat($format, $raw);
-                    if ($date instanceof DateTime) {
-                        $normalized = $date->format('Y-m-d H:i:s');
-                        break;
-                    }
-                }
-                if ($normalized === '') {
-                    $normalized = $raw;
-                }
-            }
+            $normalized = is_numeric($raw) ? date('Y-m-d H:i:s', (int) $raw) : $raw;
         }
 
-        if ($normalized === '' || $normalized === '--') {
+        if ($normalized === '--' || $normalized === '')
             return '--';
-        }
 
         $timeAgo = self::timeAgo($normalized);
         return sprintf(
@@ -144,11 +128,19 @@ class FormatHelper
             }
         }
 
+        if (empty($datetime))
+            return '--';
+
         $now = new DateTime();
         try {
-            $ago = new DateTime($datetime);
+            if (is_numeric($datetime)) {
+                $ago = new DateTime('@' . $datetime);
+                $ago->setTimezone((new DateTime())->getTimezone());
+            } else {
+                $ago = new DateTime($datetime);
+            }
         } catch (Exception $e) {
-            return $datetime;
+            return (string) $datetime;
         }
         $diff = $now->diff($ago);
 
@@ -179,11 +171,60 @@ class FormatHelper
     }
 
     /**
-     * Tạo slug từ chuỗi (URL friendly)
+     * Gắn metadata thời gian vào một mảng (Chuẩn OOP cho API/View)
+     * @param array<string,mixed> $row
+     * @param string $field Tên trường thời gian (VD: created_at)
+     * @return array<string,mixed>
+     */
+    public static function attachTimeMeta(array $row, string $field): array
+    {
+        $value = $row[$field] ?? null;
+        $meta = self::normalizeTimeMeta($value);
+
+        $row[$field . '_ts'] = $meta['ts'];
+        $row[$field . '_iso'] = $meta['iso'];
+        $row[$field . '_iso_utc'] = $meta['iso_utc'];
+        $row[$field . '_display'] = $meta['display'];
+        $row[$field . '_ago'] = ($meta['ts'] !== null) ? self::timeAgo($meta['ts']) : '';
+
+        return $row;
+    }
+
+    /**
+     * Chuẩn hóa giá trị thời gian về metadata (Hỗ trợ TimeService nếu có)
+     * @return array{ts:int|null,iso:string,iso_utc:string,display:string}
+     */
+    private static function normalizeTimeMeta($value): array
+    {
+        if (class_exists('TimeService')) {
+            return TimeService::instance()->normalizeApiTime($value);
+        }
+
+        $raw = trim((string) ($value ?? ''));
+        if ($raw === '') {
+            return ['ts' => null, 'iso' => '', 'iso_utc' => '', 'display' => ''];
+        }
+
+        $ts = is_numeric($raw) ? (int) $raw : strtotime($raw);
+        if ($ts === false) {
+            return ['ts' => null, 'iso' => '', 'iso_utc' => '', 'display' => $raw];
+        }
+
+        return [
+            'ts' => $ts,
+            'iso' => date('c', $ts),
+            'iso_utc' => gmdate('c', $ts),
+            'display' => date('Y-m-d H:i:s', $ts),
+        ];
+    }
+
+    /**
+     * Chuyển đổi chuỗi thành slug (URL friendly)
+     * Hỗ trợ xóa dấu tiếng Việt và ký tự đặc biệt.
      */
     public static function toSlug(string $str): string
     {
-        $str = trim(mb_strtolower($str, 'UTF-8'));
+        $str = trim(mb_strtolower($str));
         $str = preg_replace('/(à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ)/', 'a', $str);
         $str = preg_replace('/(è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ)/', 'e', $str);
         $str = preg_replace('/(ì|í|ị|ỉ|ĩ)/', 'i', $str);
@@ -192,7 +233,7 @@ class FormatHelper
         $str = preg_replace('/(ỳ|ý|ỵ|ỷ|ỹ)/', 'y', $str);
         $str = preg_replace('/(đ)/', 'd', $str);
         $str = preg_replace('/[^a-z0-9-\s]/', '', $str);
-        $str = preg_replace('/([\s]+)/', '-', $str);
+        $str = preg_replace('/([\s-]+)/', '-', $str);
         return trim($str, '-');
     }
 }

@@ -14,10 +14,28 @@ require_once __DIR__ . '/../layout/head.php';
 require_once __DIR__ . '/../layout/breadcrumb.php';
 
 $timeService = class_exists('TimeService') ? TimeService::instance() : null;
+
 ?>
+<style>
+    .content-wrapper {
+        margin-right: 0 !important;
+    }
+
+    .container-fluid {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    .custom-card {
+        border-left: 0;
+        border-right: 0;
+        border-radius: 0;
+        border-top: 1px solid var(--card-border);
+    }
+</style>
 
 <section class="content pb-4 mt-1">
-    <div class="container-fluid">
+    <div class="container-fluid px-0">
 
         <!-- STATS -->
         <div class="row mb-3">
@@ -61,248 +79,123 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
                 <h3 class="card-title text-uppercase font-weight-bold">DANH SÁCH TRONG KHO</h3>
             </div>
 
-            <!-- Filter Bar -->
+            <!-- BỘ LỌC -->
             <div class="dt-filters">
-                <div class="row g-2 mb-3">
-                    <div class="col-md-<?= !empty($isManualQueue) ? '7' : '5' ?> mb-2">
+                <div class="row g-2 justify-content-start align-items-center mb-3">
+                    <!-- Search Input -->
+                    <div class="col-md-2 mb-2">
                         <input id="searchTerm" class="form-control form-control-sm"
-                            placeholder="<?= !empty($isManualQueue) ? 'Tìm mã đơn, tên khách, nội dung...' : 'Tìm nội dung trong kho...' ?>"
+                            placeholder="<?= !empty($isManualQueue) ? 'Tìm kiếm tất cả...' : 'Tìm kiếm...' ?>"
                             value="<?= htmlspecialchars($search ?? '') ?>">
                     </div>
-                    <div class="col-md-3 mb-2 text-center">
+
+                    <!-- Status Filter -->
+                    <div class="col-md-2 mb-2">
                         <select id="filterStatus" class="form-control form-control-sm">
-                            <option value="" <?= $statusFilter === '' ? 'selected' : '' ?>>-- TRẠNG THÁI --</option>
+                            <option value="">-- Trạng thái --</option>
                             <?php if (!empty($isManualQueue)): ?>
-                                <option value="pending" <?= $statusFilter === 'pending' ? 'selected' : '' ?>>CHỜ XỬ LÝ</option>
-                                <option value="completed" <?= $statusFilter === 'completed' ? 'selected' : '' ?>>HOÀN TẤT
-                                </option>
-                                <option value="cancelled" <?= $statusFilter === 'cancelled' ? 'selected' : '' ?>>ĐÃ HỦY
-                                </option>
+                                <option value="pending" <?= ($statusFilter ?? '') === 'pending' ? 'selected' : '' ?>>Đang chờ
+                                    xử lý</option>
+                                <option value="completed" <?= ($statusFilter ?? '') === 'completed' ? 'selected' : '' ?>>Hoàn
+                                    tất giao hàng</option>
+                                <option value="cancelled" <?= ($statusFilter ?? '') === 'cancelled' ? 'selected' : '' ?>>Đã hủy
+                                    đơn</option>
                             <?php else: ?>
-                                <option value="available" <?= $statusFilter === 'available' ? 'selected' : '' ?>>CÒN HÀNG
-                                </option>
-                                <option value="sold" <?= $statusFilter === 'sold' ? 'selected' : '' ?>>ĐÃ BÁN</option>
+                                <option value="available" <?= ($statusFilter ?? '') === 'available' ? 'selected' : '' ?>>Còn
+                                    trong kho</option>
+                                <option value="sold" <?= ($statusFilter ?? '') === 'sold' ? 'selected' : '' ?>>Đã bán thành
+                                    công</option>
                             <?php endif; ?>
                         </select>
                     </div>
 
-                    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap mt-2">
-                        <div class="filter-show d-flex align-items-center mb-2">
-                            <span class="filter-label mr-2">HIỂN THỊ :</span>
-                            <select id="filterLimit" class="form-control form-control-sm" style="width: 80px;">
-                                <option value="10" <?= ($limit ?? 20) == 10 ? 'selected' : '' ?>>10</option>
-                                <option value="20" <?= ($limit ?? 20) == 20 ? 'selected' : '' ?>>20</option>
-                                <option value="50" <?= ($limit ?? 20) == 50 ? 'selected' : '' ?>>50</option>
-                                <option value="100" <?= ($limit ?? 20) == 100 ? 'selected' : '' ?>>100</option>
-                                <option value="500" <?= ($limit ?? 20) == 500 ? 'selected' : '' ?>>500</option>
-                            </select>
-                        </div>
-                        <div class="filter-short d-flex align-items-center mb-2">
-                            <span class="filter-label mr-2">LỌC THEO NGÀY:</span>
-                            <select id="filterDate" class="form-control form-control-sm" style="width: 150px;">
-                                <option value="all" <?= ($dateFilter ?? '') === 'all' ? 'selected' : '' ?>>Tất cả</option>
-                                <option value="7" <?= ($dateFilter ?? '') === '7' ? 'selected' : '' ?>>7 ngày qua</option>
-                                <option value="15" <?= ($dateFilter ?? '') === '15' ? 'selected' : '' ?>>15 ngày qua</option>
-                                <option value="30" <?= ($dateFilter ?? '') === '30' ? 'selected' : '' ?>>30 ngày qua</option>
-                            </select>
-                        </div>
-                    </div>
+                    <!-- Reset Button -->
                     <div class="col-md-2 mb-2 text-center">
-                        <button type="button" id="btnClearFilters" class="btn btn-secondary btn-sm shadow-sm w-100">
-                            <i class="fas fa-times-circle mr-1"></i> Xóa Lọc
+                        <button type="button" id="btnClearFilters" class="btn btn-danger btn-sm shadow-sm w-100"
+                            title="Xóa toàn bộ lọc">
+                            Xóa Lọc
                         </button>
                     </div>
+
                     <?php if (empty($isManualQueue)): ?>
-                        <div class="col-md-2 mb-2 text-center">
+                        <div class="col-md-2 mb-2">
                             <button type="button" id="btnClean" class="btn btn-danger btn-sm shadow-sm w-100"
                                 title="Xóa toàn bộ hàng chưa bán">
-                                <i class="fas fa-eraser"></i> Dọn kho
+                                <i class="fas fa-eraser mr-1"></i> Dọn kho
                             </button>
                         </div>
-                        <div class="col-md-2 mb-2 text-center">
+                        <div class="col-md-2 mb-2">
                             <button type="button" class="btn btn-primary btn-sm shadow-sm w-100 font-weight-bold"
                                 onclick="$('#importModal').modal('show')">
-                                <i class="fas fa-plus-circle mr-1"></i> Thêm vào kho
+                                <i class="fas fa-plus mr-1"></i> Thêm sản phẩm
                             </button>
                         </div>
                     <?php endif; ?>
+                </div>
+
+                <div class="top-filter mb-2">
+                    <div class="filter-show">
+                        <span class="filter-label">Hiển thị :</span>
+                        <select id="filterLimit" class="filter-select flex-grow-1">
+                            <option value="10" <?= ($limit ?? 20) == 10 ? 'selected' : '' ?>>10</option>
+                            <option value="20" <?= ($limit ?? 20) == 20 ? 'selected' : '' ?>>20</option>
+                            <option value="50" <?= ($limit ?? 20) == 50 ? 'selected' : '' ?>>50</option>
+                            <option value="100" <?= ($limit ?? 20) == 100 ? 'selected' : '' ?>>100</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-short justify-content-end">
+                        <span class="filter-label">Lọc theo ngày:</span>
+                        <select id="filterPredefinedDate" class="filter-select flex-grow-1">
+                            <option value="all" <?= ($dateFilter ?? '') === 'all' ? 'selected' : '' ?>>Tất cả</option>
+                            <option value="7" <?= ($dateFilter ?? '') === '7' ? 'selected' : '' ?>>7 ngày qua</option>
+                            <option value="15" <?= ($dateFilter ?? '') === '15' ? 'selected' : '' ?>>15 ngày qua</option>
+                            <option value="30" <?= ($dateFilter ?? '') === '30' ? 'selected' : '' ?>>30 ngày qua</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
             <div class="card-body pt-3">
                 <div class="table-responsive table-wrapper mb-3">
-                    <table id="stockTable" class="table table-hover table-bordered w-100">
+                    <table id="stockTable" class="table table-hover table-bordered admin-table w-100">
                         <thead>
                             <tr>
-                                <?php if (!empty($isManualQueue)): ?>
+                                <?php if (!empty($isSourceHistory)): ?>
+                                    <th class="text-center font-weight-bold align-middle" style="width:100px">MÃ ĐƠN</th>
+                                    <th class="text-center font-weight-bold align-middle" style="width:150px">NGÀY MUA</th>
+                                    <th class="text-center font-weight-bold align-middle">NGƯỜI MUA</th>
+                                    <th class="text-center font-weight-bold align-middle">LINK</th>
+                                    <th class="text-center font-weight-bold align-middle" style="width:140px">THAO TÁC</th>
+                                <?php elseif (!empty($isManualQueue)): ?>
                                     <th class="text-center font-weight-bold align-middle" style="width:100px">MÃ ĐƠN</th>
                                     <th class="text-center font-weight-bold align-middle" style="width:150px">NGƯỜI MUA</th>
-                                    <th class="text-center font-weight-bold align-middle">YÊU CẦU / NỘI DUNG</th>
+                                    <th class="text-center font-weight-bold align-middle">THÔNG TIN YÊU CẦU</th>
+                                    <th class="text-center font-weight-bold align-middle">NỘI DUNG GIAO HÀNG</th>
                                     <th class="text-center font-weight-bold align-middle" style="width:120px">TRẠNG THÁI
                                     </th>
-                                    <th class="text-center font-weight-bold align-middle" style="width:140px">NGÀY ĐẶT</th>
-                                    <th class="text-center font-weight-bold align-middle" style="width:140px">NGÀY GIAO</th>
-                                    <th class="text-center font-weight-bold align-middle" style="width:120px">THAO TÁC</th>
+                                    <th class="text-center font-weight-bold align-middle" style="width:140px">THAO TÁC</th>
                                 <?php else: ?>
-                                    <th class="text-center font-weight-bold align-middle">NOI DUNG KHO</th>
+                                    <th class="text-center font-weight-bold align-middle" style="width:100px">MÃ ĐƠN</th>
+                                    <th class="text-center font-weight-bold align-middle">NỘI DUNG KHO</th>
                                     <th class="text-center font-weight-bold align-middle">NGƯỜI MUA</th>
                                     <th class="text-center font-weight-bold align-middle">TRẠNG THÁI</th>
                                     <th class="text-center font-weight-bold align-middle">NGÀY NHẬP</th>
-                                    <th class="text-center font-weight-bold align-middle" style="width:120px">THAO TÁC</th>
+                                    <th class="text-center font-weight-bold align-middle" style="width:140px">THAO TÁC</th>
                                 <?php endif; ?>
                             </tr>
                         </thead>
-                        <tbody id="stockBody">
+                        <tbody id="stockBody" style="opacity: 1;">
                             <?php if (empty($items)): ?>
                                 <tr>
-                                    <td colspan="<?= !empty($isManualQueue) ? '7' : '5' ?>"
+                                    <td colspan="<?= !empty($isSourceHistory) ? '5' : '6' ?>"
                                         class="text-center text-muted py-4">
                                         <i class="fas fa-box-open fa-2x mb-2 d-block opacity-50"></i>
                                         <?= !empty($isManualQueue) ? 'Không có đơn hàng nào cần giải' : 'Kho hiện đang trống' ?>
                                     </td>
                                 </tr>
                             <?php else: ?>
-                                <?php foreach ($items as $item): ?>
-                                    <?php if (!empty($isManualQueue)): ?>
-                                        <tr>
-                                            <td class="text-center align-middle">
-                                                <span class="badge bg-light text-dark border font-weight-bold"
-                                                    style="font-family:monospace;">
-                                                    <?= htmlspecialchars($item['order_code_short'] ?: $item['order_code']) ?>
-                                                </span>
-                                            </td>
-                                            <td class="text-center align-middle">
-                                                <a href="<?= url('admin/users/edit/' . $item['username']) ?>"
-                                                    class="font-weight-bold text-primary">
-                                                    <?= htmlspecialchars($item['username']) ?>
-                                                </a>
-                                            </td>
-                                            <td class="align-middle">
-                                                <div class="small">
-                                                    <b class="text-dark">Yêu cầu:</b>
-                                                    <span
-                                                        class="text-muted"><?= htmlspecialchars($item['customer_input'] ?: 'N/A') ?></span>
-                                                </div>
-                                                <?php if ($item['status'] === 'completed'): ?>
-                                                    <div class="mt-1 small">
-                                                        <b class="text-success">Giao:</b>
-                                                        <span
-                                                            class="text-muted"><?= htmlspecialchars($item['stock_content_plain'] ?: '—') ?></span>
-                                                    </div>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td class="text-center align-middle">
-                                                <?php
-                                                $st = $item['status'];
-                                                if ($st === 'pending')
-                                                    echo '<span class="badge badge-warning">Pending</span>';
-                                                elseif ($st === 'completed')
-                                                    echo '<span class="badge badge-success">Xong</span>';
-                                                else
-                                                    echo '<span class="badge badge-danger">Hủy</span>';
-                                                ?>
-                                            </td>
-                                            <td class="text-center align-middle">
-                                                <div class="small text-nowrap"><?= FormatHelper::eventTime($item['created_at_display'] ?? $item['created_at'], $item['created_at']) ?></div>
-                                            </td>
-                                            <td class="text-center align-middle">
-                                                <?php if ($item['status'] === 'completed' && !empty($item['fulfilled_at'])): ?>
-                                                    <div class="small text-nowrap"><?= FormatHelper::eventTime($item['fulfilled_at_display'] ?? $item['fulfilled_at'], $item['fulfilled_at']) ?></div>
-                                                <?php else: ?>
-                                                    <span class="text-muted small">—</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td class="text-center align-middle">
-                                                <?php if ($item['status'] === 'pending'): ?>
-                                                    <div class="btn-group">
-                                                        <button class="btn btn-success btn-sm btn-fulfill" data-id="<?= $item['id'] ?>"
-                                                            data-code="<?= htmlspecialchars($item['order_code_short'] ?: $item['order_code']) ?>"
-                                                            data-input="<?= htmlspecialchars($item['customer_input'] ?: '') ?>"
-                                                            title="Giao đơn (Gửi thông tin)">
-                                                            <i class="fas fa-paper-plane mr-1"></i> Giao
-                                                        </button>
-                                                        <button class="btn btn-danger btn-sm btn-cancel-order"
-                                                            data-id="<?= $item['id'] ?>"
-                                                            data-code="<?= htmlspecialchars($item['order_code_short'] ?: $item['order_code']) ?>"
-                                                            title="Hủy đơn + Hoàn tiền">
-                                                            Hủy
-                                                        </button>
-                                                    </div>
-                                                <?php elseif ($item['status'] === 'completed'): ?>
-                                                    <button class="btn btn-info btn-sm btn-fulfill" data-id="<?= $item['id'] ?>"
-                                                        data-code="<?= htmlspecialchars($item['order_code_short'] ?: $item['order_code']) ?>"
-                                                        data-input="<?= htmlspecialchars($item['customer_input'] ?: '') ?>"
-                                                        data-content="<?= htmlspecialchars($item['stock_content_plain'] ?: '') ?>"
-                                                        title="Sửa nội dung (Bảo hành)">
-                                                        <i class="fas fa-edit mr-1"></i> Sửa
-                                                    </button>
-                                                <?php else: ?>
-                                                    <button class="btn btn-light btn-sm text-muted" disabled>
-                                                        <i class="fas fa-check"></i>
-                                                    </button>
-                                                <?php endif; ?>
-                                            </td>
-                                        </tr>
-                                    <?php else: ?>
-                                        <tr id="stock-row-<?= $item['id'] ?>"
-                                            class="<?= $item['status'] === 'sold' ? 'table-light' : '' ?>">
-                                            <td class="align-middle">
-                                                <div class="d-flex align-items-center">
-                                                    <code class="p-1 px-2 border rounded bg-white text-dark mr-2"
-                                                        style="font-size: 14px;"><?= htmlspecialchars($item['content']) ?></code>
-                                                    <button class="btn btn-xs btn-outline-info copy-content-btn"
-                                                        data-content="<?= htmlspecialchars($item['content']) ?>" title="Copy">
-                                                        <i class="far fa-copy"></i>
-                                                    </button>
-                                                </div>
-                                                <?php if ($item['status'] === 'sold' && $item['sold_at']): ?>
-                                                    <div class="mt-1 small">
-                                                        <span class="text-danger font-weight-bold"><i class="far fa-clock mr-1"></i>Bán
-                                                            lúc:</span>
-                                                        <span
-                                                            class="text-muted"><?= $timeService ? htmlspecialchars($timeService->formatDisplay($item['sold_at'], 'd/m/Y H:i:s')) : htmlspecialchars(date('d/m/Y H:i:s', strtotime($item['sold_at']))) ?></span>
-                                                    </div>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td class="text-center align-middle">
-                                                <?php if (!empty($item['buyer_username'])): ?>
-                                                    <a href="<?= url('admin/users/edit/' . $item['buyer_username']) ?>"
-                                                        class="d-inline-flex align-items-center text-primary font-weight-bold">
-                                                        <?= htmlspecialchars($item['buyer_username']) ?>
-                                                    </a>
-                                                <?php else: ?>
-                                                    <span class="text-muted small"><i class="fas fa-minus mr-1"></i>Chưa bán</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td class="text-center align-middle">
-                                                <?php if ($item['status'] === 'available'): ?>
-                                                    <span class="badge badge-success px-2 py-1">CÒN HÀNG</span>
-                                                <?php else: ?>
-                                                    <span class="badge badge-secondary px-2 py-1">ĐÃ BÁN</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td class="text-center align-middle">
-                                                <?= FormatHelper::eventTime($item['created_at_display'] ?? ($item['created_at'] ?? ''), $item['created_at'] ?? '') ?>
-                                            </td>
-                                            <td class="text-center align-middle">
-                                                <div class="btn-group">
-                                                    <button class="btn btn-search-dt btn-sm edit-stock-btn"
-                                                        data-id="<?= $item['id'] ?>"
-                                                        data-content="<?= htmlspecialchars($item['content']) ?>"
-                                                        title="<?= $item['status'] === 'available' ? 'Sửa nội dung' : 'Sửa nội dung (Bảo hành)' ?>">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
-                                                    <?php if ($item['status'] === 'available'): ?>
-                                                        <button class="btn btn-danger btn-sm ml-1 delete-stock-btn"
-                                                            data-id="<?= $item['id'] ?>" title="Xóa">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
-                                                    <?php endif; ?>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    <?php endif; ?>
-                                <?php endforeach; ?>
+                                <?php include __DIR__ . '/stock/' . basename($partialView) . '.php'; ?>
                             <?php endif; ?>
                         </tbody>
                     </table>
@@ -436,18 +329,14 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
     <div class="modal-dialog border-0" role="document">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-warning py-2">
-                <h5 class="modal-title font-weight-bold">SỬA NOI DUNG KHO</h5>
+                <h5 class="modal-title font-weight-bold">SỬA THÔNG TIN</h5>
                 <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
             </div>
             <div class="modal-body p-4">
                 <input type="hidden" id="editId">
                 <div class="form-group mb-0">
-                    <label class="font-weight-bold text-dark mb-2">Nội dung (1 dòng duy nhất)</label>
+                    <label class="font-weight-bold text-dark mb-2">Nội dung</label>
                     <textarea id="editContent" class="form-control" rows="3" placeholder="user:pass..."></textarea>
-                    <small class="text-muted d-block mt-2">
-                        <i class="fas fa-exclamation-triangle mr-1 text-warning"></i>
-                        Chỉ chỉnh sửa khi cần thiết (Ví dụ: khách báo sai mật khẩu, bảo hành).
-                    </small>
                 </div>
             </div>
             <div class="modal-footer border-0 pt-0 pb-4 justify-content-center">
@@ -582,13 +471,18 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
 
         // Debounce search
         let searchTimer;
+
         function smartSearch() {
             clearTimeout(searchTimer);
             searchTimer = setTimeout(() => {
                 const status = $('#filterStatus').val();
                 const search = $('#searchTerm').val().trim();
                 const limit = $('#filterLimit').val();
-                const dateFilter = $('#filterDate').val();
+                const dateFilter = $('#filterPredefinedDate').val();
+
+                let startDate = '';
+                let endDate = '';
+
 
                 $('#stockBody').css('opacity', '0.5');
 
@@ -596,7 +490,9 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
                     status_filter: status,
                     search: search,
                     limit: limit,
-                    date_filter: dateFilter
+                    date_filter: dateFilter,
+                    start_date: startDate,
+                    end_date: endDate
                 }, function (res) {
                     $('#stockBody').css('opacity', '1');
                     if (res.success) {
@@ -608,14 +504,15 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
         }
 
         // Listeners for new filters
-        $('#filterStatus, #filterLimit, #filterDate').on('change', smartSearch);
+        $('#filterStatus, #filterLimit, #filterPredefinedDate').on('change', smartSearch);
         $('#searchTerm').on('input', smartSearch);
 
-        $('#btnClearFilters').on('click', function() {
+        $('#btnClearFilters').on('click', function () {
             $('#searchTerm').val('');
             $('#filterStatus').val('');
             $('#filterLimit').val('20');
-            $('#filterDate').val('all');
+            $('#filterPredefinedDate').val('all');
+            if (typeof datePicker !== 'undefined' && datePicker) datePicker.clear();
             smartSearch();
         });
 
@@ -628,128 +525,138 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
             } else {
                 items.forEach(item => {
                     if (isManualQueue) {
-                        let statusBadge = '';
-                        if (item.status === 'pending') statusBadge = '<span class="badge badge-warning">Pending</span>';
-                        else if (item.status === 'completed') statusBadge = '<span class="badge badge-success">Xong</span>';
-                        else statusBadge = '<span class="badge badge-danger">Hủy</span>';
+                        const statusBadge = item.status === 'pending'
+                            ? '<span class="badge badge-warning">Pending</span>'
+                            : (item.status === 'completed' ? '<span class="badge badge-success">Xong</span>' : '<span class="badge badge-danger">Hủy</span>');
 
-                        let deliveryHtml = '';
-                        if (item.status === 'completed') {
-                            deliveryHtml = `<div class="mt-1 small"><b class="text-success">Giao:</b> <span class="text-muted">${escapeHtml(item.stock_content_plain || '—')}</span></div>`;
-                        }
+                        const deliveryDiv = item.status === 'completed'
+                            ? `<div class="mt-1 small"><b class="text-success">Giao:</b> <span class="text-muted">${escapeHtml(item.stock_content_plain || '—')}</span></div>`
+                            : '';
 
-                        let actionHtml = '';
+                        let actionBtns = '';
                         if (item.status === 'pending') {
-                            actionHtml = `<div class="btn-group">
-                                            <button class="btn btn-success btn-sm btn-fulfill" 
-                                                data-id="${item.id}" 
-                                                data-code="${escapeHtml(item.order_code_short || item.order_code)}"
-                                                data-input="${escapeHtml(item.customer_input || '')}"
-                                                title="Giao đơn (Gửi thông tin)">
-                                                <i class="fas fa-paper-plane mr-1"></i> Giao
-                                            </button>
-                                            <button class="btn btn-danger btn-sm btn-cancel-order"
-                                                data-id="${item.id}"
-                                                data-code="${escapeHtml(item.order_code_short || item.order_code)}"
-                                                title="Hủy đơn + Hoàn tiền">
-                                                Hủy
-                                            </button>
-                                          </div>`;
+                            actionBtns = `<div class="btn-group">
+                                <button class="btn btn-success btn-sm btn-fulfill" data-id="${item.id}" data-code="${escapeHtml(item.order_code_short || item.order_code)}" data-input="${escapeHtml(item.customer_input || '')}" title="Giao đơn (Gửi thông tin)"><i class="fas fa-paper-plane mr-1"></i> Giao</button>
+                                <button class="btn btn-danger btn-sm btn-cancel-order" data-id="${item.id}" data-code="${escapeHtml(item.order_code_short || item.order_code)}" title="Hủy đơn + Hoàn tiền">Hủy</button>
+                               </div>`;
                         } else if (item.status === 'completed') {
-                            actionHtml = `<button class="btn btn-info btn-sm btn-fulfill" 
-                                                data-id="${item.id}" 
-                                                data-code="${escapeHtml(item.order_code_short || item.order_code)}"
-                                                data-input="${escapeHtml(item.customer_input || '')}"
-                                                data-content="${escapeHtml(item.stock_content_plain || '')}"
-                                                title="Sửa nội dung (Bảo hành)">
-                                                <i class="fas fa-edit mr-1"></i> Sửa
-                                            </button>`;
+                            actionBtns = `<button class="btn btn-info btn-sm btn-fulfill" data-id="${item.id}" data-code="${escapeHtml(item.order_code_short || item.order_code)}" data-input="${escapeHtml(item.customer_input || '')}" data-content="${escapeHtml(item.stock_content_plain || '')}" title="Sửa nội dung (Bảo hành)"><i class="fas fa-edit mr-1"></i> Sửa</button>`;
                         } else {
-                            actionHtml = `<button class="btn btn-light btn-sm text-muted" disabled><i class="fas fa-check"></i></button>`;
-                        }
-
-                        let orderDate = item.created_at_display || item.created_at || '—';
-                        let deliveryDateHtml = '<span class="text-muted small">—</span>';
-                        if (item.status === 'completed' && item.fulfilled_at) {
-                            deliveryDateHtml = `<div class="small text-nowrap">${escapeHtml(item.fulfilled_at_display || item.fulfilled_at)}</div>`;
+                            actionBtns = '<button class="btn btn-light btn-sm text-muted" disabled><i class="fas fa-check"></i></button>';
                         }
 
                         html += `<tr>
-                            <td class="text-center align-middle">
-                                <span class="badge bg-light text-dark border font-weight-bold" style="font-family:monospace;">${escapeHtml(item.order_code_short || item.order_code)}</span>
-                            </td>
-                            <td class="text-center align-middle">
-                                <a href="<?= url('admin/users/edit/') ?>${item.username}" class="font-weight-bold text-primary">${escapeHtml(item.username)}</a>
-                            </td>
-                            <td class="align-middle">
-                                <div class="small"><b class="text-dark">Yêu cầu:</b> <span class="text-muted">${escapeHtml(item.customer_input || 'N/A')}</span></div>
-                                ${deliveryHtml}
-                            </td>
+                            <td class="text-center align-middle"><span class="badge bg-light text-dark border font-weight-bold" style="font-family:monospace;">${escapeHtml(item.order_code_short || item.order_code)}</span></td>
+                            <td class="text-center align-middle"><a href="<?= url('admin/users/edit/') ?>${item.username}" class="font-weight-bold text-primary">${escapeHtml(item.username)}</a></td>
+                            <td class="align-middle"><div class="small"><b class="text-dark">Yêu cầu:</b> <span class="text-muted">${escapeHtml(item.customer_input || 'N/A')}</span></div>${deliveryDiv}</td>
                             <td class="text-center align-middle">${statusBadge}</td>
-                            <td class="text-center align-middle"><div class="small text-nowrap">${escapeHtml(orderDate)}</div></td>
-                            <td class="text-center align-middle">${deliveryDateHtml}</td>
-                            <td class="text-center align-middle">${actionHtml}</td>
+                            <td class="text-center align-middle">${item.created_at_display || item.created_at}</td>
+                            <td class="text-center align-middle">${item.status === 'completed' && item.fulfilled_at ? (item.fulfilled_at_display || item.fulfilled_at) : '<span class="text-muted small">—</span>'}</td>
+                            <td class="text-center align-middle">${actionBtns}</td>
                         </tr>`;
-                        return;
+                    } else {
+                        const statusBadge = item.status === 'available'
+                            ? '<span class="badge badge-success px-2 py-1">CÒN HÀNG</span>'
+                            : '<span class="badge badge-secondary px-2 py-1">ĐÃ BÁN</span>';
+
+                        const buyerLink = item.buyer_username
+                            ? `<a href="<?= url('admin/users/edit/') ?>${item.buyer_username}" class="d-inline-flex align-items-center text-primary font-weight-bold">${escapeHtml(item.buyer_username)}</a>`
+                            : '<span class="text-muted small"><i class="fas fa-minus mr-1"></i>Chưa bán</span>';
+
+                        const soldTime = (item.status === 'sold' && item.sold_at)
+                            ? `<div class="mt-1 small"><span class="text-danger font-weight-bold"><i class="far fa-clock mr-1"></i>Bán lúc:</span> <span class="text-muted">${item.sold_at_display || item.sold_at}</span></div>`
+                            : '';
+
+                        const deleteBtn = item.status === 'available'
+                            ? `<button class="btn btn-danger btn-sm ml-1 delete-stock-btn" data-id="${item.id}" title="Xóa"><i class="fas fa-trash"></i></button>`
+                            : '';
+
+                        html += `<tr id="stock-row-${item.id}" class="${item.status === 'sold' ? 'table-light' : ''}">
+                            <td class="align-middle">
+                                <div class="d-flex align-items-center">
+                                    <code class="p-1 px-2 border rounded bg-white text-dark mr-2" style="font-size: 14px;">${escapeHtml(item.content)}</code>
+                                    <button class="btn btn-xs btn-outline-info copy-content-btn" data-content="${escapeHtml(item.content)}" title="Copy"><i class="far fa-copy"></i></button>
+                                </div>
+                                ${soldTime}
+                            </td>
+                            <td class="text-center align-middle">${buyerLink}</td>
+                            <td class="text-center align-middle">${statusBadge}</td>
+                            <td class="text-center align-middle">${item.created_at_display || item.created_at}</td>
+                            <td class="text-center align-middle">
+                                <div class="btn-group">
+                                    <button class="btn btn-search-dt btn-sm edit-stock-btn" data-id="${item.id}" data-content="${escapeHtml(item.content)}" title="${item.status === 'available' ? 'Sửa' : 'Sửa bảo hành'}"><i class="fas fa-edit"></i></button>
+                                    ${deleteBtn}
+                                </div>
+                            </td>
+                        </tr>`;
                     }
-
-                    const rowClass = item.status === 'sold' ? 'table-light' : '';
-                    const statusBadge = item.status === 'available'
-                        ? '<span class="badge badge-success px-2 py-1">CÒN HÀNG</span>'
-                        : '<span class="badge badge-secondary px-2 py-1">ĐÃ BÁN</span>';
-
-                    let buyerHtml = '<span class="text-muted small"><i class="fas fa-minus mr-1"></i>Chưa bán</span>';
-                    if (item.buyer_username) {
-                        buyerHtml = `<a href="<?= url('admin/users/edit/') ?>${item.buyer_username}" class="d-inline-flex align-items-center text-primary font-weight-bold">
-                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mr-2" style="width:24px; height:24px; font-size:10px;"><i class="fas fa-user"></i></div>
-                                        ${escapeHtml(item.buyer_username)}
-                                    </a>`;
-                    }
-
-                    let soldAtHtml = '';
-                    if (item.status === 'sold' && item.sold_at) {
-                        const soldDisplay = item.sold_at_display || item.sold_at;
-                        soldAtHtml = `<div class="mt-1 small"><span class="text-danger font-weight-bold"><i class="far fa-clock mr-1"></i>Bán lúc:</span> <span class="text-muted">${escapeHtml(soldDisplay)}</span></div>`;
-                    }
-
-                    const editTitle = item.status === 'available' ? 'Sửa nội dung' : 'Sửa nội dung (Bảo hành)';
-                    const deleteBtn = item.status === 'available'
-                        ? `<button class="btn btn-danger btn-sm ml-1 delete-stock-btn" data-id="${item.id}" title="Xóa"><i class="fas fa-trash"></i></button>`
-                        : '';
-
-                    // Time display
-                    const timeDisplay = item.created_at_display || item.created_at || '—';
-                    const timeAgo = item.created_at_ago || '';
-                    const timeHtml = timeAgo
-                        ? `<span class="badge date-badge" data-toggle="tooltip" data-placement="top" title="${escapeHtml(timeAgo)}">${escapeHtml(timeDisplay)}</span>`
-                        : `<span class="text-muted small">${escapeHtml(timeDisplay)}</span>`;
-
-                    html += `<tr id="stock-row-${item.id}" class="${rowClass}">
-                        <td class="align-middle">
-                            <div class="d-flex align-items-center">
-                                <code class="p-1 px-2 border rounded bg-white text-dark mr-2" style="font-size: 14px;">${escapeHtml(item.content)}</code>
-                                <button class="btn btn-xs btn-outline-info copy-content-btn" data-content="${escapeHtml(item.content)}" title="Copy"><i class="far fa-copy"></i></button>
-                            </div>
-                            ${soldAtHtml}
-                        </td>
-                        <td class="text-center align-middle">${buyerHtml}</td>
-                        <td class="text-center align-middle">${statusBadge}</td>
-                        <td class="text-center align-middle">${timeHtml}</td>
-                        <td class="text-center align-middle">
-                            <div class="btn-group">
-                                <button class="btn btn-search-dt btn-sm edit-stock-btn"
-                                    data-id="${item.id}" data-content="${escapeHtml(item.content)}" title="${editTitle}">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                ${deleteBtn}
-                            </div>
-                        </td>
-                    </tr>`;
                 });
             }
             $('#stockBody').html(html);
             $('[data-toggle="tooltip"]').tooltip();
         }
+
+        const actionUrl = '<?= url('admin/products/stock/action/' . $product['id']) ?>';
+
+        function performStockAction(action, id, data = {}, callback = null) {
+            const postData = { action: action, id: id, ...data };
+            $.post(actionUrl, postData, function (res) {
+                if (res.success) {
+                    if (callback) callback(res);
+                    else {
+                        Toast.fire({ icon: 'success', title: res.message || 'Thành công' });
+                        setTimeout(() => location.reload(), 1000);
+                    }
+                } else {
+                    Swal.fire('Lỗi', res.message || 'Có lỗi xảy ra', 'error');
+                }
+            }, 'json').fail(function (xhr) {
+                const msg = xhr.responseJSON ? xhr.responseJSON.message : 'Lỗi kết nối máy chủ';
+                Swal.fire('Lỗi', msg, 'error');
+            });
+        }
+
+        // DELETE STOCK
+        $(document).on('click', '.delete-stock-btn', function () {
+            const id = $(this).data('id');
+            Swal.fire({
+                title: 'Xác nhận xóa?',
+                text: "Dữ liệu này sẽ bị xóa khỏi kho!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Đồng ý xóa'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    performStockAction('delete', id);
+                }
+            });
+        });
+
+        // EDIT STOCK (Open Modal)
+        $(document).on('click', '.edit-stock-btn', function () {
+            const id = $(this).data('id');
+            const content = $(this).data('content');
+            $('#editId').val(id);
+            $('#editContent').val(content);
+            $('#editStockModal').modal('show');
+        });
+
+        // SAVE EDIT
+        $('#btnSaveEdit').click(function () {
+            const id = $('#editId').val();
+            const content = $('#editContent').val().trim();
+            if (!content) return Swal.fire('Lỗi', 'Nội dung không được để trống', 'error');
+
+            const btn = $(this);
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
+            performStockAction('update', id, { content: content }, () => {
+                $('#editStockModal').modal('hide');
+                Toast.fire({ icon: 'success', title: 'Đã cập nhật' });
+                setTimeout(() => location.reload(), 800);
+            });
+        });
 
         // OPEN FULFILL MODAL
         $(document).on('click', '.btn-fulfill', function () {
@@ -778,39 +685,23 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
         // CONFIRM FULFILL
         $('#btnConfirmFulfill').click(function () {
             const content = $('#deliveryContent').val().trim();
-            if (!content) {
-                Swal.fire('Lỗi', 'Vui lòng nhập nội dung bàn giao!', 'error');
-                return;
-            }
+            if (!content) return Swal.fire('Lỗi', 'Vui lòng nhập nội dung bàn giao!', 'error');
 
+            const id = $('#fulfillOrderId').val();
             const btn = $(this);
             btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Đang xử lý...');
 
-            $.post('<?= url('admin/logs/buying/fulfill') ?>', {
-                order_id: $('#fulfillOrderId').val(),
-                delivery_content: content
-            }, function (res) {
-                btn.prop('disabled', false).html('<i class="fas fa-check-circle mr-1"></i> XÁC NHẬN GIAO ĐƠN');
-                if (res.success) {
-                    $('#fulfillModal').modal('hide');
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Thành công',
-                        text: res.message || 'Đã xử lý đơn hàng thành công!',
-                        timer: 1500
-                    });
-                    setTimeout(() => location.reload(), 1500);
-                } else {
-                    Swal.fire('Lỗi', res.message || 'Có lỗi xảy ra', 'error');
-                }
-            }, 'json');
+            performStockAction('fulfill', id, { content: content }, () => {
+                $('#fulfillModal').modal('hide');
+                Swal.fire({ icon: 'success', title: 'Thành công', text: 'Đã xử lý đơn hàng!', timer: 1500 });
+                setTimeout(() => location.reload(), 1500);
+            });
         });
 
         // OPEN CANCEL MODAL
         $(document).on('click', '.btn-cancel-order', function () {
             const id = $(this).data('id');
             const code = $(this).data('code');
-
             $('#cancelOrderId').val(id);
             $('#cancelCode').text(code);
             $('#cancelReason').val('');
@@ -820,32 +711,17 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
         // CONFIRM CANCEL
         $('#btnConfirmCancel').click(function () {
             const reason = $('#cancelReason').val().trim();
-            if (!reason) {
-                Swal.fire('Lỗi', 'Vui lòng nhập lý do hủy đơn!', 'error');
-                return;
-            }
+            if (!reason) return Swal.fire('Lỗi', 'Vui lòng nhập lý do hủy đơn!', 'error');
 
+            const id = $('#cancelOrderId').val();
             const btn = $(this);
             btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Đang xử lý...');
 
-            $.post('<?= url('admin/logs/buying/cancel') ?>', {
-                order_id: $('#cancelOrderId').val(),
-                cancel_reason: reason
-            }, function (res) {
-                btn.prop('disabled', false).html('<i class="fas fa-check-circle mr-1"></i> XÁC NHẬN HỦY & HOÀN TIỀN');
-                if (res.success) {
-                    $('#cancelModal').modal('hide');
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Đã hủy đơn',
-                        text: 'Đơn hàng đã được hủy và hoàn tiền thành công!',
-                        timer: 1500
-                    });
-                    setTimeout(() => location.reload(), 1500);
-                } else {
-                    Swal.fire('Lỗi', res.message || 'Có lỗi xảy ra', 'error');
-                }
-            }, 'json');
+            performStockAction('cancel', id, { reason: reason }, () => {
+                $('#cancelModal').modal('hide');
+                Swal.fire({ icon: 'success', title: 'Đã hủy đơn', text: 'Đã hủy và hoàn tiền!', timer: 1500 });
+                setTimeout(() => location.reload(), 1500);
+            });
         });
 
         function renderStats(stats, isManualQueue) {
@@ -883,15 +759,11 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
                 if (!r.isConfirmed) return;
                 const btn = $(this);
                 btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>...');
-                $.post(cleanUrl, {}, function (res) {
-                    if (res.success) {
-                        Toast.fire({ icon: 'success', title: res.message });
-                        setTimeout(() => location.reload(), 1200);
-                    } else {
-                        btn.prop('disabled', false).html('<i class="fas fa-eraser"></i> Dọn kho');
-                        Toast.fire({ icon: 'error', title: res.message });
-                    }
-                }, 'json');
+
+                performStockAction('clean', <?= (int) $product['id'] ?>, {}, () => {
+                    Toast.fire({ icon: 'success', title: 'Đã dọn sạch kho' });
+                    setTimeout(() => location.reload(), 1200);
+                });
             });
         });
 

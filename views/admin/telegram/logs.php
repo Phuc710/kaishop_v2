@@ -79,7 +79,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                             <?= htmlspecialchars($log['description'] ?? '') ?>
                                         </td>
                                         <td class="text-right pr-4 small text-muted font-weight-bold">
-                                            <?= date('H:i d/m/Y', strtotime($log['created_at'])) ?>
+                                            <?= FormatHelper::eventTime($log['created_at'] ?? null, $log['created_at'] ?? null) ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>

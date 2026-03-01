@@ -103,7 +103,7 @@ class AuthController extends Controller
         if ($this->authSecurity->needsPasswordRehash($user)) {
             $this->userModel->update($user['id'], [
                 'password' => $this->authSecurity->hashPassword($password),
-                'password_updated_at' => date('Y-m-d H:i:s')
+                'password_updated_at' => class_exists('TimeService') ? TimeService::instance()->nowSql() : date('Y-m-d H:i:s')
             ]);
             $user = $this->userModel->findById((int) $user['id']) ?: $user;
         }
@@ -188,7 +188,8 @@ class AuthController extends Controller
         global $ip_address;
         $hashedPassword = $this->authSecurity->hashPassword($password);
         $apiKey = md5(bin2hex(random_bytes(16)));
-        $time = date('h:i d-m-Y');
+        $timeService = class_exists('TimeService') ? TimeService::instance() : null;
+        $time = $timeService ? $timeService->nowSql() : date('Y-m-d H:i:s');
         $randomId = $this->generateUniqueUserId();
 
         $userId = $this->userModel->create([
@@ -359,7 +360,7 @@ class AuthController extends Controller
         $new_pass = $this->authSecurity->hashPassword($password);
         $this->userModel->update($user['id'], [
             'password' => $new_pass,
-            'password_updated_at' => date('Y-m-d H:i:s'),
+            'password_updated_at' => class_exists('TimeService') ? TimeService::instance()->nowSql() : date('Y-m-d H:i:s'),
             'otpcode' => ''
         ]);
 
@@ -493,13 +494,14 @@ class AuthController extends Controller
             $username = $this->generateUniqueUsernameFromSeed((string) $baseSeed);
             $randomId = $this->generateUniqueUserId();
             $apiKey = md5(bin2hex(random_bytes(16)));
-            $time = date('h:i d-m-Y');
+            $timeService = class_exists('TimeService') ? TimeService::instance() : null;
+            $time = $timeService ? $timeService->nowSql() : date('Y-m-d H:i:s');
 
             $newId = $this->userModel->create([
                 'id' => $randomId,
                 'username' => $username,
                 'password' => $this->authSecurity->hashPassword(bin2hex(random_bytes(16))),
-                'password_updated_at' => date('Y-m-d H:i:s'),
+                'password_updated_at' => class_exists('TimeService') ? TimeService::instance()->nowSql() : date('Y-m-d H:i:s'),
                 'email' => $email,
                 'level' => ($this->userModel->count() == 0) ? '9' : '0',
                 'tong_nap' => '0',

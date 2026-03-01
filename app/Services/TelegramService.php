@@ -60,6 +60,31 @@ class TelegramService
     }
 
     /**
+     * Send photo by URL or file_id to a specific chat.
+     */
+    public function sendPhotoTo(string $chatId, string $photo, ?string $caption = null, array $options = []): bool
+    {
+        $payload = [
+            'chat_id' => $chatId,
+            'photo' => trim($photo),
+            'parse_mode' => $options['parse_mode'] ?? 'HTML',
+        ];
+
+        if ($caption !== null && trim($caption) !== '') {
+            $payload['caption'] = trim($caption);
+        }
+
+        if (!empty($options['reply_markup'])) {
+            $payload['reply_markup'] = is_string($options['reply_markup'])
+                ? $options['reply_markup']
+                : json_encode($options['reply_markup'], JSON_UNESCAPED_UNICODE);
+        }
+
+        $result = $this->apiCall('sendPhoto', $payload);
+        return !empty($result['ok']);
+    }
+
+    /**
      * Edit an existing message.
      *
      * @param mixed $keyboard
@@ -80,6 +105,14 @@ class TelegramService
         }
 
         $result = $this->apiCall('editMessageText', $payload);
+
+        if (empty($result['ok'])) {
+            $desc = (string) ($result['description'] ?? '');
+            if (str_contains($desc, 'message is not modified')) {
+                return true; // Technically success
+            }
+        }
+
         return !empty($result['ok']);
     }
 
@@ -237,5 +270,22 @@ class TelegramService
     public static function buildInlineKeyboard(array $rows): array
     {
         return ['inline_keyboard' => $rows];
+    }
+
+    /**
+     * Reply keyboard builder (persistent button menu).
+     */
+    public static function buildReplyKeyboard(
+        array $rows,
+        bool $resize = true,
+        bool $oneTime = false,
+        bool $persistent = true
+    ): array {
+        return [
+            'keyboard' => $rows,
+            'resize_keyboard' => $resize,
+            'one_time_keyboard' => $oneTime,
+            'is_persistent' => $persistent,
+        ];
     }
 }

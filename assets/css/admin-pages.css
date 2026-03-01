@@ -76,6 +76,53 @@ table.dataTable tbody td {
     border-right: none !important;
 }
 
+/* Product thumbnails (admin/products) */
+.product-image-col,
+.product-image-cell {
+    width: 84px;
+    min-width: 84px;
+}
+
+.product-thumb {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    background: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.product-thumb-img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+    object-position: center;
+    background: #ffffff;
+}
+
+.product-thumb-placeholder {
+    color: #94a3b8;
+}
+
+@media (max-width: 768px) {
+
+    .product-image-col,
+    .product-image-cell {
+        width: 76px;
+        min-width: 76px;
+    }
+
+    .product-thumb {
+        width: 52px;
+        height: 52px;
+    }
+}
+
 /* Bắt buộc hiển thị màu trắng cho dòng, loại bỏ xọc dưa (odd/even) của DataTables */
 table.dataTable tbody tr.odd,
 table.dataTable tbody tr.even,
@@ -366,8 +413,8 @@ table.dataTable.table-bordered {
     background: #ede9fe;
     color: #5b21b6;
     border-radius: 20px;
-    padding: 3px 10px;
-    font-size: 11.5px;
+    padding: 2px 8px;
+    font-size: 11px;
     font-weight: 600;
     white-space: nowrap;
     gap: 4px;
@@ -718,5 +765,71 @@ table.dataTable.table-bordered {
         width: 30px;
         height: 30px;
         border-radius: 8px;
+    }
+}
+
+/* Admin Dashboard Revenue */
+.admin-dashboard-page .container-fluid {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+}
+
+.admin-dashboard-page .dashboard-range-tabs {
+    gap: 8px;
+}
+
+.admin-dashboard-page .dashboard-range-tabs .btn {
+    border-radius: 8px !important;
+    min-width: 84px;
+}
+
+.admin-dashboard-page .dashboard-range-hint {
+    font-size: 13px;
+}
+
+.admin-dashboard-page .dashboard-mini-box {
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+}
+
+.admin-dashboard-page .dashboard-mini-sub {
+    color: #6b7280;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.admin-dashboard-page .table td,
+.admin-dashboard-page .table th {
+    vertical-align: middle;
+}
+
+.admin-dashboard-page .table thead th {
+    white-space: nowrap;
+}
+
+.admin-dashboard-page .dashboard-chart-wrap {
+    position: relative;
+    width: 100%;
+    min-height: 300px;
+}
+
+.admin-dashboard-page .dashboard-chart-wrap--donut {
+    min-height: 300px;
+    max-height: 360px;
+}
+
+@media (max-width: 767.98px) {
+    .admin-dashboard-page .container-fluid {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+
+    .admin-dashboard-page .dashboard-range-tabs .btn {
+        min-width: 74px;
+        margin-bottom: 6px;
+    }
+
+    .admin-dashboard-page .dashboard-chart-wrap,
+    .admin-dashboard-page .dashboard-chart-wrap--donut {
+        min-height: 240px;
     }
 }

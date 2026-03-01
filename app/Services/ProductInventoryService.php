@@ -11,6 +11,25 @@ class ProductInventoryService
         $this->stockModel = $stockModel ?: new ProductStock();
     }
 
+    /**
+     * Factory method to get the appropriate handler for a product's inventory
+     */
+    public function getHandler(array $product): InventoryHandlerInterface
+    {
+        $deliveryMode = Product::resolveDeliveryMode($product);
+
+        switch ($deliveryMode) {
+            case 'account_stock':
+                return new AccountInventoryHandler($product);
+            case 'source_link':
+                return new SourceLinkInventoryHandler($product);
+            case 'manual_info':
+                return new ManualInfoInventoryHandler($product);
+            default:
+                throw new Exception("Unsupported delivery mode: {$deliveryMode}");
+        }
+    }
+
     public function usesUnlimitedStock(array $product): bool
     {
         return !Product::isStockManagedProduct($product);

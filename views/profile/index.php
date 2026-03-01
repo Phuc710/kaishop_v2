@@ -123,6 +123,12 @@ require __DIR__ . '/layout/header.php';
                             <div class="fw-bold text-dark">
                                 <?= htmlspecialchars((string) ($tgLink['telegram_username'] ?? $tgLink['first_name'] ?? 'Người dùng Telegram'), ENT_QUOTES, 'UTF-8'); ?>
                             </div>
+                            <?php if (!empty($tgLink['linked_at'])): ?>
+                                <div class="small text-muted mt-1" style="font-size: 0.8rem;">
+                                    <i class="fas fa-calendar-alt me-1"></i> Liên kết lúc:
+                                    <?= TimeService::instance()->formatDisplay($tgLink['linked_at'], 'H:i d/m/Y') ?>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <button type="button" onclick="unlinkTelegram()" class="btn btn-outline-danger btn-sm rounded-pill px-3">Hủy
@@ -152,7 +158,7 @@ require __DIR__ . '/layout/header.php';
                             <code>/link <span id="tg-otp-code-val">000000</span></code>
                         </div>
                         <div class="mt-3 d-flex flex-column flex-sm-row justify-content-center align-items-center gap-2">
-                           
+
                             <div class="text-danger">
                                 <i class="fas fa-clock me-1"></i> Hết hạn sau <strong id="tg-countdown">05:00</strong>
                             </div>
@@ -387,15 +393,38 @@ require __DIR__ . '/layout/header.php';
             }
 
             async unlink() {
-                const confirmed = await SwalHelper.confirm('Bạn có chắc muốn hủy liên kết Telegram?', 'Hành động này sẽ ngắt kết nối với Bot.');
-                if (!confirmed) return;
+                const tgName = '<?= htmlspecialchars((string) ($tgLink['first_name'] ?? $tgLink['telegram_username'] ?? 'BOT Telegram'), ENT_QUOTES, 'UTF-8'); ?>';
+                const result = await Swal.fire({
+                    title: 'Xác nhận hủy liên kết',
+                    text: 'Sau khi hủy, bạn muốn số dư ví hiện tại nằm ở đâu?',
+                    icon: 'question',
+                    showDenyButton: true,
+                    showCancelButton: true,
+                    confirmButtonText: '🤖 ' + tgName,
+                    denyButtonText: '🌐 Tài khoản WEB',
+                    cancelButtonText: 'Hủy',
+                    confirmButtonColor: '#0088cc',
+                    denyButtonColor: '#00c300',
+                    footer: '<div class="small text-danger text-center">Hành động này sẽ ngắt kết nối ngay lập tức.</div>'
+                });
+
+                if (result.isDismissed) return;
+
+                const destination = result.isConfirmed ? 'bot' : 'web';
+
+                SwalHelper.loading('Đang xử lý...');
 
                 try {
-                    const response = await fetch(this.unlinkUrl, { method: 'POST' });
+                    const formData = new FormData();
+                    formData.append('destination', destination);
+
+                    const response = await fetch(this.unlinkUrl, {
+                        method: 'POST',
+                        body: formData
+                    });
                     const data = await response.json();
                     if (data.success) {
-                        SwalHelper.toast(data.message, 'success');
-                        setTimeout(() => location.reload(), 1500);
+                        SwalHelper.successReload(data.message);
                     } else {
                         SwalHelper.error(data.message);
                     }

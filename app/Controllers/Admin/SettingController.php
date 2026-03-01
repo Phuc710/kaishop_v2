@@ -18,7 +18,7 @@ class SettingController extends Controller
 
         if (!isset($user['level']) || (int) $user['level'] !== 9) {
             http_response_code(403);
-            die('Truy cap bi tu choi - chi danh cho quan tri vien');
+            die('Truy cập bị từ chối - Chỉ dành cho quản trị viên');
         }
     }
 
@@ -44,7 +44,7 @@ class SettingController extends Controller
         $this->requireAdmin();
 
         if (!$this->validateCsrf()) {
-            return $this->json(['status' => 'error', 'message' => 'Loi xac thuc (CSRF). Vui long tai lai trang.']);
+            return $this->json(['status' => 'error', 'message' => 'Lỗi xác thực (CSRF). Vui lòng tải lại trang.']);
         }
 
         $action = $this->post('action');
@@ -99,7 +99,7 @@ class SettingController extends Controller
             case 'update_maintenance':
                 $res = $this->maintenanceService->saveConfig($data);
                 if ($res['success']) {
-                    Logger::info('System', 'update_maintenance', 'Cap nhat cau hinh bao tri');
+                    Logger::info('System', 'update_maintenance', 'Cập nhật cấu hình bảo trì');
                 }
                 return $this->json([
                     'status' => $res['success'] ? 'success' : 'error',
@@ -112,7 +112,7 @@ class SettingController extends Controller
                     Logger::info(
                         'System',
                         'toggle_maintenance_manual',
-                        !empty($data['maintenance_enabled']) ? 'Bat bao tri thu cong' : 'Tat bao tri thu cong'
+                        !empty($data['maintenance_enabled']) ? 'Bật bảo trì thủ công' : 'Tắt bảo trì thủ công'
                     );
                 }
                 return $this->json([
@@ -124,7 +124,7 @@ class SettingController extends Controller
             case 'clear_maintenance':
                 $res = $this->maintenanceService->clearNow();
                 if ($res['success']) {
-                    Logger::info('System', 'clear_maintenance', 'Tat che do bao tri ngay lap tuc');
+                    Logger::info('System', 'clear_maintenance', 'Tắt chế độ bảo trì ngay lập tức');
                 }
                 return $this->json([
                     'status' => $res['success'] ? 'success' : 'error',
@@ -132,7 +132,7 @@ class SettingController extends Controller
                 ]);
 
             default:
-                return $this->json(['status' => 'error', 'message' => 'Hanh dong khong hop le']);
+                return $this->json(['status' => 'error', 'message' => 'Hành động không hợp lệ']);
         }
     }
 
@@ -150,22 +150,22 @@ class SettingController extends Controller
         }
 
         if (empty($sets)) {
-            return $this->json(['status' => 'error', 'message' => 'Khong co du lieu thay doi']);
+            return $this->json(['status' => 'error', 'message' => 'Không có dữ liệu thay đổi']);
         }
 
         $sql = "UPDATE `setting` SET " . implode(', ', $sets) . " ORDER BY `id` ASC LIMIT 1";
 
         if ($connection->query($sql)) {
-            Logger::info('Admin', $action, 'Cap nhat cai dat he thong: ' . implode(', ', $keys));
+            Logger::info('Admin', $action, 'Cập nhật cài đặt hệ thống: ' . implode(', ', $keys));
 
             if (class_exists('Config')) {
                 Config::clearSiteConfigCache();
             }
 
-            return $this->json(['status' => 'success', 'message' => 'Cap nhat thanh cong']);
+            return $this->json(['status' => 'success', 'message' => 'Cập nhật thành công']);
         }
 
-        return $this->json(['status' => 'error', 'message' => 'Loi database: ' . $connection->error]);
+        return $this->json(['status' => 'error', 'message' => 'Lỗi database: ' . $connection->error]);
     }
 
     private function updateTelegramSettings()
@@ -179,7 +179,7 @@ class SettingController extends Controller
         if ($token !== '' && !preg_match('/^\d{6,}:[A-Za-z0-9_-]{20,}$/', $token)) {
             return $this->json([
                 'status' => 'error',
-                'message' => 'Telegram Bot Token khong hop le (dinh dang thuong la 123456789:ABC...)',
+                'message' => 'Telegram Bot Token không hợp lệ (định dạng thường là 123456789:ABC...)',
             ]);
         }
 
@@ -188,7 +188,7 @@ class SettingController extends Controller
         if ($chatId !== '' && !$isNumericChatId && !$isChannelChat) {
             return $this->json([
                 'status' => 'error',
-                'message' => 'Telegram Chat ID khong hop le (vi du: -1001234567890 hoac @channel_name)',
+                'message' => 'Telegram Chat ID không hợp lệ (ví dụ: -1001234567890 hoặc @channel_name)',
             ]);
         }
 
@@ -213,7 +213,7 @@ class SettingController extends Controller
         if (empty($sets)) {
             return $this->json([
                 'status' => 'error',
-                'message' => 'Khong co thay doi nao de luu',
+                'message' => 'Không có thay đổi nào để lưu',
             ]);
         }
 
@@ -221,7 +221,7 @@ class SettingController extends Controller
         if (!$connection->query($sql)) {
             return $this->json([
                 'status' => 'error',
-                'message' => 'Loi database: ' . $connection->error,
+                'message' => 'Lỗi database: ' . $connection->error,
             ]);
         }
 
@@ -229,7 +229,7 @@ class SettingController extends Controller
             Config::clearSiteConfigCache();
         }
 
-        Logger::info('Admin', 'update_telegram', 'Cap nhat cau hinh Telegram', [
+        Logger::info('Admin', 'update_telegram', 'Cập nhật cấu hình Telegram', [
             'fields' => $changedFields,
             'has_token' => $clearToken ? false : ($token !== '' ? true : null),
             'has_chat_id' => $chatId !== '',
@@ -237,7 +237,7 @@ class SettingController extends Controller
 
         return $this->json([
             'status' => 'success',
-            'message' => 'Da luu cau hinh Telegram',
+            'message' => 'Đã lưu cấu hình Telegram',
         ]);
     }
 }

@@ -251,7 +251,8 @@
             <div class="row">
                 <div class="col-lg-6">
                     <div class="copy-right">
-                        <p>&copy; <?= date('Y') ?> <?= htmlspecialchars($chungapi['ten_web'] ?? 'KaiShop'); ?>.
+                        <p>&copy; <?= TimeService::instance()->nowDateTime()->format('Y') ?>
+                            <?= htmlspecialchars($chungapi['ten_web'] ?? 'KaiShop'); ?>.
                             All rights reserved.</p>
                     </div>
                 </div>
@@ -330,6 +331,7 @@ $loadInteractiveBundle = !empty($pageAssetFlagsResolved['interactive_bundle']);
     <script src="<?= asset('assets/js/main.js') ?>"></script>
 <?php endif; ?>
 <script src="<?= asset('assets/js/clipboard.js') ?>" defer></script>
+<script src="<?= asset('assets/js/image-copy-guard.js') ?>" defer></script>
 <script src="<?= asset('assets/js/perf-loader.js') ?>" defer></script>
 
 <script>

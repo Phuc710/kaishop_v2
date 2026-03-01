@@ -17,7 +17,7 @@ $router = new Router();
 // Register routes
 foreach ($routes as $route) {
     list($method, $path, $handler) = $route;
-    
+
     if ($method === 'GET') {
         $router->get($path, $handler);
     } elseif ($method === 'POST') {

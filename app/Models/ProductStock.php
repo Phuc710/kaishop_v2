@@ -8,9 +8,14 @@ class ProductStock extends Model
 {
     protected $table = 'product_stock';
 
+    protected ?TimeService $timeService = null;
+
     public function __construct()
     {
         parent::__construct();
+        if (class_exists('TimeService')) {
+            $this->timeService = TimeService::instance();
+        }
     }
 
     /**
@@ -23,9 +28,10 @@ class ProductStock extends Model
         $dateFilter = $filters['date_filter'] ?? '';
         $limit = (int) ($filters['limit'] ?? 20);
 
-        $sql = "SELECT t.*, u.username as buyer_username 
+        $sql = "SELECT t.*, u.username as buyer_username, o.order_code 
                 FROM {$this->table} t 
                 LEFT JOIN users u ON t.buyer_id = u.id 
+                LEFT JOIN orders o ON t.order_id = o.id
                 WHERE t.product_id = ?";
         $params = [$productId];
 
@@ -34,17 +40,34 @@ class ProductStock extends Model
             $params[] = $status;
         }
         if ($search !== '') {
-            $sql .= " AND (t.content LIKE ? OR u.username LIKE ?)";
+            $sql .= " AND (
+                t.content LIKE ?
+                OR u.username LIKE ?
+                OR o.order_code LIKE ?
+                OR UPPER(SUBSTRING(SHA2(o.order_code, 256), 1, 8)) LIKE ?
+            )";
             $params[] = '%' . $search . '%';
             $params[] = '%' . $search . '%';
+            $params[] = '%' . $search . '%';
+            $params[] = '%' . strtoupper($search) . '%';
         }
 
         if ($dateFilter !== '' && $dateFilter !== 'all') {
             $days = (int) $dateFilter;
             if ($days > 0) {
-                $sql .= " AND t.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)";
+                $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+                $sql .= " AND t.created_at >= DATE_SUB(?, INTERVAL ? DAY)";
+                $params[] = $nowSql;
                 $params[] = $days;
             }
+        }
+
+        $startDate = $filters['start_date'] ?? '';
+        $endDate = $filters['end_date'] ?? '';
+        if ($startDate !== '' && $endDate !== '') {
+            $sql .= " AND t.created_at BETWEEN ? AND ?";
+            $params[] = $startDate . ' 00:00:00';
+            $params[] = $endDate . ' 23:59:59';
         }
 
         $sql .= " ORDER BY t.id DESC LIMIT " . (int) $limit;
@@ -100,7 +123,7 @@ class ProductStock extends Model
                 return null;
             }
 
-            $now = date('Y-m-d H:i:s');
+            $now = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
             $update = $this->db->prepare(
                 "UPDATE {$this->table} SET status='sold', buyer_id=?, order_id=?, sold_at=? WHERE id=?"
             );
@@ -263,7 +286,7 @@ class ProductStock extends Model
             return null;
         }
 
-        $now = date('Y-m-d H:i:s');
+        $now = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
         $update = $this->db->prepare(
             "UPDATE {$this->table}
              SET status = 'sold', buyer_id = ?, order_id = ?, sold_at = ?

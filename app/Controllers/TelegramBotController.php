@@ -74,20 +74,36 @@ class TelegramBotController extends Controller
         $expectedSecret = TelegramConfig::webhookSecret();
         $providedSecret = trim((string) ($_SERVER['HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN'] ?? ''));
 
-        if ($expectedSecret !== '' && !hash_equals($expectedSecret, $providedSecret)) {
-            Logger::warning(
-                'TelegramBot',
-                'webhook_unauthorized',
-                'Invalid secret token from IP: ' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown')
-            );
-            http_response_code(403);
-            echo '{"ok":false}';
-            return null;
+        if ($expectedSecret !== '') {
+            $hasSecretHeader = $providedSecret !== '';
+            if (!$hasSecretHeader || !hash_equals($expectedSecret, $providedSecret)) {
+                $reason = $hasSecretHeader ? 'invalid_secret' : 'missing_secret';
+                Logger::warning(
+                    'TelegramBot',
+                    'webhook_unauthorized',
+                    'Unauthorized webhook request: ' . $reason,
+                    $this->buildUnauthorizedWebhookPayload($reason, $providedSecret)
+                );
+                http_response_code(403);
+                header('Content-Type: application/json');
+                echo '{"ok":false,"description":"Unauthorized"}';
+                return null;
+            }
         }
 
         // 2. IP rate limit
-        $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        $ip = $this->resolveClientIp();
         if (!$this->checkIpRateLimit($ip)) {
+            Logger::warning(
+                'TelegramBot',
+                'webhook_rate_limited',
+                'Webhook IP rate limit triggered',
+                [
+                    'ip' => $ip,
+                    'uri' => (string) ($_SERVER['REQUEST_URI'] ?? ''),
+                    'method' => strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'POST')),
+                ]
+            );
             http_response_code(429);
             echo '{"ok":false,"description":"Rate limited"}';
             return null;
@@ -109,6 +125,46 @@ class TelegramBotController extends Controller
         }
 
         return $update;
+    }
+
+    private function buildUnauthorizedWebhookPayload(string $reason, string $providedSecret): array
+    {
+        $tokenHashPrefix = '';
+        if ($providedSecret !== '') {
+            $tokenHashPrefix = substr(hash('sha256', $providedSecret), 0, 16);
+        }
+
+        return [
+            'reason' => $reason,
+            'ip' => $this->resolveClientIp(),
+            'uri' => (string) ($_SERVER['REQUEST_URI'] ?? ''),
+            'method' => strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'POST')),
+            'has_secret_header' => $providedSecret !== '',
+            'provided_secret_length' => strlen($providedSecret),
+            'provided_secret_hash16' => $tokenHashPrefix,
+            'content_type' => (string) ($_SERVER['CONTENT_TYPE'] ?? ($_SERVER['HTTP_CONTENT_TYPE'] ?? '')),
+            'content_length' => (int) ($_SERVER['CONTENT_LENGTH'] ?? 0),
+            'user_agent' => substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 200),
+        ];
+    }
+
+    private function resolveClientIp(): string
+    {
+        $forwardedFor = trim((string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''));
+        if ($forwardedFor !== '') {
+            $parts = explode(',', $forwardedFor);
+            $candidate = trim((string) ($parts[0] ?? ''));
+            if ($candidate !== '') {
+                return $candidate;
+            }
+        }
+
+        $realIp = trim((string) ($_SERVER['HTTP_X_REAL_IP'] ?? ''));
+        if ($realIp !== '') {
+            return $realIp;
+        }
+
+        return (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     }
 
     /**

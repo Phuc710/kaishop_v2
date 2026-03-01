@@ -116,9 +116,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                             data-time-ts="<?= (int) ($row['list_time_ts'] ?? 0) ?>"
                                             data-time-iso="<?= htmlspecialchars((string) ($row['list_time_iso'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                                             data-order="<?= (int) ($row['list_time_ts'] ?? 0) ?>">
-                                            <span class="badge date-badge">
-                                                <?= htmlspecialchars((string) ($row['list_time_display'] ?? ($row['created_at'] ?? '—'))) ?>
-                                            </span>
+                                            <?= FormatHelper::eventTime($row['list_time_display'] ?? ($row['created_at'] ?? ''), $row['created_at'] ?? ($row['list_time_display'] ?? '')) ?>
                                         </td>
                                         <td class="text-center align-middle">
                                             <div class="btn-group">

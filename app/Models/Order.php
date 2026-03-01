@@ -8,11 +8,15 @@ class Order extends Model
     protected $table = 'orders';
     private ?CryptoService $crypto = null;
     private ProductStock $productStockModel;
+    private ?BalanceChangeService $balanceChangeService = null;
+    protected ?TimeService $timeService = null;
 
     public function __construct()
     {
         parent::__construct();
         $this->productStockModel = new ProductStock();
+        $this->timeService = class_exists('TimeService') ? TimeService::instance() : null;
+        $this->balanceChangeService = class_exists('BalanceChangeService') ? new BalanceChangeService($this->db) : null;
         if (class_exists('CryptoService')) {
             $this->crypto = new CryptoService();
         }
@@ -51,13 +55,14 @@ class Order extends Model
         }
 
         try {
+            $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
             $stmt = $this->db->prepare("
                 UPDATE `{$this->table}`
-                SET `user_deleted_at` = NOW()
+                SET `user_deleted_at` = ?
                 WHERE `id` = ? AND `user_id` = ? AND `user_deleted_at` IS NULL
                 LIMIT 1
             ");
-            $stmt->execute([$id, $userId]);
+            $stmt->execute([$nowSql, $id, $userId]);
 
             if ($stmt->rowCount() < 1) {
                 return ['success' => false, 'message' => 'Đơn hàng không tồn tại hoặc đã bị xóa.'];
@@ -133,19 +138,30 @@ class Order extends Model
 
         $search = trim((string) ($filters['search'] ?? ''));
         if ($search !== '') {
-            $where[] = "(`username` LIKE ? OR `order_code` LIKE ? OR `customer_input` LIKE ?)";
+            $where[] = "(`username` LIKE ? OR `order_code` LIKE ? OR `customer_input` LIKE ? OR UPPER(SUBSTRING(SHA2(`order_code`, 256), 1, 8)) LIKE ?)";
             $params[] = '%' . $search . '%';
             $params[] = '%' . $search . '%';
             $params[] = '%' . $search . '%';
+            $params[] = '%' . strtoupper($search) . '%';
         }
 
         $dateFilter = trim((string) ($filters['date_filter'] ?? ''));
         if ($dateFilter !== '' && $dateFilter !== 'all') {
             $days = (int) $dateFilter;
             if ($days > 0) {
-                $where[] = "`created_at` >= DATE_SUB(NOW(), INTERVAL ? DAY)";
+                $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+                $where[] = "`created_at` >= DATE_SUB(?, INTERVAL ? DAY)";
+                $params[] = $nowSql;
                 $params[] = $days;
             }
+        }
+
+        $startDate = trim((string) ($filters['start_date'] ?? ''));
+        $endDate = trim((string) ($filters['end_date'] ?? ''));
+        if ($startDate !== '' && $endDate !== '') {
+            $where[] = "`created_at` BETWEEN ? AND ?";
+            $params[] = $startDate . ' 00:00:00';
+            $params[] = $endDate . ' 23:59:59';
         }
 
         $limit = max(1, min(500, (int) ($filters['limit'] ?? 20)));
@@ -325,11 +341,14 @@ class Order extends Model
                 throw new RuntimeException('Gia tri don hang khong hop le.');
             }
 
-            $userStmt = $this->db->prepare("SELECT id FROM `users` WHERE `id` = ? LIMIT 1 FOR UPDATE");
+            $userStmt = $this->db->prepare("SELECT id, money FROM `users` WHERE `id` = ? LIMIT 1 FOR UPDATE");
             $userStmt->execute([$userId]);
-            if (!$userStmt->fetch(PDO::FETCH_ASSOC)) {
+            $userRow = $userStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+            if (!$userRow) {
                 throw new RuntimeException('Tai khoan nguoi mua khong ton tai.');
             }
+            $beforeBalance = (int) ($userRow['money'] ?? 0);
+            $afterBalance = $beforeBalance + $price;
 
             $refundStmt = $this->db->prepare("UPDATE `users` SET `money` = `money` + ? WHERE `id` = ? LIMIT 1");
             $refundStmt->execute([$price, $userId]);
@@ -337,13 +356,29 @@ class Order extends Model
                 throw new RuntimeException('Khong the hoan tien cho nguoi dung.');
             }
 
+            if ($this->balanceChangeService) {
+                try {
+                    $this->balanceChangeService->record(
+                        $userId,
+                        $username !== '' ? $username : ('user#' . $userId),
+                        $beforeBalance,
+                        $price,
+                        $afterBalance,
+                        'Hoan tien don bi huy: ' . (string) ($order['order_code'] ?? ('#' . $id))
+                    );
+                } catch (Throwable $e) {
+                    // Non-blocking in refund flow.
+                }
+            }
+
             $sets = [
                 "`status` = 'cancelled'",
                 "`cancel_reason` = ?",
                 "`fulfilled_by` = ?",
-                "`fulfilled_at` = NOW()",
+                "`fulfilled_at` = ?",
             ];
-            $params = [($reason !== '' ? $reason : null), $adminUsername, $id];
+            $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+            $params = [($reason !== '' ? $reason : null), $adminUsername, $nowSql, $id];
 
             $updateSql = "UPDATE `{$this->table}` SET " . implode(', ', $sets) . " WHERE `id` = ? LIMIT 1";
             $updateStmt = $this->db->prepare($updateSql);
@@ -360,7 +395,7 @@ class Order extends Model
                     $username !== '' ? $username : ('user#' . $userId),
                     'Hoan tien don hang bi huy: ' . (string) ($order['product_name'] ?? ('#' . $id)),
                     (string) $price,
-                    (string) time(),
+                    (string) ($this->timeService ? $this->timeService->nowTs() : time()),
                 ]);
             } catch (Throwable $e) {
                 // Non-blocking if legacy activity table schema differs.
@@ -434,7 +469,9 @@ class Order extends Model
             } else {
                 $days = (int) $sortDate;
                 if ($days > 0) {
-                    $where[] = "`created_at` >= DATE_SUB(NOW(), INTERVAL {$days} DAY)";
+                    $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+                    $where[] = "`created_at` >= DATE_SUB(?, INTERVAL {$days} DAY)";
+                    $params[] = $nowSql;
                 }
             }
         }

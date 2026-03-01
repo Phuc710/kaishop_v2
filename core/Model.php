@@ -8,10 +8,14 @@ class Model
 {
     protected $db;
     protected $table;
+    protected ?TimeService $timeService = null;
 
     public function __construct()
     {
         $this->db = Database::getInstance()->getConnection();
+        if (class_exists('TimeService')) {
+            $this->timeService = TimeService::instance();
+        }
     }
 
     /**

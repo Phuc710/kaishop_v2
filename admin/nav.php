@@ -1,4 +1,5 @@
 ﻿<?php
+global $chungapi;
 /**
  * KAISHOP Admin Navigation - Single Source UI
  * Menu items are now loaded from NavConfig (APP_DIR-safe).

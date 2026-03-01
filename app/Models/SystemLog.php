@@ -6,10 +6,13 @@
  */
 class SystemLog extends Model
 {
+    protected ?TimeService $timeService = null;
+
     public function __construct()
     {
         parent::__construct();
         $this->table = 'system_logs';
+        $this->timeService = class_exists('TimeService') ? TimeService::instance() : null;
     }
 
     /**
@@ -104,18 +107,7 @@ class SystemLog extends Model
             $params['f_severity'] = $filters['severity'];
         }
 
-        // Date logic exactly like AdminJournal
-        $dateFilter = (string) ($filters['date_filter'] ?? 'all');
-        if ($dateFilter === 'today') {
-            $conditions[] = "created_at >= :df_today";
-            $params['df_today'] = date('Y-m-d 00:00:00');
-        } elseif ($dateFilter === '7days') {
-            $conditions[] = "created_at >= :df_7days";
-            $params['df_7days'] = date('Y-m-d H:i:s', strtotime('-7 days'));
-        } elseif ($dateFilter === '30days') {
-            $conditions[] = "created_at >= :df_30days";
-            $params['df_30days'] = date('Y-m-d H:i:s', strtotime('-30 days'));
-        }
+        $this->appendDateConditions($conditions, $params, $filters);
 
         $rangeDate = trim((string) ($filters['time_range'] ?? ''));
         if ($rangeDate !== '') {
@@ -146,5 +138,37 @@ class SystemLog extends Model
         $stmt->execute($params);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * @param array<int, string> $conditions
+     * @param array<string, mixed> $params
+     * @param array<string, mixed> $filters
+     */
+    private function appendDateConditions(array &$conditions, array &$params, array $filters): void
+    {
+        $dateFilter = (string) ($filters['date_filter'] ?? 'all');
+
+        if ($this->timeService) {
+            $now = $this->timeService->nowDateTime($this->timeService->getDbTimezone());
+            $todayStart = $now->setTime(0, 0, 0)->format('Y-m-d H:i:s');
+            $last7Days = $now->modify('-7 days')->format('Y-m-d H:i:s');
+            $last30Days = $now->modify('-30 days')->format('Y-m-d H:i:s');
+        } else {
+            $todayStart = date('Y-m-d 00:00:00');
+            $last7Days = date('Y-m-d H:i:s', strtotime('-7 days'));
+            $last30Days = date('Y-m-d H:i:s', strtotime('-30 days'));
+        }
+
+        if ($dateFilter === 'today') {
+            $conditions[] = "created_at >= :df_today";
+            $params['df_today'] = $todayStart;
+        } elseif ($dateFilter === '7days') {
+            $conditions[] = "created_at >= :df_7days";
+            $params['df_7days'] = $last7Days;
+        } elseif ($dateFilter === '30days') {
+            $conditions[] = "created_at >= :df_30days";
+            $params['df_30days'] = $last30Days;
+        }
     }
 }

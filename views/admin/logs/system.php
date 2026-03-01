@@ -103,7 +103,7 @@
                                             <?= $log['id'] ?>
                                         </td>
                                         <td>
-                                            <?= date('H:i d/m/Y', strtotime($log['created_at'])) ?>
+                                            <?= FormatHelper::eventTime($log['created_at'] ?? null, $log['created_at'] ?? null) ?>
                                         </td>
                                         <td>
                                             <?php if ($log['severity'] === 'INFO'): ?>

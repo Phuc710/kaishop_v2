@@ -45,7 +45,8 @@ class UserTelegramLink extends Model
             'user_id' => $userId,
             'telegram_id' => $telegramId,
             'telegram_username' => $username,
-            'first_name' => $firstName
+            'first_name' => $firstName,
+            'linked_at' => TimeService::instance()->nowSql()
         ]) > 0;
     }
 

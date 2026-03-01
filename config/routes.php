@@ -119,6 +119,7 @@ return [
     ['POST', '/admin/products/toggle-status', 'Admin\\AdminProductController@toggleStatus'],
     // Stock (Kho)
     ['GET', '/admin/products/stock/{id}', 'Admin\\AdminProductController@stock'],
+    ['POST', '/admin/products/stock/action/{id}', 'Admin\\AdminProductController@stockAction'],
     ['POST', '/admin/products/stock/{id}/import', 'Admin\\AdminProductController@stockImport'],
     ['POST', '/admin/products/stock/{id}/clean', 'Admin\\AdminProductController@stockClean'],
     ['POST', '/admin/products/stock/update', 'Admin\\AdminProductController@stockUpdate'],

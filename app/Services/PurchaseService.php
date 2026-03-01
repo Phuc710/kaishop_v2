@@ -13,6 +13,9 @@ class PurchaseService
     private User $userModel;
     private Order $orderModel;
     private $giftCodeModel = null;
+    private ?CryptoService $crypto = null;
+    private ?TimeService $timeService = null;
+    private ?BalanceChangeService $balanceChangeService = null;
 
     public function __construct(
         ?Product $productModel = null,
@@ -26,6 +29,12 @@ class PurchaseService
         $this->inventoryService = new ProductInventoryService($this->stockModel);
         $this->userModel = $userModel ?: new User();
         $this->orderModel = $orderModel ?: new Order();
+        if (class_exists('TimeService')) {
+            $this->timeService = TimeService::instance();
+        }
+        if (class_exists('BalanceChangeService')) {
+            $this->balanceChangeService = new BalanceChangeService($this->db);
+        }
         if (class_exists('GiftCode')) {
             $this->giftCodeModel = new GiftCode();
         }
@@ -112,7 +121,8 @@ class PurchaseService
                     $subtotalPrice
                 );
                 $discountPercent = max(0, min(100, (int) ($giftcodeMeta['giamgia'] ?? 0)));
-                $discountAmount = (int) floor(($subtotalPrice * $discountPercent) / 100);
+                // Chỉ giảm giá trên 1 sản phẩm duy nhất để tránh lạm dụng (User request)
+                $discountAmount = (int) floor(($price * $discountPercent) / 100);
                 if ($discountAmount > $subtotalPrice) {
                     $discountAmount = $subtotalPrice;
                 }
@@ -154,7 +164,7 @@ class PurchaseService
                 (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''),
                 $requestedQty,
                 $customerInput !== '' ? $customerInput : null,
-                TimeService::instance()->nowSql(),
+                $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s'),
             ];
 
             $insertFields = '`' . implode('`, `', $orderColumns) . '`';
@@ -169,11 +179,28 @@ class PurchaseService
                 $decStmt->execute([$requestedQty, $productId]);
             }
 
+            $beforeBalance = (int) ($user['money'] ?? 0);
+            $afterBalance = $beforeBalance - $totalPrice;
             if ($totalPrice > 0) {
                 $debitStmt = $this->db->prepare("UPDATE `users` SET `money` = `money` - ? WHERE `id` = ? AND `money` >= ?");
                 $debitStmt->execute([$totalPrice, $userId, $totalPrice]);
                 if ($debitStmt->rowCount() < 1) {
                     throw new RuntimeException('Số dư không đủ để thanh toán.');
+                }
+            }
+
+            if ($totalPrice > 0 && $this->balanceChangeService) {
+                try {
+                    $this->balanceChangeService->record(
+                        $userId,
+                        $username,
+                        $beforeBalance,
+                        -$totalPrice,
+                        $afterBalance,
+                        'Thanh toan mua hang: ' . $orderCode
+                    );
+                } catch (Throwable $e) {
+                    // Non-blocking if log schema differs.
                 }
             }
 
@@ -219,7 +246,7 @@ class PurchaseService
                 'Mua san pham: ' . (string) ($product['name'] ?? ('#' . $productId))
                 . ($giftcodeMeta ? (' | Ma giam gia: ' . $giftcodeInput) : ''),
                 -$totalPrice,
-                (string) time(),
+                (string) ($this->timeService ? $this->timeService->nowTs() : time()),
             ]);
 
             $this->db->commit();
@@ -233,14 +260,17 @@ class PurchaseService
                         $outbox = new TelegramOutbox();
                         $notifMsg = "🛍 <b>ĐƠN HÀNG THÀNH CÔNG</b>\n\n";
                         $notifMsg .= "Mã đơn: <code>{$orderCode}</code>\n";
-                        $notifMsg .= "Sản phẩm: <b>" . ($product['name'] ?? '') . "</b>\n";
-                        $notifMsg .= "Tổng tiền: <b>" . number_format($totalPrice) . "đ</b>\n";
+                        $notifMsg .= "📦Tên SP: <b>" . ($product['name'] ?? '') . "</b>\n";
+                        $notifMsg .= "💰Giá:  <b>" . number_format($totalPrice) . "đ</b>\n";
+                        $notifMsg .= "SL: <b>{$requestedQty}</b>\n";
 
                         if ($requiresInfo) {
                             $notifMsg .= "\n⏳ Đang chờ xử lý. Admin sẽ giao hàng sớm cho bạn.";
                         } else if (!empty($deliveredPlain)) {
-                            $notifMsg .= "\n🔑 Nội dung:\n<code>{$deliveredPlain}</code>";
+                            $notifMsg .= "🔑 Nội dung:\n<code>" . htmlspecialchars($deliveredPlain) . "</code>\n";
                         }
+                        $notifMsg .= "━━━━━━━━━━━━━━\n";
+                        $notifMsg .= "🙏 Cảm ơn bạn đã mua hàng!";
 
                         $outbox->enqueue((int) $link['telegram_id'], $notifMsg);
                     }
@@ -285,7 +315,9 @@ class PurchaseService
                         'status' => 'pending',
                         'customer_input' => $customerInput,
                         'info_instructions' => (string) ($product['info_instructions'] ?? ''),
-                        'created_at' => date('H:i:s d/m/Y'),
+                        'created_at' => $this->timeService
+                            ? $this->timeService->formatDisplay($this->timeService->nowTs(), 'H:i:s d/m/Y')
+                            : date('H:i:s d/m/Y'),
                     ],
                 ];
             }
@@ -307,7 +339,9 @@ class PurchaseService
                     'quantity' => $requestedQty,
                     'content' => $deliveredPlain,
                     'stock_id' => $firstStockId,
-                    'created_at' => date('H:i:s d/m/Y'),
+                    'created_at' => $this->timeService
+                        ? $this->timeService->formatDisplay($this->timeService->nowTs(), 'H:i:s d/m/Y')
+                        : date('H:i:s d/m/Y'),
                 ],
             ];
         } catch (Throwable $e) {
@@ -388,7 +422,8 @@ class PurchaseService
             if ($giftcodeInput !== '') {
                 $giftcodeMeta = $this->validateGiftCodeGeneric($giftcodeInput, $productId, $subtotalPrice, false);
                 $discountPercent = max(0, min(100, (int) ($giftcodeMeta['giamgia'] ?? 0)));
-                $discountAmount = (int) floor(($subtotalPrice * $discountPercent) / 100);
+                // Chỉ giảm giá trên 1 sản phẩm duy nhất để tránh lạm dụng (User request)
+                $discountAmount = (int) floor(($price * $discountPercent) / 100);
                 if ($discountAmount > $subtotalPrice) {
                     $discountAmount = $subtotalPrice;
                 }
@@ -420,7 +455,10 @@ class PurchaseService
 
     private function completeOrderDelivery(int $orderId, ?int $stockId, string $deliveryContentPlain): void
     {
-        $stored = $deliveryContentPlain;
+        $stored = ($this->crypto instanceof CryptoService && $this->crypto->isEnabled())
+            ? $this->crypto->encryptString($deliveryContentPlain)
+            : $deliveryContentPlain;
+        $fulfilledAt = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
 
         if ($stockId !== null && $stockId > 0) {
             $stmt = $this->db->prepare("
@@ -428,7 +466,7 @@ class PurchaseService
                 SET `status` = 'completed', `stock_id` = ?, `stock_content` = ?, `fulfilled_at` = ?
                 WHERE `id` = ? LIMIT 1
             ");
-            $stmt->execute([$stockId, $stored, TimeService::instance()->nowSql(), $orderId]);
+            $stmt->execute([$stockId, $stored, $fulfilledAt, $orderId]);
             return;
         }
 
@@ -437,12 +475,14 @@ class PurchaseService
             SET `status` = 'completed', `stock_content` = ?, `fulfilled_at` = ?
             WHERE `id` = ? LIMIT 1
         ");
-        $stmt->execute([$stored, TimeService::instance()->nowSql(), $orderId]);
+        $stmt->execute([$stored, $fulfilledAt, $orderId]);
     }
 
     private function linkStockToPendingOrder(int $orderId, ?int $stockId, string $deliveryContentPlain): void
     {
-        $stored = $deliveryContentPlain;
+        $stored = ($this->crypto instanceof CryptoService && $this->crypto->isEnabled())
+            ? $this->crypto->encryptString($deliveryContentPlain)
+            : $deliveryContentPlain;
 
         $stmt = $this->db->prepare("
             UPDATE `orders`
@@ -482,7 +522,11 @@ class PurchaseService
         }
 
         $expiredAt = trim((string) ($row['expired_at'] ?? ''));
-        if ($expiredAt !== '' && strtotime($expiredAt) !== false && strtotime($expiredAt) < time()) {
+        $expiredTs = $this->timeService
+            ? $this->timeService->toTimestamp($expiredAt, $this->timeService->getDbTimezone())
+            : (strtotime($expiredAt) ?: null);
+        $nowTs = $this->timeService ? $this->timeService->nowTs() : time();
+        if ($expiredAt !== '' && $expiredTs !== null && $expiredTs < $nowTs) {
             throw new RuntimeException('Mã giảm giá đã hết hạn.');
         }
 
@@ -529,7 +573,7 @@ class PurchaseService
                 $orderCode,
                 $username,
                 $giftCodeId,
-                (string) time(),
+                (string) ($this->timeService ? $this->timeService->nowTs() : time()),
             ]);
         } catch (Throwable $e) {
             // Legacy optional table; do not fail purchase if logging schema differs.

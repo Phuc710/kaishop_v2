@@ -8,10 +8,12 @@
 class SepayWebhookController extends Controller
 {
     private $depositModel;
+    private ?BalanceChangeService $balanceChangeService = null;
 
     public function __construct()
     {
         $this->depositModel = new PendingDeposit();
+        $this->balanceChangeService = class_exists('BalanceChangeService') ? new BalanceChangeService() : null;
     }
 
     /**
@@ -150,8 +152,17 @@ class SepayWebhookController extends Controller
         $userId = (int) $deposit['user_id'];
 
         $db = Database::getInstance()->getConnection();
+        $beforeBalance = 0;
+        $beforeStmt = $db->prepare("SELECT `money` FROM `users` WHERE `id` = ? LIMIT 1");
+        $beforeStmt->execute([$userId]);
+        $beforeValue = $beforeStmt->fetchColumn();
+        if ($beforeValue !== false && $beforeValue !== null) {
+            $beforeBalance = (int) $beforeValue;
+        }
+
         $stmt = $db->prepare("UPDATE `users` SET `money` = `money` + ?, `tong_nap` = `tong_nap` + ? WHERE `id` = ?");
         $stmt->execute([$totalCredit, $transferAmount, $userId]);
+        $afterBalance = $beforeBalance + $totalCredit;
 
         // Enqueue Telegram notification if user is linked
         try {
@@ -166,7 +177,7 @@ class SepayWebhookController extends Controller
                         $notifMsg .= "Khuyến mãi: <b>" . number_format($bonusAmount) . "đ</b>\n";
                     }
                     $notifMsg .= "Thực nhận: <b>" . number_format($totalCredit) . "đ</b>\n";
-                    $notifMsg .= "Số dư hiện tại: <b>" . number_format($db->query("SELECT money FROM users WHERE id = $userId")->fetchColumn()) . "đ</b>";
+                    $notifMsg .= "Số dư hiện tại: <b>" . number_format($afterBalance) . "đ</b>";
 
                     $outbox->enqueue((int) $link['telegram_id'], $notifMsg);
                 }
@@ -180,10 +191,25 @@ class SepayWebhookController extends Controller
         $this->depositModel->markComplete((int) $deposit['id'], $sepayId);
 
         // 11. Record in history_nap_bank (PDO prepared statements)
-        $now = time();
+        $now = class_exists('TimeService') ? TimeService::instance()->nowTs() : time();
 
         $stmt = $db->prepare("INSERT INTO `history_nap_bank` (`trans_id`, `username`, `type`, `ctk`, `stk`, `thucnhan`, `status`, `time`) VALUES (?, ?, ?, ?, ?, ?, 'hoantat', ?)");
         $stmt->execute([$referenceCode, $username, $gateway, $content, $accountNumber, $totalCredit, $now]);
+
+        $reason = 'Nap tien SePay';
+        if ($content !== '') {
+            $reason .= ': ' . $content;
+        }
+        if ($this->balanceChangeService) {
+            $this->balanceChangeService->record(
+                $userId,
+                (string) $username,
+                $beforeBalance,
+                $totalCredit,
+                $afterBalance,
+                $reason
+            );
+        }
 
 
         // 12. Log
@@ -202,4 +228,5 @@ class SepayWebhookController extends Controller
         http_response_code(200);
         return $this->json(['success' => true, 'message' => 'Deposit credited']);
     }
+
 }

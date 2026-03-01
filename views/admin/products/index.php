@@ -128,7 +128,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                     <table id="productTable" class="table table-hover table-bordered admin-table w-100">
                         <thead>
                             <tr>
-                                <th class="text-center font-weight-bold align-middle" style="width:60px;">ẢNH</th>
+                                <th class="text-center font-weight-bold align-middle product-image-col">ẢNH</th>
                                 <th class="text-center font-weight-bold align-middle">TÊN SẢN PHẨM</th>
                                 <th class="text-center font-weight-bold align-middle">LOẠI</th>
                                 <th class="text-center font-weight-bold align-middle">DANH MỤC</th>
@@ -150,13 +150,15 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                     $st = $stockStats[$pid] ?? ['available' => 0, 'sold' => 0, 'unlimited' => false];
                                     ?>
                                     <tr id="row-<?= $pid ?>">
-                                        <td class="text-center align-middle">
+                                        <td class="text-center align-middle product-image-cell">
                                             <?php if (!empty($p['image'])): ?>
-                                                <img src="<?= htmlspecialchars($p['image']) ?>"
-                                                    style="width:46px;height:46px;object-fit:cover;border-radius:6px;" alt="">
+                                                <span class="product-thumb">
+                                                    <img src="<?= htmlspecialchars($p['image']) ?>" class="product-thumb-img"
+                                                        alt="<?= htmlspecialchars($p['name'] ?? 'Product image', ENT_QUOTES, 'UTF-8') ?>"
+                                                        decoding="async" loading="lazy">
+                                                </span>
                                             <?php else: ?>
-                                                <div
-                                                    style="width:46px;height:46px;background:#f0f0f0;border-radius:6px;display:flex;align-items:center;justify-content:center;margin: 0 auto;">
+                                                <div class="product-thumb product-thumb-placeholder">
                                                     <i class="fas fa-image text-muted"></i>
                                                 </div>
                                             <?php endif; ?>
@@ -301,7 +303,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
         });
 
         dtProduct = $('#productTable').DataTable({
-            dom: 't<"row align-items-center mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7 d-flex justify-content-md-end justify-content-center"p>>',
+            dom: 't<"row align-items-center mt-3"<"col-12 d-flex justify-content-md-end justify-content-center"p>>',
             responsive: true,
             autoWidth: false,
             order: [
@@ -320,13 +322,13 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             language: {
                 sLengthMenu: 'Hiển thị _MENU_ sản phẩm',
                 sZeroRecords: '<div class="text-center w-100 font-weight-bold py-3">Không tìm thấy sản phẩm nào</div>',
-                sInfo: 'Xem _START_–_END_ / _TOTAL_ sản phẩm',
-                sInfoEmpty: 'Không có sản phẩm nào',
-                sInfoFiltered: '(lọc từ _MAX_ sản phẩm)',
+                sInfo: '',
+                sInfoEmpty: '',
+                sInfoFiltered: '',
                 sSearch: 'Tìm kiếm:',
                 oPaginate: {
-                    sPrevious: '&lsaquo; Trước',
-                    sNext: 'Tiếp &rsaquo;'
+                    sPrevious: '<i class="fas fa-chevron-left"></i>',
+                    sNext: '<i class="fas fa-chevron-right"></i>'
                 },
             },
         });

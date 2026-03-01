@@ -22,6 +22,7 @@ class AntiFloodService
     private string $storageDir;
     private ?PDO $db = null;
     private ?BanService $banService = null;
+    private ?TimeService $timeService = null;
 
     // ─── Configurable Thresholds ───────────────────────────
     /** @var array<string, array{window: int, softLimit: int, hardLimit: int}> */
@@ -75,6 +76,9 @@ class AntiFloodService
 
         if (class_exists('BanService')) {
             $this->banService = new BanService();
+        }
+        if (class_exists('TimeService')) {
+            $this->timeService = TimeService::instance();
         }
     }
 
@@ -161,9 +165,10 @@ class AntiFloodService
 
         // File cache for speed
         $cacheFile = $this->storageDir . '/devban_' . substr($deviceHash, 0, 16) . '.flag';
+        $ts = $this->timeService ? $this->timeService->nowTs() : time();
         if (is_file($cacheFile)) {
             $expiresAt = (int) @file_get_contents($cacheFile);
-            if ($expiresAt > time()) {
+            if ($expiresAt > $ts) {
                 return true;
             }
             @unlink($cacheFile);
@@ -174,11 +179,13 @@ class AntiFloodService
             if (!$db) {
                 return false;
             }
-            $stmt = $db->prepare("SELECT id, expires_at FROM banned_fingerprints WHERE fingerprint_hash = ? AND (expires_at IS NULL OR expires_at > NOW()) LIMIT 1");
-            $stmt->execute([$deviceHash]);
+            $ts = $this->timeService ? $this->timeService->nowTs() : time();
+            $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+            $stmt = $db->prepare("SELECT id, expires_at FROM banned_fingerprints WHERE fingerprint_hash = ? AND (expires_at IS NULL OR expires_at > ?) LIMIT 1");
+            $stmt->execute([$deviceHash, $nowSql]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
             if ($row) {
-                $expiresTs = !empty($row['expires_at']) ? (strtotime((string) $row['expires_at']) ?: (time() + 3600)) : (time() + 86400 * 365);
+                $expiresTs = !empty($row['expires_at']) ? (strtotime((string) $row['expires_at']) ?: ($ts + 3600)) : ($ts + 86400 * 365);
                 @file_put_contents($cacheFile, (string) $expiresTs, LOCK_EX);
                 return true;
             }
@@ -205,15 +212,16 @@ class AntiFloodService
                 return;
             }
 
+            $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
             // Check if already banned
-            $stmt = $db->prepare("SELECT id FROM banned_fingerprints WHERE fingerprint_hash = ? AND (expires_at IS NULL OR expires_at > NOW()) LIMIT 1");
-            $stmt->execute([$deviceHash]);
+            $stmt = $db->prepare("SELECT id FROM banned_fingerprints WHERE fingerprint_hash = ? AND (expires_at IS NULL OR expires_at > ?) LIMIT 1");
+            $stmt->execute([$deviceHash, $nowSql]);
             if ($stmt->fetchColumn()) {
                 return; // Already banned
             }
 
-            $stmt = $db->prepare("INSERT INTO banned_fingerprints (fingerprint_hash, reason, banned_by, created_at, expires_at, source) VALUES (?, ?, 'antiflood_system', NOW(), NULL, 'antiflood')");
-            $stmt->execute([$deviceHash, mb_substr($reason, 0, 500)]);
+            $stmt = $db->prepare("INSERT INTO banned_fingerprints (fingerprint_hash, reason, banned_by, created_at, expires_at, source) VALUES (?, ?, 'antiflood_system', ?, NULL, 'antiflood')");
+            $stmt->execute([$deviceHash, mb_substr($reason, 0, 500), $nowSql]);
 
             if ($this->banService) {
                 $this->banService->recordAutoDeviceBan($deviceHash, mb_substr($reason, 0, 500));
@@ -221,7 +229,8 @@ class AntiFloodService
 
             // File cache
             $cacheFile = $this->storageDir . '/devban_' . substr($deviceHash, 0, 16) . '.flag';
-            @file_put_contents($cacheFile, (string) (time() + 86400 * 365), LOCK_EX);
+            $ts = $this->timeService ? $this->timeService->nowTs() : time();
+            @file_put_contents($cacheFile, (string) ($ts + 86400 * 365), LOCK_EX);
 
             $this->log('device_auto_banned', $this->clientIp(), [
                 'device_hash' => $deviceHash,
@@ -268,9 +277,10 @@ class AntiFloodService
     public function isBlacklisted(string $ip): bool
     {
         $cacheFile = $this->storageDir . '/blacklist_' . md5($ip) . '.flag';
+        $ts = $this->timeService ? $this->timeService->nowTs() : time();
         if (is_file($cacheFile)) {
             $expiresAt = (int) @file_get_contents($cacheFile);
-            if ($expiresAt > time()) {
+            if ($expiresAt > $ts) {
                 return true;
             }
             @unlink($cacheFile);
@@ -281,11 +291,13 @@ class AntiFloodService
             if (!$db) {
                 return false;
             }
-            $stmt = $db->prepare("SELECT id, expires_at FROM ip_blacklist WHERE ip_address = ? AND (expires_at IS NULL OR expires_at > NOW()) LIMIT 1");
-            $stmt->execute([$ip]);
+            $ts = $this->timeService ? $this->timeService->nowTs() : time();
+            $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+            $stmt = $db->prepare("SELECT id, expires_at FROM ip_blacklist WHERE ip_address = ? AND (expires_at IS NULL OR expires_at > ?) LIMIT 1");
+            $stmt->execute([$ip, $nowSql]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if ($row) {
-                $expiresTs = $row['expires_at'] ? strtotime($row['expires_at']) : (time() + 86400 * 365);
+                $expiresTs = $row['expires_at'] ? strtotime($row['expires_at']) : ($ts + 86400 * 365);
                 @file_put_contents($cacheFile, (string) $expiresTs, LOCK_EX);
                 return true;
             }
@@ -307,25 +319,27 @@ class AntiFloodService
             // Generate REF hash (same as banned.php uses for display)
             $refHash = substr(hash('sha256', $ip . '|' . $this->userAgent()), 0, 12);
 
+            $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
             $stmt = $db->prepare("SELECT id FROM ip_blacklist WHERE ip_address = ? LIMIT 1");
             $stmt->execute([$ip]);
             if ($stmt->fetchColumn()) {
-                $stmt = $db->prepare("UPDATE ip_blacklist SET reason = ?, expires_at = DATE_ADD(NOW(), INTERVAL ? MINUTE), updated_at = NOW(), hit_count = hit_count + 1, ref_hash = ?, source = 'antiflood', banned_by = 'antiflood_system' WHERE ip_address = ?");
-                $stmt->execute([mb_substr($reason, 0, 500), $this->autoBanMinutes, $refHash, $ip]);
+                $stmt = $db->prepare("UPDATE ip_blacklist SET reason = ?, expires_at = DATE_ADD(?, INTERVAL ? MINUTE), updated_at = ?, hit_count = hit_count + 1, ref_hash = ?, source = 'antiflood', banned_by = 'antiflood_system' WHERE ip_address = ?");
+                $stmt->execute([mb_substr($reason, 0, 500), $nowSql, $this->autoBanMinutes, $nowSql, $refHash, $ip]);
             } else {
-                $stmt = $db->prepare("INSERT INTO ip_blacklist (ip_address, reason, banned_at, expires_at, hit_count, user_agent, ref_hash, created_at, updated_at, source, banned_by) VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL ? MINUTE), 1, ?, ?, NOW(), NOW(), 'antiflood', 'antiflood_system')");
-                $stmt->execute([$ip, mb_substr($reason, 0, 500), $this->autoBanMinutes, mb_substr($this->userAgent(), 0, 1000), $refHash]);
+                $stmt = $db->prepare("INSERT INTO ip_blacklist (ip_address, reason, banned_at, expires_at, hit_count, user_agent, ref_hash, created_at, updated_at, source, banned_by) VALUES (?, ?, ?, DATE_ADD(?, INTERVAL ? MINUTE), 1, ?, ?, ?, ?, 'antiflood', 'antiflood_system')");
+                $stmt->execute([$ip, mb_substr($reason, 0, 500), $nowSql, $nowSql, $this->autoBanMinutes, mb_substr($this->userAgent(), 0, 1000), $refHash, $nowSql, $nowSql]);
             }
 
             if ($this->banService) {
-                $expiresAt = (new DateTimeImmutable('now', new DateTimeZone(function_exists('app_db_timezone') ? app_db_timezone() : date_default_timezone_get())))
-                    ->modify('+' . $this->autoBanMinutes . ' minutes')
-                    ->format('Y-m-d H:i:s');
+                $appTz = $this->timeService ? new DateTimeZone($this->timeService->getAppTimezone()) : new DateTimeZone('Asia/Ho_Chi_Minh');
+                $now = $this->timeService ? $this->timeService->nowDateTime() : new DateTimeImmutable();
+                $expiresAt = $now->modify('+' . $this->autoBanMinutes . ' minutes')->format('Y-m-d H:i:s');
                 $this->banService->recordAutoIpBan($ip, mb_substr($reason, 0, 500), $expiresAt, $refHash, mb_substr($this->userAgent(), 0, 1000));
             }
 
+            $ts = $this->timeService ? $this->timeService->nowTs() : time();
             $cacheFile = $this->storageDir . '/blacklist_' . md5($ip) . '.flag';
-            @file_put_contents($cacheFile, (string) (time() + $this->autoBanMinutes * 60), LOCK_EX);
+            @file_put_contents($cacheFile, (string) ($ts + $this->autoBanMinutes * 60), LOCK_EX);
 
             // Track device → escalate to device ban if needed
             $this->checkDeviceBanEscalation($deviceHash, $ip);
@@ -372,7 +386,8 @@ class AntiFloodService
      */
     private function blockWith429(int $window): void
     {
-        $remaining = max(1, $window - (time() % $window));
+        $ts = $this->timeService ? $this->timeService->nowTs() : time();
+        $remaining = max(1, $window - ($ts % $window));
         if (!headers_sent()) {
             http_response_code(429);
             header('Retry-After: ' . $remaining);
@@ -498,13 +513,15 @@ class AntiFloodService
             $data = $raw ? (json_decode($raw, true) ?: []) : [];
         }
 
-        $data[] = ['type' => $type, 'path' => $path, 'time' => date('Y-m-d H:i:s')];
+        $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+        $data[] = ['type' => $type, 'path' => $path, 'time' => $nowSql];
         if (count($data) > 50) {
             $data = array_slice($data, -50);
         }
 
         $recentCount = 0;
-        $oneHourAgo = strtotime('-1 hour');
+        $ts = $this->timeService ? $this->timeService->nowTs() : time();
+        $oneHourAgo = $ts - 3600;
         foreach ($data as $entry) {
             if (isset($entry['time']) && strtotime($entry['time']) >= $oneHourAgo) {
                 $recentCount++;

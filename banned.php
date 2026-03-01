@@ -79,7 +79,7 @@ if (!empty($_SESSION['banned_reason']) && $banContext['reason'] === '') {
 unset($_SESSION['banned_reason']);
 
 $banExpiresAt = $banContext['expires_at'] ?: null;
-$banExpiresTs = $banExpiresAt ? (strtotime($banExpiresAt) ?: null) : null;
+$banExpiresTs = $banExpiresAt ? ($timeService ? $timeService->toTimestamp($banExpiresAt) : strtotime($banExpiresAt)) : null;
 $isPermanentBan = $banContext['scope'] !== '' && $banExpiresAt === null;
 $reason = $banContext['reason'] !== '' ? htmlspecialchars($banContext['reason'], ENT_QUOTES, 'UTF-8') : '';
 $bannedBy = $banContext['banned_by'] !== '' ? htmlspecialchars($banContext['banned_by'], ENT_QUOTES, 'UTF-8') : '';

@@ -49,6 +49,166 @@ if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed
         padding: 0.35em 0.8em !important;
         font-weight: 600 !important;
     }
+
+    .purchase-order-modal .modal-dialog {
+        max-width: 980px;
+    }
+
+    .purchase-order-modal .modal-content {
+        border: 0;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+    }
+
+    .purchase-order-modal .modal-header {
+        border-bottom: 0;
+        padding: 14px 20px;
+    }
+
+    .purchase-order-modal .modal-body {
+        padding: 20px;
+        background: #f8fafc;
+    }
+
+    .purchase-order-shell {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .purchase-order-time {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        width: fit-content;
+        max-width: 100%;
+        border: 1px solid #dbe2ea;
+        background: #ffffff;
+        border-radius: 10px;
+        padding: 8px 12px;
+        font-weight: 600;
+    }
+
+    .purchase-order-time-label {
+        color: #1f2937;
+    }
+
+    .purchase-order-time-value {
+        color: #0f172a;
+        font-weight: 500;
+    }
+
+    .purchase-order-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .purchase-order-meta-item {
+        background: #ffffff;
+        border: 1px solid #dbe2ea;
+        border-radius: 10px;
+        padding: 10px 12px;
+        min-height: 76px;
+    }
+
+    .purchase-order-meta-label {
+        font-size: 12px;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        margin-bottom: 5px;
+        font-weight: 700;
+    }
+
+    .purchase-order-meta-value {
+        color: #1e293b;
+        font-weight: 600;
+        word-break: break-word;
+    }
+
+    .purchase-order-card {
+        background: #ffffff;
+        border: 1px solid #dbe2ea;
+        border-radius: 10px;
+        padding: 12px;
+        height: 100%;
+    }
+
+    .purchase-order-card-title {
+        font-size: 12px;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        margin-bottom: 8px;
+        font-weight: 700;
+    }
+
+    .purchase-order-card-content {
+        color: #0f172a;
+        white-space: pre-wrap;
+        word-break: break-word;
+        min-height: 66px;
+    }
+
+    .purchase-order-product-row {
+        background: #ffffff;
+        border: 1px solid #dbe2ea;
+        border-radius: 10px;
+        padding: 12px;
+        display: grid;
+        grid-template-columns: minmax(0, 1.7fr) repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        align-items: center;
+    }
+
+    .purchase-order-product-cell {
+        min-width: 0;
+        word-break: break-word;
+    }
+
+    .purchase-order-product-cell b {
+        color: #0f172a;
+    }
+
+    .purchase-order-product-info {
+        color: #1e293b;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    .purchase-order-modal .modal-footer {
+        border-top: 0;
+        padding: 14px 20px 18px;
+        background: #ffffff;
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+
+    @media (max-width: 991.98px) {
+        .purchase-order-meta-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .purchase-order-product-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        .purchase-order-modal .modal-body {
+            padding: 14px;
+        }
+
+        .purchase-order-meta-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .purchase-order-modal .modal-footer {
+            padding: 12px 14px 14px;
+        }
+    }
 </style>
 
 <section class="content pb-4 mt-3">
@@ -183,7 +343,8 @@ if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed
     </div>
 
     <?php if ($isPurchaseJournal): ?>
-        <div class="modal fade" id="purchaseOrderModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal fade purchase-order-modal" id="purchaseOrderModal" tabindex="-1" role="dialog"
+            aria-hidden="true">
             <div class="modal-dialog modal-lg" role="document">
                 <div class="modal-content">
                     <div class="modal-header bg-primary text-white">
@@ -197,35 +358,76 @@ if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed
                             <i class="fas fa-spinner fa-spin mr-2"></i>Đang tải...
                         </div>
                         <div id="purchaseOrderModalError" class="alert alert-danger d-none mb-3"></div>
-                        <div id="purchaseOrderModalContent" class="d-none">
-                            <div id="purchaseOrderMeta" class="mb-3"></div>
-                            <div class="form-group mb-3">
-                                <label class="font-weight-bold">Thông tin khách đã gửi</label>
-                                <textarea id="purchaseOrderCustomerInput" class="form-control" rows="5" readonly></textarea>
+                        <div id="purchaseOrderModalContent" class="purchase-order-shell d-none">
+                            <div class="purchase-order-time">
+                                <span class="purchase-order-time-label">Đặt:</span>
+                                <span id="purchaseOrderCreatedAt" class="purchase-order-time-value">-</span>
                             </div>
 
-                            <!-- Stock Hint -->
-                            <div id="purchaseOrderStockHint" class="alert alert-info py-2 mb-3 d-none">
-                                <i class="fas fa-key mr-1"></i><b>Nội dung kho đã gán sẵn:</b>
-                                <div id="purchaseOrderStockContent" class="mt-1"
-                                    style="font-family:monospace;white-space:pre-wrap;font-size:12px;"></div>
+                            <div class="purchase-order-meta-grid">
+                                <div class="purchase-order-meta-item">
+                                    <div class="purchase-order-meta-label">Mã đơn</div>
+                                    <div class="purchase-order-meta-value">
+                                        <span id="purchaseOrderCodeBadge" class="badge bg-light text-dark border"
+                                            style="font-family:monospace;">-</span>
+                                    </div>
+                                </div>
+                                <div class="purchase-order-meta-item">
+                                    <div class="purchase-order-meta-label">Người mua</div>
+                                    <div id="purchaseOrderBuyer" class="purchase-order-meta-value">-</div>
+                                </div>
+                                <div class="purchase-order-meta-item">
+                                    <div class="purchase-order-meta-label">Trạng thái</div>
+                                    <div id="purchaseOrderStatus" class="purchase-order-meta-value">-</div>
+                                </div>
+                                <div class="purchase-order-meta-item">
+                                    <div class="purchase-order-meta-label">Số lượng</div>
+                                    <div id="purchaseOrderQuantity" class="purchase-order-meta-value">1</div>
+                                </div>
                             </div>
 
-                            <div class="form-group mb-0">
-                                <label class="font-weight-bold">Nội dung bàn giao / trả code</label>
-                                <textarea id="purchaseOrderDeliveryContent" class="form-control" rows="7"
-                                    placeholder="Nhập code/nội dung trả lại cho khách..."></textarea>
+                            <div class="row">
+                                <div class="col-lg-6 mb-2" id="purchaseOrderRequestCol">
+                                    <div class="purchase-order-card">
+                                        <div class="purchase-order-card-title" id="purchaseOrderRequestTitle">Thông tin yêu
+                                            cầu</div>
+                                        <div id="purchaseOrderRequest" class="purchase-order-card-content">-</div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6 mb-2" id="purchaseOrderDeliveryCol">
+                                    <div class="purchase-order-card">
+                                        <div class="purchase-order-card-title" id="purchaseOrderDeliveryTitle">Nội dung giao
+                                            hàng</div>
+                                        <div id="purchaseOrderDelivery" class="purchase-order-card-content">-</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="purchase-order-product-row">
+                                <div class="purchase-order-product-cell">
+                                    <b>Sản phẩm:</b> <span id="purchaseOrderProductName">-</span>
+                                </div>
+                                <div class="purchase-order-product-cell">
+                                    <b>Giá mua:</b> <span id="purchaseOrderPrice">0đ</span>
+                                </div>
+                                <div class="purchase-order-product-cell">
+                                    <b id="purchaseOrderExtraLabel">Loại:</b> <span id="purchaseOrderExtraValue">-</span>
+                                </div>
+                            </div>
+
+                            <div class="purchase-order-card" id="purchaseOrderModeInfoCard">
+                                <div class="purchase-order-card-title" id="purchaseOrderModeInfoTitle">Thông tin theo loại
+                                    sản phẩm</div>
+                                <div id="purchaseOrderProductInfo" class="purchase-order-product-info">-</div>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light border" data-dismiss="modal">Đóng</button>
-                        <button type="button" class="btn btn-danger" id="btnCancelOrderSubmit">
-                            <i class="fas fa-undo mr-1"></i> Hủy đơn + Hoàn tiền
-                        </button>
-                        <button type="button" class="btn btn-success" id="btnFulfillOrderSubmit">
-                            <i class="fas fa-paper-plane mr-1"></i> Giao hàng & Hoàn tất
-                        </button>
+                        <a href="#" target="_blank" id="purchaseOrderOpenStockBtn" class="btn btn-primary disabled"
+                            aria-disabled="true">
+                            <i class="fas fa-warehouse mr-1"></i> Xem chi tiết trong kho
+                        </a>
                     </div>
                 </div>
             </div>
@@ -273,10 +475,6 @@ if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed
     ?>;
     const IS_PURCHASE_JOURNAL = <?= $isPurchaseJournal ? 'true' : 'false' ?>;
     const PURCHASE_DETAIL_BASE_URL = '<?= url("admin/logs/buying/detail") ?>';
-    const PURCHASE_FULFILL_URL = '<?= url("admin/logs/buying/fulfill") ?>';
-    const PURCHASE_CANCEL_URL = '<?= url("admin/logs/buying/cancel") ?>';
-    const CSRF_TOKEN = <?= json_encode(function_exists('csrf_token') ? csrf_token() : '', JSON_UNESCAPED_UNICODE) ?>;
-    let purchaseModalCurrentOrderId = 0;
 
     document.addEventListener("DOMContentLoaded", function () {
         let checkExist = setInterval(function () {
@@ -376,19 +574,10 @@ if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed
     }
 
     function initPurchaseOrderActions() {
-        $(document).on('click', '.js-order-view, .js-order-fulfill, .js-order-cancel', function () {
+        $(document).on('click', '.js-order-view', function () {
             var orderId = Number($(this).data('order-id') || 0);
-            var openFulfillMode = $(this).hasClass('js-order-fulfill');
             if (!orderId) return;
-            openPurchaseOrderModal(orderId, openFulfillMode);
-        });
-
-        $('#btnFulfillOrderSubmit').on('click', function () {
-            submitPurchaseFulfill();
-        });
-
-        $('#btnCancelOrderSubmit').on('click', function () {
-            submitPurchaseCancel();
+            openPurchaseOrderModal(orderId);
         });
     }
 
@@ -405,49 +594,167 @@ if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed
         }
     }
 
-    function fillPurchaseOrderModal(order, openFulfillMode) {
+    function fillPurchaseOrderModal(order) {
         order = order || {};
-        purchaseModalCurrentOrderId = Number(order.id || 0);
 
-        var metaHtml = ''
-            + '<div class="row">'
-            + '<div class="col-md-6 mb-2"><b>Mã đơn:</b> <span class="badge bg-light text-dark border">' + escapeHtml(order.order_code_short || order.order_code || '-') + '</span></div>'
-            + '<div class="col-md-6 mb-2"><b>Trạng thái:</b> ' + escapeHtml(order.status || '-') + '</div>'
-            + '<div class="col-md-6 mb-2"><b>Khách hàng:</b> ' + escapeHtml(order.username || '-') + '</div>'
-            + '<div class="col-md-6 mb-2"><b>Số lượng:</b> ' + escapeHtml(order.quantity || 1) + '</div>'
-            + '<div class="col-md-12 mb-2"><b>Sản phẩm:</b> ' + escapeHtml(order.product_name || '-') + '</div>'
-            + '</div>';
-        $('#purchaseOrderMeta').html(metaHtml);
-        $('#purchaseOrderCustomerInput').val(order.customer_input || '');
+        var orderCode = String(order.order_code_short || order.order_code || '-');
+        var customerInput = String(order.customer_input || '').trim();
+        var deliveryContent = String(order.delivery_content || '').trim();
+        if (String(order.status || '') === 'cancelled' && String(order.cancel_reason || '').trim() !== '') {
+            deliveryContent = String(order.cancel_reason || '').trim();
+        }
 
-        var userMessage = '';
-        if (order.status === 'cancelled' && order.cancel_reason) {
-            userMessage = order.cancel_reason;
+        $('#purchaseOrderCreatedAt').text(String(order.created_at_display || order.created_at || '-'));
+        $('#purchaseOrderCodeBadge').text(orderCode);
+        $('#purchaseOrderBuyer').text(String(order.username || '-'));
+        $('#purchaseOrderRequest').html(nl2brEscape(customerInput !== '' ? customerInput : 'Không có'));
+        $('#purchaseOrderDelivery').html(nl2brEscape(deliveryContent !== '' ? deliveryContent : 'Chưa có'));
+        $('#purchaseOrderStatus').html(getOrderStatusBadgeHtml(String(order.status || '')));
+        $('#purchaseOrderProductName').text(String(order.product_name || '-'));
+        $('#purchaseOrderQuantity').text(String(order.quantity || 1));
+        $('#purchaseOrderPrice').text(formatVnd(order.price || 0));
+        applyPurchaseModeUi(order, customerInput, deliveryContent);
+        setPurchaseOrderStockLink(order.stock_url || '');
+    }
+
+    function applyPurchaseModeUi(order, customerInput, deliveryContent) {
+        var product = order.product || {};
+        var mode = resolvePurchaseDeliveryMode(product);
+        var sourceLink = String(product.source_link || '').trim();
+        var productInstructions = String(product.info_instructions || '').trim();
+
+        var ui = {
+            requestTitle: 'Thông tin yêu cầu',
+            requestText: customerInput !== '' ? customerInput : 'Không có',
+            showRequest: customerInput !== '',
+            deliveryTitle: 'Nội dung giao hàng',
+            deliveryText: deliveryContent !== '' ? deliveryContent : 'Chưa có',
+            showDelivery: true,
+            extraLabel: 'Loại',
+            extraValue: String(product.delivery_label || '-') || '-',
+            modeInfoTitle: 'Thông tin theo loại sản phẩm',
+            modeInfoHtml: '',
+        };
+
+        if (mode === 'manual_info') {
+            ui.requestTitle = 'Yêu cầu từ khách';
+            ui.requestText = customerInput !== '' ? customerInput : 'Khách chưa gửi yêu cầu.';
+            ui.showRequest = true;
+            ui.deliveryTitle = 'Phản hồi / giao hàng';
+            ui.deliveryText = deliveryContent !== '' ? deliveryContent : 'Chưa phản hồi.';
+            ui.extraValue = 'Yêu cầu thông tin';
+            ui.modeInfoTitle = 'Thông tin sản phẩm yêu cầu';
+
+            var manualLines = [];
+            manualLines.push('<div><b>Loại bàn giao:</b> Yêu cầu thông tin</div>');
+            if (productInstructions !== '') {
+                manualLines.push('<div class="mt-1"><b>Mẫu yêu cầu:</b> ' + nl2brEscape(productInstructions) + '</div>');
+            }
+            ui.modeInfoHtml = manualLines.join('');
+        } else if (mode === 'source_link') {
+            ui.requestTitle = 'Thông tin bổ sung';
+            ui.requestText = customerInput !== '' ? customerInput : 'Không có thông tin bổ sung.';
+            ui.showRequest = customerInput !== '';
+            ui.deliveryTitle = 'Source';
+            ui.deliveryText = deliveryContent !== '' ? deliveryContent : (sourceLink !== '' ? sourceLink : 'Chưa có source.');
+            ui.extraValue = 'Source';
+            ui.modeInfoTitle = 'Thông tin source';
+
+            var sourceLines = [];
+            sourceLines.push('<div><b>Loại bàn giao:</b> Source</div>');
+            if (sourceLink !== '') {
+                sourceLines.push('<div class="mt-1"><b>Source:</b> <code class="text-dark">' + escapeHtml(sourceLink) + '</code></div>');
+            }
+            ui.modeInfoHtml = sourceLines.join('');
         } else {
-            userMessage = order.delivery_content || '';
+            ui.requestTitle = 'Thông tin mua hàng';
+            ui.requestText = customerInput !== '' ? customerInput : 'Không có thông tin yêu cầu.';
+            ui.showRequest = customerInput !== '';
+            ui.deliveryTitle = 'Tài khoản';
+            ui.deliveryText = deliveryContent !== '' ? deliveryContent : 'Chưa bàn giao tài khoản.';
+            ui.extraValue = 'Tài khoản';
+            ui.modeInfoTitle = 'Thông tin tài khoản';
+
+            var accountLines = [];
+            accountLines.push('<div><b>Loại bàn giao:</b> Tài khoản</div>');
+            if (deliveryContent !== '') {
+                accountLines.push('<div class="mt-1"><b>Tài khoản đã giao:</b> Có dữ liệu bàn giao.</div>');
+            }
+            ui.modeInfoHtml = accountLines.join('');
         }
-        $('#purchaseOrderDeliveryContent').val(userMessage);
 
-        var hasStock = !!order.delivery_content && order.status === 'pending';
-        $('#purchaseOrderStockHint').toggleClass('d-none', !hasStock);
-        if (hasStock) {
-            $('#purchaseOrderStockContent').text(order.delivery_content);
+        $('#purchaseOrderRequestTitle').text(ui.requestTitle);
+        $('#purchaseOrderRequest').html(nl2brEscape(ui.requestText));
+        $('#purchaseOrderDeliveryTitle').text(ui.deliveryTitle);
+        $('#purchaseOrderDelivery').html(nl2brEscape(ui.deliveryText));
+        $('#purchaseOrderExtraLabel').text(ui.extraLabel + ':');
+        $('#purchaseOrderExtraValue').text(ui.extraValue);
+        $('#purchaseOrderModeInfoTitle').text(ui.modeInfoTitle);
+        $('#purchaseOrderProductInfo').html(ui.modeInfoHtml !== '' ? ui.modeInfoHtml : '<span class="text-muted">Không có thêm thông tin.</span>');
+        $('#purchaseOrderModeInfoCard').toggleClass('d-none', ui.modeInfoHtml === '');
+
+        applyPurchaseContentColumns(ui.showRequest, ui.showDelivery);
+    }
+
+    function resolvePurchaseDeliveryMode(product) {
+        var p = product || {};
+        var mode = String(p.delivery_mode || '').trim();
+        if (mode !== '') return mode;
+
+        var type = String(p.product_type || '').trim();
+        if (type === 'link') return 'source_link';
+        if (Number(p.requires_info || 0) === 1) return 'manual_info';
+        return 'account_stock';
+    }
+
+    function applyPurchaseContentColumns(showRequest, showDelivery) {
+        var requestCol = $('#purchaseOrderRequestCol');
+        var deliveryCol = $('#purchaseOrderDeliveryCol');
+
+        requestCol.toggleClass('d-none', !showRequest);
+        deliveryCol.toggleClass('d-none', !showDelivery);
+
+        requestCol.removeClass('col-12').addClass('col-lg-6');
+        deliveryCol.removeClass('col-12').addClass('col-lg-6');
+
+        if (showRequest && !showDelivery) {
+            requestCol.removeClass('col-lg-6').addClass('col-12');
         }
-
-        var canFulfill = ['pending', 'processing'].indexOf(String(order.status || '')) !== -1;
-        var canCancel = String(order.status || '') === 'pending';
-        $('#purchaseOrderDeliveryContent').prop('readonly', !canFulfill);
-        $('#btnFulfillOrderSubmit').toggle(canFulfill);
-        $('#btnCancelOrderSubmit').toggle(canCancel);
-
-        if (openFulfillMode && canFulfill) {
-            setTimeout(function () {
-                $('#purchaseOrderDeliveryContent').focus();
-            }, 150);
+        if (!showRequest && showDelivery) {
+            deliveryCol.removeClass('col-lg-6').addClass('col-12');
         }
     }
 
-    function openPurchaseOrderModal(orderId, openFulfillMode) {
+    function setPurchaseOrderStockLink(stockUrl) {
+        var btn = $('#purchaseOrderOpenStockBtn');
+        var href = String(stockUrl || '').trim();
+        if (href === '') {
+            btn.addClass('disabled').attr('aria-disabled', 'true').attr('href', '#');
+            return;
+        }
+        btn.removeClass('disabled').removeAttr('aria-disabled').attr('href', href);
+    }
+
+    function getOrderStatusBadgeHtml(status) {
+        var st = String(status || '').toLowerCase();
+        if (st === 'completed') return '<span class="badge badge-pill badge-soft-success">Hoàn tất</span>';
+        if (st === 'cancelled') return '<span class="badge badge-pill badge-soft-danger">Đã hủy</span>';
+        if (st === 'pending') return '<span class="badge badge-pill badge-soft-warning">Pending</span>';
+        if (st === 'processing') return '<span class="badge badge-pill badge-soft-warning">Đang xử lý</span>';
+        return '<span class="badge bg-secondary">' + escapeHtml(status || '-') + '</span>';
+    }
+
+    function formatVnd(amount) {
+        var num = Number(amount || 0);
+        if (Number.isNaN(num)) num = 0;
+        return num.toLocaleString('vi-VN') + 'đ';
+    }
+
+    function nl2brEscape(text) {
+        return escapeHtml(String(text || '')).replace(/\r?\n/g, '<br>');
+    }
+
+    function openPurchaseOrderModal(orderId) {
         if (!IS_PURCHASE_JOURNAL) return;
         setPurchaseModalError('');
         setPurchaseModalLoading(true);
@@ -458,7 +765,7 @@ if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed
             .then(data => {
                 setPurchaseModalLoading(false);
                 if (data.success) {
-                    fillPurchaseOrderModal(data.order, openFulfillMode);
+                    fillPurchaseOrderModal(data.order);
                 } else {
                     setPurchaseModalError(data.message);
                 }
@@ -466,50 +773,6 @@ if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed
             .catch(err => {
                 setPurchaseModalLoading(false);
                 setPurchaseModalError('Lỗi kết nối server.');
-            });
-    }
-
-    function submitPurchaseFulfill() {
-        var orderId = purchaseModalCurrentOrderId;
-        var content = $('#purchaseOrderDeliveryContent').val().trim();
-        if (!content) return setPurchaseModalError('Nhập nội dung!');
-
-        var formData = new FormData();
-        formData.append('order_id', orderId);
-        formData.append('delivery_content', content);
-        formData.append('csrf_token', CSRF_TOKEN);
-
-        fetch(PURCHASE_FULFILL_URL, { method: 'POST', body: formData })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    $('#purchaseOrderModal').modal('hide');
-                    location.reload();
-                } else {
-                    setPurchaseModalError(data.message);
-                }
-            });
-    }
-
-    function submitPurchaseCancel() {
-        var orderId = purchaseModalCurrentOrderId;
-        var reason = $('#purchaseOrderDeliveryContent').val().trim();
-        if (!reason) return setPurchaseModalError('Nhập lý do!');
-
-        var formData = new FormData();
-        formData.append('order_id', orderId);
-        formData.append('cancel_reason', reason);
-        formData.append('csrf_token', CSRF_TOKEN);
-
-        fetch(PURCHASE_CANCEL_URL, { method: 'POST', body: formData })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    $('#purchaseOrderModal').modal('hide');
-                    location.reload();
-                } else {
-                    setPurchaseModalError(data.message);
-                }
             });
     }
 

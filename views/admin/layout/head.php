@@ -1,4 +1,5 @@
 <?php
+global $chungapi, $user;
 /**
  * Admin Layout — HEAD wrapper
  * 
