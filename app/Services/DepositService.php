@@ -88,7 +88,12 @@ class DepositService
      * @param array<string,mixed> $siteConfig
      * @return array<string,mixed>
      */
-    public function createBankDeposit(array $user, int $amount, array $siteConfig): array
+    public function createBankDeposit(
+        array $user,
+        int $amount,
+        array $siteConfig,
+        int $sourceChannel = SourceChannelHelper::WEB
+    ): array
     {
         if ($amount < self::MIN_AMOUNT) {
             return ['success' => false, 'message' => 'Số tiền nạp tối thiểu 10.000đ'];
@@ -105,7 +110,8 @@ class DepositService
             (int) ($user['id'] ?? 0),
             (string) ($user['username'] ?? ''),
             $amount,
-            $bonusPercent
+            $bonusPercent,
+            SourceChannelHelper::normalize($sourceChannel)
         );
 
         if (!$result) {
@@ -124,6 +130,7 @@ class DepositService
                 'deposit_code' => (string) $result['deposit_code'],
                 'amount' => $amount,
                 'bonus_percent' => $bonusPercent,
+                'source_channel' => SourceChannelHelper::normalize($sourceChannel),
                 'status' => 'pending',
                 'status_text' => $this->mapDepositStatusText('pending'),
                 'bonus_amount' => $bonusAmount,

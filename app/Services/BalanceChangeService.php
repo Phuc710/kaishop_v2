@@ -9,6 +9,7 @@ class BalanceChangeService
     private PDO $db;
     private ?TimeService $timeService = null;
     private ?bool $tableExists = null;
+    private ?bool $hasSourceChannelColumn = null;
 
     public function __construct(?PDO $db = null)
     {
@@ -16,6 +17,7 @@ class BalanceChangeService
         if (class_exists('TimeService')) {
             $this->timeService = TimeService::instance();
         }
+        $this->ensureSourceChannelSchema();
     }
 
     public function isAvailable(): bool
@@ -41,7 +43,8 @@ class BalanceChangeService
         int $beforeBalance,
         int $changeAmount,
         int $afterBalance,
-        string $reason
+        string $reason,
+        int $sourceChannel = SourceChannelHelper::WEB
     ): bool {
         if ($userId <= 0 || $changeAmount === 0 || !$this->isAvailable()) {
             return false;
@@ -56,25 +59,68 @@ class BalanceChangeService
             : date('Y-m-d H:i:s');
 
         try {
-            $stmt = $this->db->prepare("
-                INSERT INTO `lich_su_bien_dong_so_du`
-                    (`user_id`, `username`, `before_balance`, `change_amount`, `after_balance`, `reason`, `time`, `created_at`)
-                VALUES
-                    (?, ?, ?, ?, ?, ?, ?, ?)
-            ");
+            $columns = ['user_id', 'username', 'before_balance', 'change_amount', 'after_balance', 'reason', 'time', 'created_at'];
+            $values = [$userId, $username, $beforeBalance, $changeAmount, $afterBalance, $reason, $rawTime, $createdAt];
 
-            return $stmt->execute([
-                $userId,
-                $username,
-                $beforeBalance,
-                $changeAmount,
-                $afterBalance,
-                $reason,
-                $rawTime,
-                $createdAt,
-            ]);
+            if ($this->hasSourceChannelColumn()) {
+                $columns[] = 'source_channel';
+                $values[] = SourceChannelHelper::normalize($sourceChannel);
+            }
+
+            $marks = implode(', ', array_fill(0, count($columns), '?'));
+            $sql = "
+                INSERT INTO `lich_su_bien_dong_so_du`
+                    (`" . implode('`, `', $columns) . "`)
+                VALUES
+                    ({$marks})
+            ";
+            $stmt = $this->db->prepare($sql);
+
+            return $stmt->execute($values);
         } catch (Throwable $e) {
             return false;
         }
+    }
+
+    private function ensureSourceChannelSchema(): void
+    {
+        if (!$this->isAvailable()) {
+            return;
+        }
+
+        if ($this->hasSourceChannelColumn()) {
+            return;
+        }
+
+        try {
+            $this->db->exec("ALTER TABLE `lich_su_bien_dong_so_du` ADD COLUMN `source_channel` TINYINT(1) NOT NULL DEFAULT 0 AFTER `reason`");
+        } catch (Throwable $e) {
+            // ignore if ALTER is restricted
+        }
+
+        try {
+            $this->db->exec("ALTER TABLE `lich_su_bien_dong_so_du` ADD KEY `idx_lsbd_source_created` (`source_channel`, `created_at`)");
+        } catch (Throwable $e) {
+            // ignore if key exists or ALTER is restricted
+        }
+
+        $this->hasSourceChannelColumn = null;
+    }
+
+    private function hasSourceChannelColumn(): bool
+    {
+        if ($this->hasSourceChannelColumn !== null) {
+            return $this->hasSourceChannelColumn;
+        }
+
+        $stmt = $this->db->query("
+            SELECT COUNT(*)
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+              AND table_name = 'lich_su_bien_dong_so_du'
+              AND column_name = 'source_channel'
+        ");
+        $this->hasSourceChannelColumn = (int) ($stmt ? $stmt->fetchColumn() : 0) > 0;
+        return $this->hasSourceChannelColumn;
     }
 }

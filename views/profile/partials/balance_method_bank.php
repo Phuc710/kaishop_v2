@@ -1,4 +1,8 @@
-﻿<div class="deposit-panel-step" data-deposit-step="amount" <?= $activeDepositExists ? 'hidden' : '' ?>>
+<?php
+$qrLogoSetting = trim((string) ($chungapi['favicon'] ?? ''));
+$qrLogoSrc = UrlHelper::resolveIcon($qrLogoSetting, 'assets/images/kaishop_favicon.png');
+?>
+<div class="deposit-panel-step" data-deposit-step="amount" <?= $activeDepositExists ? 'hidden' : '' ?>>
     <div class="deposit-panel-title-row">
         <h6 class="deposit-panel-title">Chọn số tiền nạp</h6>
     </div>
@@ -65,8 +69,8 @@
                 <div class="deposit-qr-box">
                     <img data-deposit-qr src="<?= htmlspecialchars($qrUrl, ENT_QUOTES, 'UTF-8') ?>" alt="QR thanh toán">
                     <div class="deposit-qr-logo">
-                        <img src="<?= htmlspecialchars((string) ($chungapi['favicon'] ?? ($chungapi['logo'] ?? '')), ENT_QUOTES, 'UTF-8') ?>"
-                            alt="Logo">
+                        <img src="<?= htmlspecialchars($qrLogoSrc, ENT_QUOTES, 'UTF-8') ?>" alt="Logo" draggable="false"
+                            class="ks-img-guard" decoding="async" loading="lazy" fetchpriority="low">
                     </div>
                 </div>
                 <button type="button" class="btn btn-search-custom w-100 mt-3" data-deposit-action="download-qr">

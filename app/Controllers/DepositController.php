@@ -196,7 +196,7 @@ class DepositController extends Controller
         $siteConfig = Config::getSiteConfig();
         $amount = (int) $this->post('amount', 0);
 
-        $result = $this->depositService->createBankDeposit($user, $amount, $siteConfig);
+        $result = $this->depositService->createBankDeposit($user, $amount, $siteConfig, SourceChannelHelper::WEB);
         if (empty($result['success'])) {
             return $this->json([
                 'success' => false,
@@ -211,6 +211,7 @@ class DepositController extends Controller
             'bonus' => (int) ($payload['bonus_percent'] ?? 0),
             'deposit_code' => (string) ($payload['deposit_code'] ?? ''),
             'method' => (string) ($payload['method'] ?? DepositService::METHOD_BANK_SEPAY),
+            'source_channel' => SourceChannelHelper::WEB,
         ]);
 
         return $this->json($result);
@@ -360,6 +361,7 @@ class DepositController extends Controller
 
         Logger::info('Billing', 'deposit_cancelled', "User {$user['username']} huỷ giao dịch nạp tiền", [
             'deposit_code' => $depositCode,
+            'source_channel' => SourceChannelHelper::normalize($deposit['source_channel'] ?? SourceChannelHelper::WEB),
         ]);
 
         return $this->json(['success' => true, 'message' => 'Đã huỷ giao dịch']);

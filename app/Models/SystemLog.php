@@ -7,12 +7,14 @@
 class SystemLog extends Model
 {
     protected ?TimeService $timeService = null;
+    private array $schemaCache = [];
 
     public function __construct()
     {
         parent::__construct();
         $this->table = 'system_logs';
         $this->timeService = class_exists('TimeService') ? TimeService::instance() : null;
+        $this->ensureSourceChannelSchema();
     }
 
     /**
@@ -89,6 +91,7 @@ class SystemLog extends Model
     {
         $conditions = ['1=1'];
         $params = [];
+        $sourceExpr = $this->buildSourceChannelExpression();
 
         if (!empty($filters['search'])) {
             $search = '%' . trim((string) $filters['search']) . '%';
@@ -105,6 +108,12 @@ class SystemLog extends Model
         if (!empty($filters['severity']) && $filters['severity'] !== 'all') {
             $conditions[] = 'severity = :f_severity';
             $params['f_severity'] = $filters['severity'];
+        }
+
+        $sourceFilter = trim((string) ($filters['source_channel'] ?? 'all'));
+        if (in_array($sourceFilter, ['0', '1'], true)) {
+            $conditions[] = "({$sourceExpr}) = :f_source_channel";
+            $params['f_source_channel'] = (int) $sourceFilter;
         }
 
         $this->appendDateConditions($conditions, $params, $filters);
@@ -132,12 +141,73 @@ class SystemLog extends Model
         }
 
         $where = implode(' AND ', $conditions);
-        $sql = "SELECT * FROM `{$this->table}` WHERE {$where} ORDER BY id DESC";
+        $sql = "SELECT *, {$sourceExpr} AS source_channel_resolved FROM `{$this->table}` WHERE {$where} ORDER BY id DESC";
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    private function ensureSourceChannelSchema(): void
+    {
+        try {
+            if (!$this->hasColumn('source_channel')) {
+                $this->db->exec("ALTER TABLE `{$this->table}` ADD COLUMN `source_channel` TINYINT(1) NOT NULL DEFAULT 0 AFTER `severity`");
+            }
+        } catch (Throwable $e) {
+            // ignore if ALTER is restricted
+        }
+
+        try {
+            $this->db->exec("ALTER TABLE `{$this->table}` ADD KEY `idx_system_logs_source_created` (`source_channel`, `created_at`)");
+        } catch (Throwable $e) {
+            // ignore if key exists or ALTER is restricted
+        }
+
+        unset($this->schemaCache['source_channel']);
+    }
+
+    private function hasColumn(string $column): bool
+    {
+        if (array_key_exists($column, $this->schemaCache)) {
+            return $this->schemaCache[$column];
+        }
+
+        $stmt = $this->db->prepare("
+            SELECT COUNT(*)
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+              AND table_name = :table_name
+              AND column_name = :column_name
+        ");
+        $stmt->execute([
+            'table_name' => $this->table,
+            'column_name' => $column,
+        ]);
+
+        $exists = (int) $stmt->fetchColumn() > 0;
+        $this->schemaCache[$column] = $exists;
+        return $exists;
+    }
+
+    private function buildSourceChannelExpression(): string
+    {
+        if ($this->hasColumn('source_channel')) {
+            return "COALESCE(`source_channel`, 0)";
+        }
+
+        return "
+            CASE
+                WHEN LOWER(COALESCE(`module`, '')) LIKE '%telegram%'
+                     OR LOWER(COALESCE(`action`, '')) LIKE '%telegram%'
+                     OR LOWER(COALESCE(`payload`, '')) LIKE '%\"source_channel\":1%'
+                     OR LOWER(COALESCE(`payload`, '')) LIKE '%\"source\":\"telegram\"%'
+                     OR LOWER(COALESCE(`payload`, '')) LIKE '%\"telegram_id\":%'
+                THEN 1
+                ELSE 0
+            END
+        ";
     }
 
     /**

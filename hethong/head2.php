@@ -130,18 +130,6 @@ $ogType = isset($seoOgType) && trim((string) $seoOgType) !== '' ? trim((string) 
 <?php endif; ?>
 
 <?php
-$resolveSiteIconUrl = static function ($path): string {
-    $cleanPath = trim(preg_replace('/\s+/', '', (string) $path));
-    if ($cleanPath === '') {
-        return '';
-    }
-
-    if (preg_match('~^(?:https?:)?//|^(?:data|blob):~i', $cleanPath)) {
-        return $cleanPath;
-    }
-
-    return asset(ltrim($cleanPath, '/'));
-};
 
 $appendIconVersion = static function (string $href, string $version): string {
     if ($href === '' || $version === '') {
@@ -159,29 +147,10 @@ $appendIconVersion = static function (string $href, string $version): string {
     return $href . (str_contains($href, '?') ? '&' : '?') . 'v=' . rawurlencode($version);
 };
 
-$faviconHref = '';
+$faviconHref = UrlHelper::resolveFavicon($chungapi['favicon'] ?? '', $chungapi['logo'] ?? '');
 $faviconVersion = trim((string) ($chungapi['updated_at'] ?? TimeService::instance()->nowTs()));
-foreach (
-    [
-        'assets/images/kaishop_favicon.png',
-        (string) ($chungapi['favicon'] ?? ''),
-        (string) ($chungapi['logo'] ?? ''),
-        'assets/images/header_logo.gif',
-    ] as $iconCandidate
-) {
-    if (trim($iconCandidate) === '')
-        continue;
-    $resolvedIcon = $resolveSiteIconUrl($iconCandidate);
-    if ($resolvedIcon !== '') {
-        $faviconHref = $resolvedIcon;
-        break;
-    }
-}
 $faviconHref = $appendIconVersion($faviconHref, (string) $faviconVersion);
 $fallbackFaviconHref = asset('assets/images/kaishop_favicon.png');
-if ($faviconHref === '') {
-    $faviconHref = $fallbackFaviconHref;
-}
 ?>
 <link rel="icon" href="<?= htmlspecialchars($faviconHref, ENT_QUOTES, 'UTF-8') ?>">
 <link rel="shortcut icon" href="<?= htmlspecialchars($faviconHref, ENT_QUOTES, 'UTF-8') ?>">

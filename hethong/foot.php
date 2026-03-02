@@ -110,13 +110,13 @@
 <footer class="footer">
     <div class="container">
         <div class="footer-top">
-            <div class="row">
+            <div class="row mb-4">
                 <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12 text-center">
                     <div class="footer-widget">
                         <?php global $chungapi; ?>
                         <a href="<?= url('') ?>" class="d-block mb-3">
-                            <img src="<?= $chungapi['logo_footer'] ?? $chungapi['logo']; ?>" width="150" alt="KaiShop"
-                                style="margin: 0 auto; display: block;">
+                            <img src="<?= asset($chungapi['logo_footer'] ?? $chungapi['logo']); ?>" width="230"
+                                alt="KaiShop" style="margin: 0 auto; display: block; max-width: 100%; height: auto;">
                         </a>
                         <p class="mx-auto" style="max-width: 320px;">
                             <?= !empty($chungapi['mo_ta']) ? htmlspecialchars($chungapi['mo_ta']) : 'Hệ thống cung cấp Source Code, Tài khoản MMO, Công cụ và Dịch vụ chất lượng cao.'; ?>
@@ -158,7 +158,7 @@
 
                 <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6">
                     <div class="footer-widget">
-                        <h3>Danh mục nổi bật</h3>
+                        <h3>Chuyên Mục Nổi Bật</h3>
                         <div class="row">
                             <div class="col-md-12">
                                 <ul class="menu-items">
@@ -167,12 +167,12 @@
                                     try {
                                         $db = class_exists('Database') ? Database::getInstance()->getConnection() : null;
                                         if ($db instanceof PDO) {
-                                            $stmt = $db->prepare("SELECT * FROM categories WHERE status = ? ORDER BY display_order ASC, id ASC LIMIT 5");
+                                            $stmt = $db->prepare("SELECT * FROM categories WHERE status = ? ORDER BY display_order ASC, id ASC LIMIT 3");
                                             $stmt->execute(['ON']);
                                             $footer_categories = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
                                         } else {
                                             global $connection;
-                                            $footer_categories = $connection->query("SELECT * FROM categories WHERE status = 'ON' LIMIT 5")->fetch_all(MYSQLI_ASSOC);
+                                            $footer_categories = $connection->query("SELECT * FROM categories WHERE status = 'ON' LIMIT 3")->fetch_all(MYSQLI_ASSOC);
                                         }
                                     } catch (Throwable $e) {
                                         $footer_categories = [];
@@ -219,30 +219,6 @@
                 </div>
             </div>
 
-            <div class="contact-widget">
-                <div class="row align-items-center">
-                    <div class="col-xl-9">
-                        <ul class="location-list">
-                            <li>
-                                <span><i class="fa-solid fa-phone"></i></span>
-                                <div class="location-info">
-                                    <h6>Phone</h6>
-                                    <p><?= $chungapi['sdt_admin']; ?></p>
-                                </div>
-                            </li>
-                            <li>
-                                <span><i class="fa-regular fa-envelope"></i></span>
-                                <div class="location-info">
-                                    <h6>Email</h6>
-                                    <p><?= $chungapi['email_cf']; ?></p>
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="col-xl-3 text-xl-end"></div>
-                </div>
-            </div>
-
         </div>
     </div>
 
@@ -253,7 +229,8 @@
                     <div class="copy-right">
                         <p>&copy; <?= TimeService::instance()->nowDateTime()->format('Y') ?>
                             <?= htmlspecialchars($chungapi['ten_web'] ?? 'KaiShop'); ?>.
-                            All rights reserved.</p>
+                            All rights reserved.
+                        </p>
                     </div>
                 </div>
                 <div class="col-lg-6">

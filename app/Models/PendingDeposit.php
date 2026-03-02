@@ -9,6 +9,7 @@ class PendingDeposit extends Model
     protected $table = 'pending_deposits';
     private const PENDING_TTL_SECONDS = 300;
     protected ?TimeService $timeService = null;
+    private ?bool $hasSourceChannelColumn = null;
 
     public function __construct()
     {
@@ -16,6 +17,7 @@ class PendingDeposit extends Model
         if (class_exists('TimeService')) {
             $this->timeService = TimeService::instance();
         }
+        $this->ensureSourceChannelSchema();
     }
 
     /**
@@ -36,7 +38,13 @@ class PendingDeposit extends Model
      *
      * @return array{id: int, deposit_code: string, expires_at: string}|false
      */
-    public function createDeposit(int $userId, string $username, int $amount, int $bonusPercent = 0)
+    public function createDeposit(
+        int $userId,
+        string $username,
+        int $amount,
+        int $bonusPercent = 0,
+        int $sourceChannel = SourceChannelHelper::WEB
+    )
     {
         // Cancel any existing pending deposits for this user
         $this->cancelAllPendingByUser($userId);
@@ -47,20 +55,30 @@ class PendingDeposit extends Model
         $code = $this->generateCode();
         $now = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
 
-        $stmt = $this->db->prepare("
-            INSERT INTO `{$this->table}` 
-            (`user_id`, `username`, `deposit_code`, `amount`, `bonus_percent`, `status`, `created_at`)
-            VALUES (:uid, :uname, :code, :amount, :bonus, 'pending', :now)
-        ");
-
-        $result = $stmt->execute([
+        $columns = ['user_id', 'username', 'deposit_code', 'amount', 'bonus_percent', 'status', 'created_at'];
+        $marks = [':uid', ':uname', ':code', ':amount', ':bonus', "'pending'", ':now'];
+        $params = [
             'uid' => $userId,
             'uname' => $username,
             'code' => $code,
             'amount' => $amount,
             'bonus' => $bonusPercent,
             'now' => $now,
-        ]);
+        ];
+
+        if ($this->hasSourceChannelColumn()) {
+            $columns[] = 'source_channel';
+            $marks[] = ':source_channel';
+            $params['source_channel'] = SourceChannelHelper::normalize($sourceChannel);
+        }
+
+        $sql = "
+            INSERT INTO `{$this->table}`
+            (`" . implode('`, `', $columns) . "`)
+            VALUES (" . implode(', ', $marks) . ")
+        ";
+        $stmt = $this->db->prepare($sql);
+        $result = $stmt->execute($params);
 
         if (!$result) {
             return false;
@@ -188,5 +206,56 @@ class PendingDeposit extends Model
         if (!$createdAt)
             return true;
         return (time() - $createdAt) >= $this->getPendingTtlSeconds();
+    }
+
+    private function ensureSourceChannelSchema(): void
+    {
+        if (!$this->tableExists()) {
+            return;
+        }
+        if ($this->hasSourceChannelColumn()) {
+            return;
+        }
+
+        try {
+            $this->db->exec("ALTER TABLE `{$this->table}` ADD COLUMN `source_channel` TINYINT(1) NOT NULL DEFAULT 0 AFTER `bonus_percent`");
+        } catch (Throwable $e) {
+            // ignore if ALTER is restricted
+        }
+
+        try {
+            $this->db->exec("ALTER TABLE `{$this->table}` ADD KEY `idx_pd_source_status_created` (`source_channel`, `status`, `created_at`)");
+        } catch (Throwable $e) {
+            // ignore if key exists or ALTER is restricted
+        }
+
+        $this->hasSourceChannelColumn = null;
+    }
+
+    private function tableExists(): bool
+    {
+        $stmt = $this->db->prepare("
+            SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE() AND table_name = ?
+        ");
+        $stmt->execute([$this->table]);
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
+    private function hasSourceChannelColumn(): bool
+    {
+        if ($this->hasSourceChannelColumn !== null) {
+            return $this->hasSourceChannelColumn;
+        }
+
+        $stmt = $this->db->prepare("
+            SELECT COUNT(*)
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE() AND table_name = ? AND column_name = 'source_channel'
+        ");
+        $stmt->execute([$this->table]);
+        $this->hasSourceChannelColumn = (int) $stmt->fetchColumn() > 0;
+        return $this->hasSourceChannelColumn;
     }
 }

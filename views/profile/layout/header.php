@@ -12,12 +12,19 @@ if (isset($userPageAssetFlags) && is_array($userPageAssetFlags)) {
 
 $userPageTitle = (string) ($userPageTitle ?? 'Thong tin tai khoan');
 $activePage = (string) ($activePage ?? 'profile');
+$userPageFaviconOverride = isset($userPageFaviconOverride) ? trim((string) $userPageFaviconOverride) : '';
 ?>
 <!DOCTYPE html>
 <html lang="vi">
 
 <head>
     <?php require __DIR__ . '/../../../hethong/head2.php'; ?>
+    <?php if ($userPageFaviconOverride !== ''): ?>
+        <link rel="icon" type="image/png" href="<?= htmlspecialchars($userPageFaviconOverride, ENT_QUOTES, 'UTF-8'); ?>">
+        <link rel="shortcut icon" type="image/png"
+            href="<?= htmlspecialchars($userPageFaviconOverride, ENT_QUOTES, 'UTF-8'); ?>">
+        <link rel="apple-touch-icon" href="<?= htmlspecialchars($userPageFaviconOverride, ENT_QUOTES, 'UTF-8'); ?>">
+    <?php endif; ?>
     <title>
         <?= htmlspecialchars($userPageTitle, ENT_QUOTES, 'UTF-8'); ?> |
         <?= htmlspecialchars((string) ($chungapi['ten_web'] ?? 'KaiShop'), ENT_QUOTES, 'UTF-8'); ?>

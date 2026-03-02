@@ -41,6 +41,9 @@ final class TelegramConfig
     /** Cooldown mặc định giữa 2 lần mua (giây) */
     public const BUY_COOLDOWN_DEFAULT = 10;
 
+    /** TTL phiên mua hàng Telegram (giây) */
+    public const PURCHASE_SESSION_TTL_DEFAULT = 900; // 15 phút
+
     // ================================================================
     // OUTBOX WORKER
     // ================================================================
@@ -175,6 +178,16 @@ final class TelegramConfig
     public static function buyCooldown(): int
     {
         return (int) get_setting('telegram_order_cooldown', self::BUY_COOLDOWN_DEFAULT);
+    }
+
+    /**
+     * Purchase session TTL (giây) cho flow mua hàng Telegram.
+     * Clamp trong khoảng [120s .. 3600s] để tránh config lỗi.
+     */
+    public static function purchaseSessionTtl(): int
+    {
+        $ttl = (int) get_setting('telegram_purchase_session_ttl', self::PURCHASE_SESSION_TTL_DEFAULT);
+        return max(120, min(3600, $ttl));
     }
 
     /**

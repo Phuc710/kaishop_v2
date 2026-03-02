@@ -92,12 +92,12 @@ class AuthController extends Controller
 
         if (!$user) {
             $this->authSecurity->recordLoginAttempt('login', $username, false, 'user_not_found');
-            return $this->json(['success' => false, 'message' => 'Thông tin đăng nhập không chính xác.'], 401);
+            return $this->respondLoginFailure($username);
         }
 
         if (!$this->authSecurity->verifyPassword($user, $password)) {
             $this->authSecurity->recordLoginAttempt('login', $username, false, 'wrong_password');
-            return $this->json(['success' => false, 'message' => 'Thông tin đăng nhập không chính xác.'], 401);
+            return $this->respondLoginFailure($username);
         }
 
         if ($this->authSecurity->needsPasswordRehash($user)) {
@@ -140,6 +140,34 @@ class AuthController extends Controller
             'access_expires_in' => 900,
             'refresh_expires_in' => $rememberMe ? 1209600 : 86400
         ]);
+    }
+
+    private function respondLoginFailure(string $username)
+    {
+        $status = $this->authSecurity->getFailedAttemptStatus('login', $username);
+        $attemptsLeft = (int) ($status['attempts_left'] ?? 0);
+        $maxAttempts = (int) ($status['limit'] ?? 5);
+        $windowMinutes = (int) ($status['window_minutes'] ?? 10);
+
+        if ($attemptsLeft <= 0) {
+            $limit = $this->authSecurity->checkRateLimit('login', $username);
+            $message = (string) ($limit['message'] ?? ('Tài khoản này đã bị khoá tạm thời ' . $windowMinutes . ' phút do nhập sai quá ' . $maxAttempts . ' lần.'));
+            return $this->json([
+                'success' => false,
+                'message' => $message,
+                'attempts_left' => 0,
+                'max_attempts' => $maxAttempts,
+                'window_minutes' => $windowMinutes
+            ], 429);
+        }
+
+        return $this->json([
+            'success' => false,
+            'message' => "Thông tin đăng nhập không chính xác.\nBạn còn " . $attemptsLeft . '/' . $maxAttempts . ' lần thử',
+            'attempts_left' => $attemptsLeft,
+            'max_attempts' => $maxAttempts,
+            'window_minutes' => $windowMinutes
+        ], 401);
     }
 
     /**

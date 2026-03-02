@@ -77,6 +77,7 @@ class SettingController extends Controller
                 return $this->updateSettings([
                     'popup_template',
                     'thongbao',
+                    'home_hero_html',
                 ]);
 
             case 'update_telegram':
@@ -142,7 +143,32 @@ class SettingController extends Controller
         $sets = [];
         $action = $this->post('action', 'update_settings');
 
+        // Handle File Uploads
+        $uploadDir = 'assets/uploads/images/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
         foreach ($keys as $key) {
+            // Check if file is uploaded for this key
+            if (isset($_FILES[$key]) && $_FILES[$key]['error'] === UPLOAD_ERR_OK) {
+                $file = $_FILES[$key];
+                $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                $allowed = ['jpg', 'jpeg', 'png', 'gif', 'ico', 'svg', 'webp'];
+
+                if (in_array($ext, $allowed)) {
+                    $newFilename = $key . '_' . time() . '.' . $ext;
+                    $uploadPath = $uploadDir . $newFilename;
+
+                    if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
+                        $safePath = $connection->real_escape_string($uploadPath);
+                        $sets[] = "`{$key}` = '{$safePath}'";
+                        continue; // Skip text input if file uploaded successfully
+                    }
+                }
+            }
+
+            // Handle Text Input if no file or upload failed
             if (isset($_POST[$key])) {
                 $value = $connection->real_escape_string($_POST[$key]);
                 $sets[] = "`{$key}` = '{$value}'";

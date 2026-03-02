@@ -6066,9 +6066,7 @@ html.menu-opened body {
     margin: 0 15px 0 0;
 }
 
-.contact-icon {
-    margin: 0 0 15px;
-}
+
 
 .contact-icon span {
     width: 60px;
@@ -7362,9 +7360,6 @@ html.menu-opened body {
     margin-bottom: 0;
 }
 
-.header-logo {
-    margin-bottom: 50px;
-}
 
 .coming-soon {
     display: -webkit-box;
@@ -18589,7 +18584,7 @@ html.menu-opened body {
     position: fixed;
     top: 0px;
     left: 0px;
-    z-index: 9999;
+    z-index: 9999999;
     width: 100%;
     height: 100%;
     opacity: .75;

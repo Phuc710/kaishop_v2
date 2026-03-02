@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS `orders` (
   `ip_address` varchar(45) DEFAULT NULL,
   `user_agent` text NULL,
   `source` varchar(20) DEFAULT 'web' COMMENT 'web, telegram',
+  `source_channel` tinyint(1) NOT NULL DEFAULT 0 COMMENT '0=Web, 1=BotTele',
   `telegram_id` bigint(20) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp(),
@@ -120,7 +121,8 @@ CREATE TABLE IF NOT EXISTS `orders` (
   UNIQUE KEY `uniq_orders_code` (`order_code`),
   KEY `idx_orders_user` (`user_id`),
   KEY `idx_orders_product` (`product_id`),
-  KEY `idx_orders_created` (`created_at`)
+  KEY `idx_orders_created` (`created_at`),
+  KEY `idx_orders_source_created` (`source_channel`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
@@ -183,11 +185,13 @@ CREATE TABLE IF NOT EXISTS `lich_su_bien_dong_so_du` (
   `change_amount` bigint(20) DEFAULT 0,
   `after_balance` bigint(20) DEFAULT 0,
   `reason` text DEFAULT NULL,
+  `source_channel` tinyint(1) NOT NULL DEFAULT 0 COMMENT '0=Web, 1=BotTele',
   `time` varchar(100) DEFAULT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `idx_lsbd_username` (`username`),
-  KEY `idx_lsbd_created_at` (`created_at`)
+  KEY `idx_lsbd_created_at` (`created_at`),
+  KEY `idx_lsbd_source_created` (`source_channel`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `users` (
@@ -418,13 +422,15 @@ CREATE TABLE IF NOT EXISTS `system_logs` (
   `ip_address` varchar(45) DEFAULT NULL,
   `user_agent` varchar(255) DEFAULT NULL,
   `severity` enum('INFO','WARNING','DANGER') DEFAULT 'INFO',
+  `source_channel` tinyint(1) NOT NULL DEFAULT 0 COMMENT '0=Web, 1=BotTele',
   `created_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `idx_username` (`username`),
   KEY `idx_module` (`module`),
   KEY `idx_severity` (`severity`),
   KEY `idx_system_logs_created_at` (`created_at`),
-  KEY `idx_system_logs_severity_created` (`severity`,`created_at`)
+  KEY `idx_system_logs_severity_created` (`severity`,`created_at`),
+  KEY `idx_system_logs_source_created` (`source_channel`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `user_fingerprints` (
@@ -462,6 +468,7 @@ CREATE TABLE IF NOT EXISTS `pending_deposits` (
   `deposit_code` varchar(50) NOT NULL,
   `amount` bigint(20) NOT NULL,
   `bonus_percent` int(11) NOT NULL DEFAULT 0,
+  `source_channel` tinyint(1) NOT NULL DEFAULT 0 COMMENT '0=Web, 1=BotTele',
   `status` enum('pending','completed','cancelled','expired') DEFAULT 'pending',
   `sepay_transaction_id` int(11) DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
@@ -471,6 +478,7 @@ CREATE TABLE IF NOT EXISTS `pending_deposits` (
   UNIQUE KEY `uniq_pd_sepay_transaction_id` (`sepay_transaction_id`),
   KEY `idx_pd_user` (`user_id`),
   KEY `idx_pd_status` (`status`),
+  KEY `idx_pd_source_status_created` (`source_channel`,`status`,`created_at`),
   KEY `idx_pd_user_status_created` (`user_id`,`status`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -483,13 +491,15 @@ CREATE TABLE IF NOT EXISTS `history_nap_bank` (
   `stk` varchar(100) DEFAULT NULL COMMENT 'Số tài khoản nguồn',
   `thucnhan` bigint(20) DEFAULT 0 COMMENT 'Số tiền thực nhận (có dấu +/-)',
   `status` varchar(50) DEFAULT 'pending',
+  `source_channel` tinyint(1) NOT NULL DEFAULT 0 COMMENT '0=Web, 1=BotTele',
   `time` varchar(100) DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_hnb_username` (`username`),
   KEY `idx_hnb_trans` (`trans_id`),
   KEY `idx_hnb_created_at` (`created_at`),
-  KEY `idx_hnb_status_created` (`status`,`created_at`)
+  KEY `idx_hnb_status_created` (`status`,`created_at`),
+  KEY `idx_hnb_source_created` (`source_channel`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- AntiFlood: IP Blacklist table

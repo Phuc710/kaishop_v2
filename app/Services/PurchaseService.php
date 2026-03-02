@@ -16,6 +16,7 @@ class PurchaseService
     private ?CryptoService $crypto = null;
     private ?TimeService $timeService = null;
     private ?BalanceChangeService $balanceChangeService = null;
+    private array $schemaColumnCache = [];
 
     public function __construct(
         ?Product $productModel = null,
@@ -41,6 +42,7 @@ class PurchaseService
         if (class_exists('CryptoService')) {
             $this->crypto = new CryptoService();
         }
+        $this->ensureSourceChannelSchema();
     }
 
     /**
@@ -53,6 +55,11 @@ class PurchaseService
         $requestedQty = max(1, (int) ($options['quantity'] ?? 1));
         $customerInput = trim((string) ($options['customer_input'] ?? ''));
         $giftcodeInput = strtoupper(trim((string) ($options['giftcode'] ?? '')));
+        $sourceChannel = SourceChannelHelper::normalize($options['source_channel'] ?? ($options['source'] ?? SourceChannelHelper::WEB));
+        $sourceName = trim((string) ($options['source'] ?? ($sourceChannel === SourceChannelHelper::BOTTELE ? 'telegram' : 'web')));
+        if ($sourceName === '') {
+            $sourceName = $sourceChannel === SourceChannelHelper::BOTTELE ? 'telegram' : 'web';
+        }
         if ($userId <= 0 || $username === '') {
             return ['success' => false, 'message' => 'Bạn chưa đăng nhập.'];
         }
@@ -158,7 +165,7 @@ class PurchaseService
                 $totalPrice,
                 $orderStatus,
                 'wallet',
-                (string) ($options['source'] ?? 'web'),
+                $sourceName,
                 isset($options['telegram_id']) ? (int) $options['telegram_id'] : null,
                 (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
                 (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''),
@@ -166,6 +173,11 @@ class PurchaseService
                 $customerInput !== '' ? $customerInput : null,
                 $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s'),
             ];
+
+            if ($this->hasColumn('orders', 'source_channel')) {
+                $orderColumns[] = 'source_channel';
+                $orderValues[] = $sourceChannel;
+            }
 
             $insertFields = '`' . implode('`, `', $orderColumns) . '`';
             $insertMarks = implode(', ', array_fill(0, count($orderColumns), '?'));
@@ -197,7 +209,8 @@ class PurchaseService
                         $beforeBalance,
                         -$totalPrice,
                         $afterBalance,
-                        'Thanh toan mua hang: ' . $orderCode
+                        'Thanh toan mua hang: ' . $orderCode,
+                        $sourceChannel
                     );
                 } catch (Throwable $e) {
                     // Non-blocking if log schema differs.
@@ -291,6 +304,7 @@ class PurchaseService
                 'subtotal_price' => $subtotalPrice,
                 'discount_amount' => $discountAmount,
                 'giftcode' => $giftcodeMeta ? $giftcodeInput : null,
+                'source_channel' => $sourceChannel,
             ]);
 
             $orderShortCode = $this->makeShortOrderDisplayCode($orderCode);
@@ -354,6 +368,7 @@ class PurchaseService
                 'username' => $username,
                 'product_id' => $productId,
                 'error' => $e->getMessage(),
+                'source_channel' => $sourceChannel,
             ]);
 
             if ($e instanceof RuntimeException) {
@@ -583,6 +598,49 @@ class PurchaseService
     private function makeShortOrderDisplayCode(string $orderCode): string
     {
         return strtoupper(substr(hash('sha256', $orderCode), 0, 8));
+    }
+
+    private function ensureSourceChannelSchema(): void
+    {
+        try {
+            if (!$this->hasColumn('orders', 'source_channel')) {
+                $this->db->exec("ALTER TABLE `orders` ADD COLUMN `source_channel` TINYINT(1) NOT NULL DEFAULT 0 AFTER `source`");
+            }
+        } catch (Throwable $e) {
+            // ignore if ALTER is restricted
+        }
+
+        try {
+            $this->db->exec("ALTER TABLE `orders` ADD KEY `idx_orders_source_created` (`source_channel`, `created_at`)");
+        } catch (Throwable $e) {
+            // ignore if key exists or ALTER is restricted
+        }
+
+        unset($this->schemaColumnCache['orders.source_channel']);
+    }
+
+    private function hasColumn(string $table, string $column): bool
+    {
+        $cacheKey = $table . '.' . $column;
+        if (array_key_exists($cacheKey, $this->schemaColumnCache)) {
+            return $this->schemaColumnCache[$cacheKey];
+        }
+
+        $stmt = $this->db->prepare("
+            SELECT COUNT(*)
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+              AND table_name = :table_name
+              AND column_name = :column_name
+        ");
+        $stmt->execute([
+            'table_name' => $table,
+            'column_name' => $column,
+        ]);
+
+        $exists = (int) $stmt->fetchColumn() > 0;
+        $this->schemaColumnCache[$cacheKey] = $exists;
+        return $exists;
     }
 }
 

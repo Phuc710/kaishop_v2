@@ -58,6 +58,45 @@ if ($telegramTokenStored !== '') {
         text-decoration: underline !important;
         opacity: 0.9;
     }
+
+    /* Image Preview Styles */
+    .image-preview-container {
+        position: relative;
+        width: 100%;
+        height: 120px;
+        border: 2px dashed #ddd;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background: #f8f9fa;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 10px;
+    }
+
+    .image-preview-container:hover {
+        border-color: #17a2b8;
+        background: #f1f3f4;
+    }
+
+    .image-preview-container img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+
+    .image-preview-container .upload-placeholder {
+        text-align: center;
+        color: #6c757d;
+    }
+
+    .image-preview-container .upload-placeholder i {
+        display: block !important;
+        font-size: 24px;
+        margin-bottom: 5px;
+    }
 </style>
 
 <section class="content pb-4 mt-3">
@@ -66,7 +105,7 @@ if ($telegramTokenStored !== '') {
         <div class="row">
             <div class="col-md-12">
                 <div class="card custom-card">
-                    <form id="form-general" class="form-horizontal">
+                    <form id="form-general" class="form-horizontal" enctype="multipart/form-data">
                         <div class="card-header border-0">
                             <h3 class="card-title text-uppercase font-weight-bold">
                                 THÔNG TIN CƠ BẢN
@@ -85,23 +124,70 @@ if ($telegramTokenStored !== '') {
                                 <div class="col-md-4">
                                     <div class="form-group">
                                         <label class="font-weight-bold small text-uppercase">LOGO (Header)</label>
-                                        <input type="text" class="form-control" name="logo" placeholder="https://..."
-                                            value="<?= htmlspecialchars($chungapi['logo'] ?? ''); ?>">
+                                        <div class="image-preview-container"
+                                            onclick="document.getElementById('file_logo').click()">
+                                            <?php $logo = $chungapi['logo'] ?? ''; ?>
+                                            <img src="<?= htmlspecialchars(url($logo)) ?>" id="preview_logo"
+                                                class="<?= empty($logo) ? 'd-none' : '' ?>">
+                                            <div class="upload-placeholder <?= !empty($logo) ? 'd-none' : '' ?>"
+                                                id="placeholder_logo">
+                                                <i class="fas fa-cloud-upload-alt"></i>
+                                                <span class="small">Click để tải ảnh</span>
+                                            </div>
+                                        </div>
+                                        <input type="file" id="file_logo" name="logo" class="d-none" accept="image/*"
+                                            onchange="previewFile(this, 'preview_logo', 'placeholder_logo', 'input_logo')">
+                                        <input type="text" class="form-control form-control-sm" id="input_logo"
+                                            name="logo" placeholder="Hoặc nhập URL https://..."
+                                            value="<?= htmlspecialchars($logo); ?>"
+                                            oninput="previewUrl(this.value, 'preview_logo', 'placeholder_logo')">
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-group">
                                         <label class="font-weight-bold small text-uppercase">LOGO (Footer)</label>
-                                        <input type="text" class="form-control" name="logo_footer"
-                                            placeholder="https://..."
-                                            value="<?= htmlspecialchars($chungapi['logo_footer'] ?? $chungapi['logo'] ?? ''); ?>">
+                                        <div class="image-preview-container"
+                                            onclick="document.getElementById('file_logo_footer').click()">
+                                            <?php $logo_footer = $chungapi['logo_footer'] ?? $chungapi['logo'] ?? ''; ?>
+                                            <img src="<?= htmlspecialchars(url($logo_footer)) ?>"
+                                                id="preview_logo_footer"
+                                                class="<?= empty($logo_footer) ? 'd-none' : '' ?>">
+                                            <div class="upload-placeholder <?= !empty($logo_footer) ? 'd-none' : '' ?>"
+                                                id="placeholder_logo_footer">
+                                                <i class="fas fa-cloud-upload-alt"></i>
+                                                <span class="small">Click để tải ảnh</span>
+                                            </div>
+                                        </div>
+                                        <input type="file" id="file_logo_footer" name="logo_footer" class="d-none"
+                                            accept="image/*"
+                                            onchange="previewFile(this, 'preview_logo_footer', 'placeholder_logo_footer', 'input_logo_footer')">
+                                        <input type="text" class="form-control form-control-sm" id="input_logo_footer"
+                                            name="logo_footer" placeholder="Hoặc nhập URL https://..."
+                                            value="<?= htmlspecialchars($logo_footer); ?>"
+                                            oninput="previewUrl(this.value, 'preview_logo_footer', 'placeholder_logo_footer')">
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-group">
                                         <label class="font-weight-bold small text-uppercase">FAVICON</label>
-                                        <input type="text" class="form-control" name="favicon" placeholder="https://..."
-                                            value="<?= htmlspecialchars($chungapi['favicon'] ?? ''); ?>">
+                                        <div class="image-preview-container"
+                                            onclick="document.getElementById('file_favicon').click()">
+                                            <?php $favicon = $chungapi['favicon'] ?? ''; ?>
+                                            <img src="<?= htmlspecialchars(url($favicon)) ?>" id="preview_favicon"
+                                                class="<?= empty($favicon) ? 'd-none' : '' ?>">
+                                            <div class="upload-placeholder <?= !empty($favicon) ? 'd-none' : '' ?>"
+                                                id="placeholder_favicon">
+                                                <i class="fas fa-cloud-upload-alt"></i>
+                                                <span class="small">Click để tải ảnh</span>
+                                            </div>
+                                        </div>
+                                        <input type="file" id="file_favicon" name="favicon" class="d-none"
+                                            accept="image/*"
+                                            onchange="previewFile(this, 'preview_favicon', 'placeholder_favicon', 'input_favicon')">
+                                        <input type="text" class="form-control form-control-sm" id="input_favicon"
+                                            name="favicon" placeholder="Hoặc nhập URL https://..."
+                                            value="<?= htmlspecialchars($favicon); ?>"
+                                            oninput="previewUrl(this.value, 'preview_favicon', 'placeholder_favicon')">
                                     </div>
                                 </div>
 
@@ -263,6 +349,12 @@ if ($telegramTokenStored !== '') {
                                     </div>
                                 </div>
                                 <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label class="font-weight-bold small text-uppercase">NỘI DUNG HERO BANNER (TRANG
+                                            CHỦ)</label>
+                                        <textarea class="form-control" name="home_hero_html" rows="4"
+                                            placeholder="Nhập nội dung HTML banner..."><?= htmlspecialchars($chungapi['home_hero_html'] ?? '') ?></textarea>
+                                    </div>
                                     <div class="form-group mb-0">
                                         <label class="font-weight-bold small text-uppercase">NỘI DUNG THÔNG BÁO</label>
                                         <textarea class="form-control" name="thongbao" rows="5"
@@ -466,7 +558,8 @@ if ($telegramTokenStored !== '') {
                                     <span id="maintenanceStatusBadge" class="badge badge-secondary px-2 py-1">Đang
                                         tải...</span>
                                 </div>
-                                <div id="maintenanceStatusText" class="small text-muted mb-3">Đang đồng bộ trạng thái...</div>
+                                <div id="maintenanceStatusText" class="small text-muted mb-3">Đang đồng bộ trạng thái...
+                                </div>
                                 <div class="row">
                                     <div class="col-md-6 mb-2">
                                         <div class="small text-muted text-uppercase font-weight-bold">Đếm ngược tới bắt
@@ -490,7 +583,8 @@ if ($telegramTokenStored !== '') {
                                         <div id="maintenanceElapsed" class="font-weight-bold">--:--:--</div>
                                     </div>
                                 </div>
-                                <div id="maintenanceSyncMeta" class="small text-muted mt-2">Đang lấy dữ liệu từ máy chủ...</div>
+                                <div id="maintenanceSyncMeta" class="small text-muted mt-2">Đang lấy dữ liệu từ máy
+                                    chủ...</div>
                             </div>
 
                             <div class="row">
@@ -499,7 +593,8 @@ if ($telegramTokenStored !== '') {
                                         <label class="font-weight-bold small text-uppercase">Bắt đầu</label>
                                         <input type="datetime-local" class="form-control" name="maintenance_start_at"
                                             value="<?= htmlspecialchars((string) ($maintenanceStartInput ?? '')) ?>">
-                                        <small class="text-muted">Lưu lịch không phụ thuộc công tắc thủ công ở trên.</small>
+                                        <small class="text-muted">Lưu lịch không phụ thuộc công tắc thủ công ở
+                                            trên.</small>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -595,6 +690,39 @@ if ($telegramTokenStored !== '') {
         handleFormSubmit('form-telegram', 'update_telegram');
         handleFormSubmit('form-bank', 'update_bank');
         handleFormSubmit('form-maintenance', 'update_maintenance', () => setTimeout(() => location.reload(), 700));
+    });
+
+    function previewUrl(url, imgId, placeholderId) {
+        const img = document.getElementById(imgId);
+        const placeholder = document.getElementById(placeholderId);
+        if (url) {
+            img.src = url;
+            img.classList.remove('d-none');
+            placeholder.classList.add('d-none');
+        } else {
+            img.classList.add('d-none');
+            placeholder.classList.remove('d-none');
+        }
+    }
+
+    function previewFile(input, imgId, placeholderId, textInputId) {
+        const img = document.getElementById(imgId);
+        const placeholder = document.getElementById(placeholderId);
+        const textInput = document.getElementById(textInputId);
+
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                img.src = e.target.result;
+                img.classList.remove('d-none');
+                placeholder.classList.add('d-none');
+                textInput.value = ''; // Clear text input when file is selected
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    $(document).ready(function () {
 
         (function initMaintenanceStatusRealtime() {
             const $badge = $('#maintenanceStatusBadge');

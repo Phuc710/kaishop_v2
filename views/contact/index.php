@@ -114,7 +114,6 @@ if (!defined('BASE_URL')) {
 
         .contact-bottom {
             background: #fff;
-            padding: 60px 0;
         }
     </style>
 

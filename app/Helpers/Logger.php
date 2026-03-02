@@ -2,6 +2,9 @@
 
 class Logger
 {
+    private static bool $schemaChecked = false;
+    private static bool $hasSourceChannelColumn = false;
+
     /**
      * Log an INFO message
      */
@@ -38,6 +41,7 @@ class Logger
             }
 
             $db = Database::getInstance()->getConnection();
+            self::ensureSystemLogSchema($db);
 
             // Extract user info if available
             $userId = null;
@@ -61,20 +65,18 @@ class Logger
                 ?? $_SERVER['REMOTE_ADDR']
                 ?? '0.0.0.0';
             $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+            $sourceChannel = SourceChannelHelper::fromSystemLogContext($module, $action, $payload, $_SERVER);
 
             // Enrich Payload with Device Information
             $deviceInfo = \App\Helpers\UserAgentParser::parse($userAgent);
             $payload['device_os'] = $deviceInfo['os'];
             $payload['device_browser'] = $deviceInfo['browser'];
             $payload['device_type'] = $deviceInfo['type'];
+            $payload['source_channel'] = $sourceChannel;
 
             // Insert
-            $sql = "INSERT INTO `system_logs` 
-                    (`user_id`, `username`, `module`, `action`, `description`, `payload`, `ip_address`, `user_agent`, `severity`)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-            $stmt = $db->prepare($sql);
-            $stmt->execute([
+            $columns = ['user_id', 'username', 'module', 'action', 'description', 'payload', 'ip_address', 'user_agent', 'severity'];
+            $values = [
                 $userId,
                 $username,
                 $module,
@@ -83,11 +85,65 @@ class Logger
                 !empty($payload) ? json_encode($payload, JSON_UNESCAPED_UNICODE) : null,
                 $ipAddress,
                 $userAgent,
-                $severity
-            ]);
+                $severity,
+            ];
+            if (self::$hasSourceChannelColumn) {
+                $columns[] = 'source_channel';
+                $values[] = $sourceChannel;
+            }
+
+            $marks = implode(', ', array_fill(0, count($columns), '?'));
+            $sql = "INSERT INTO `system_logs` (`" . implode('`, `', $columns) . "`) VALUES ({$marks})";
+            $stmt = $db->prepare($sql);
+            $stmt->execute($values);
         } catch (Exception $e) {
             // Silently fail if log cannot be written (to avoid breaking main application flow)
             error_log("Logger Error: " . $e->getMessage());
+        }
+    }
+
+    private static function ensureSystemLogSchema(PDO $db): void
+    {
+        if (!self::$schemaChecked) {
+            try {
+                $stmt = $db->query("
+                    SELECT COUNT(*)
+                    FROM information_schema.columns
+                    WHERE table_schema = DATABASE()
+                      AND table_name = 'system_logs'
+                      AND column_name = 'source_channel'
+                ");
+                self::$hasSourceChannelColumn = (int) ($stmt ? $stmt->fetchColumn() : 0) > 0;
+            } catch (Throwable $e) {
+                self::$hasSourceChannelColumn = false;
+            }
+
+            if (!self::$hasSourceChannelColumn) {
+                try {
+                    $db->exec("ALTER TABLE `system_logs` ADD COLUMN `source_channel` TINYINT(1) NOT NULL DEFAULT 0 AFTER `severity`");
+                } catch (Throwable $e) {
+                    // ignore if ALTER is restricted
+                }
+                try {
+                    $db->exec("ALTER TABLE `system_logs` ADD KEY `idx_system_logs_source_created` (`source_channel`, `created_at`)");
+                } catch (Throwable $e) {
+                    // ignore if key exists or ALTER is restricted
+                }
+                try {
+                    $stmt = $db->query("
+                        SELECT COUNT(*)
+                        FROM information_schema.columns
+                        WHERE table_schema = DATABASE()
+                          AND table_name = 'system_logs'
+                          AND column_name = 'source_channel'
+                    ");
+                    self::$hasSourceChannelColumn = (int) ($stmt ? $stmt->fetchColumn() : 0) > 0;
+                } catch (Throwable $e) {
+                    self::$hasSourceChannelColumn = false;
+                }
+            }
+
+            self::$schemaChecked = true;
         }
     }
 }

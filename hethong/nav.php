@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 if (!headers_sent()) {
     header('Content-Type: text/html; charset=UTF-8');
 }
@@ -124,8 +124,99 @@ foreach ($authNavPaths as $p) {
         transition: none;
         transform: none;
     }
-</style>
 
+    .header-primary {
+        box-shadow: rgba(0, 0, 0, 0.15) 0px 5px 15px 0px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 2000;
+        background: #fff;
+    }
+
+    main {
+        padding-top: 40px;
+    }
+
+    .nav-divider {
+        height: 1px;
+        margin: 15px 25px;
+        background: linear-gradient(to right, rgba(0, 0, 0, 0.01), rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.01));
+        list-style: none;
+    }
+
+    /* Core Navigation Classes */
+    .ks-navbar {
+        position: relative;
+        min-height: 80px;
+        padding: 0;
+    }
+
+    .ks-logo-container {
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 1050;
+        padding: 10px 0;
+    }
+
+    .ks-logo-img {
+        position: absolute;
+        height: 110px;
+        width: auto;
+        min-width: 100px;
+        object-fit: contain;
+        transition: transform 0.3s ease;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.05));
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    @media (max-width: 1199.98px) {
+        .ks-logo-container {
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100px;
+            max-width: 100px;
+        }
+
+        .ks-logo-img {
+            top: auto;
+            transform: none;
+            height: 100px;
+            min-width: 50px;
+            width: auto;
+            position: static;
+            margin: 0;
+            max-height: none;
+        }
+
+        .mobile-sidebar-header {
+            padding: 12px 16px 8px;
+        }
+
+        .mobile-sidebar-brand {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ks-mobile-sidebar-logo {
+            display: block;
+            width: 100px;
+            height: auto;
+            margin: 0;
+        }
+    }
+</style>
 <div class="loader-wrapper">
     <span class="site-loader"> </span>
 </div>
@@ -140,42 +231,32 @@ foreach ($authNavPaths as $p) {
 <!-- Menu Start -->
 <header class="header-primary<?= $isAuthNavPage ? ' auth-shell-header' : '' ?>">
     <div class="container">
-        <nav class="navbar navbar-expand-xl justify-content-between">
-            <a href="<?= url('') ?>">
+        <nav class="navbar navbar-expand-xl justify-content-center ks-navbar">
+            <a href="<?= url('') ?>" class="ks-logo-container">
                 <?php global $chungapi; ?>
-                <img src="<?= $chungapi['logo']; ?>" width="150" alt="dailycode.vn" decoding="async"
-                    fetchpriority="high" />
+                <img src="<?= asset($chungapi['logo']); ?>" width="180" alt="<?= $chungapi['ten_web'] ?? 'KaiShop'; ?>"
+                    decoding="async" fetchpriority="high" draggable="false" class="ks-img-guard ks-logo-img"
+                    loading="eager" />
             </a>
 
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav mx-auto">
-                    <li class="d-block d-xl-none">
-                        <div class="logo">
-                            <a href="<?= url('') ?>">
-                                <img src="<?= $chungapi['logo']; ?>" width="150" alt="dailycode.vn" decoding="async"
-                                    fetchpriority="high" />
-                            </a>
-                        </div>
-                    </li>
-
+            <!-- [PC NAVIGATION] - Horizontal Menu Center -->
+            <div class="collapse navbar-collapse d-none d-xl-flex justify-content-center" id="navbarNavPC">
+                <ul class="navbar-nav">
                     <?php
                     $publicHeaderItems = NavConfig::publicHeaderMenu();
                     foreach ($publicHeaderItems as $navItem):
                         $navType = (string) ($navItem['type'] ?? 'link');
                         $navLabel = htmlspecialchars((string) ($navItem['label'] ?? ''), ENT_QUOTES, 'UTF-8');
-                        $navMobileIcon = htmlspecialchars((string) ($navItem['mobile_icon'] ?? ''), ENT_QUOTES, 'UTF-8');
                         $embedImg = (string) ($navItem['embed_img'] ?? '');
                         ?>
                         <?php if ($navType === 'dropdown'): ?>
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
                                     data-bs-auto-close="outside" aria-expanded="false">
-                                    <?php if ($navMobileIcon !== ''): ?><i
-                                            class="<?= $navMobileIcon ?> me-2 d-xl-none"></i><?php endif; ?><?= $navLabel ?>
+                                    <?= $navLabel ?>
                                     <?php if ($embedImg !== ''): ?>
-                                        <img src="<?= htmlspecialchars($embedImg, ENT_QUOTES, 'UTF-8') ?>" alt="icon" loading="lazy"
-                                            decoding="async" fetchpriority="low"
-                                            style="height: 22px; margin-left: 4px; vertical-align: middle; margin-top: -2px;">
+                                        <img src="<?= htmlspecialchars($embedImg, ENT_QUOTES, 'UTF-8') ?>" alt="icon"
+                                            style="height: 18px; margin-left: 4px; vertical-align: middle; margin-top: -2px;">
                                     <?php endif; ?>
                                 </a>
                                 <ul class="dropdown-menu">
@@ -190,15 +271,13 @@ foreach ($authNavPaths as $p) {
                                             <a href="<?= htmlspecialchars((string) ($child['href'] ?? '#'), ENT_QUOTES, 'UTF-8') ?>"
                                                 class="dropdown-item d-flex align-items-center">
                                                 <?php if ($childImg !== '' || $childIcon !== ''): ?>
-                                                    <span class="d-flex align-items-center justify-content-center me-2"
-                                                        style="width: 30px;">
+                                                    <span class="me-2 d-flex align-items-center justify-content-center"
+                                                        style="width: 24px;">
                                                         <?php if ($childImg !== ''): ?>
                                                             <img src="<?= htmlspecialchars($childImg, ENT_QUOTES, 'UTF-8') ?>" alt="icon"
-                                                                loading="lazy" decoding="async" fetchpriority="low"
-                                                                style="height: <?= $isBinance ? '25px' : '18px' ?>; width: auto; max-width: 28px; vertical-align: middle;">
+                                                                style="height: <?= $isBinance ? '20px' : '16px' ?>;">
                                                         <?php elseif ($childIcon !== ''): ?>
-                                                            <i class="<?= htmlspecialchars($childIcon, ENT_QUOTES, 'UTF-8') ?> <?= $isBinance ? 'is-binance' : '' ?>"
-                                                                style="font-size: <?= $isBinance ? '18px' : '14px' ?>;"></i>
+                                                            <i class="<?= htmlspecialchars($childIcon, ENT_QUOTES, 'UTF-8') ?>"></i>
                                                         <?php endif; ?>
                                                     </span>
                                                 <?php endif; ?>
@@ -211,14 +290,11 @@ foreach ($authNavPaths as $p) {
                         <?php else: ?>
                             <li class="nav-item">
                                 <a class="nav-link"
-                                    href="<?= htmlspecialchars((string) ($navItem['href'] ?? '#'), ENT_QUOTES, 'UTF-8') ?>"
-                                    role="button" aria-expanded="false">
-                                    <?php if ($navMobileIcon !== ''): ?><i
-                                            class="<?= $navMobileIcon ?> me-2 d-xl-none"></i><?php endif; ?><?= $navLabel ?>
+                                    href="<?= htmlspecialchars((string) ($navItem['href'] ?? '#'), ENT_QUOTES, 'UTF-8') ?>">
+                                    <?= $navLabel ?>
                                     <?php if ($embedImg !== ''): ?>
-                                        <img src="<?= htmlspecialchars($embedImg, ENT_QUOTES, 'UTF-8') ?>" alt="icon" loading="lazy"
-                                            decoding="async" fetchpriority="low"
-                                            style="height: 22px; margin-left: 4px; vertical-align: middle; margin-top: -4px;">
+                                        <img src="<?= htmlspecialchars($embedImg, ENT_QUOTES, 'UTF-8') ?>" alt="icon"
+                                            style="height: 18px; margin-left: 4px; vertical-align: middle; margin-top: -2px;">
                                     <?php endif; ?>
                                 </a>
                             </li>
@@ -226,6 +302,115 @@ foreach ($authNavPaths as $p) {
                     <?php endforeach; ?>
                 </ul>
             </div>
+
+            <!-- [MOBILE NAVIGATION] - Sidebar Drawer -->
+            <div class="mobile-sidebar-nav d-xl-none" id="navbarNav">
+                <div class="mobile-sidebar-header justify-content-center">
+                    <div class="mobile-sidebar-brand">
+                        <img src="<?= asset($chungapi['logo']); ?>" alt="<?= $chungapi['ten_web'] ?? 'logo' ?>"
+                            draggable="false" class="ks-img-guard ks-mobile-sidebar-logo"
+                            decoding="async" loading="lazy" fetchpriority="low">
+                    </div>
+                </div>
+
+                <ul class="navbar-nav mobile-nav-list">
+                    <?php
+                    foreach ($publicHeaderItems as $index => $navItem):
+                        $navType = (string) ($navItem['type'] ?? 'link');
+                        $navLabel = htmlspecialchars((string) ($navItem['label'] ?? ''), ENT_QUOTES, 'UTF-8');
+                        $navMobileIcon = htmlspecialchars((string) ($navItem['mobile_icon'] ?? ''), ENT_QUOTES, 'UTF-8');
+                        $embedImg = (string) ($navItem['embed_img'] ?? '');
+                        $collapseId = "navCollapse_" . $index;
+                        ?>
+                        <?php if ($navType === 'dropdown'): ?>
+                            <li class="nav-item">
+                                <a class="nav-link dropdown-toggle-custom" data-bs-toggle="collapse" href="#<?= $collapseId ?>"
+                                    role="button" aria-expanded="false">
+                                    <div class="nav-link-content">
+                                        <span class="nav-icon">
+                                            <?php if ($navMobileIcon !== ''): ?>
+                                                <i class="<?= $navMobileIcon ?>"></i>
+                                            <?php endif; ?>
+                                        </span>
+                                        <span class="nav-text"><?= $navLabel ?></span>
+                                    </div>
+                                    <i class="fa-solid fa-chevron-down arrow-icon"></i>
+                                </a>
+                                <div class="collapse sub-menu-collapse" id="<?= $collapseId ?>">
+                                    <ul class="sub-nav-list">
+                                        <?php foreach ((array) ($navItem['children'] ?? []) as $child): ?>
+                                            <?php
+                                            $childLabel = htmlspecialchars((string) ($child['label'] ?? ''), ENT_QUOTES, 'UTF-8');
+                                            $childIcon = (string) ($child['icon'] ?? '');
+                                            $childImg = (string) ($child['embed_img'] ?? '');
+                                            $isBinance = strpos(strtolower($childLabel), 'binance') !== false;
+                                            ?>
+                                            <li class="sub-nav-item">
+                                                <a href="<?= htmlspecialchars((string) ($child['href'] ?? '#'), ENT_QUOTES, 'UTF-8') ?>"
+                                                    class="sub-nav-link">
+                                                    <?php if ($childImg !== '' || $childIcon !== ''): ?>
+                                                        <span class="child-icon">
+                                                            <?php if ($childImg !== ''): ?>
+                                                                <img src="<?= htmlspecialchars($childImg, ENT_QUOTES, 'UTF-8') ?>"
+                                                                    alt="icon" style="height: 18px;">
+                                                            <?php elseif ($childIcon !== ''): ?>
+                                                                <i class="<?= htmlspecialchars($childIcon, ENT_QUOTES, 'UTF-8') ?>"></i>
+                                                            <?php endif; ?>
+                                                        </span>
+                                                    <?php endif; ?>
+                                                    <span class="child-text"><?= $childLabel ?></span>
+                                                </a>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                </div>
+                            </li>
+                        <?php else: ?>
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                    href="<?= htmlspecialchars((string) ($navItem['href'] ?? '#'), ENT_QUOTES, 'UTF-8') ?>">
+                                    <div class="nav-link-content">
+                                        <span class="nav-icon">
+                                            <?php if ($navMobileIcon !== ''): ?>
+                                                <i class="<?= $navMobileIcon ?>"></i>
+                                            <?php endif; ?>
+                                        </span>
+                                        <span class="nav-text"><?= $navLabel ?></span>
+                                    </div>
+                                </a>
+                            </li>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+
+                    <li class="nav-divider"></li>
+
+                    <?php if (isset($_SESSION['session'])): ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="javascript:void(0)"
+                                onclick="SwalHelper.confirmLogout('<?= url('logout') ?>')">
+                                <div class="nav-link-content">
+                                    <span class="nav-icon" style="color: #dc3545;">
+                                        <i class="fa-solid fa-right-from-bracket"></i>
+                                    </span>
+                                    <span class="nav-text" style="color: #dc3545; font-weight: 600;">Đăng xuất</span>
+                                </div>
+                            </a>
+                        </li>
+                    <?php else: ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="<?= url('login') ?>">
+                                <div class="nav-link-content">
+                                    <span class="nav-icon">
+                                        <i class="fa-solid fa-right-to-bracket"></i>
+                                    </span>
+                                    <span class="nav-text" style="font-weight: 600;">Đăng nhập</span>
+                                </div>
+                            </a>
+                        </li>
+                    <?php endif; ?>
+                </ul>
+            </div>
+            <div class="mobile-nav-backdrop d-xl-none" data-bs-toggle="collapse" data-bs-target="#navbarNav"></div>
 
             <?php
             global $chungapi, $username, $user;

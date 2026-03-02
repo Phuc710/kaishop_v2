@@ -1,6 +1,4 @@
 # Ignore database configuration files with sensitive information
-config.php
-connection.php
 
 # Ignore environment files
 .env

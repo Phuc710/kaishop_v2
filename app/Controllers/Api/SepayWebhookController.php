@@ -9,11 +9,13 @@ class SepayWebhookController extends Controller
 {
     private $depositModel;
     private ?BalanceChangeService $balanceChangeService = null;
+    private array $schemaCache = [];
 
     public function __construct()
     {
         $this->depositModel = new PendingDeposit();
         $this->balanceChangeService = class_exists('BalanceChangeService') ? new BalanceChangeService() : null;
+        $this->ensureHistorySourceChannelSchema();
     }
 
     /**
@@ -115,6 +117,7 @@ class SepayWebhookController extends Controller
             ]);
             return $this->json(['success' => true, 'message' => 'Deposit code not found']);
         }
+        $sourceChannel = SourceChannelHelper::normalize($deposit['source_channel'] ?? SourceChannelHelper::WEB);
 
         if ($deposit['status'] === 'expired') {
             Logger::warning('Billing', 'webhook_expired_deposit', 'SePay webhook: Payment received for EXPIRED deposit', [
@@ -193,8 +196,18 @@ class SepayWebhookController extends Controller
         // 11. Record in history_nap_bank (PDO prepared statements)
         $now = class_exists('TimeService') ? TimeService::instance()->nowTs() : time();
 
-        $stmt = $db->prepare("INSERT INTO `history_nap_bank` (`trans_id`, `username`, `type`, `ctk`, `stk`, `thucnhan`, `status`, `time`) VALUES (?, ?, ?, ?, ?, ?, 'hoantat', ?)");
-        $stmt->execute([$referenceCode, $username, $gateway, $content, $accountNumber, $totalCredit, $now]);
+        $historyColumns = ['trans_id', 'username', 'type', 'ctk', 'stk', 'thucnhan', 'status', 'time'];
+        $historyValues = [$referenceCode, $username, $gateway, $content, $accountNumber, $totalCredit, 'hoantat', $now];
+        if ($this->hasColumn('history_nap_bank', 'source_channel')) {
+            $historyColumns[] = 'source_channel';
+            $historyValues[] = $sourceChannel;
+        }
+        $historyMarks = implode(', ', array_fill(0, count($historyColumns), '?'));
+        $stmt = $db->prepare("
+            INSERT INTO `history_nap_bank` (`" . implode('`, `', $historyColumns) . "`)
+            VALUES ({$historyMarks})
+        ");
+        $stmt->execute($historyValues);
 
         $reason = 'Nap tien SePay';
         if ($content !== '') {
@@ -207,7 +220,8 @@ class SepayWebhookController extends Controller
                 $beforeBalance,
                 $totalCredit,
                 $afterBalance,
-                $reason
+                $reason,
+                $sourceChannel
             );
         }
 
@@ -222,11 +236,56 @@ class SepayWebhookController extends Controller
             'total_credit' => $totalCredit,
             'gateway' => $gateway,
             'username' => $username,
+            'source_channel' => $sourceChannel,
         ]);
 
         // 13. Return success
         http_response_code(200);
         return $this->json(['success' => true, 'message' => 'Deposit credited']);
+    }
+
+    private function hasColumn(string $table, string $column): bool
+    {
+        $cacheKey = $table . '.' . $column;
+        if (array_key_exists($cacheKey, $this->schemaCache)) {
+            return $this->schemaCache[$cacheKey];
+        }
+
+        $stmt = Database::getInstance()->getConnection()->prepare("
+            SELECT COUNT(*)
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+              AND table_name = :table_name
+              AND column_name = :column_name
+        ");
+        $stmt->execute([
+            'table_name' => $table,
+            'column_name' => $column,
+        ]);
+        $exists = (int) $stmt->fetchColumn() > 0;
+        $this->schemaCache[$cacheKey] = $exists;
+        return $exists;
+    }
+
+    private function ensureHistorySourceChannelSchema(): void
+    {
+        try {
+            if (!$this->hasColumn('history_nap_bank', 'source_channel')) {
+                Database::getInstance()->getConnection()
+                    ->exec("ALTER TABLE `history_nap_bank` ADD COLUMN `source_channel` TINYINT(1) NOT NULL DEFAULT 0 AFTER `status`");
+            }
+        } catch (Throwable $e) {
+            // ignore if ALTER is restricted
+        }
+
+        try {
+            Database::getInstance()->getConnection()
+                ->exec("ALTER TABLE `history_nap_bank` ADD KEY `idx_hnb_source_created` (`source_channel`, `created_at`)");
+        } catch (Throwable $e) {
+            // ignore if key exists or ALTER is restricted
+        }
+
+        unset($this->schemaCache['history_nap_bank.source_channel']);
     }
 
 }

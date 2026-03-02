@@ -24,6 +24,12 @@ class AuthSecurityService
     private const REFRESH_TTL_REMEMBER = 1209600; // 14 days
     private const REFRESH_TTL_DEFAULT = 86400; // 1 day
     private const TRUSTED_DEVICE_DAYS = 30;
+    private const IP_BURST_LIMIT = 10;
+    private const IP_BURST_WINDOW_MINUTES = 15;
+    private const LOGIN_FAIL_LIMIT = 5;
+    private const LOGIN_FAIL_WINDOW_MINUTES = 10;
+    private const DEFAULT_FAIL_LIMIT = 5;
+    private const DEFAULT_FAIL_WINDOW_MINUTES = 15;
 
     private static bool $pruneAttempted = false;
 
@@ -84,41 +90,87 @@ class AuthSecurityService
 
     public function checkRateLimit(string $action, string $usernameOrEmail = ''): ?array
     {
-        // IP burst: 10 attempts / 15 minutes
         $ip = $this->clientIp();
         $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
-        $stmt = $this->db->prepare("SELECT COUNT(*) c FROM auth_login_attempts WHERE action = ? AND ip_address = ? AND created_at >= (? - INTERVAL 15 MINUTE)");
+        $ipWindowMinutes = (int) self::IP_BURST_WINDOW_MINUTES;
+        $stmt = $this->db->prepare("SELECT COUNT(*) c FROM auth_login_attempts WHERE action = ? AND ip_address = ? AND created_at >= (? - INTERVAL {$ipWindowMinutes} MINUTE)");
         $stmt->execute([$action, $ip, $nowSql]);
         $ipCount = (int) $stmt->fetchColumn();
-        if ($ipCount >= 10) {
+        if ($ipCount >= self::IP_BURST_LIMIT) {
             return ['blocked' => true, 'message' => 'Bạn thao tác quá nhanh. Vui lòng thử lại sau 15 phút.'];
         }
 
         if ($usernameOrEmail !== '') {
-            $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
-            $stmt = $this->db->prepare("SELECT COUNT(*) c FROM auth_login_attempts WHERE action = ? AND username_or_email = ? AND ip_address = ? AND success = 0 AND created_at >= (? - INTERVAL 15 MINUTE)");
+            $policy = $this->getFailPolicy($action);
+            $failWindowMinutes = (int) ($policy['window_minutes'] ?? self::DEFAULT_FAIL_WINDOW_MINUTES);
+            $stmt = $this->db->prepare("SELECT COUNT(*) c FROM auth_login_attempts WHERE action = ? AND username_or_email = ? AND ip_address = ? AND success = 0 AND created_at >= (? - INTERVAL {$failWindowMinutes} MINUTE)");
             $stmt->execute([$action, mb_substr($usernameOrEmail, 0, 190), $ip, $nowSql]);
             $failCount = (int) $stmt->fetchColumn();
-            if ($failCount >= 5) {
+            if ($failCount >= $policy['limit']) {
                 // Send email warning on first lockout trigger
-                $this->sendLockoutWarningEmail($usernameOrEmail, $ip, $failCount);
-                return ['blocked' => true, 'message' => 'Tài khoản này đã bị khoá tạm thời 15 phút do nhập sai quá 5 lần.'];
+                if ($action === 'login') {
+                    $this->sendLockoutWarningEmail($usernameOrEmail, $ip, $failCount, (int) $policy['window_minutes']);
+                }
+                return ['blocked' => true, 'message' => 'Tài khoản này đã bị khoá tạm thời ' . (int) $policy['window_minutes'] . ' phút do nhập sai quá ' . (int) $policy['limit'] . ' lần.'];
             }
         }
 
         return null;
     }
 
+    public function getFailedAttemptStatus(string $action, string $usernameOrEmail): array
+    {
+        $policy = $this->getFailPolicy($action);
+        $normalized = mb_substr(trim($usernameOrEmail), 0, 190);
+        if ($normalized === '') {
+            return [
+                'failed_attempts' => 0,
+                'attempts_left' => $policy['limit'],
+                'limit' => $policy['limit'],
+                'window_minutes' => $policy['window_minutes'],
+            ];
+        }
+
+        $ip = $this->clientIp();
+        $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+        $failWindowMinutes = (int) ($policy['window_minutes'] ?? self::DEFAULT_FAIL_WINDOW_MINUTES);
+        $stmt = $this->db->prepare("SELECT COUNT(*) c FROM auth_login_attempts WHERE action = ? AND username_or_email = ? AND ip_address = ? AND success = 0 AND created_at >= (? - INTERVAL {$failWindowMinutes} MINUTE)");
+        $stmt->execute([$action, $normalized, $ip, $nowSql]);
+        $failCount = (int) $stmt->fetchColumn();
+
+        return [
+            'failed_attempts' => $failCount,
+            'attempts_left' => max(0, (int) $policy['limit'] - $failCount),
+            'limit' => $policy['limit'],
+            'window_minutes' => $policy['window_minutes'],
+        ];
+    }
+
+    private function getFailPolicy(string $action): array
+    {
+        if ($action === 'login') {
+            return [
+                'limit' => self::LOGIN_FAIL_LIMIT,
+                'window_minutes' => self::LOGIN_FAIL_WINDOW_MINUTES,
+            ];
+        }
+
+        return [
+            'limit' => self::DEFAULT_FAIL_LIMIT,
+            'window_minutes' => self::DEFAULT_FAIL_WINDOW_MINUTES,
+        ];
+    }
+
     /**
      * Send a security warning email when a user account is locked out due to too many failed login attempts.
      */
-    private function sendLockoutWarningEmail(string $usernameOrEmail, string $ip, int $attemptCount): void
+    private function sendLockoutWarningEmail(string $usernameOrEmail, string $ip, int $attemptCount, int $lockMinutes): void
     {
         try {
             // Avoid sending duplicate lockout emails within the same lockout window
             $cacheKey = 'lockout_email_' . md5($usernameOrEmail . $ip);
-            if (!empty($_SESSION[$cacheKey]) && (time() - (int) $_SESSION[$cacheKey]) < 900) {
-                return; // Already sent within 15 minutes
+            if (!empty($_SESSION[$cacheKey]) && (time() - (int) $_SESSION[$cacheKey]) < ($lockMinutes * 60)) {
+                return; // Already sent within lock window
             }
 
             // Find user by username or email
@@ -139,7 +191,7 @@ class AuthSecurityService
             $headline = 'Cảnh báo bảo mật';
             $content = '
                 <p style="font-size:15px;color:#334155;">Xin chào <strong>' . htmlspecialchars($username, ENT_QUOTES, 'UTF-8') . '</strong>,</p>
-                <p style="font-size:15px;color:#334155;">Tài khoản của bạn vừa bị <strong style="color:#dc2626;">khoá tạm thời 15 phút</strong> do nhập sai mật khẩu <strong>' . (int) $attemptCount . ' lần liên tiếp</strong>.</p>
+                <p style="font-size:15px;color:#334155;">Tài khoản của bạn vừa bị <strong style="color:#dc2626;">khoá tạm thời ' . (int) $lockMinutes . ' phút</strong> do nhập sai mật khẩu <strong>' . (int) $attemptCount . ' lần liên tiếp</strong>.</p>
                 <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:16px 20px;margin:16px 0;">
                     <p style="margin:0 0 8px;font-weight:700;color:#991b1b;">📌 Chi tiết:</p>
                     <p style="margin:0;font-size:14px;color:#7f1d1d;">• Thời gian: ' . $time . '</p>

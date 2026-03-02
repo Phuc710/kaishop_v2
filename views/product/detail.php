@@ -557,12 +557,16 @@ if ($rawDescHtml !== '') {
             }
 
             .pd-meta-line {
-                align-items: flex-start;
+                align-items: center;
+                justify-content: space-between;
+                flex-wrap: nowrap;
             }
 
             .pd-stock {
-                text-align: left;
-                width: 100%;
+                text-align: right;
+                width: auto;
+                margin-left: auto;
+                white-space: nowrap;
             }
         }
 

@@ -22,6 +22,10 @@ $prefilterOrderStatus = trim((string) ($_GET['order_status'] ?? 'all'));
 if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed', 'cancelled'], true)) {
     $prefilterOrderStatus = 'all';
 }
+$prefilterSource = trim((string) ($_GET['source_channel'] ?? 'all'));
+if (!in_array($prefilterSource, ['all', '0', '1'], true)) {
+    $prefilterSource = 'all';
+}
 ?>
 
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
@@ -76,139 +80,145 @@ if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed
         gap: 14px;
     }
 
+    .purchase-order-time-wrapper {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 5px;
+    }
+
     .purchase-order-time {
         display: inline-flex;
         align-items: center;
-        gap: 10px;
-        width: fit-content;
-        max-width: 100%;
-        border: 1px solid #dbe2ea;
-        background: #ffffff;
-        border-radius: 10px;
-        padding: 8px 12px;
-        font-weight: 600;
+        gap: 8px;
+        border: 1px solid #dee2e6;
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 13.5px;
     }
 
     .purchase-order-time-label {
-        color: #1f2937;
+        color: #6c757d;
+        font-weight: 600;
     }
 
     .purchase-order-time-value {
-        color: #0f172a;
+        color: #212529;
         font-weight: 500;
     }
 
-    .purchase-order-meta-grid {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 10px;
-    }
+.purchase-order-meta-grid {
+display: grid;
+grid-template-columns: repeat(4, minmax(0, 1fr));
+gap: 10px;
+}
 
-    .purchase-order-meta-item {
-        background: #ffffff;
-        border: 1px solid #dbe2ea;
-        border-radius: 10px;
-        padding: 10px 12px;
-        min-height: 76px;
-    }
+.purchase-order-meta-item {
+background: #ffffff;
+border: 1px solid #dbe2ea;
+border-radius: 10px;
+padding: 10px 12px;
+min-height: 76px;
+}
 
-    .purchase-order-meta-label {
-        font-size: 12px;
-        color: #64748b;
-        text-transform: uppercase;
-        letter-spacing: .4px;
-        margin-bottom: 5px;
-        font-weight: 700;
-    }
+.purchase-order-meta-label {
+font-size: 12px;
+color: #64748b;
+text-transform: uppercase;
+letter-spacing: .4px;
+margin-bottom: 5px;
+font-weight: 700;
+}
 
-    .purchase-order-meta-value {
-        color: #1e293b;
-        font-weight: 600;
-        word-break: break-word;
-    }
+.purchase-order-meta-value {
+color: #1e293b;
+font-weight: 600;
+word-break: break-word;
+}
 
-    .purchase-order-card {
-        background: #ffffff;
-        border: 1px solid #dbe2ea;
-        border-radius: 10px;
-        padding: 12px;
-        height: 100%;
-    }
+.purchase-order-card {
+background: #ffffff;
+border: 1px solid #dbe2ea;
+border-radius: 10px;
+padding: 12px;
+height: 100%;
+}
 
-    .purchase-order-card-title {
-        font-size: 12px;
-        color: #64748b;
-        text-transform: uppercase;
-        letter-spacing: .4px;
-        margin-bottom: 8px;
-        font-weight: 700;
-    }
+.purchase-order-card-title {
+font-size: 12px;
+color: #64748b;
+text-transform: uppercase;
+letter-spacing: .4px;
+margin-bottom: 8px;
+font-weight: 700;
+}
 
-    .purchase-order-card-content {
-        color: #0f172a;
-        white-space: pre-wrap;
-        word-break: break-word;
-        min-height: 66px;
-    }
+.purchase-order-card-content {
+color: #0f172a;
+white-space: pre-wrap;
+word-break: break-word;
+min-height: 66px;
+}
 
-    .purchase-order-product-row {
-        background: #ffffff;
-        border: 1px solid #dbe2ea;
-        border-radius: 10px;
-        padding: 12px;
-        display: grid;
-        grid-template-columns: minmax(0, 1.7fr) repeat(2, minmax(0, 1fr));
-        gap: 10px;
-        align-items: center;
-    }
+.purchase-order-product-row {
+background: #ffffff;
+border: 1px solid #dbe2ea;
+border-radius: 10px;
+padding: 12px;
+display: grid;
+grid-template-columns: minmax(0, 1.7fr) repeat(2, minmax(0, 1fr));
+gap: 10px;
+align-items: center;
+}
 
-    .purchase-order-product-cell {
-        min-width: 0;
-        word-break: break-word;
-    }
+.purchase-order-product-cell {
+min-width: 0;
+word-break: break-word;
+}
 
-    .purchase-order-product-cell b {
-        color: #0f172a;
-    }
+.purchase-order-product-cell b {
+color: #0f172a;
+}
 
-    .purchase-order-product-info {
-        color: #1e293b;
-        white-space: pre-wrap;
-        word-break: break-word;
-    }
+.purchase-order-product-info {
+color: #1e293b;
+white-space: pre-wrap;
+word-break: break-word;
+}
 
-    .purchase-order-modal .modal-footer {
-        border-top: 0;
-        padding: 14px 20px 18px;
-        background: #ffffff;
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-    }
+.purchase-order-modal .modal-footer {
+border-top: 0;
+padding: 14px 20px 18px;
+background: #ffffff;
+display: flex;
+justify-content: flex-end;
+gap: 8px;
+}
 
-    @media (max-width: 991.98px) {
-        .purchase-order-meta-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
+@media (max-width: 991.98px) {
+.purchase-order-meta-grid {
+grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 
-        .purchase-order-product-row {
-            grid-template-columns: 1fr;
-        }
-    }
+.purchase-order-product-row {
+grid-template-columns: 1fr;
+}
+}
 
-    @media (max-width: 575.98px) {
-        .purchase-order-modal .modal-body {
-            padding: 14px;
-        }
+@media (max-width: 575.98px) {
+.purchase-order-modal .modal-body {
+padding: 14px;
+}
 
-        .purchase-order-meta-grid {
-            grid-template-columns: 1fr;
-        }
+.purchase-order-meta-grid {
+grid-template-columns: 1fr;
+}
 
-        .purchase-order-modal .modal-footer {
-            padding: 12px 14px 14px;
-        }
-    }
+.purchase-order-modal .modal-footer {
+padding: 12px 14px 14px;
+}
+}
 </style>
 
 <section class="content pb-4 mt-3">
@@ -235,8 +245,6 @@ if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed
                                 </option>
                                 <option value="pending" <?= $prefilterOrderStatus === 'pending' ? 'selected' : '' ?>>Pending
                                 </option>
-                                <option value="processing" <?= $prefilterOrderStatus === 'processing' ? 'selected' : '' ?>>Đang
-                                    xử lý</option>
                                 <option value="completed" <?= $prefilterOrderStatus === 'completed' ? 'selected' : '' ?>>Hoàn
                                     tất</option>
                                 <option value="cancelled" <?= $prefilterOrderStatus === 'cancelled' ? 'selected' : '' ?>>Đã hủy
@@ -244,6 +252,13 @@ if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed
                             </select>
                         </div>
                     <?php endif; ?>
+                    <div class="col-md-2 mb-2">
+                        <select id="f-source" class="form-control form-control-sm">
+                            <option value="all" <?= $prefilterSource === 'all' ? 'selected' : '' ?>>Tất cả nguồn</option>
+                            <option value="0" <?= $prefilterSource === '0' ? 'selected' : '' ?>>Web</option>
+                            <option value="1" <?= $prefilterSource === '1' ? 'selected' : '' ?>>BotTele</option>
+                        </select>
+                    </div>
 
                     <?php if (!empty($showSeverityFilter)): ?>
                         <div class="filter-show ms-3" style="min-width: 150px;">
@@ -343,8 +358,7 @@ if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed
     </div>
 
     <?php if ($isPurchaseJournal): ?>
-        <div class="modal fade purchase-order-modal" id="purchaseOrderModal" tabindex="-1" role="dialog"
-            aria-hidden="true">
+        <div class="modal fade purchase-order-modal" id="purchaseOrderModal" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-lg" role="document">
                 <div class="modal-content">
                     <div class="modal-header bg-primary text-white">
@@ -359,9 +373,15 @@ if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed
                         </div>
                         <div id="purchaseOrderModalError" class="alert alert-danger d-none mb-3"></div>
                         <div id="purchaseOrderModalContent" class="purchase-order-shell d-none">
-                            <div class="purchase-order-time">
-                                <span class="purchase-order-time-label">Đặt:</span>
-                                <span id="purchaseOrderCreatedAt" class="purchase-order-time-value">-</span>
+                            <div class="purchase-order-time-wrapper">
+                                <div class="purchase-order-time">
+                                    <span class="purchase-order-time-label">ĐẶT:</span>
+                                    <span id="purchaseOrderCreatedAt" class="purchase-order-time-value">-</span>
+                                </div>
+                                <div id="purchaseOrderFulfilledWrapper" class="purchase-order-time d-none">
+                                    <span class="purchase-order-time-label">GIAO:</span>
+                                    <span id="purchaseOrderFulfilledAt" class="purchase-order-time-value">-</span>
+                                </div>
                             </div>
 
                             <div class="purchase-order-meta-grid">
@@ -442,6 +462,8 @@ if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed
 
 <script>
     let dt;
+    let sourceFilterValue = 'all';
+    let sourceFilterRegistered = false;
     const TABLE_ID = '<?= htmlspecialchars($tableId ?? "journalTable") ?>';
     const TIME_COL_INDEX = <?php
     $timeIdx = 0;
@@ -472,6 +494,16 @@ if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed
         }
     }
     echo $statusIdx;
+    ?>;
+    const SOURCE_COL_INDEX = <?php
+    $sourceIdx = -1;
+    foreach (($columns ?? []) as $i => $col) {
+        if (($col['key'] ?? '') === 'source') {
+            $sourceIdx = $i;
+            break;
+        }
+    }
+    echo $sourceIdx;
     ?>;
     const IS_PURCHASE_JOURNAL = <?= $isPurchaseJournal ? 'true' : 'false' ?>;
     const PURCHASE_DETAIL_BASE_URL = '<?= url("admin/logs/buying/detail") ?>';
@@ -507,9 +539,11 @@ if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed
         if (prefilter) {
             dt.search(prefilter).draw();
         }
+        registerSourceFilter();
         if (IS_PURCHASE_JOURNAL && STATUS_COL_INDEX >= 0) {
             applyPurchaseStatusFilter();
         }
+        applySourceFilter();
 
         if (typeof flatpickr !== 'undefined') {
             flatpickr('#f-date', {
@@ -546,6 +580,10 @@ if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed
             applyPurchaseStatusFilter();
         });
 
+        $('#f-source').change(function () {
+            applySourceFilter();
+        });
+
         $('#f-sort').change(function () {
             dt.draw();
         });
@@ -555,6 +593,7 @@ if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed
             $('#f-length').val('20');
             $('#f-sort').val('all');
             $('#f-order-status').val('all');
+            $('#f-source').val('all');
             dt.search('').columns().search('').page.len(20).draw();
         });
 
@@ -571,6 +610,41 @@ if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed
         } else {
             dt.column(STATUS_COL_INDEX).search(val).draw();
         }
+    }
+
+    function applySourceFilter() {
+        if (SOURCE_COL_INDEX < 0) return;
+        sourceFilterValue = String($('#f-source').val() || 'all');
+        dt.draw();
+    }
+
+    function registerSourceFilter() {
+        if (sourceFilterRegistered || SOURCE_COL_INDEX < 0 || !$.fn || !$.fn.dataTable || !$.fn.dataTable.ext) {
+            return;
+        }
+        sourceFilterRegistered = true;
+        $.fn.dataTable.ext.search.push(function (settings, data) {
+            if (!settings || !settings.nTable || settings.nTable.id !== TABLE_ID) {
+                return true;
+            }
+            if (sourceFilterValue === 'all') {
+                return true;
+            }
+
+            var rawCell = String(data[SOURCE_COL_INDEX] || '');
+            var plain = rawCell
+                .replace(/<[^>]*>/g, ' ')
+                .toLowerCase()
+                .replace(/\s+/g, '');
+
+            if (sourceFilterValue === '0') {
+                return plain.indexOf('web') !== -1 || plain.indexOf('0') === 0;
+            }
+            if (sourceFilterValue === '1') {
+                return plain.indexOf('bottele') !== -1 || plain.indexOf('telegram') !== -1 || plain.indexOf('1') === 0;
+            }
+            return true;
+        });
     }
 
     function initPurchaseOrderActions() {
@@ -605,6 +679,15 @@ if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed
         }
 
         $('#purchaseOrderCreatedAt').text(String(order.created_at_display || order.created_at || '-'));
+
+        var fulfilledAt = String(order.fulfilled_at_display || order.fulfilled_at || '').trim();
+        if (fulfilledAt !== '' && fulfilledAt !== '0000-00-00 00:00:00') {
+            $('#purchaseOrderFulfilledAt').text(fulfilledAt);
+            $('#purchaseOrderFulfilledWrapper').removeClass('d-none');
+        } else {
+            $('#purchaseOrderFulfilledWrapper').addClass('d-none');
+        }
+
         $('#purchaseOrderCodeBadge').text(orderCode);
         $('#purchaseOrderBuyer').text(String(order.username || '-'));
         $('#purchaseOrderRequest').html(nl2brEscape(customerInput !== '' ? customerInput : 'Không có'));
@@ -624,65 +707,65 @@ if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed
         var productInstructions = String(product.info_instructions || '').trim();
 
         var ui = {
-            requestTitle: 'Thông tin yêu cầu',
-            requestText: customerInput !== '' ? customerInput : 'Không có',
+            requestTitle: 'THÔNG TIN MUA HÀNG',
+            requestText: customerInput !== '' ? customerInput : 'Không có thông tin yêu cầu.',
             showRequest: customerInput !== '',
-            deliveryTitle: 'Nội dung giao hàng',
-            deliveryText: deliveryContent !== '' ? deliveryContent : 'Chưa có',
+            deliveryTitle: 'NỘI DUNG BÀN GIAO',
+            deliveryText: deliveryContent !== '' ? deliveryContent : 'Chưa có dữ liệu bàn giao.',
             showDelivery: true,
             extraLabel: 'Loại',
-            extraValue: String(product.delivery_label || '-') || '-',
-            modeInfoTitle: 'Thông tin theo loại sản phẩm',
+            extraValue: 'Sản phẩm',
+            modeInfoTitle: 'CHI TIẾT DỊCH VỤ',
             modeInfoHtml: '',
         };
 
         if (mode === 'manual_info') {
-            ui.requestTitle = 'Yêu cầu từ khách';
-            ui.requestText = customerInput !== '' ? customerInput : 'Khách chưa gửi yêu cầu.';
-            ui.showRequest = true;
-            ui.deliveryTitle = 'Phản hồi / giao hàng';
-            ui.deliveryText = deliveryContent !== '' ? deliveryContent : 'Chưa phản hồi.';
             ui.extraValue = 'Yêu cầu thông tin';
-            ui.modeInfoTitle = 'Thông tin sản phẩm yêu cầu';
+            ui.requestTitle = 'THÔNG TIN TỪ KHÁCH HÀNG';
+            ui.showRequest = true; // Always show for this type even if empty
+            ui.deliveryTitle = 'PHẢN HỒI / BÀN GIAO';
+            ui.modeInfoTitle = 'THÔNG TIN DỊCH VỤ (YÊU CẦU)';
 
             var manualLines = [];
-            manualLines.push('<div><b>Loại bàn giao:</b> Yêu cầu thông tin</div>');
+            manualLines.push('<div class="mb-1"><b>Loại sản phẩm:</b> Yêu cầu xử lý thủ công</div>');
             if (productInstructions !== '') {
-                manualLines.push('<div class="mt-1"><b>Mẫu yêu cầu:</b> ' + nl2brEscape(productInstructions) + '</div>');
+                manualLines.push('<div class="mb-1"><b>Hướng dẫn:</b> ' + nl2brEscape(productInstructions) + '</div>');
+            }
+            if (order.fulfilled_by) {
+                manualLines.push('<div class="mb-1"><b>Xử lý bởi:</b> <span class="badge bg-light text-dark border">' + escapeHtml(order.fulfilled_by) + '</span></div>');
             }
             ui.modeInfoHtml = manualLines.join('');
+
         } else if (mode === 'source_link') {
-            ui.requestTitle = 'Thông tin bổ sung';
-            ui.requestText = customerInput !== '' ? customerInput : 'Không có thông tin bổ sung.';
-            ui.showRequest = customerInput !== '';
-            ui.deliveryTitle = 'Source';
-            ui.deliveryText = deliveryContent !== '' ? deliveryContent : (sourceLink !== '' ? sourceLink : 'Chưa có source.');
             ui.extraValue = 'Source';
-            ui.modeInfoTitle = 'Thông tin source';
+            ui.requestTitle = 'THÔNG TIN BỔ SUNG';
+            ui.deliveryTitle = 'LINK NGUỒN (SOURCE)';
+            ui.modeInfoTitle = 'THÔNG TIN SOURCE';
 
             var sourceLines = [];
-            sourceLines.push('<div><b>Loại bàn giao:</b> Source</div>');
+            sourceLines.push('<div class="mb-1"><b>Loại sản phẩm:</b> Link Source / Download</div>');
             if (sourceLink !== '') {
-                sourceLines.push('<div class="mt-1"><b>Source:</b> <code class="text-dark">' + escapeHtml(sourceLink) + '</code></div>');
+                sourceLines.push('<div class="mb-1"><b>Link gốc:</b> <a href="' + escapeHtml(sourceLink) + '" target="_blank" class="text-primary">' + escapeHtml(sourceLink) + '</a></div>');
             }
             ui.modeInfoHtml = sourceLines.join('');
+
         } else {
-            ui.requestTitle = 'Thông tin mua hàng';
-            ui.requestText = customerInput !== '' ? customerInput : 'Không có thông tin yêu cầu.';
-            ui.showRequest = customerInput !== '';
-            ui.deliveryTitle = 'Tài khoản';
-            ui.deliveryText = deliveryContent !== '' ? deliveryContent : 'Chưa bàn giao tài khoản.';
             ui.extraValue = 'Tài khoản';
-            ui.modeInfoTitle = 'Thông tin tài khoản';
+            ui.requestTitle = 'THÔNG TIN MUA HÀNG';
+            ui.deliveryTitle = 'DỮ LIỆU TÀI KHOẢN';
+            ui.modeInfoTitle = 'THÔNG TIN TÀI KHOẢN (KHO)';
 
             var accountLines = [];
-            accountLines.push('<div><b>Loại bàn giao:</b> Tài khoản</div>');
+            accountLines.push('<div class="mb-1"><b>Loại sản phẩm:</b> Tài khoản có sẵn trong kho</div>');
             if (deliveryContent !== '') {
-                accountLines.push('<div class="mt-1"><b>Tài khoản đã giao:</b> Có dữ liệu bàn giao.</div>');
+                accountLines.push('<div class="mb-1"><b>Trạng thái:</b> Đã bàn giao dữ liệu từ kho.</div>');
+            } else {
+                accountLines.push('<div class="mb-1"><b>Trạng thái:</b> Đang chờ bàn giao từ kho.</div>');
             }
             ui.modeInfoHtml = accountLines.join('');
         }
 
+        // Apply UI to DOM
         $('#purchaseOrderRequestTitle').text(ui.requestTitle);
         $('#purchaseOrderRequest').html(nl2brEscape(ui.requestText));
         $('#purchaseOrderDeliveryTitle').text(ui.deliveryTitle);
@@ -690,8 +773,10 @@ if (!in_array($prefilterOrderStatus, ['all', 'pending', 'processing', 'completed
         $('#purchaseOrderExtraLabel').text(ui.extraLabel + ':');
         $('#purchaseOrderExtraValue').text(ui.extraValue);
         $('#purchaseOrderModeInfoTitle').text(ui.modeInfoTitle);
-        $('#purchaseOrderProductInfo').html(ui.modeInfoHtml !== '' ? ui.modeInfoHtml : '<span class="text-muted">Không có thêm thông tin.</span>');
-        $('#purchaseOrderModeInfoCard').toggleClass('d-none', ui.modeInfoHtml === '');
+        $('#purchaseOrderProductInfo').html(ui.modeInfoHtml !== '' ? ui.modeInfoHtml : '<span class="text-muted">Không có thêm thông tin chi tiết.</span>');
+
+        // Show info card if we have something to show
+        $('#purchaseOrderModeInfoCard').removeClass('d-none');
 
         applyPurchaseContentColumns(ui.showRequest, ui.showDelivery);
     }

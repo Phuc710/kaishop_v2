@@ -12,6 +12,7 @@ class UserController extends Controller
     private $banService;
     private $timeService;
     private ?BalanceChangeService $balanceChangeService = null;
+    private array $schemaCache = [];
 
     public function __construct()
     {
@@ -21,6 +22,7 @@ class UserController extends Controller
         $this->banService = new BanService();
         $this->timeService = class_exists('TimeService') ? TimeService::instance() : null;
         $this->balanceChangeService = class_exists('BalanceChangeService') ? new BalanceChangeService() : null;
+        $this->ensureHistorySourceChannelSchema();
     }
 
     /**
@@ -189,6 +191,7 @@ class UserController extends Controller
                 `stk` = NULL,
                 `thucnhan` = '{$amount}',
                 `status` = 'hoantat',
+                source_channel = '0',
                 `time` = '{$now}'");
 
             if ($this->balanceChangeService) {
@@ -198,7 +201,8 @@ class UserController extends Controller
                     $beforeBalance,
                     $amount,
                     $afterBalance,
-                    'Admin cộng tiền' . ($reason !== '' ? ': ' . $reason : '')
+                    'Admin cộng tiền' . ($reason !== '' ? ': ' . $reason : ''),
+                    SourceChannelHelper::WEB
                 );
             }
 
@@ -252,6 +256,7 @@ class UserController extends Controller
                 `stk` = NULL,
                 `thucnhan` = '-{$amount}',
                 `status` = 'hoantat',
+                source_channel = '0',
                 `time` = '{$now}'");
 
             if ($this->balanceChangeService) {
@@ -261,7 +266,8 @@ class UserController extends Controller
                     $beforeBalance,
                     -$amount,
                     $afterBalance,
-                    'Admin trừ tiền' . ($reason !== '' ? ': ' . $reason : '')
+                    'Admin trừ tiền' . ($reason !== '' ? ': ' . $reason : ''),
+                    SourceChannelHelper::WEB
                 );
             }
 
@@ -400,6 +406,49 @@ class UserController extends Controller
         return (int) $clean;
     }
 
+    private function ensureHistorySourceChannelSchema(): void
+    {
+        $pdo = $this->userModel->getConnection();
+        try {
+            if (!$this->hasColumn($pdo, 'history_nap_bank', 'source_channel')) {
+                $pdo->exec("ALTER TABLE `history_nap_bank` ADD COLUMN `source_channel` TINYINT(1) NOT NULL DEFAULT 0 AFTER `status`");
+            }
+        } catch (Throwable $e) {
+            // ignore if ALTER is restricted
+        }
+
+        try {
+            $pdo->exec("ALTER TABLE `history_nap_bank` ADD KEY `idx_hnb_source_created` (`source_channel`, `created_at`)");
+        } catch (Throwable $e) {
+            // ignore if key exists or ALTER is restricted
+        }
+
+        unset($this->schemaCache['history_nap_bank.source_channel']);
+    }
+
+    private function hasColumn(PDO $pdo, string $table, string $column): bool
+    {
+        $cacheKey = $table . '.' . $column;
+        if (array_key_exists($cacheKey, $this->schemaCache)) {
+            return $this->schemaCache[$cacheKey];
+        }
+
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*)
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+              AND table_name = :table_name
+              AND column_name = :column_name
+        ");
+        $stmt->execute([
+            'table_name' => $table,
+            'column_name' => $column,
+        ]);
+        $exists = (int) $stmt->fetchColumn() > 0;
+        $this->schemaCache[$cacheKey] = $exists;
+        return $exists;
+    }
+
     /**
      * @param array<string,mixed> $row
      * @param array<int,string> $candidates
@@ -451,3 +500,5 @@ class UserController extends Controller
         ];
     }
 }
+
+

@@ -18,18 +18,6 @@ if (empty($_SESSION['admin'])) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <?php
-$resolveAdminIconUrl = static function ($path): string {
-    $cleanPath = trim(preg_replace('/\s+/', '', (string) $path));
-    if ($cleanPath === '') {
-        return '';
-    }
-
-    if (preg_match('~^(?:https?:)?//|^(?:data|blob):~i', $cleanPath)) {
-        return $cleanPath;
-    }
-
-    return asset(ltrim($cleanPath, '/'));
-};
 
 $appendAdminIconVersion = static function (string $href, string $version): string {
     if ($href === '' || $version === '') {
@@ -39,21 +27,8 @@ $appendAdminIconVersion = static function (string $href, string $version): strin
     return $href . (str_contains($href, '?') ? '&' : '?') . 'v=' . rawurlencode($version);
 };
 
-$adminFaviconHref = '';
+$adminFaviconHref = UrlHelper::resolveFavicon($chungapi['favicon'] ?? '', $chungapi['logo'] ?? '');
 $adminFaviconVersion = trim((string) ($chungapi['updated_at'] ?? ''));
-foreach (
-    [
-        (string) ($chungapi['favicon'] ?? ''),
-        (string) ($chungapi['logo'] ?? ''),
-        'assets/images/header_logo.gif',
-    ] as $iconCandidate
-) {
-    $resolvedIcon = $resolveAdminIconUrl($iconCandidate);
-    if ($resolvedIcon !== '') {
-        $adminFaviconHref = $resolvedIcon;
-        break;
-    }
-}
 $adminFaviconHref = $appendAdminIconVersion($adminFaviconHref, $adminFaviconVersion);
 ?>
 <link rel="icon" href="<?= htmlspecialchars($adminFaviconHref, ENT_QUOTES, 'UTF-8') ?>" />

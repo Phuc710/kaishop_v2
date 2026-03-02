@@ -5,6 +5,7 @@ $userPageAssetFlags = [
     'flatpickr' => true,
     'interactive_bundle' => false,
 ];
+$userPageFaviconOverride = asset('assets/images/kaishop_favicon.png') . '&page=history-orders';
 $activePage = 'order-history';
 require __DIR__ . '/layout/header.php';
 ?>

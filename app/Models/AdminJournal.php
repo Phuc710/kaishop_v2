@@ -14,6 +14,7 @@ class AdminJournal extends Model
     {
         parent::__construct();
         $this->timeService = class_exists('TimeService') ? TimeService::instance() : null;
+        $this->ensureSourceChannelSchema();
     }
 
     /**
@@ -120,6 +121,7 @@ class AdminJournal extends Model
         $params = [];
         $conditions = ['1=1'];
         $timeExpr = 'o.created_at';
+        $sourceExpr = $this->buildOrderSourceChannelExpression('o');
 
         if (!empty($filters['search'])) {
             $search = '%' . trim((string) $filters['search']) . '%';
@@ -134,6 +136,8 @@ class AdminJournal extends Model
             $conditions[] = 'o.status = :order_status';
             $params['order_status'] = $orderStatus;
         }
+
+        $this->appendSourceChannelCondition($conditions, $params, $sourceExpr, $filters, 'src_order');
 
         $this->appendDateConditions($conditions, $params, $timeExpr, $filters);
 
@@ -151,6 +155,7 @@ class AdminJournal extends Model
                 o.price,
                 o.status,
                 o.payment_method,
+                {$sourceExpr} AS source_channel,
                 " . ($hasQuantity ? 'o.quantity' : '1') . " AS quantity,
                 " . ($hasCustomerInput ? 'o.customer_input' : 'NULL') . " AS customer_input,
                 " . ($hasFulfilledBy ? 'o.fulfilled_by' : 'NULL') . " AS fulfilled_by,
@@ -211,6 +216,7 @@ class AdminJournal extends Model
 
         $timeColumn = $this->detectTimeColumn('history_nap_bank');
         $timeExpr = $this->buildEventTimeExpression('h', $timeColumn);
+        $sourceExpr = $this->buildDepositSourceChannelExpression('h');
 
         if (!empty($filters['search'])) {
             $search = '%' . trim((string) $filters['search']) . '%';
@@ -232,6 +238,7 @@ class AdminJournal extends Model
         }
 
         $this->appendDateConditions($conditions, $params, $timeExpr, $filters);
+        $this->appendSourceChannelCondition($conditions, $params, $sourceExpr, $filters, 'src_dep');
 
         $joinUsers = $hasUsers ? 'LEFT JOIN `users` u ON u.username = h.username' : '';
         $userIdSelect = $hasUsers && $this->hasColumn('users', 'id') ? 'u.id AS user_id' : 'NULL AS user_id';
@@ -246,6 +253,7 @@ class AdminJournal extends Model
                 h.ctk AS reason,
                 h.thucnhan AS amount,
                 h.status,
+                {$sourceExpr} AS source_channel,
                 h.time AS raw_time,
                 {$timeExpr} AS event_time
             FROM `history_nap_bank` h
@@ -294,6 +302,7 @@ class AdminJournal extends Model
 
         $timeColumn = $this->detectTimeColumn('lich_su_bien_dong_so_du');
         $timeExpr = $this->buildEventTimeExpression('b', $timeColumn);
+        $sourceExpr = $this->buildSimpleSourceChannelExpression('b', 'lich_su_bien_dong_so_du');
 
         if (!empty($filters['search'])) {
             $search = '%' . trim((string) $filters['search']) . '%';
@@ -318,6 +327,7 @@ class AdminJournal extends Model
         }
 
         $this->appendDateConditions($conditions, $params, $timeExpr, $filters);
+        $this->appendSourceChannelCondition($conditions, $params, $sourceExpr, $filters, 'src_bal');
 
         $select = [
             'b.id',
@@ -327,6 +337,7 @@ class AdminJournal extends Model
             $this->hasColumn('lich_su_bien_dong_so_du', 'change_amount') ? 'b.change_amount' : 'NULL AS change_amount',
             $this->hasColumn('lich_su_bien_dong_so_du', 'after_balance') ? 'b.after_balance' : 'NULL AS after_balance',
             $this->hasColumn('lich_su_bien_dong_so_du', 'reason') ? 'b.reason' : "'' AS reason_text",
+            "{$sourceExpr} AS source_channel",
             $this->hasColumn('lich_su_bien_dong_so_du', 'time') ? 'b.time AS raw_time' : 'NULL AS raw_time',
             "{$timeExpr} AS event_time",
         ];
@@ -360,6 +371,7 @@ class AdminJournal extends Model
 
         $timeColumn = $this->detectTimeColumn('history_nap_bank');
         $timeExpr = $this->buildEventTimeExpression('h', $timeColumn);
+        $sourceExpr = $this->buildDepositSourceChannelExpression('h');
 
         if (!empty($filters['search'])) {
             $search = '%' . trim((string) $filters['search']) . '%';
@@ -384,6 +396,7 @@ class AdminJournal extends Model
         }
 
         $this->appendDateConditions($conditions, $params, $timeExpr, $filters);
+        $this->appendSourceChannelCondition($conditions, $params, $sourceExpr, $filters, 'src_bal_bank');
 
         $joinUsers = $hasUsers ? 'LEFT JOIN `users` u ON u.username = h.username' : '';
         $userIdSelect = $hasUsers && $this->hasColumn('users', 'id') ? 'u.id AS user_id' : 'NULL AS user_id';
@@ -396,6 +409,7 @@ class AdminJournal extends Model
                 h.username,
                 h.ctk AS reason,
                 h.thucnhan AS raw_change,
+                {$sourceExpr} AS source_channel,
                 h.time AS raw_time,
                 {$timeExpr} AS event_time,
                 {$currentMoneySelect}
@@ -594,6 +608,109 @@ class AdminJournal extends Model
         return in_array($column, $this->tableColumnsCache[$table], true);
     }
 
+    private function ensureSourceChannelSchema(): void
+    {
+        $targets = [
+            'orders' => [
+                "ALTER TABLE `orders` ADD COLUMN `source_channel` TINYINT(1) NOT NULL DEFAULT 0 AFTER `source`",
+                "ALTER TABLE `orders` ADD KEY `idx_orders_source_created` (`source_channel`, `created_at`)",
+            ],
+            'history_nap_bank' => [
+                "ALTER TABLE `history_nap_bank` ADD COLUMN `source_channel` TINYINT(1) NOT NULL DEFAULT 0 AFTER `status`",
+                "ALTER TABLE `history_nap_bank` ADD KEY `idx_hnb_source_created` (`source_channel`, `created_at`)",
+            ],
+            'lich_su_bien_dong_so_du' => [
+                "ALTER TABLE `lich_su_bien_dong_so_du` ADD COLUMN `source_channel` TINYINT(1) NOT NULL DEFAULT 0 AFTER `reason`",
+                "ALTER TABLE `lich_su_bien_dong_so_du` ADD KEY `idx_lsbd_source_created` (`source_channel`, `created_at`)",
+            ],
+        ];
+
+        foreach ($targets as $table => $sqlList) {
+            if (!$this->tableExists($table)) {
+                continue;
+            }
+            foreach ($sqlList as $sql) {
+                try {
+                    $this->db->exec($sql);
+                } catch (Throwable $e) {
+                    // ignore if already exists or ALTER is restricted
+                }
+            }
+            unset($this->tableColumnsCache[$table]);
+        }
+    }
+
+    private function appendSourceChannelCondition(
+        array &$conditions,
+        array &$params,
+        string $sourceExpr,
+        array $filters,
+        string $paramName
+    ): void {
+        $sourceFilter = trim((string) ($filters['source_channel'] ?? 'all'));
+        if (!in_array($sourceFilter, ['0', '1'], true)) {
+            return;
+        }
+
+        $conditions[] = "({$sourceExpr}) = :{$paramName}";
+        $params[$paramName] = (int) $sourceFilter;
+    }
+
+    private function buildOrderSourceChannelExpression(string $alias): string
+    {
+        if ($this->hasColumn('orders', 'source_channel')) {
+            return "COALESCE({$alias}.source_channel, 0)";
+        }
+
+        $parts = [];
+        if ($this->hasColumn('orders', 'source')) {
+            $parts[] = "LOWER(TRIM(CAST({$alias}.source AS CHAR))) IN ('telegram','tele','telebot','bot','tg','1')";
+        }
+        if ($this->hasColumn('orders', 'telegram_id')) {
+            $parts[] = "COALESCE({$alias}.telegram_id, 0) > 0";
+        }
+
+        if (empty($parts)) {
+            return '0';
+        }
+
+        return "CASE WHEN (" . implode(' OR ', $parts) . ") THEN 1 ELSE 0 END";
+    }
+
+    private function buildDepositSourceChannelExpression(string $alias): string
+    {
+        if ($this->hasColumn('history_nap_bank', 'source_channel')) {
+            return "COALESCE({$alias}.source_channel, 0)";
+        }
+
+        $parts = [];
+        if ($this->hasColumn('history_nap_bank', 'type')) {
+            $parts[] = "LOWER(COALESCE({$alias}.type, '')) LIKE '%telegram%'";
+        }
+        if ($this->hasColumn('history_nap_bank', 'username')) {
+            $parts[] = "LOWER(COALESCE({$alias}.username, '')) LIKE 'tg\\_%'";
+        }
+        if (empty($parts)) {
+            return '0';
+        }
+
+        return "
+            CASE
+                WHEN " . implode(' OR ', $parts) . "
+                THEN 1
+                ELSE 0
+            END
+        ";
+    }
+
+    private function buildSimpleSourceChannelExpression(string $alias, string $table): string
+    {
+        if ($this->hasColumn($table, 'source_channel')) {
+            return "COALESCE({$alias}.source_channel, 0)";
+        }
+        return '0';
+    }
+
     /**
      * @param mixed $value
      */
@@ -665,7 +782,8 @@ class AdminJournal extends Model
             $rawTime = trim((string) ($row['event_time'] ?? ''));
         }
         $change = (string) $this->parseAmount($row['change_amount'] ?? ($row['raw_change'] ?? 0));
-        return $username . '|' . $rawTime . '|' . $change;
+        $sourceChannel = (string) SourceChannelHelper::normalize($row['source_channel'] ?? SourceChannelHelper::WEB);
+        return $username . '|' . $rawTime . '|' . $change . '|' . $sourceChannel;
     }
 
     /**

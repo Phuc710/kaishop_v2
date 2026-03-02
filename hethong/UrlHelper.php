@@ -31,7 +31,10 @@ class UrlHelper
      */
     public static function base($path = '')
     {
-        $cleanPath = ltrim($path, '/');
+        if (preg_match('~^(?:https?:)?//|^(?:data|blob):~i', (string) $path)) {
+            return $path;
+        }
+        $cleanPath = ltrim((string) $path, '/');
         return self::getBasePath() . ($cleanPath ? '/' . $cleanPath : '');
     }
 
@@ -40,6 +43,9 @@ class UrlHelper
      */
     public static function asset($path)
     {
+        if (preg_match('~^(?:https?:)?//|^(?:data|blob):~i', (string) $path)) {
+            return $path;
+        }
         return self::base(self::appendAssetVersion(ltrim((string) $path, '/')));
     }
 
@@ -121,6 +127,47 @@ class UrlHelper
     public static function is($path)
     {
         return self::current() === self::base($path);
+    }
+
+    /**
+     * Resolve site icon URL (favicon, logo, etc.)
+     * Handles both absolute URLs and relative paths correctly.
+     */
+    public static function resolveIcon($path, $default = '')
+    {
+        $cleanPath = trim((string) $path);
+        if ($cleanPath === '') {
+            return $default !== '' ? self::asset($default) : '';
+        }
+
+        // If it's already an absolute URL or data URI, return as is
+        if (preg_match('~^(?:https?:)?//|^(?:data|blob):~i', $cleanPath)) {
+            return $cleanPath;
+        }
+
+        // Otherwise, treat as relative asset path
+        return self::asset(ltrim($cleanPath, '/'));
+    }
+
+    /**
+     * Resolve favicon with specific fallback logic
+     */
+    public static function resolveFavicon($faviconSetting, $logoSetting = '')
+    {
+        // 1. Try Favicon setting
+        $resolved = self::resolveIcon($faviconSetting);
+        if ($resolved !== '') {
+            return $resolved;
+        }
+
+        // 2. Try Logo setting as fallback
+        $resolved = self::resolveIcon($logoSetting);
+        if ($resolved !== '') {
+            return $resolved;
+        }
+
+        // 3. Final default hardcoded (can be empty if strictly dynamic is required)
+        return self::asset('assets/images/kaishop_favicon.png');
     }
 }
 

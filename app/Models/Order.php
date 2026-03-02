@@ -358,13 +358,15 @@ class Order extends Model
 
             if ($this->balanceChangeService) {
                 try {
+                    $sourceChannel = SourceChannelHelper::fromOrderRow($order);
                     $this->balanceChangeService->record(
                         $userId,
                         $username !== '' ? $username : ('user#' . $userId),
                         $beforeBalance,
                         $price,
                         $afterBalance,
-                        'Hoan tien don bi huy: ' . (string) ($order['order_code'] ?? ('#' . $id))
+                        'Hoan tien don bi huy: ' . (string) ($order['order_code'] ?? ('#' . $id)),
+                        $sourceChannel
                     );
                 } catch (Throwable $e) {
                     // Non-blocking in refund flow.

@@ -55,6 +55,7 @@ class JournalController extends Controller
                 ['key' => 'time', 'label' => 'Thời gian', 'align' => 'center'],
                 ['key' => 'order_code', 'label' => 'Mã đơn', 'align' => 'center'],
                 ['key' => 'username', 'label' => 'Khách hàng', 'align' => 'center'],
+                ['key' => 'source', 'label' => 'Nguồn', 'align' => 'center'],
                 ['key' => 'product_name', 'label' => 'Sản phẩm', 'align' => 'center'],
                 ['key' => 'quantity', 'label' => 'SL', 'align' => 'center'],
                 ['key' => 'price', 'label' => 'Giá', 'align' => 'center'],
@@ -211,6 +212,7 @@ class JournalController extends Controller
             'columns' => [
                 ['key' => 'time', 'label' => 'Thời gian', 'align' => 'center'],
                 ['key' => 'username', 'label' => 'Khách Hàng', 'align' => 'center'],
+                ['key' => 'source', 'label' => 'Nguồn', 'align' => 'center'],
                 ['key' => 'reason', 'label' => 'Lý do', 'align' => 'center'],
                 ['key' => 'before_balance', 'label' => 'Số dư trước', 'align' => 'center'],
                 ['key' => 'change_balance', 'label' => 'Biến động', 'align' => 'center'],
@@ -240,6 +242,7 @@ class JournalController extends Controller
             'columns' => [
                 ['key' => 'time', 'label' => 'Thời gian', 'align' => 'center'],
                 ['key' => 'username', 'label' => 'Khách Hàng', 'align' => 'center'],
+                ['key' => 'source', 'label' => 'Nguồn', 'align' => 'center'],
                 ['key' => 'trans_id', 'label' => 'Mã GD', 'align' => 'center'],
                 ['key' => 'method', 'label' => 'Phương Thức', 'align' => 'center'],
                 ['key' => 'amount', 'label' => 'Thực Nhận', 'align' => 'center'],
@@ -270,11 +273,12 @@ class JournalController extends Controller
             'showSeverityFilter' => true,
             'columns' => [
                 ['key' => 'username', 'label' => 'TÊN USER', 'align' => 'center'],
+                ['key' => 'source', 'label' => 'Nguồn', 'align' => 'center'],
                 ['key' => 'severity', 'label' => 'Mức độ', 'align' => 'center'],
                 ['key' => 'time', 'label' => 'Thời gian', 'align' => 'center'],
                 ['key' => 'module', 'label' => 'Module', 'align' => 'center'],
                 ['key' => 'action', 'label' => 'Hành động', 'align' => 'center'],
-                ['key' => 'description', 'label' => 'Mô tả chi tiết', 'align' => 'center'],
+                ['key' => 'description', 'label' => 'Mô tả chi tiết', 'align' => 'left'],
                 ['key' => 'payload', 'label' => 'Payload', 'align' => 'center'],
             ],
             'rows' => $this->mapSystemLogRows($rawRows),
@@ -309,6 +313,10 @@ class JournalController extends Controller
         if (!in_array($orderStatus, ['all', 'pending', 'processing', 'completed', 'cancelled'], true)) {
             $orderStatus = 'all';
         }
+        $sourceChannel = trim((string) $this->get('source_channel', 'all'));
+        if (!in_array($sourceChannel, ['all', '0', '1'], true)) {
+            $sourceChannel = 'all';
+        }
 
         return [
             'search' => trim((string) $this->get('search', '')),
@@ -316,6 +324,7 @@ class JournalController extends Controller
             'time_range' => trim((string) $this->get('time_range', '')),
             'date_filter' => $this->normalizeDateFilter((string) $this->get('date_filter', 'all')),
             'order_status' => $orderStatus,
+            'source_channel' => $sourceChannel,
         ];
     }
 
@@ -381,6 +390,7 @@ class JournalController extends Controller
                 'time' => $this->formatTimeCell($row['event_time'] ?? null, $row['raw_time'] ?? null),
                 'order_code' => '<span class="badge bg-light text-dark border font-weight-bold" style="font-family:monospace;">' . htmlspecialchars($shortOrderCode !== '' ? $shortOrderCode : $rawOrderCode) . '</span>',
                 'username' => '<a href="' . url('admin/users/edit/' . urlencode($username)) . '" class="font-weight-bold text-dark">' . htmlspecialchars($username) . '</a>',
+                'source' => $this->formatSourceCell($row['source_channel'] ?? null),
                 'product_name' => '<span class="font-weight-500 text-dark">' . htmlspecialchars(trim((string) ($row['product_name'] ?? '--'))) . '</span>',
                 'quantity' => '<span class="badge bg-light text-dark border">' . $quantity . '</span>',
                 'price' => $priceFormatted,
@@ -405,6 +415,7 @@ class JournalController extends Controller
             $output[] = [
                 'time' => $this->formatTimeCell($row['event_time'] ?? null, $row['raw_time'] ?? null),
                 'username' => '<a href="' . url('admin/users/edit/' . urlencode($username)) . '" class="font-weight-bold text-dark">' . htmlspecialchars($username) . '</a>',
+                'source' => $this->formatSourceCell($row['source_channel'] ?? null),
                 'reason' => trim((string) ($row['reason_text'] ?? ($row['reason'] ?? '--'))) ?: '--',
                 'before_balance' => FormatHelper::initialBalance($row['before_balance'] ?? null),
                 'change_balance' => FormatHelper::balanceChange($row['change_amount'] ?? ($row['raw_change'] ?? null)),
@@ -444,6 +455,7 @@ class JournalController extends Controller
             $output[] = [
                 'time' => $this->formatTimeCell($row['event_time'] ?? null, $row['raw_time'] ?? null),
                 'username' => '<a href="' . url('admin/users/edit/' . urlencode($username)) . '" class="font-weight-bold text-dark">' . htmlspecialchars($username) . '</a>',
+                'source' => $this->formatSourceCell($row['source_channel'] ?? null),
                 'trans_id' => '<span class="font-weight-500 text-monospace">' . htmlspecialchars($row['trans_id'] ?? '--') . '</span>',
                 'method' => '<span class="badge bg-light text-dark border">' . htmlspecialchars($method) . '</span>',
                 'amount' => FormatHelper::balanceChange($amountVal),
@@ -465,6 +477,7 @@ class JournalController extends Controller
         foreach ($rows as $log) {
             $log = $this->normalizeSystemLogRow($log);
             $displayUser = trim((string) $log['username']);
+            $sourceChannel = $this->resolveSystemLogSourceChannel($log);
 
             // Try extracting from payload if username is empty (e.g for login/register actions)
             if ($displayUser === '' && !empty($log['payload'])) {
@@ -502,6 +515,7 @@ class JournalController extends Controller
 
             $output[] = [
                 'time' => $this->formatTimeCell($log['created_at'], $log['created_at']),
+                'source' => $this->formatSourceCell($sourceChannel),
                 'severity' => $severityLabel,
                 'module' => $moduleLabel,
                 'username' => $username,
@@ -522,7 +536,11 @@ class JournalController extends Controller
     {
         foreach (['username', 'module', 'action', 'description', 'ip_address'] as $field) {
             if (isset($log[$field]) && is_string($log[$field])) {
-                $log[$field] = $this->normalizeMojibakeText($log[$field]);
+                if ($field === 'description') {
+                    $log[$field] = $this->normalizeDescriptionText($log[$field]);
+                } else {
+                    $log[$field] = $this->normalizeMojibakeText($log[$field]);
+                }
             }
         }
 
@@ -561,10 +579,73 @@ class JournalController extends Controller
         return trim($text);
     }
 
+    private function normalizeDescriptionText(string $text): string
+    {
+        $text = trim($text);
+        if ($text === '') {
+            return '';
+        }
+
+        $replacements = [
+            'Mua san pham thanh cong' => 'Mua sản phẩm thành công',
+            'Mua san pham that bai' => 'Mua sản phẩm thất bại',
+            'Admin giao noi dung don pending' => 'Admin giao nội dung đơn pending',
+            'Admin huy don pending va hoan tien' => 'Admin huỷ đơn pending và hoàn tiền',
+            'SePay webhook called but sepay_api_key is not configured' => 'Webhook SePay được gọi nhưng chưa cấu hình sepay_api_key',
+            'SePay webhook: invalid API key' => 'Webhook SePay: API key không hợp lệ',
+            'SePay webhook: no deposit code found' => 'Webhook SePay: không tìm thấy mã nạp tiền',
+            'SePay webhook: deposit code not found in DB' => 'Webhook SePay: không tìm thấy mã nạp trong cơ sở dữ liệu',
+            'SePay webhook: Payment received for EXPIRED deposit' => 'Webhook SePay: nhận tiền cho giao dịch nạp đã hết hạn',
+            'SePay webhook: amount mismatch' => 'Webhook SePay: số tiền không khớp',
+            'Nap tien SePay' => 'Nạp tiền SePay',
+            'thanh cong' => 'thành công',
+            'that bai' => 'thất bại',
+            'hoan tien' => 'hoàn tiền',
+            'don pending' => 'đơn pending',
+            'noi dung' => 'nội dung',
+        ];
+
+        return strtr($text, $replacements);
+    }
+
     private function formatUsername(string $username): string
     {
         $name = trim($username);
         return $name !== '' ? $name : '--';
+    }
+
+    /**
+     * @param mixed $value
+     */
+    private function formatSourceCell($value): string
+    {
+        $channel = SourceChannelHelper::normalize($value);
+        $label = SourceChannelHelper::label($channel);
+        $badgeClass = $channel === SourceChannelHelper::BOTTELE
+            ? 'badge badge-pill badge-soft-success'
+            : 'badge bg-light text-dark border';
+
+        return '<span style="display:none;">' . $channel . '</span><span class="' . $badgeClass . '">' . htmlspecialchars($label) . '</span>';
+    }
+
+    /**
+     * @param array<string,mixed> $log
+     */
+    private function resolveSystemLogSourceChannel(array $log): int
+    {
+        if (array_key_exists('source_channel', $log)) {
+            return SourceChannelHelper::normalize($log['source_channel']);
+        }
+        if (array_key_exists('source_channel_resolved', $log)) {
+            return SourceChannelHelper::normalize($log['source_channel_resolved']);
+        }
+
+        return SourceChannelHelper::fromSystemLogContext(
+            (string) ($log['module'] ?? ''),
+            (string) ($log['action'] ?? ''),
+            $log['payload'] ?? null,
+            $_SERVER
+        );
     }
 
     private function normalizePerPage(int $value): int

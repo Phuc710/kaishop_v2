@@ -14,15 +14,6 @@
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>
     <title> Trang Chủ | <?= $chungapi['ten_web']; ?></title>
     <style>
-        .ds-category-title {
-            width: 100% !important;
-            background-color: #0d6efd !important;
-            color: #fff !important;
-            padding: 10px 16px;
-            border-radius: 6px;
-            text-align: center;
-        }
-
         .category-section-wrapper.d-none {
             display: none !important;
         }
@@ -30,16 +21,19 @@
 </head>
 
 <body> <?php require __DIR__ . '/../../hethong/nav.php'; ?>
-    <main class="pb-5">
+    <main>
         <div class="container py-4 home-main-content">
             <!-- Premium Hero Banner -->
-            <div class="home-hero-banner mb-5">
-                <div class="hero-content">
-                    <h1>Khám phá Kho <span class="text-warning">Mã Nguồn</span> & Dịch Vụ Số</h1>
-                    <p>Giải pháp công nghệ chuyên nghiệp cho doanh nghiệp và cá nhân. Cam kết chất lượng, bảo hành 24/7.
-                    </p>
+            <?php if (!empty($chungapi['home_hero_html'])): ?>
+                <?= $chungapi['home_hero_html'] ?>
+            <?php else: ?>
+                <div class="home-hero-banner mb-5">
+                    <div class="hero-content">
+                        <h1>Khám phá Kho <span class="text-warning">Mã Nguồn</span> & Dịch Vụ Số</h1>
+                        <p>Giải pháp công nghệ chuyên nghiệp cho doanh nghiệp và cá nhân. Cam kết chất lượng, bảo hành 24/7.</p>
+                    </div>
                 </div>
-            </div>
+            <?php endif; ?>
 
             <!-- Smart Category Navigation -->
             <div class="section-title-row mb-3 mt-5">
@@ -49,11 +43,11 @@
                 <div class="category-nav-scroll">
                     <?php if (isset($is_category_page) && $is_category_page): ?>
                         <a href="<?= url('') ?>" class="category-pill">
-                            <i class="fas fa-border-all"></i> Tất cả
+                            <i class="fas fa-border-all"></i> <span>Tất cả</span>
                         </a>
                     <?php else: ?>
                         <a href="#" class="category-pill active" data-filter="all">
-                            <i class="fas fa-border-all"></i> Tất cả
+                            <i class="fas fa-border-all"></i> <span>Tất cả</span>
                         </a>
                     <?php endif; ?>
 
@@ -62,7 +56,7 @@
                             <a href="#cat-<?= $cat['id'] ?>"
                                 class="category-pill <?= (isset($is_category_page) && $is_category_page) ? 'active' : '' ?>"
                                 data-filter="cat-wrap-<?= $cat['id'] ?>">
-                                <i class="fas fa-tags"></i> <?= htmlspecialchars($cat['name']) ?>
+                                <i class="fas fa-tags"></i> <span><?= htmlspecialchars($cat['name']) ?></span>
                             </a>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -76,7 +70,7 @@
                         <?php if (!empty($productsByCategory[$category['id']])): ?>
                             <div class="category-section-wrapper" id="cat-wrap-<?= $category['id'] ?>">
                                 <div id="cat-<?= $category['id'] ?>" class="ds-section-header mt-5 mb-4">
-                                    <div class="d-flex align-items-center justify-content-center">
+                                    <div class="d-flex align-items-center">
                                         <h3 class="ds-category-title mb-0"><?= htmlspecialchars($category['name']) ?></h3>
                                     </div>
                                 </div>
@@ -109,9 +103,7 @@
                                             class="ds-card <?= $is_offline ? 'offline' : '' ?>">
                                             <div class="ds-card-img-wrap">
                                                 <img src="<?= $product['image'] ?>" class="ds-card-img" alt="<?= $product['name'] ?>"
-                                                    loading="lazy"
-                                                    decoding="async"
-                                                    fetchpriority="low">
+                                                    loading="lazy" decoding="async" fetchpriority="low">
                                                 <?php if ($badge_text): ?>
                                                     <div class="ds-badge <?= $badge ?>"><?= htmlspecialchars($badge_text) ?></div>
                                                 <?php endif; ?>
@@ -175,6 +167,7 @@
         document.addEventListener('DOMContentLoaded', function () {
             const pills = document.querySelectorAll('.category-pill');
             const sections = document.querySelectorAll('.category-section-wrapper');
+            const cards = document.querySelectorAll('.ds-card');
 
             // Handle Active State on Click
             pills.forEach(pill => {
@@ -198,6 +191,38 @@
                             }
                         });
                     }
+                });
+            });
+
+            // Light click animation for product cards.
+            const clampPercent = (value) => Math.max(0, Math.min(100, value));
+            cards.forEach(card => {
+                const animateCardClick = (clientX, clientY) => {
+                    const rect = card.getBoundingClientRect();
+                    const x = rect.width > 0 ? ((clientX - rect.left) / rect.width) * 100 : 50;
+                    const y = rect.height > 0 ? ((clientY - rect.top) / rect.height) * 100 : 50;
+
+                    card.style.setProperty('--ripple-x', clampPercent(x) + '%');
+                    card.style.setProperty('--ripple-y', clampPercent(y) + '%');
+
+                    card.classList.remove('is-clicked');
+                    requestAnimationFrame(() => card.classList.add('is-clicked'));
+
+                    clearTimeout(card.__clickAnimTimer);
+                    card.__clickAnimTimer = setTimeout(() => {
+                        card.classList.remove('is-clicked');
+                    }, 220);
+                };
+
+                card.addEventListener('pointerdown', function (e) {
+                    if (e.pointerType === 'mouse' && e.button !== 0) return;
+                    animateCardClick(e.clientX, e.clientY);
+                }, { passive: true });
+
+                card.addEventListener('keydown', function (e) {
+                    if (e.key !== 'Enter') return;
+                    const rect = card.getBoundingClientRect();
+                    animateCardClick(rect.left + rect.width / 2, rect.top + rect.height / 2);
                 });
             });
         });

@@ -29,13 +29,10 @@ class DashboardController extends Controller
 
         if (!isset($user['level']) || $user['level'] != 9) {
             http_response_code(403);
-            die('Truy cập bị từ chối - Chỉ dành cho quản trị viên');
+            die('Truy cap bi tu choi - Chi danh cho quan tri vien');
         }
     }
 
-    /**
-     * Show admin dashboard
-     */
     public function index()
     {
         $this->requireAdmin();
@@ -50,11 +47,18 @@ class DashboardController extends Controller
 
         $userStats = $this->fetchUserStats();
         $revenueStats = $this->fetchRevenueStats($rangeMeta);
-        $channelBreakdown = $this->fetchChannelBreakdown($rangeMeta, (int) ($revenueStats['revenue_total'] ?? 0), (int) ($revenueStats['orders_sold'] ?? 0));
+
+        $prevRangeMeta = $this->resolvePreviousRangeMeta($rangeKey, $rangeMeta);
+        $prevRevenueStats = $this->fetchRevenueStats($prevRangeMeta);
+
+        $channelBreakdown = $this->fetchChannelBreakdown($rangeMeta, (int) ($revenueStats['spend_total'] ?? 0), (int) ($revenueStats['orders_sold'] ?? 0));
         $chartData = $this->buildRevenueChartData($rangeKey, $rangeMeta);
         $topProducts = $this->fetchTopProducts($rangeMeta, 12);
         $recentOrders = $this->fetchRecentOrders($rangeMeta, 20);
         $recentDeposits = $this->fetchRecentDeposits($rangeMeta, 20);
+
+        $lowStockProducts = $this->fetchLowStockProducts(10);
+        $topSpenders = $this->fetchTopSpenders($rangeMeta, 10);
 
         $this->view('admin/dashboard', [
             'chungapi' => $chungapi,
@@ -66,18 +70,21 @@ class DashboardController extends Controller
             'totalProducts' => (int) ($userStats['total_products'] ?? 0),
             'totalUserDeposited' => (int) ($userStats['total_user_deposit'] ?? 0),
             'revenueStats' => $revenueStats,
+            'prevRevenueStats' => $prevRevenueStats,
             'channelBreakdown' => $channelBreakdown,
             'chartData' => $chartData,
             'topProducts' => $topProducts,
             'recentOrders' => $recentOrders,
             'recentDeposits' => $recentDeposits,
+            'lowStockProducts' => $lowStockProducts,
+            'topSpenders' => $topSpenders,
         ]);
     }
 
     private function normalizeRange(string $range): string
     {
         $range = strtolower(trim($range));
-        $allowed = ['all', 'today', 'week', 'month', 'quarter'];
+        $allowed = ['all', 'today', 'week', 'month', 'quarter', 'year'];
         return in_array($range, $allowed, true) ? $range : 'all';
     }
 
@@ -96,7 +103,7 @@ class DashboardController extends Controller
 
         switch ($range) {
             case 'today':
-                $label = 'Today';
+                $label = 'Hôm nay';
                 $start = $now->setTime(0, 0, 0);
                 break;
             case 'week':
@@ -112,6 +119,10 @@ class DashboardController extends Controller
                 $month = (int) $now->format('n');
                 $quarterStartMonth = (int) (floor(($month - 1) / 3) * 3) + 1;
                 $start = $now->setDate((int) $now->format('Y'), $quarterStartMonth, 1)->setTime(0, 0, 0);
+                break;
+            case 'year':
+                $label = 'Năm này';
+                $start = $now->setDate((int) $now->format('Y'), 1, 1)->setTime(0, 0, 0);
                 break;
             default:
                 $label = 'Tất cả';
@@ -181,6 +192,9 @@ class DashboardController extends Controller
     private function fetchRevenueStats(array $rangeMeta): array
     {
         $stats = [
+            'spend_total' => 0,
+            'spend_web' => 0,
+            'spend_telegram' => 0,
             'revenue_total' => 0,
             'revenue_web' => 0,
             'revenue_telegram' => 0,
@@ -188,6 +202,7 @@ class DashboardController extends Controller
             'orders_all' => 0,
             'deposit_total' => 0,
             'deposit_count' => 0,
+            'net_flow' => 0,
         ];
 
         try {
@@ -207,9 +222,9 @@ class DashboardController extends Controller
 
                 $sql = "
                     SELECT
-                        COALESCE(SUM(CASE WHEN {$soldCondition} THEN o.`price` ELSE 0 END), 0) AS revenue_total,
-                        COALESCE(SUM(CASE WHEN {$soldCondition} AND {$webCondition} THEN o.`price` ELSE 0 END), 0) AS revenue_web,
-                        COALESCE(SUM(CASE WHEN {$soldCondition} AND {$telegramCondition} THEN o.`price` ELSE 0 END), 0) AS revenue_telegram,
+                        COALESCE(SUM(CASE WHEN {$soldCondition} THEN o.`price` ELSE 0 END), 0) AS spend_total,
+                        COALESCE(SUM(CASE WHEN {$soldCondition} AND {$webCondition} THEN o.`price` ELSE 0 END), 0) AS spend_web,
+                        COALESCE(SUM(CASE WHEN {$soldCondition} AND {$telegramCondition} THEN o.`price` ELSE 0 END), 0) AS spend_telegram,
                         SUM(CASE WHEN {$soldCondition} THEN 1 ELSE 0 END) AS orders_sold,
                         COUNT(*) AS orders_all
                     FROM `orders` o
@@ -218,9 +233,9 @@ class DashboardController extends Controller
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute($params);
                 $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
-                $stats['revenue_total'] = (int) ($row['revenue_total'] ?? 0);
-                $stats['revenue_web'] = (int) ($row['revenue_web'] ?? 0);
-                $stats['revenue_telegram'] = (int) ($row['revenue_telegram'] ?? 0);
+                $stats['spend_web'] = (int) ($row['spend_web'] ?? 0);
+                $stats['spend_telegram'] = (int) ($row['spend_telegram'] ?? 0);
+                $stats['spend_total'] = $stats['spend_web'] + $stats['spend_telegram'];
                 $stats['orders_sold'] = (int) ($row['orders_sold'] ?? 0);
                 $stats['orders_all'] = (int) ($row['orders_all'] ?? 0);
             }
@@ -245,6 +260,12 @@ class DashboardController extends Controller
                 $stats['deposit_total'] = (int) ($row['deposit_total'] ?? 0);
                 $stats['deposit_count'] = (int) ($row['deposit_count'] ?? 0);
             }
+
+            // Keep legacy keys for backward compatibility in old views/widgets.
+            $stats['revenue_total'] = $stats['spend_total'];
+            $stats['revenue_web'] = $stats['spend_web'];
+            $stats['revenue_telegram'] = $stats['spend_telegram'];
+            $stats['net_flow'] = $stats['deposit_total'] - ($stats['spend_web'] + $stats['spend_telegram']);
         } catch (Throwable $e) {
             // Non-blocking dashboard fallback.
         }
@@ -269,7 +290,7 @@ class DashboardController extends Controller
             ],
             [
                 'channel_key' => 'telegram',
-                'channel_label' => 'Bot Telegram',
+                'channel_label' => 'Telegram Bot',
                 'orders_count' => 0,
                 'revenue_total' => 0,
                 'orders_ratio' => 0,
@@ -372,7 +393,7 @@ class DashboardController extends Controller
                 FROM `orders` o
                 {$whereSql}
                 GROUP BY o.`product_name`
-                ORDER BY revenue_total DESC, orders_count DESC
+                ORDER BY quantity_total DESC, orders_count DESC, revenue_total DESC
                 LIMIT {$limit}
             ";
 
@@ -421,7 +442,7 @@ class DashboardController extends Controller
                 "o.`price`",
                 $this->hasColumn('orders', 'quantity') ? "o.`quantity`" : "1 AS quantity",
                 $this->hasColumn('orders', 'status') ? "o.`status`" : "'completed' AS status",
-                $this->hasColumn('orders', 'source') ? "o.`source`" : "'web' AS source",
+                $this->hasColumn('orders', 'source') ? "o.`source`" : "'0' AS source",
                 $this->hasColumn('orders', 'telegram_id') ? "o.`telegram_id`" : "NULL AS telegram_id",
                 $this->hasColumn('orders', 'created_at') ? "o.`created_at`" : "NULL AS created_at",
             ];
@@ -446,7 +467,7 @@ class DashboardController extends Controller
                 $row['source'] = trim((string) ($row['source'] ?? ''));
                 $row['telegram_id'] = (int) ($row['telegram_id'] ?? 0);
                 $row['channel_key'] = $this->isTelegramOrderRow($row) ? 'telegram' : 'web';
-                $row['channel_label'] = $row['channel_key'] === 'telegram' ? 'Bot Telegram' : 'Web';
+                $row['channel_label'] = $row['channel_key'] === 'telegram' ? 'Telegram Bot' : 'Web';
                 $row['status_label'] = $this->formatOrderStatusLabel($row['status']);
                 $row['created_display'] = $this->formatDashboardDateTime($row['created_at'] ?? '');
             }
@@ -574,10 +595,12 @@ class DashboardController extends Controller
                     if ($day === '') {
                         continue;
                     }
+                    $revenueWeb = (int) ($row['revenue_web'] ?? 0);
+                    $revenueTelegram = (int) ($row['revenue_telegram'] ?? 0);
                     $dataMap[$day] = [
-                        'revenue_total' => (int) ($row['revenue_total'] ?? 0),
-                        'revenue_web' => (int) ($row['revenue_web'] ?? 0),
-                        'revenue_telegram' => (int) ($row['revenue_telegram'] ?? 0),
+                        'revenue_total' => $revenueWeb + $revenueTelegram,
+                        'revenue_web' => $revenueWeb,
+                        'revenue_telegram' => $revenueTelegram,
                         'deposit_total' => 0,
                     ];
                 }
@@ -670,7 +693,7 @@ class DashboardController extends Controller
         if ($rangeKey === 'all') {
             $start = $now->modify('-29 days')->setTime(0, 0, 0);
             $end = $now;
-            return [$start, $end, '30 ngày gần nhất'];
+            return [$start, $end, '30 ngay gan nhat'];
         }
 
         $startRaw = trim((string) ($rangeMeta['start_sql'] ?? ''));
@@ -710,10 +733,10 @@ class DashboardController extends Controller
     {
         $parts = [];
         if ($this->hasColumn('orders', 'source')) {
-            $parts[] = "{$alias}.`source` = 'telegram'";
+            $parts[] = "COALESCE(LOWER(TRIM(CAST({$alias}.`source` AS CHAR))), '') IN ('telegram','tele','telebot','bot','tg','1')";
         }
         if ($this->hasColumn('orders', 'telegram_id')) {
-            $parts[] = "({$alias}.`telegram_id` IS NOT NULL AND {$alias}.`telegram_id` > 0)";
+            $parts[] = "(COALESCE({$alias}.`telegram_id`, 0) > 0)";
         }
 
         if (empty($parts)) {
@@ -740,8 +763,12 @@ class DashboardController extends Controller
      */
     private function isTelegramOrderRow(array $row): bool
     {
-        $source = strtolower(trim((string) ($row['source'] ?? '')));
-        if ($source === 'telegram') {
+        $sourceRaw = trim((string) ($row['source'] ?? ''));
+        $source = strtolower($sourceRaw);
+        if (
+            in_array($source, ['telegram', 'tele', 'telebot', 'bot', 'tg', '1'], true)
+            || (is_numeric($sourceRaw) && (int) $sourceRaw === 1)
+        ) {
             return true;
         }
         return (int) ($row['telegram_id'] ?? 0) > 0;
@@ -788,6 +815,98 @@ class DashboardController extends Controller
             'pending' => 'Pending',
             default => $status !== '' ? strtoupper($status) : '--',
         };
+    }
+
+    private function resolvePreviousRangeMeta(string $rangeKey, array $rangeMeta): array
+    {
+        $startSql = $rangeMeta['start_sql'] ?? null;
+        $endSql = $rangeMeta['end_sql'] ?? null;
+
+        try {
+            $tz = new DateTimeZone($this->timeService ? $this->timeService->getDbTimezone() : date_default_timezone_get());
+            if (!$startSql || !$endSql) {
+                // For 'all', compare last 30 days vs 30 days before that
+                $now = $this->timeService ? $this->timeService->nowDateTime($this->timeService->getDbTimezone()) : new DateTimeImmutable('now', $tz);
+                $prevEnd = $now->modify('-30 days')->setTime(23, 59, 59);
+                $prevStart = $prevEnd->modify('-30 days')->setTime(0, 0, 0);
+            } else {
+                $start = new DateTimeImmutable($startSql, $tz);
+                $end = new DateTimeImmutable($endSql, $tz);
+                $diff = $start->diff($end);
+
+                // Subtract the duration from the current start to get the previous end
+                $prevEnd = $start->modify('-1 second');
+                // To get previous start, we need to handle the interval carefully
+                $prevStart = $prevEnd->sub($diff);
+            }
+
+            return [
+                'start_sql' => $prevStart->format('Y-m-d H:i:s'),
+                'end_sql' => $prevEnd->format('Y-m-d H:i:s'),
+            ];
+        } catch (Throwable $e) {
+            return ['start_sql' => null, 'end_sql' => null];
+        }
+    }
+
+    private function fetchLowStockProducts(int $limit = 10): array
+    {
+        if (!$this->tableExists('products')) {
+            return [];
+        }
+
+        try {
+            $sql = "
+                SELECT p.id, p.name, 
+                       COALESCE(s.available, 0) as available_count,
+                       p.product_type
+                FROM products p
+                LEFT JOIN (
+                    SELECT product_id, COUNT(*) as available 
+                    FROM product_stock 
+                    WHERE status = 'available' 
+                    GROUP BY product_id
+                ) s ON p.id = s.product_id
+                WHERE p.status = 'ON'
+                  AND (
+                    (p.product_type = 'account' AND COALESCE(s.available, 0) < 5)
+                    OR (p.product_type = 'link' AND 0 < 0) -- links don't have stock
+                  )
+                ORDER BY available_count ASC
+                LIMIT " . (int) $limit;
+            return $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (Throwable $e) {
+            return [];
+        }
+    }
+
+    private function fetchTopSpenders(array $rangeMeta, int $limit = 10): array
+    {
+        if (!$this->tableExists('orders')) {
+            return [];
+        }
+
+        try {
+            $params = [];
+            $whereSql = "WHERE o.status IN ('pending','processing','completed')";
+            if ($this->hasColumn('orders', 'created_at')) {
+                $whereSql .= $this->buildRangeWhere('o.created_at', $rangeMeta, $params, 'ts');
+            }
+
+            $sql = "
+                SELECT o.username, SUM(o.price) as total_spent, COUNT(*) as order_count
+                FROM orders o
+                {$whereSql}
+                GROUP BY o.username
+                ORDER BY total_spent DESC
+                LIMIT " . (int) $limit;
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (Throwable $e) {
+            return [];
+        }
     }
 
     private function tableExists(string $table): bool

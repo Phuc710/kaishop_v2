@@ -5,9 +5,6 @@
    ===================================================== */
 
 /* ── Product Container ────────────────────────────── */
-.ds-product-container {
-    /* wrapper cho toàn bộ sản phẩm ở homepage */
-}
 
 /* ── Product Grid ─────────────────────────────────── */
 .ds-product-grid {
@@ -22,7 +19,7 @@
     background: #fff;
     border-radius: 12px !important;
     overflow: hidden;
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.22s ease, border-color 0.22s ease;
     border: 1px solid #ebebeb !important;
     margin-bottom: 0 !important;
     /* reset styles.css .card margin */
@@ -33,6 +30,23 @@
     cursor: pointer;
     text-decoration: none;
     color: inherit;
+    will-change: transform;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.ds-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%),
+            rgba(255, 105, 0, 0.18) 0%,
+            rgba(255, 105, 0, 0.1) 20%,
+            rgba(255, 105, 0, 0) 58%);
+    opacity: 0;
+    transform: scale(0.96);
+    transition: opacity 0.24s ease, transform 0.24s ease;
 }
 
 .ds-card:hover,
@@ -44,23 +58,38 @@
     /* prevent styles.css a:hover color */
 }
 
+.ds-card:active {
+    transform: translateY(-1px) scale(0.988);
+    box-shadow: 0 7px 18px rgba(0, 0, 0, 0.11);
+}
+
+.ds-card.is-clicked {
+    transform: translateY(-1px) scale(0.99);
+}
+
+.ds-card.is-clicked::after {
+    opacity: 1;
+    transform: scale(1);
+}
+
 /* ── Card Image Wrapper ───────────────────────────── */
 .ds-card-img-wrap {
     position: relative;
     width: 100%;
-    padding-top: 56.25%;
-    /* 16:9 */
+    aspect-ratio: 16 / 9;
     background: #f5f5f5;
     flex-shrink: 0;
+    overflow: hidden;
 }
 
 .ds-card-img {
-    position: absolute;
-    inset: 0;
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
+
+
 
 /* ── Badges ───────────────────────────────────────── */
 .ds-badge {
@@ -189,16 +218,24 @@
 }
 
 /* ── Section Header ───────────────────────────────── */
-.ds-section-header {
-    /* spacing handled by mt-5 mb-4 */
-}
 
 .ds-category-title {
-    font-size: 1.15rem !important;
-    /* beat global h3 rule */
+    font-size: 1.25rem !important;
     font-weight: 700 !important;
-    color: #1a1a2e !important;
+    color: #1e293b !important;
     margin: 0 !important;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ds-category-title::before {
+    content: "";
+    display: inline-block;
+    width: 4px;
+    height: 24px;
+    background: #ff6900;
+    border-radius: 2px;
 }
 
 /* ── Category Nav Pills ───────────────────────────── */
@@ -210,7 +247,11 @@
     display: flex;
     gap: 8px;
     overflow-x: auto;
-    padding-bottom: 6px;
+    padding: 20px 4px 28px;
+    /* Increased vertical padding to prevent clipping */
+    margin-top: -20px;
+    margin-bottom: -15px;
+    /* Adjusting margins accordingly */
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
@@ -222,23 +263,39 @@
 .category-pill {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 7px 16px;
-    border-radius: 999px;
-    font-size: 13px;
+    gap: 8px;
+    padding: 10px 20px;
+    /* Increased vertical padding to make pills taller */
+    border-radius: 12px;
+    font-size: 14px;
     font-weight: 600;
     white-space: nowrap;
-    background: #f1f5f9;
-    color: #475569;
+    background: #ffffff;
+    color: #000;
     border: 1px solid #e2e8f0;
     text-decoration: none;
-    transition: background 0.18s, color 0.18s, border-color 0.18s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    max-width: 200px;
+}
+
+.category-pill i {
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+.category-pill span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .category-pill:hover {
-    background: #e2e8f0;
-    color: #1e293b;
+    background: #f8fafc;
+    color: #0f172a;
+    border-color: #b6c0cc;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     text-decoration: none;
 }
 
@@ -246,43 +303,57 @@
     background: #ff6900;
     color: #fff;
     border-color: #ff6900;
+    box-shadow: 0 4px 12px rgba(255, 105, 0, 0.25);
+}
+
+.category-pill.active i {
+    opacity: 1;
 }
 
 /* ── Hero Banner ──────────────────────────────────── */
 .home-hero-banner {
-    background: #0f172a;
-    /* Solid dark background */
-    border-radius: 16px;
-    padding: 48px 40px;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    border-radius: 24px;
+    padding: 60px 50px;
     color: #fff;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-/* Removed linear-gradient glow */
-.home-hero-banner::before {
-    display: none;
+.home-hero-banner::after {
+    content: "";
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(255, 105, 0, 0.15) 0%, rgba(255, 105, 0, 0) 70%);
+    z-index: 0;
+    border-radius: 50%;
 }
 
 .hero-content {
     position: relative;
     z-index: 1;
-    max-width: 600px;
+    max-width: 650px;
 }
 
 .hero-content h1 {
-    font-size: clamp(1.6rem, 3.5vw, 2.4rem) !important;
-    font-weight: 800 !important;
+    font-size: clamp(2rem, 4vw, 2.8rem) !important;
+    font-weight: 850 !important;
     color: #fff !important;
-    line-height: 1.25;
-    margin-bottom: 14px !important;
+    line-height: 1.1;
+    margin-bottom: 20px !important;
+    letter-spacing: -0.02em;
 }
 
 .hero-content p {
-    font-size: 1rem;
-    color: rgba(255, 255, 255, 0.75);
-    line-height: 1.7;
+    font-size: 1.125rem;
+    color: rgba(226, 232, 240, 0.9);
+    line-height: 1.6;
     margin: 0;
+    font-weight: 400;
 }
 
 /* ── Section Title Row ────────────────────────────── */
@@ -314,6 +385,14 @@
 
     .home-hero-banner {
         padding: 32px 20px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .ds-card,
+    .ds-card::after {
+        transition: none !important;
     }
 }
 

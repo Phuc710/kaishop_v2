@@ -21,10 +21,12 @@
     max-width: 1300px;
     margin: 0 auto;
 }
+
 * {
     font-family: 'Signika', sans-serif;
     letter-spacing: 0.5px;
 }
+
 /* ── PAGE SHELL ──────────────────────────────────────── */
 .user-page-main {
     min-height: 60vh;
@@ -41,7 +43,7 @@
 /* PC only: padding lớn hơn */
 @media (min-width: 768px) {
     .user-page-section {
-        padding-top: 80px;
+        padding-top: 60px;
         padding-bottom: 64px;
     }
 }
@@ -129,9 +131,11 @@
 .profile-card-body {
     padding: 24px;
 }
+
 .pt-0 {
     padding-top: 0 !important;
 }
+
 /* ── STAT BOXES (Ví của tôi) ─────────────────────────── */
 .stat-box {
     padding: 20px;
@@ -1102,12 +1106,6 @@
     text-decoration: none;
 }
 
-/* Shared auth page shell (login/register/forgot/reset/otp) */
-.auth-page-section {
-    padding-top: 36px !important;
-    padding-bottom: 56px !important;
-}
-
 .auth-page-row {
     justify-content: center;
 }
@@ -1846,7 +1844,7 @@
     border-spacing: 0;
     margin: 0;
     font-family: 'Signika', sans-serif;
-    font-size: 13px;
+    font-size: 15px;
 }
 
 .user-history-table-wrap {
@@ -1891,7 +1889,7 @@
     color: #0f172a;
     border-bottom: 1px solid #e2e8f0 !important;
     font-weight: 700;
-    font-size: 13px;
+    font-size: 15px;
     text-transform: uppercase;
     letter-spacing: .02em;
 }
@@ -1910,7 +1908,7 @@
 .user-history-table tbody td a,
 .user-history-table tbody td button {
     font-family: 'Signika', sans-serif !important;
-    font-size: 13px !important;
+    font-size: 15px !important;
 }
 
 .user-history-table tbody tr:hover td {
@@ -1924,7 +1922,7 @@
 
 .user-time-plain {
     color: #000 !important;
-    font-size: 13px !important;
+    font-size: 15px !important;
     font-weight: 500;
     white-space: nowrap;
     cursor: help;
@@ -1960,7 +1958,7 @@
     padding: 0;
     font-weight: 700;
     font-family: 'Signika', sans-serif;
-    font-size: 13px;
+    font-size: 15px;
     cursor: pointer;
 }
 
@@ -1999,7 +1997,7 @@
     border: 1px solid #dbe3ee;
     background: #f8fafc;
     color: #334155;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 700;
     line-height: 1.2;
 }
@@ -2029,7 +2027,7 @@
 }
 
 .user-order-detail__value .user-order-status {
-    font-size: 12px;
+    font-size: 14px;
 }
 
 /* Fallback: support old history markup (<div class="small" style="color:#00ad5c">...) */
@@ -2042,7 +2040,7 @@
     border: 1px solid #facc15;
     background: #fffbeb;
     color: #b45309 !important;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 700;
     line-height: 1.2;
 }
@@ -2184,10 +2182,27 @@
     color: #1488c2;
     border: 1px solid #bae6fd;
 }
-.is-binance { color: #f3ba2f !important; }
 
-.is-binance-img { height: 22px !important; width: auto !important; }
-.dropdown-item img[src*='Binance_icon.svg'] { height: 22px !important; width: auto !important; }
+.is-binance {
+    color: #f3ba2f !important;
+}
 
-.user-card-badge__icon.is-binance-img { height: 22px !important; width: auto !important; margin-top: -1px; }
-.dropdown-menu .dropdown-item img { object-fit: contain; }
+.is-binance-img {
+    height: 22px !important;
+    width: auto !important;
+}
+
+.dropdown-item img[src*='Binance_icon.svg'] {
+    height: 22px !important;
+    width: auto !important;
+}
+
+.user-card-badge__icon.is-binance-img {
+    height: 22px !important;
+    width: auto !important;
+    margin-top: -1px;
+}
+
+.dropdown-menu .dropdown-item img {
+    object-fit: contain;
+}

@@ -44,9 +44,9 @@ if (!class_exists('Config')) {
             $defaults = [
                 'ten_web' => 'KaiShop',
                 'mo_ta' => 'Dịch vụ số chất lượng cao.',
-                'logo' => 'https://i.imgur.com/UCzMRwz.gif',
-                'logo_footer' => 'https://i.imgur.com/UCzMRwz.gif',
-                'favicon' => 'https://i.imgur.com/UCzMRwz.gif',
+                'logo' => 'assets/images/header_logo.gif',
+                'logo_footer' => 'assets/images/footer_logo.gif',
+                'favicon' => 'assets/images/kaishop_favicon.png',
                 'banner' => '',
                 'key_words' => '',
                 'sdt_admin' => '',
@@ -85,7 +85,17 @@ if (!class_exists('Config')) {
             try {
                 $result = $connection->query("SELECT * FROM setting LIMIT 1");
                 $row = $result ? ($result->fetch_assoc() ?: []) : [];
-                self::$siteConfigCache = array_merge($defaults, is_array($row) ? $row : []);
+
+                // Merge logic: only overwrite defaults with NON-EMPTY values from DB
+                $finalConfig = $defaults;
+                if (is_array($row)) {
+                    foreach ($row as $key => $val) {
+                        if (isset($val) && (string) $val !== '' && $val !== null) {
+                            $finalConfig[$key] = $val;
+                        }
+                    }
+                }
+                self::$siteConfigCache = $finalConfig;
             } catch (Throwable $e) {
                 self::$siteConfigCache = $defaults;
             }
