@@ -15,7 +15,6 @@ global $chungapi, $user;
 <head>
     <?php require_once dirname(__DIR__, 3) . '/admin/head.php'; ?>
     <title><?= htmlspecialchars($pageTitle ?? 'Admin Panel') ?> | Admin</title>
-    <?php require_once dirname(__DIR__, 3) . '/admin/nav.php'; ?>
 
     <?php if (isset($user['id'])): ?>
         <script src="<?= asset('assets/js/fingerprint.js') ?>" defer></script>
@@ -56,5 +55,6 @@ global $chungapi, $user;
 </head>
 
 <body class="hold-transition sidebar-mini layout-fixed">
+    <?php require_once dirname(__DIR__, 3) . '/admin/nav.php'; ?>
     <div class="wrapper">
         <div class="content-wrapper">

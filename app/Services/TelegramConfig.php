@@ -175,9 +175,9 @@ final class TelegramConfig
     /**
      * Purchase cooldown (giây)
      */
-    public static function buyCooldown(): int
+    public static function buyCooldown(): float
     {
-        return (int) get_setting('telegram_order_cooldown', self::BUY_COOLDOWN_DEFAULT);
+        return 1.5;
     }
 
     /**
@@ -188,6 +188,26 @@ final class TelegramConfig
     {
         $ttl = (int) get_setting('telegram_purchase_session_ttl', self::PURCHASE_SESSION_TTL_DEFAULT);
         return max(120, min(3600, $ttl));
+    }
+
+    /**
+     * Kiểm tra trạng thái bảo trì riêng của Bot Telegram
+     */
+    public static function isMaintenanceEnabled(): bool
+    {
+        return (int) get_setting('telegram_maintenance_enabled', 0) === 1;
+    }
+
+    /**
+     * Nội dung tin nhắn khi Bot đang bảo trì
+     */
+    public static function maintenanceMessage(): string
+    {
+        $msg = trim((string) get_setting('telegram_maintenance_message', ''));
+        if ($msg === '') {
+            return "🛠 <b>HỆ THỐNG ĐANG BẢO TRÌ</b>\nChúng tôi đang nâng cấp dịch vụ, vui lòng quay lại sau.";
+        }
+        return $msg;
     }
 
     /**

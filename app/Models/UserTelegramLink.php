@@ -76,7 +76,21 @@ class UserTelegramLink extends Model
                 `last_active` = ? 
                 WHERE `id` = ?";
         return $this->db->prepare($sql)->execute([$username, $firstName, $now, $existing['id']]);
+    }
 
+    public function getAdoptionTrend(int $days = 7): array
+    {
+        $sql = "SELECT DATE(linked_at) as date, COUNT(*) as count 
+                FROM `{$this->table}` 
+                WHERE `linked_at` >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+                GROUP BY DATE(linked_at)
+                ORDER BY date ASC";
+        return $this->query($sql, [$days - 1])->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getTotalCount(): int
+    {
+        return (int) $this->query("SELECT COUNT(*) FROM `{$this->table}`")->fetchColumn();
     }
 }
 

@@ -150,10 +150,11 @@ return [
     ['POST', '/admin/telegram/sync', 'Admin\\TelegramAdminController@syncBotAction'],
     ['GET', '/admin/telegram/notification-channels', 'Admin\\TelegramAdminController@notificationChannels'],
     ['POST', '/admin/telegram/notification-channels/add', 'Admin\\TelegramAdminController@addChannelAction'],
+    ['POST', '/admin/telegram/notification-channels/update', 'Admin\\TelegramAdminController@updateChannelAction'],
     ['POST', '/admin/telegram/notification-channels/toggle', 'Admin\\TelegramAdminController@toggleChannelAction'],
     ['POST', '/admin/telegram/notification-channels/delete', 'Admin\\TelegramAdminController@deleteChannelAction'],
-    ['GET', '/admin/telegram/broadcast', 'Admin\\TelegramAdminController@broadcast'],
-    ['POST', '/admin/telegram/broadcast', 'Admin\\TelegramAdminController@broadcastAction'],
+    ['POST', '/admin/telegram/main-channel/alert', 'Admin\\TelegramAdminController@sendMainChannelAlertAction'],
+    ['POST', '/admin/telegram/broadcast/send', 'Admin\\TelegramAdminController@broadcastAction'],
     ['GET', '/admin/telegram/links', 'Admin\\TelegramAdminController@links'],
     ['POST', '/admin/telegram/links/unlink', 'Admin\\TelegramAdminController@unlinkAction'],
     ['GET', '/admin/telegram/outbox', 'Admin\\TelegramAdminController@outbox'],
@@ -161,9 +162,10 @@ return [
     ['POST', '/admin/telegram/outbox/delete', 'Admin\\TelegramAdminController@outboxDelete'],
     ['GET', '/admin/telegram/logs', 'Admin\\TelegramAdminController@logs'],
     ['GET', '/admin/telegram/orders', 'Admin\\TelegramAdminController@orders'],
+    ['GET', '/admin/telegram/terminal', 'Admin\\TelegramAdminController@terminal'],
+    ['GET', '/admin/telegram/terminal/poll', 'Admin\\TelegramAdminController@terminalPoll'],
 
     // ========== CANONICAL PRODUCT SLUG ROUTE ==========
     // Keep this near the end to avoid catching admin/api routes like /admin/users
     ['GET', '/{categorySlug}/{productSlug}', 'ProductController@showBySlug'],
 ];
-

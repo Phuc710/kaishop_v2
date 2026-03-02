@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 /**
  * Centralized navigation configuration (admin + public + user sidebar).
@@ -89,20 +89,9 @@ class NavConfig
                 'label' => 'Telegram Bot',
                 'children' => [
                     [
-                        'href' => self::buildUrl('admin/telegram'),
-                        'label' => 'Tổng quan',
-                        'active_prefixes' => [],
-                        'active_patterns' => ['#^/admin/telegram/?$#'],
-                    ],
-                    [
                         'href' => self::buildUrl('admin/telegram/settings'),
                         'label' => 'Cấu hình Bot',
                         'active_prefixes' => ['admin/telegram/settings'],
-                    ],
-                    [
-                        'href' => self::buildUrl('admin/telegram/broadcast'),
-                        'label' => 'Gửi thông báo',
-                        'active_prefixes' => ['admin/telegram/broadcast'],
                     ],
                     [
                         'href' => self::buildUrl('admin/telegram/links'),
@@ -115,14 +104,9 @@ class NavConfig
                         'active_prefixes' => ['admin/telegram/outbox'],
                     ],
                     [
-                        'href' => self::buildUrl('admin/telegram/logs'),
-                        'label' => 'Nhật ký hoạt động',
-                        'active_prefixes' => ['admin/telegram/logs'],
-                    ],
-                    [
-                        'href' => self::buildUrl('admin/telegram/orders'),
-                        'label' => 'Đơn hàng Telegram',
-                        'active_prefixes' => ['admin/telegram/orders'],
+                        'href' => self::buildUrl('admin/telegram/terminal'),
+                        'label' => '⚡ Bot Terminal',
+                        'active_prefixes' => ['admin/telegram/terminal'],
                     ],
                 ],
             ],

@@ -34,6 +34,12 @@
     --font-size: 0.875rem;
     /* ~13px */
     --transition: all 0.2s ease;
+
+    /* Telegram Premium Tokens */
+    --tg-primary: #0088cc;
+    --tg-secondary: #24292e;
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.4);
 }
 
 /* ──────────────────────────────────────────────

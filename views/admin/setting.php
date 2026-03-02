@@ -105,7 +105,7 @@ if ($telegramTokenStored !== '') {
         <div class="row">
             <div class="col-md-12">
                 <div class="card custom-card">
-                    <form id="form-general" class="form-horizontal" enctype="multipart/form-data">
+                    <form id="form-general" class="form-horizontal" enctype="multipart/form-data" method="post" action="<?= url('admin/setting/update') ?>">
                         <div class="card-header border-0">
                             <h3 class="card-title text-uppercase font-weight-bold">
                                 THÔNG TIN CƠ BẢN
@@ -287,7 +287,7 @@ if ($telegramTokenStored !== '') {
         <div class="row">
             <!-- SMTP SETTINGS -->
             <div class="col-lg-6">
-                <form id="form-smtp">
+                <form id="form-smtp" method="post" action="<?= url('admin/setting/update') ?>">
                     <div class="card custom-card">
                         <div class="card-header border-0">
                             <h3 class="card-title text-uppercase font-weight-bold">
@@ -329,7 +329,7 @@ if ($telegramTokenStored !== '') {
                 </form>
 
                 <!-- NOTIFICATION SETTINGS -->
-                <form id="form-notification">
+                <form id="form-notification" method="post" action="<?= url('admin/setting/update') ?>">
                     <div class="card custom-card mt-3">
                         <div class="card-header border-0">
                             <h3 class="card-title text-uppercase font-weight-bold">
@@ -372,7 +372,7 @@ if ($telegramTokenStored !== '') {
                     </div>
                 </form>
 
-                <form id="form-telegram">
+                <form id="form-telegram" method="post" action="<?= url('admin/setting/update') ?>">
                     <div class="card custom-card mt-3">
                         <div class="card-header border-0">
                             <h3 class="card-title text-uppercase font-weight-bold">
@@ -430,7 +430,7 @@ if ($telegramTokenStored !== '') {
 
             <!-- BANK & PROMO SETTINGS -->
             <div class="col-lg-6">
-                <form id="form-bank">
+                <form id="form-bank" method="post" action="<?= url('admin/setting/update') ?>">
                     <div class="card custom-card">
                         <div class="card-header border-0">
                             <h3 class="card-title text-uppercase font-weight-bold">
@@ -530,7 +530,7 @@ if ($telegramTokenStored !== '') {
                 </form>
 
                 <!-- MAINTENANCE SETTINGS -->
-                <form id="form-maintenance">
+                <form id="form-maintenance" method="post" action="<?= url('admin/setting/update') ?>">
                     <div class="card custom-card mt-3">
                         <div class="card-header border-0">
                             <h3 class="card-title text-uppercase font-weight-bold">BẢO TRÌ HỆ THỐNG</h3>

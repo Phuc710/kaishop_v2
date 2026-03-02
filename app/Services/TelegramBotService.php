@@ -144,6 +144,15 @@ class TelegramBotService
         // Cập nhật last_active + tạo shadow account nếu chưa có
         $this->upsertTelegramUser($message['from']);
 
+        // Ghi log terminal
+        $this->writeLog("[MSG] {$fromName} ({$telegramId}): {$text}", 'INFO', 'INCOMING', 'MESSAGE');
+
+        // 1. Kiểm tra trạng thái bảo trì (Chỉ áp dụng cho người dùng thường)
+        if (TelegramConfig::isMaintenanceEnabled() && !TelegramConfig::isAdmin($telegramId)) {
+            $this->telegram->sendTo($chatId, TelegramConfig::maintenanceMessage());
+            return;
+        }
+
         if (!str_starts_with($text, '/')) {
             if ($this->handleDepositAmountInput($chatId, $telegramId, $text)) {
                 return;
@@ -240,6 +249,12 @@ class TelegramBotService
         $messageId = (int) ($query['message']['message_id'] ?? 0);
 
         $this->upsertTelegramUser($query['from']);
+
+        // 1. Kiểm tra trạng thái bảo trì
+        if (TelegramConfig::isMaintenanceEnabled() && !TelegramConfig::isAdmin($telegramId)) {
+            $this->telegram->answerCallbackQuery($callbackId, "Hệ thống đang bảo trì, vui lòng thử lại sau.", true);
+            return;
+        }
 
         // Composite callbacks must be parsed before generic split('_')
         if (preg_match('/^buy_gift_(\d+)_(\d+)$/', $data, $m)) {
@@ -1648,29 +1663,31 @@ class TelegramBotService
             return;
         }
 
-        $action = strtolower(trim($args[0] ?? ''));
-        if (!in_array($action, ['on', 'off'], true)) {
-            $this->telegram->sendTo(
-                $chatId,
-                "🛠 <b>BẢO TRÌ HỆ THỐNG</b>\n\n"
-                . "<code>/maintenance on</code>  - Bật bảo trì\n"
-                . "<code>/maintenance off</code> - Tắt bảo trì"
-            );
+        $action = strtolower($args[0] ?? '');
+        if ($action !== 'on' && $action !== 'off') {
+            $status = TelegramConfig::isMaintenanceEnabled() ? "🔴 Đang BẬT" : "🟢 Đang TẮT";
+            $this->telegram->sendTo($chatId, "🛠 <b>BẢO TRÌ HỆ THỐNG</b>\nTrạng thái hiện tại: {$status}\n\nSử dụng:\n<code>/maintenance on</code> - Bật bảo trì toàn hệ thống\n<code>/maintenance off</code> - Tắt bảo trì toàn hệ thống");
             return;
         }
 
+        $svc = new MaintenanceService();
+        $db = $this->userModel->getConnection();
+
         try {
-            if (!class_exists('MaintenanceService')) {
-                $path = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2);
-                require_once $path . '/app/Services/MaintenanceService.php';
-            }
-            $svc = new MaintenanceService();
             if ($action === 'on') {
                 $svc->saveConfig(['maintenance_enabled' => '1']);
-                $this->telegram->sendTo($chatId, "🛠 <b>Đã bật bảo trì!</b>\nWebsite khóa và hiện trang bảo trì.");
+                // Đồng bộ luôn vào cài đặt bảo trì riêng của Bot (nếu có cột)
+                $db->prepare("UPDATE `setting` SET `telegram_maintenance_enabled` = 1 ORDER BY `id` ASC LIMIT 1")->execute();
+                Config::clearSiteConfigCache();
+
+                $this->telegram->sendTo($chatId, "🔧 <b>Đã bật bảo trì TOÀN HỆ THỐNG!</b>\nWebsite và Bot hiện đã tạm dừng phục vụ.");
             } else {
                 $svc->clearNow();
-                $this->telegram->sendTo($chatId, "✅ <b>Đã tắt bảo trì!</b>\nWebsite hoạt động bình thường.");
+                // Tắt luôn bảo trì Bot
+                $db->prepare("UPDATE `setting` SET `telegram_maintenance_enabled` = 0 ORDER BY `id` ASC LIMIT 1")->execute();
+                Config::clearSiteConfigCache();
+
+                $this->telegram->sendTo($chatId, "✅ <b>Đã tắt bảo trì TOÀN HỆ THỐNG!</b>\nWebsite và Bot đã hoạt động trở lại.");
             }
         } catch (Throwable $e) {
             $this->telegram->sendTo($chatId, "❌ Lỗi: " . $e->getMessage());
@@ -2055,5 +2072,24 @@ class TelegramBotService
         $timestamps[] = $now;
         @file_put_contents($file, json_encode($timestamps), LOCK_EX);
         return true;
+    }
+
+    /**
+     * Ghi log hoạt động Bot vào bảng telegram_logs (Terminal view).
+     * Silent fail — không bao giờ ném exception.
+     */
+    private function writeLog(
+        string $message,
+        string $level = 'INFO',
+        string $type = 'INCOMING',
+        string $category = 'GENERAL',
+        $data = null
+    ): void {
+        try {
+            $logModel = new TelegramLog();
+            $logModel->log($message, $level, $type, $category, $data);
+        } catch (Throwable $e) {
+            error_log('[TelegramBotService] writeLog failed: ' . $e->getMessage());
+        }
     }
 }

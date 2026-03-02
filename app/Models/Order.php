@@ -655,4 +655,16 @@ class Order extends Model
         $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
         return trim($value);
     }
+
+    public function getSourceTrend(int $days = 7): array
+    {
+        $sql = "SELECT DATE(created_at) as date,
+                       SUM(CASE WHEN source_channel = 1 THEN 1 ELSE 0 END) as tele_orders,
+                       SUM(CASE WHEN source_channel = 0 THEN 1 ELSE 0 END) as web_orders
+                FROM `{$this->table}`
+                WHERE `created_at` >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+                GROUP BY DATE(created_at)
+                ORDER BY date ASC";
+        return $this->query($sql, [$days - 1])->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

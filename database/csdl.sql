@@ -9,7 +9,7 @@ START TRANSACTION;
 SET FOREIGN_KEY_CHECKS = 0;
 
 
-CREATE TABLE `categories` (
+CREATE TABLE IF NOT EXISTS `categories` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `slug` varchar(100) DEFAULT NULL COMMENT 'URL slug',
@@ -25,7 +25,7 @@ CREATE TABLE `categories` (
   KEY `idx_categories_order` (`display_order`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE `banned_fingerprints` (
+CREATE TABLE IF NOT EXISTS `banned_fingerprints` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `fingerprint_hash` varchar(64) NOT NULL,
   `reason` text NULL,
@@ -40,7 +40,7 @@ CREATE TABLE `banned_fingerprints` (
   UNIQUE KEY `uniq_bf_hash` (`fingerprint_hash`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE `products` (
+CREATE TABLE IF NOT EXISTS `products` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `slug` varchar(255) DEFAULT NULL COMMENT 'URL slug (auto-gen từ tên)',
@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS `orders` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
-CREATE TABLE `gift_code` (
+CREATE TABLE IF NOT EXISTS `gift_code` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `giftcode` varchar(100) NOT NULL,
   `giamgia` int(11) NOT NULL DEFAULT 0,
@@ -150,7 +150,7 @@ CREATE TABLE `gift_code` (
   KEY `idx_gift_code_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE `lich_su_mua_code` (
+CREATE TABLE IF NOT EXISTS `lich_su_mua_code` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `trans_id` varchar(150) DEFAULT NULL,
   `username` varchar(100) DEFAULT NULL,
@@ -164,7 +164,7 @@ CREATE TABLE `lich_su_mua_code` (
   KEY `idx_lsmc_trans` (`trans_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE `lich_su_hoat_dong` (
+CREATE TABLE IF NOT EXISTS `lich_su_hoat_dong` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(100) NOT NULL,
   `hoatdong` varchar(255) NOT NULL,
@@ -194,7 +194,7 @@ CREATE TABLE IF NOT EXISTS `lich_su_bien_dong_so_du` (
   KEY `idx_lsbd_source_created` (`source_channel`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE `users` (
+CREATE TABLE IF NOT EXISTS `users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(100) NOT NULL,
   `password` varchar(255) NOT NULL,
@@ -322,7 +322,7 @@ CREATE TABLE IF NOT EXISTS `auth_login_attempts` (
   KEY `idx_auth_attempt_action_user_ip_success_time` (`action`,`username_or_email`,`ip_address`,`success`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE `setting` (
+CREATE TABLE IF NOT EXISTS `setting` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `ten_web` varchar(150) DEFAULT 'KaiShop',
   `logo` text DEFAULT NULL,
@@ -364,6 +364,7 @@ CREATE TABLE `setting` (
   `telegram_bot_token` varchar(255) DEFAULT NULL,
   `telegram_chat_id` varchar(64) DEFAULT NULL,
   `telegram_webhook_secret` varchar(255) DEFAULT NULL,
+  `telegram_webhook_path` varchar(120) DEFAULT 'bottelekaishop_default',
   `telegram_bot_user` varchar(100) DEFAULT 'KaiShopBot',
   `telegram_last_update_id` bigint(20) DEFAULT 0,
   `bonus_1_amount` bigint(20) DEFAULT 100000,
@@ -378,7 +379,9 @@ CREATE TABLE `setting` (
   `maintenance_notice_minutes` int(11) NOT NULL DEFAULT 5,
   `maintenance_message` text DEFAULT NULL,
   `telegram_admin_ids` TEXT NULL COMMENT 'Nhiều Admin Telegram ID, phân cách dấu phẩy',
-  `telegram_order_cooldown` INT NOT NULL DEFAULT 10 COMMENT 'Cooldown giữa 2 lần mua (giây)',
+  `telegram_purchase_session_ttl` INT NOT NULL DEFAULT 900 COMMENT 'TTL phiên mua hàng bot (giây), mặc định 15 phút',
+  `telegram_maintenance_enabled` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0=Bot hoạt động, 1=Bot bảo trì',
+  `telegram_maintenance_message` TEXT NULL COMMENT 'Thông báo khi bot ở chế độ bảo trì',
   `last_cron_run` DATETIME NULL COMMENT 'Timestamp lần cuối cron.php chạy (Worker Health)',
   `created_at` datetime DEFAULT current_timestamp(),
   `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
@@ -386,16 +389,16 @@ CREATE TABLE `setting` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Keep one blank settings row so app can read config without undefined index warnings
-INSERT INTO `setting` (
+INSERT IGNORE INTO `setting` (
   `id`, `ten_web`, `logo`, `logo_footer`, `banner`, `favicon`, `key_words`, `mo_ta`, `fb_admin`, `sdt_admin`, `tele_admin`, `tiktok_admin`, `youtube_admin`,
   `email_auto`, `pass_mail_auto`, `ten_nguoi_gui`,
   `email_cf`, `contact_page_title`, `contact_page_subtitle`, `contact_email_label`, `contact_phone_label`, `contact_support_note`, `policy_page_title`, `policy_page_subtitle`, `policy_content_html`, `policy_notice_text`, `terms_page_title`, `terms_page_subtitle`, `terms_content_html`, `terms_notice_text`, `apikey`, `thongbao`, `license`,
-  `bank_name`, `bank_account`, `bank_owner`, `sepay_api_key`,  `telegram_bot_token`, `telegram_chat_id`, `telegram_webhook_secret`, `telegram_bot_user`, `telegram_last_update_id`,
-  `telegram_admin_ids`, `telegram_order_cooldown`, `last_cron_run`,
+  `bank_name`, `bank_account`, `bank_owner`, `sepay_api_key`, `telegram_bot_token`, `telegram_chat_id`, `telegram_webhook_secret`, `telegram_webhook_path`, `telegram_bot_user`, `telegram_last_update_id`,
+  `telegram_admin_ids`, `telegram_purchase_session_ttl`, `telegram_maintenance_enabled`, `telegram_maintenance_message`, `last_cron_run`,
   `bonus_1_amount`, `bonus_1_percent`, `bonus_2_amount`, `bonus_2_percent`, `bonus_3_amount`, `bonus_3_percent`,
   `maintenance_enabled`, `maintenance_start_at`, `maintenance_end_at`, `maintenance_notice_minutes`, `maintenance_message`
 ) VALUES (
-  1, 'KaiShop', '', '', 'KaiShop', '', 'KaiShop, Shop account', 'Dịch vụ KaiShop uy tín chất lượng', 'https://facebook.com/phamlinh7114', '0812420710', 'https://t.me/kaishop25', 'https://www.tiktok.com/@kai_01s.', 'https://www.youtube.com/@KaiOfficial-0x',
+  1, 'KaiShop', '', '', 'KaiShop', '', 'KaiShop, Shop account', 'Dịch vụ KaiShop uy tín chất lượng', '', '0812420710', 'https://t.me/kaishop25', 'https://www.tiktok.com/@kai_01s.', 'https://www.youtube.com/@KaiOfficial-0x',
   NULL, NULL, NULL,
   NULL, 'Liên hệ KaiShop', 'Liên hệ hỗ trợ nhanh qua email, Zalo hoặc các kênh mạng xã hội bên dưới.', 'Email hỗ trợ', 'Số điện thoại / Zalo', 'Hỗ trợ trong giờ làm việc hoặc qua kênh online.',
   'Chính sách & Quy định', '', NULL, 'Khi tiếp tục sử dụng dịch vụ tại website, bạn xác nhận đã đọc, hiểu và đồng ý với các chính sách/quy định được công bố.',
@@ -405,8 +408,8 @@ INSERT INTO `setting` (
   <b>Phiên bản: v1.1</b><br>
   <span>Khi dùng dịch vụ chính hãng, bạn được hỗ trợ tốt hơn và nâng cấp tính năng với chi phí tối ưu.</span>
 </div>', '',
-  'MB Bank', '', '', '', '', '', '', 'KaiShopBot', 0,
-  NULL, 10, NULL,
+  'MB Bank', '', '', '', '', '', '', 'bottelekaishop_default', 'KaiShopBot', 0,
+  NULL, 900, 0, 'Hệ thống Bot đang bảo trì. Vui lòng quay lại sau ít phút.', NULL,
   100000, 10, 200000, 15, 500000, 20,
   0, NULL, NULL, 5, 'Hệ thống đang bảo trì để nâng cấp dịch vụ. Vui lòng quay lại sau ít phút.'
 );
@@ -613,6 +616,20 @@ CREATE TABLE IF NOT EXISTS `telegram_users` (
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `last_seen_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Bot activity logs for terminal view
+CREATE TABLE IF NOT EXISTS `telegram_logs` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `level` ENUM('INFO', 'WARN', 'ERROR') NOT NULL DEFAULT 'INFO',
+  `type` ENUM('INCOMING', 'OUTGOING') NOT NULL DEFAULT 'INCOMING',
+  `category` VARCHAR(50) NOT NULL DEFAULT 'GENERAL',
+  `message` TEXT NOT NULL,
+  `data` LONGTEXT DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  KEY `idx_tl_level_created` (`level`, `created_at`),
+  KEY `idx_tl_type_created` (`type`, `created_at`),
+  KEY `idx_tl_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
 COMMIT;

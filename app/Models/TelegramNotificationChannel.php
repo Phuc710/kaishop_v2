@@ -51,4 +51,15 @@ class TelegramNotificationChannel extends Model
             'is_active' => 1
         ]);
     }
+
+    /**
+     * Update channel metadata
+     */
+    public function updateChannel(int $id, string $chatId, ?string $label = null): bool
+    {
+        return $this->update($id, [
+            'chat_id' => $chatId,
+            'label' => $label
+        ]);
+    }
 }
