@@ -16,8 +16,9 @@ $sent = (int) ($stats['sent'] ?? 0);
 $failed = (int) ($stats['failed'] ?? 0);
 ?>
 
-<section class="content pb-5 mt-1">
+<section class="content mt-3">
     <div class="container-fluid">
+
         <!-- Floating Stats Panel -->
         <div class="card custom-card bg-primary text-white border-0 shadow mb-4"
             style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;">
@@ -65,97 +66,73 @@ $failed = (int) ($stats['failed'] ?? 0);
                         <a href="<?= url('admin/telegram/outbox?status=sent') ?>"
                             class="btn btn-sm btn-action <?= $statusFilter === 'sent' ? 'btn-success shadow' : 'btn-outline-success' ?>">Sent</a>
                         <a href="<?= url('admin/telegram/outbox?status=fail') ?>"
-                            class="btn btn-sm btn-action <?= $statusFilter === 'fail' ? 'btn-danger shadow' : 'btn-outline-danger' ?>">Fail</a>
+                            class="btn btn-sm btn-action <?= $statusFilter === 'fail' ? 'btn-danger shadow' : 'btn-outline-danger' ?>">Failed</a>
                     </div>
-
-                    <button class="btn btn-sm btn-danger px-3 shadow-sm rounded-pill" onclick="deleteBatch()">
-                        <i class="fas fa-trash-alt mr-1"></i> Xóa đã chọn
+                    <button type="button" class="btn btn-sm btn-danger px-3 shadow-sm btn-action"
+                        onclick="batchDeleteMessages()">
+                        <i class="fas fa-trash-alt mr-1"></i> Xóa hàng đợi
                     </button>
-                    <?php if ($failed > 0): ?>
-                        <button class="btn btn-sm btn-warning px-3 shadow-sm rounded-pill ml-2" id="btnRetryAll">
-                            <i class="fas fa-redo mr-1"></i> Thử lại toàn bộ lỗi
-                        </button>
-                    <?php endif; ?>
+                    <button type="button" class="btn btn-sm btn-warning px-3 shadow-sm btn-action ml-2"
+                        onclick="retryFailedMessages()">
+                        <i class="fas fa-sync-alt mr-1"></i> Gửi lại lỗi
+                    </button>
                 </div>
             </div>
-
-            <div class="card-body px-0 pt-0">
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 w-100">
-                        <thead class="bg-light">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light text-muted">
                             <tr>
-                                <th class="pl-4" style="width:40px;">
-                                    <div class="custom-control custom-checkbox">
-                                        <input type="checkbox" class="custom-control-input" id="checkAll">
-                                        <label class="custom-control-label" for="checkAll"></label>
-                                    </div>
-                                </th>
-                                <th>ID</th>
-                                <th>Telegram ID</th>
+                                <th class="pl-4">ID</th>
+                                <th>Người nhận</th>
                                 <th>Nội dung</th>
-                                <th class="text-center">Trạng thái</th>
-                                <th class="text-center">Số lượt</th>
+                                <th>Trạng thái</th>
+                                <th>Thử lại</th>
                                 <th>Lỗi cuối</th>
-                                <th class="text-right pr-4">Hành động</th>
+                                <th class="pr-4 text-right">Cập nhật</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (!empty($messages)): ?>
-                                <?php foreach ($messages as $msg): ?>
+                            <?php if (!empty($messages)):
+                                foreach ($messages as $msg): ?>
                                     <tr>
-                                        <td class="pl-4">
-                                            <div class="custom-control custom-checkbox">
-                                                <input type="checkbox" class="custom-control-input row-check"
-                                                    id="chk_<?= $msg['id'] ?>" value="<?= $msg['id'] ?>">
-                                                <label class="custom-control-label" for="chk_<?= $msg['id'] ?>"></label>
-                                            </div>
-                                        </td>
-                                        <td class="font-weight-bold">#<?= $msg['id'] ?></td>
-                                        <td><code><?= $msg['telegram_id'] ?></code></td>
+                                        <td class="pl-4 font-weight-bold">#<?= $msg['id'] ?></td>
                                         <td>
-                                            <div class="text-muted small"
-                                                style="max-width:300px; max-height: 2.4em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
-                                                <?= htmlspecialchars(strip_tags($msg['message'])) ?>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-sm bg-light rounded text-primary mr-2 d-flex align-items-center justify-content-center"
+                                                    style="width: 32px; height: 32px;">
+                                                    <i class="fab fa-telegram-plane"></i>
+                                                </div>
+                                                <code><?= $msg['telegram_id'] ?></code>
                                             </div>
-                                        </td>
-                                        <td class="text-center">
-                                            <?php
-                                            $st = $msg['status'];
-                                            $cls = match ($st) {
-                                                'sent' => 'badge-success',
-                                                'pending' => 'badge-warning shadow-sm',
-                                                'fail' => 'badge-danger',
-                                                default => 'badge-secondary'
-                                            };
-                                            ?>
-                                            <span class="badge <?= $cls ?> px-3 py-1"><?= strtoupper($st) ?></span>
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="font-weight-bold"><?= $msg['try_count'] ?></span>
                                         </td>
                                         <td>
-                                            <small
-                                                class="text-danger"><?= htmlspecialchars(mb_substr($msg['last_error'] ?? '', 0, 50)) ?></small>
-                                        </td>
-                                        <td class="text-right pr-4">
-                                            <div class="btn-group">
-                                                <?php if ($msg['status'] === 'fail'): ?>
-                                                    <button class="btn btn-outline-warning btn-sm border-0" title="Thử lại"
-                                                        onclick="retryIds('<?= $msg['id'] ?>')">
-                                                        <i class="fas fa-redo"></i>
-                                                    </button>
-                                                <?php endif; ?>
-                                                <button class="btn btn-outline-danger btn-sm border-0" title="Xóa"
-                                                    onclick="deleteIds('<?= $msg['id'] ?>')">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
+                                            <div class="text-wrap" style="max-width: 300px; font-size: 0.9rem;">
+                                                <?= htmlspecialchars(mb_strimwidth($msg['message'], 0, 100, "...")) ?>
                                             </div>
+                                        </td>
+                                        <td>
+                                            <?php if ($msg['status'] === 'sent'): ?>
+                                                <span class="badge badge-pill badge-outline-success">SENT</span>
+                                            <?php elseif ($msg['status'] === 'fail'): ?>
+                                                <span class="badge badge-pill badge-outline-danger">FAIL</span>
+                                            <?php else: ?>
+                                                <span class="badge badge-pill badge-outline-warning">PENDING</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-light"><?= $msg['retry_count'] ?> lần</span>
+                                        </td>
+                                        <td class="small text-danger">
+                                            <?= htmlspecialchars($msg['last_error'] ?? '-') ?>
+                                        </td>
+                                        <td class="pr-4 text-right text-muted small">
+                                            <?= $msg['updated_at'] ?>
                                         </td>
                                     </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
+                                <?php endforeach; else: ?>
                                 <tr>
-                                    <td colspan="8" class="text-center py-5 text-muted">Hàng đợi trống</td>
+                                    <td colspan="7" class="text-center py-5 text-muted">Không tìm thấy tin nhắn nào</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
@@ -166,46 +143,68 @@ $failed = (int) ($stats['failed'] ?? 0);
     </div>
 </section>
 
-<?php require_once __DIR__ . '/../layout/foot.php'; ?>
+<style>
+    .badge-pill {
+        font-weight: 600;
+        padding: 0.4em 0.8em;
+    }
+
+    .badge-outline-success {
+        color: #28a745;
+        border: 1px solid #28a745;
+        background: transparent;
+    }
+
+    .badge-outline-danger {
+        color: #dc3545;
+        border: 1px solid #dc3545;
+        background: transparent;
+    }
+
+    .badge-outline-warning {
+        color: #ffc107;
+        border: 1px solid #ffc107;
+        background: transparent;
+    }
+
+    .btn-action {
+        border-radius: 8px;
+        font-weight: 600;
+    }
+
+    .custom-card {
+        border-radius: 12px;
+    }
+</style>
 
 <script>
-    $('#checkAll').change(function () {
-        $('.row-check').prop('checked', $(this).is(':checked'));
-    });
-
-    function getSelectedIds() {
-        return $('.row-check:checked').map(function () { return $(this).val(); }).get().join(',');
-    }
-
-    function retryIds(ids) {
-        $.post('<?= url('admin/telegram/outbox/retry') ?>', { ids: ids }, function (res) {
-            SwalHelper.toast(res.message, res.success ? 'success' : 'error');
-            if (res.success) setTimeout(() => location.reload(), 800);
-        }, 'json');
-    }
-
-    function deleteIds(ids) {
-        Swal.fire({
-            title: 'Xác nhận xóa?', text: 'Hành động này không thể hoàn tác.', icon: 'warning',
-            showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#64748b',
-            confirmButtonText: 'Xóa ngay', cancelButtonText: 'Hủy'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.post('<?= url('admin/telegram/outbox/delete') ?>', { ids: ids }, function (res) {
-                    SwalHelper.toast(res.message, res.success ? 'success' : 'error');
-                    if (res.success) setTimeout(() => location.reload(), 800);
-                }, 'json');
-            }
+    function batchDeleteMessages() {
+        SwalHelper.confirm('Xác nhận xóa?', 'Tất cả tin nhắn trong hàng đợi hiện tại sẽ bị xóa vĩnh viễn.', () => {
+            fetch('<?= url('admin/telegram/outbox/delete') ?>', { method: 'POST' })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success) {
+                        SwalHelper.success(res.message).then(() => location.reload());
+                    } else {
+                        SwalHelper.error(res.message);
+                    }
+                });
         });
     }
 
-    function deleteBatch() {
-        const ids = getSelectedIds();
-        if (!ids) { SwalHelper.toast('Vui lòng chọn ít nhất 1 tin nhắn', 'warning'); return; }
-        deleteIds(ids);
+    function retryFailedMessages() {
+        SwalHelper.confirm('Thử lại tất cả lỗi?', 'Hệ thống sẽ đặt lại trạng thái PENDING cho các tin nhắn bị lỗi.', () => {
+            fetch('<?= url('admin/telegram/outbox/retry') ?>', { method: 'POST' })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success) {
+                        SwalHelper.success(res.message).then(() => location.reload());
+                    } else {
+                        SwalHelper.error(res.message);
+                    }
+                });
+        });
     }
-
-    $('#btnRetryAll').click(function () {
-        retryIds('all_fails');
-    });
 </script>
+
+<?php require_once __DIR__ . '/../layout/foot.php'; ?>

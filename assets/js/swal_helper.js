@@ -11,6 +11,9 @@ const SwalHelper = {
             showConfirmButton: false,
             timer: 2500,
             timerProgressBar: true,
+            customClass: {
+                popup: 'swal2-toast-custom-margin'
+            },
             didOpen: (toast) => {
                 toast.onmouseenter = Swal.stopTimer;
                 toast.onmouseleave = Swal.resumeTimer;

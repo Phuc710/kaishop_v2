@@ -82,6 +82,29 @@ class TelegramAdminController extends Controller
 
         $totalUsers = (int) $db->query("SELECT COUNT(*) FROM `users`")->fetchColumn();
 
+        // --- Chart Data ---
+        // Reuse $db from $linkModel->getConnection();
+
+        // 1. Linked users last 7 days
+        $linkedUsersChart = $db->query("
+            SELECT DATE(linked_at) as date, COUNT(*) as count 
+            FROM user_telegram_links 
+            WHERE linked_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+            GROUP BY DATE(linked_at)
+            ORDER BY date ASC
+        ")->fetchAll(PDO::FETCH_ASSOC);
+
+        // 2. Order Sources last 7 days (Web vs Telegram)
+        $orderStatsChart = $db->query("
+            SELECT DATE(created_at) as date,
+                   SUM(CASE WHEN source_channel = 1 THEN 1 ELSE 0 END) as tele_orders,
+                   SUM(CASE WHEN source_channel = 0 THEN 1 ELSE 0 END) as web_orders
+            FROM orders
+            WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+            GROUP BY DATE(created_at)
+            ORDER BY date ASC
+        ")->fetchAll(PDO::FETCH_ASSOC);
+
         $this->view('admin/telegram/index', [
             'chungapi' => Config::getSiteConfig(),
             'botInfo' => $botInfo,
@@ -91,6 +114,8 @@ class TelegramAdminController extends Controller
             'totalLinks' => $totalLinks,
             'newLinksToday' => $newLinksToday,
             'totalUsers' => $totalUsers,
+            'linkedUsersChart' => $linkedUsersChart,
+            'orderStatsChart' => $orderStatsChart,
         ]);
     }
 
@@ -106,11 +131,17 @@ class TelegramAdminController extends Controller
         $botInfo = $this->telegram->getMe();
         $webhookInfo = $this->telegram->getWebhookInfo();
 
+        $channels = (new TelegramNotificationChannel())->fetchAll();
+        $outboxModel = new TelegramOutbox();
+        $outboxStats = $outboxModel->getStats();
+
         $this->view('admin/telegram/settings', [
             'chungapi' => $siteConfig,
             'siteConfig' => $siteConfig,
             'botInfo' => $botInfo,
             'webhookInfo' => $webhookInfo,
+            'channels' => $channels,
+            'outboxStats' => $outboxStats,
         ]);
     }
 
@@ -122,6 +153,8 @@ class TelegramAdminController extends Controller
             'telegram_bot_token',
             'telegram_chat_id',
             'telegram_webhook_secret',
+            'telegram_admin_ids',
+            'telegram_order_cooldown',
         ];
 
         $db = (new UserTelegramLink())->getConnection();
@@ -181,6 +214,75 @@ class TelegramAdminController extends Controller
             'success' => (bool) $success,
             'message' => $success ? 'Đã gửi tin nhắn test' : 'Gửi thất bại, kiểm tra Token và Chat ID',
         ]);
+    }
+
+    public function syncBotAction(): void
+    {
+        $this->requireAdmin();
+        $botLogic = new TelegramBotService($this->telegram);
+        $result = $botLogic->initializeBot();
+
+        $this->json([
+            'success' => !empty($result['ok']),
+            'message' => !empty($result['ok']) ? 'Đã đồng bộ Menu & Lệnh Bot thành công' : ($result['description'] ?? 'Lỗi đồng bộ'),
+        ]);
+    }
+
+    // ─── Notification Channels ──────────────────────────────
+
+    public function notificationChannels(): void
+    {
+        $this->requireAdmin();
+        $channels = (new TelegramNotificationChannel())->fetchAll();
+        $this->json(['success' => true, 'channels' => $channels]);
+    }
+
+    public function addChannelAction(): void
+    {
+        $this->requireAdmin();
+        $chatId = trim((string) $this->post('chat_id', ''));
+        $label = trim((string) $this->post('label', ''));
+
+        if ($chatId === '') {
+            $this->json(['success' => false, 'message' => 'Chat ID/Channel name không được để trống']);
+            return;
+        }
+
+        $model = new TelegramNotificationChannel();
+        $success = $model->add($chatId, $label ?: null);
+
+        $this->json([
+            'success' => $success,
+            'message' => $success ? 'Đã thêm kênh nhận thông báo' : 'Kênh này đã tồn tại hoặc có lỗi',
+        ]);
+    }
+
+    public function toggleChannelAction(): void
+    {
+        $this->requireAdmin();
+        $id = (int) $this->post('id', 0);
+        if ($id <= 0) {
+            $this->json(['success' => false, 'message' => 'ID không hợp lệ']);
+            return;
+        }
+
+        $model = new TelegramNotificationChannel();
+        $success = $model->toggle($id);
+        $this->json(['success' => $success]);
+    }
+
+    public function deleteChannelAction(): void
+    {
+        $this->requireAdmin();
+        $id = (int) $this->post('id', 0);
+        if ($id <= 0) {
+            $this->json(['success' => false, 'message' => 'ID không hợp lệ']);
+            return;
+        }
+
+        $model = new TelegramNotificationChannel();
+        $success = $model->delete($id);
+        $this->json(['success' => $success]);
     }
 
     // ─── User Links ───────────────────────────────────────────
@@ -314,6 +416,43 @@ class TelegramAdminController extends Controller
         $this->json(['success' => true, 'message' => 'Đã xóa']);
     }
 
+    // ─── Broadcast ────────────────────────────────────────────
+
+    public function broadcast(): void
+    {
+        $this->requireAdmin();
+        $this->view('admin/telegram/broadcast', [
+            'chungapi' => Config::getSiteConfig(),
+        ]);
+    }
+
+    public function broadcastAction(): void
+    {
+        $this->requireAdmin();
+        $message = trim((string) $this->post('message', ''));
+        if ($message === '') {
+            $this->json(['success' => false, 'message' => 'Nội dung tin nhắn không được để trống']);
+            return;
+        }
+
+        $userModel = new TelegramUser();
+        $tids = $userModel->getAllActive();
+
+        if (empty($tids)) {
+            $this->json(['success' => false, 'message' => 'Chưa có người dùng nào tương tác với Bot']);
+            return;
+        }
+
+        $outbox = new TelegramOutbox();
+        $count = 0;
+        foreach ($tids as $tid) {
+            $outbox->enqueue((int) $tid, $message);
+            $count++;
+        }
+
+        $this->json(['success' => true, 'message' => "Đã thêm {$count} tin nhắn vào hàng đợi gửi (Outbox)"]);
+    }
+
     // ─── Logs ─────────────────────────────────────────────────
 
     public function logs(): void
@@ -321,7 +460,7 @@ class TelegramAdminController extends Controller
         $this->requireAdmin();
 
         $db = (new SystemLog())->getConnection();
-        $sql = "SELECT * FROM `system_logs` WHERE `module` = 'telegram' ORDER BY `id` DESC LIMIT 200";
+        $sql = "SELECT * FROM `system_logs` WHERE `module` = 'telegram' ORDER BY `id` DESC LIMIT 500";
         $logs = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 
         $this->view('admin/telegram/logs', [
@@ -335,44 +474,37 @@ class TelegramAdminController extends Controller
     {
         $this->requireAdmin();
 
-        $db = (new Order())->getConnection();
-        $orderColumns = [];
-        try {
-            $stmt = $db->query("SHOW COLUMNS FROM `orders`");
-            $orderColumns = array_map(
-                static fn(array $row): string => (string) ($row['Field'] ?? ''),
-                $stmt ? ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: []) : []
-            );
-        } catch (Throwable $e) {
-            $orderColumns = [];
-        }
+        $orderModel = new Order();
+        $db = $orderModel->getConnection();
 
-        $hasSourceColumn = in_array('source', $orderColumns, true);
-        $hasTelegramIdColumn = in_array('telegram_id', $orderColumns, true);
+        // Dynamic column detection
         $filterMode = 'none';
-
-        if ($hasSourceColumn) {
-            $whereClause = "WHERE o.`source` = 'telegram'";
-            $filterMode = 'source';
-        } elseif ($hasTelegramIdColumn) {
-            $whereClause = "WHERE o.`telegram_id` IS NOT NULL";
-            $filterMode = 'telegram_id';
-        } else {
-            // Current schema cannot reliably distinguish Telegram-created orders.
-            $whereClause = "WHERE 1 = 0";
+        try {
+            $check = $db->query("SHOW COLUMNS FROM `orders` LIKE 'source_channel'")->fetch();
+            if ($check) {
+                $filterMode = 'all';
+            }
+        } catch (\Throwable $e) {
         }
 
-        $sql = "SELECT o.*, COALESCE(u.username, o.username) AS buyer_username
-                FROM `orders` o
-                LEFT JOIN `users` u ON u.id = o.user_id
-                {$whereClause}
-                ORDER BY o.id DESC LIMIT 200";
-        $orders = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $orders = [];
+        if ($filterMode === 'all') {
+            try {
+                $sql = "SELECT o.*, u.username AS buyer_username
+                        FROM `orders` o
+                        LEFT JOIN `users` u ON u.id = o.user_id
+                        WHERE o.`source_channel` = 1 OR o.`source` = 'telegram'
+                        ORDER BY o.id DESC LIMIT 500";
+                $orders = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            } catch (\Throwable $e) {
+                $filterMode = 'none';
+            }
+        }
 
         $this->view('admin/telegram/orders', [
             'chungapi' => Config::getSiteConfig(),
             'orders' => $orders,
-            'filterMode' => $filterMode,
+            'filterMode' => $filterMode
         ]);
     }
 }

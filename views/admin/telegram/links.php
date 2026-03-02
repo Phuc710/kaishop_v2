@@ -12,10 +12,10 @@ $breadcrumbs = [
 require_once __DIR__ . '/../layout/breadcrumb.php';
 ?>
 
-<section class="content pb-5 mt-1">
+<section class="content mt-3">
     <div class="container-fluid">
-        <!-- Floating Stats Panel -->
-        <div class="row mb-4">
+        <div class="row">
+            <!-- Floating Stats Panel -->
             <div class="col-md-6 col-xl-3">
                 <div class="card custom-card bg-primary text-white shadow-sm"
                     style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;">

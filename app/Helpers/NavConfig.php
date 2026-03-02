@@ -90,8 +90,8 @@ class NavConfig
                 'children' => [
                     [
                         'href' => self::buildUrl('admin/telegram'),
-                        'label' => 'Dashboard',
-                        'active_prefixes' => ['admin/telegram'],
+                        'label' => 'Tổng quan',
+                        'active_prefixes' => [],
                         'active_patterns' => ['#^/admin/telegram/?$#'],
                     ],
                     [
@@ -100,23 +100,28 @@ class NavConfig
                         'active_prefixes' => ['admin/telegram/settings'],
                     ],
                     [
+                        'href' => self::buildUrl('admin/telegram/broadcast'),
+                        'label' => 'Gửi thông báo',
+                        'active_prefixes' => ['admin/telegram/broadcast'],
+                    ],
+                    [
                         'href' => self::buildUrl('admin/telegram/links'),
-                        'label' => 'User Links',
+                        'label' => 'Liên kết người dùng',
                         'active_prefixes' => ['admin/telegram/links'],
                     ],
                     [
                         'href' => self::buildUrl('admin/telegram/outbox'),
-                        'label' => 'Outbox & Worker',
+                        'label' => 'Hàng đợi & Outbox',
                         'active_prefixes' => ['admin/telegram/outbox'],
                     ],
                     [
                         'href' => self::buildUrl('admin/telegram/logs'),
-                        'label' => 'Nhật ký',
+                        'label' => 'Nhật ký hoạt động',
                         'active_prefixes' => ['admin/telegram/logs'],
                     ],
                     [
                         'href' => self::buildUrl('admin/telegram/orders'),
-                        'label' => 'Đơn hàng Bot',
+                        'label' => 'Đơn hàng Telegram',
                         'active_prefixes' => ['admin/telegram/orders'],
                     ],
                 ],

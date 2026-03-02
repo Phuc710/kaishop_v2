@@ -19,6 +19,9 @@ $webhookOk = !empty($webhookInfo['ok']) && !empty($webhookInfo['result']['url'])
 $currentToken = $siteConfig['telegram_bot_token'] ?? '';
 $currentChatId = $siteConfig['telegram_chat_id'] ?? '';
 $currentSecret = $siteConfig['telegram_webhook_secret'] ?? '';
+$sentCount = (int) ($outboxStats['sent'] ?? 0);
+$pendingCount = (int) ($outboxStats['pending'] ?? 0);
+$failedCount = (int) ($outboxStats['failed'] ?? 0);
 ?>
 
 <style>
@@ -75,10 +78,103 @@ $currentSecret = $siteConfig['telegram_webhook_secret'] ?? '';
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
+
+    .stat-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border: none;
+        border-radius: 16px;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .icon-box {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
 </style>
 
-<section class="content pb-5 mt-1">
+<section class="content mt-3">
     <div class="container-fluid">
+        <div class="row">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stat-card shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-box bg-soft-primary text-primary mr-3">
+                                <i class="fab fa-telegram-plane"></i>
+                            </div>
+                            <div>
+                                <p class="text-muted mb-0 font-weight-bold small uppercase">Bot Status</p>
+                                <h5 class="mb-0 font-weight-bolder">
+                                    <?= $botOk ? '<span class="text-success">Hoạt động</span>' : '<span class="text-danger">Ngắt kết nối</span>' ?>
+                                </h5>
+                                <small class="text-muted"><?= htmlspecialchars($botUsername) ?></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stat-card shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-box bg-soft-info text-info mr-3">
+                                <i class="fas fa-paper-plane"></i>
+                            </div>
+                            <div>
+                                <p class="text-muted mb-0 font-weight-bold small uppercase">Đã gửi (HT)</p>
+                                <h4 class="mb-0 font-weight-bolder"><?= number_format($sentCount) ?></h4>
+                                <small class="text-muted">Tổng số tin nhắn</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stat-card shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-box bg-soft-warning text-warning mr-3">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div>
+                                <p class="text-muted mb-0 font-weight-bold small uppercase">Hàng đợi</p>
+                                <h4 class="mb-0 font-weight-bolder text-warning"><?= number_format($pendingCount) ?></h4>
+                                <small class="text-muted">Tin nhắn đang chờ</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stat-card shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-box bg-soft-danger text-danger mr-3">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div>
+                                <p class="text-muted mb-0 font-weight-bold small uppercase">Lỗi gửi</p>
+                                <h4 class="mb-0 font-weight-bolder text-danger"><?= number_format($failedCount) ?></h4>
+                                <small class="text-muted">Tin nhắn thất bại</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="row">
             <!-- Informational Sidebar / Top -->
             <div class="col-lg-4">
@@ -135,88 +231,210 @@ $currentSecret = $siteConfig['telegram_webhook_secret'] ?? '';
                 </div>
             </div>
 
-            <!-- Configuration Form -->
+            <!-- Configuration Form & Hub -->
             <div class="col-lg-8">
-                <div class="card custom-card shadow-sm h-100">
-                    <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
-                        <h5 class="card-title font-weight-bold mb-0">CẤU HÌNH HỆ THỐNG BOT</h5>
-                        <i class="fas fa-cog text-muted"></i>
+                <div class="card custom-card shadow-sm mb-4">
+                    <div class="card-header border-0 pb-0">
+                        <ul class="nav nav-tabs card-header-tabs" id="tgSettingsTabs" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active font-weight-bold" id="config-tab" data-toggle="tab"
+                                    href="#config" role="tab">CẤU HÌNH HỆ THỐNG</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link font-weight-bold" id="channels-tab" data-toggle="tab"
+                                    href="#channels" role="tab">KÊNH NHẬN THÔNG BÁO</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link font-weight-bold text-danger" id="broadcast-tab" data-toggle="tab"
+                                    href="#broadcast" role="tab">GỬI THÔNG BÁO (ALL)</a>
+                            </li>
+                        </ul>
                     </div>
                     <div class="card-body pt-4">
-                        <form id="formTgSettings">
-                            <div class="form-group mb-4">
-                                <label><i class="fas fa-robot mr-2"></i>Bot Token (API Token)</label>
-                                <div class="input-group">
-                                    <input type="password" name="telegram_bot_token" id="botTokenInput"
-                                        class="form-control" value="<?= htmlspecialchars($currentToken) ?>"
-                                        placeholder="Nhập Token lấy từ @BotFather">
-                                    <div class="input-group-append">
-                                        <button class="btn btn-outline-secondary" type="button"
-                                            onclick="togglePassword('botTokenInput')">
-                                            <i class="fas fa-eye"></i>
+                        <div class="tab-content" id="tgSettingsTabsContent">
+                            <!-- Tab 1: System Config -->
+                            <div class="tab-pane fade show active" id="config" role="tabpanel">
+                                <form id="formTgSettings">
+                                    <div class="form-group mb-4">
+                                        <label><i class="fas fa-robot mr-2"></i>Bot Token (API Token)</label>
+                                        <div class="input-group">
+                                            <input type="password" name="telegram_bot_token" id="botTokenInput"
+                                                class="form-control" value="<?= htmlspecialchars($currentToken) ?>"
+                                                placeholder="8547601180:AAGx6y...">
+                                            <div class="input-group-append">
+                                                <button class="btn btn-outline-secondary" type="button"
+                                                    onclick="togglePassword('botTokenInput')">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group mb-4">
+                                                <label><i class="fas fa-id-badge mr-2"></i>Admin ID chính</label>
+                                                <input type="text" name="telegram_chat_id" class="form-control"
+                                                    value="<?= htmlspecialchars($currentChatId) ?>" placeholder="6560022754">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group mb-4">
+                                                <label><i class="fas fa-users-cog mr-2"></i>Admin IDs Phụ (Phẩy)</label>
+                                                <input type="text" name="telegram_admin_ids" class="form-control"
+                                                    value="<?= htmlspecialchars($siteConfig['telegram_admin_ids'] ?? '') ?>"
+                                                    placeholder="123456, 789012...">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group mb-4">
+                                                <label><i class="fas fa-clock mr-2"></i>Cảnh báo nạp (Giây)</label>
+                                                <input type="number" name="telegram_order_cooldown" class="form-control"
+                                                    value="<?= htmlspecialchars($siteConfig['telegram_order_cooldown'] ?? '300') ?>">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group mb-4">
+                                                <label><i class="fas fa-user-secret mr-2"></i>Webhook Secret</label>
+                                                <input type="text" name="telegram_webhook_secret" class="form-control"
+                                                    value="<?= htmlspecialchars($currentSecret) ?>">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between align-items-center mt-4">
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-primary btn-sm rounded-pill px-3" id="btnSyncBot">
+                                                <i class="fas fa-sync-alt"></i> Sync Menu
+                                            </button>
+                                            <button type="button" class="btn btn-info btn-sm rounded-pill px-3 ml-2" id="btnTestBot">
+                                                <i class="fas fa-paper-plane"></i> Test Bot
+                                            </button>
+                                        </div>
+                                        <button type="submit" class="btn btn-success px-5 shadow rounded-pill font-weight-bold">
+                                            <i class="fas fa-save"></i> LƯU THAY ĐỔI
                                         </button>
                                     </div>
-                                </div>
-                                <small class="text-muted mt-2 d-block">Mã bảo mật để kết nối server KaiShop với Telegram
-                                    Bot API.</small>
+                                </form>
                             </div>
 
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group mb-4">
-                                        <label><i class="fas fa-id-badge mr-2"></i>Admin Chat ID</label>
-                                        <input type="text" name="telegram_chat_id" class="form-control"
-                                            value="<?= htmlspecialchars($currentChatId) ?>"
-                                            placeholder="Chat ID của admin">
-                                        <small class="text-muted mt-2 d-block">Dùng để nhận thông báo nạp tiền, đơn hàng
-                                            mới.</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group mb-4">
-                                        <label><i class="fas fa-user-secret mr-2"></i>Webhook Secret</label>
-                                        <input type="text" name="telegram_webhook_secret" class="form-control"
-                                            value="<?= htmlspecialchars($currentSecret) ?>"
-                                            placeholder="Mã bảo mật webhook">
-                                        <small class="text-muted mt-2 d-block">Tùy chọn. Bảo vệ webhook khỏi các request
-                                            lạ.</small>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <hr class="my-4 op-1">
-
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div class="btn-group-webhook">
-                                    <button type="button" class="btn btn-action btn-primary" id="btnSetWebhook"
-                                        title="Cập nhật/Đăng ký URL Webhook với Telegram">
-                                        <i class="fas fa-plug"></i> Update Webhook
-                                    </button>
-                                    <button type="button" class="btn btn-action btn-outline-danger ml-2"
-                                        id="btnDeleteWebhook">
-                                        <i class="fas fa-power-off"></i> Gỡ Webhook
+                            <!-- Tab 2: Channels -->
+                            <div class="tab-pane fade" id="channels" role="tabpanel">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h6 class="font-weight-bold text-muted mb-0">DANH SÁCH KÊNH/NHÓM NHẬN ĐƠN HÀNG</h6>
+                                    <button class="btn btn-primary btn-sm rounded-pill" data-toggle="modal" data-target="#modalAddChannel">
+                                        <i class="fas fa-plus"></i> THÊM KÊNH
                                     </button>
                                 </div>
 
-                                <button type="submit" class="btn btn-action btn-success px-5 shadow">
-                                    <i class="fas fa-save"></i> LƯU CẤU HÌNH
-                                </button>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead class="bg-light small">
+                                            <tr>
+                                                <th>TÊN GỢI NHỚ</th>
+                                                <th>CHAT ID / CHANNEL</th>
+                                                <th class="text-center">TRẠNG THÁI</th>
+                                                <th class="text-right">HÀNH ĐỘNG</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php if (!empty($channels)): foreach ($channels as $c): ?>
+                                                <tr>
+                                                    <td class="font-weight-bold"><?= htmlspecialchars($c['label'] ?: 'Không tên') ?></td>
+                                                    <td><code><?= htmlspecialchars($c['chat_id']) ?></code></td>
+                                                    <td class="text-center">
+                                                        <div class="custom-control custom-switch">
+                                                            <input type="checkbox" class="custom-control-input ch-toggle" 
+                                                                   id="ch-<?= $c['id'] ?>" data-id="<?= $c['id'] ?>"
+                                                                   <?= $c['is_active'] ? 'checked' : '' ?>>
+                                                            <label class="custom-control-label" for="ch-<?= $c['id'] ?>"></label>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-right">
+                                                        <button class="btn btn-sm btn-outline-danger border-0 ch-delete" data-id="<?= $c['id'] ?>">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; else: ?>
+                                                <tr><td colspan="4" class="text-center py-4 text-muted small">Chưa có kênh phụ nào</td></tr>
+                                            <?php endif; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-                        </form>
 
-                        <div
-                            class="mt-5 p-3 rounded-lg bg-soft-info border-info-light border d-flex align-items-center">
-                            <div class="mr-3">
-                                <i class="fas fa-vial fa-2x text-info"></i>
+                            <!-- Tab 3: Broadcast -->
+                            <div class="tab-pane fade" id="broadcast" role="tabpanel">
+                                <div class="alert alert-danger bg-soft-danger border-0 mb-4">
+                                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                                    <b>CHÚ Ý:</b> Tin nhắn sẽ được gửi đến <b>TẤT CẢ</b> người dùng đã từng nhắn tin/nhấn <code>/start</code> với Bot. Hãy cân nhắc kỹ trước khi gửi.
+                                </div>
+
+                                <form id="formBroadcast">
+                                    <div class="form-group mb-4">
+                                        <label>Nội dung thông báo (Hỗ trợ HTML)</label>
+                                        <textarea name="message" class="form-control" style="height: 150px;" 
+                                                  placeholder="Chào anh em, KaiShop vừa cập nhật sản phẩm mới..."></textarea>
+                                        <small class="text-muted mt-2 d-block">Sử dụng HTML: <code>&lt;b&gt;đậm&lt;/i&gt;</code>, <code>&lt;i&gt;nghiêng&lt;/i&gt;</code>, <code>&lt;code&gt;mã&lt;/code&gt;</code>, <code>&lt;a href="..."&gt;link&lt;/a&gt;</code>.</small>
+                                    </div>
+                                    <div class="text-right">
+                                        <button type="submit" class="btn btn-danger px-5 shadow rounded-pill font-weight-bold">
+                                            <i class="fas fa-broadcast-tower"></i> BẮT ĐẦU GỬI (BROADCAST)
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
-                            <div class="flex-grow-1">
-                                <h6 class="font-weight-bold mb-1">Kiểm tra kết nối?</h6>
-                                <p class="mb-0 small text-muted">Gửi một tin nhắn test đến Admin Chat ID đã cấu hình ở
-                                    trên.</p>
-                            </div>
-                            <button class="btn btn-info btn-sm px-4 rounded-pill font-weight-bold" id="btnTestBot">
-                                <i class="fas fa-paper-plane mr-1"></i> SEND TEST
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Webhook Management -->
+                <div class="card custom-card glass-card shadow-sm">
+                    <div class="card-body py-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="small font-weight-bold text-muted text-uppercase">Hành động Webhook:</span>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-outline-primary btn-sm px-3 rounded-pill" id="btnSetWebhook">
+                                <i class="fas fa-plug"></i> Update Webhook
                             </button>
+                            <button class="btn btn-outline-danger btn-sm px-3 rounded-pill ml-2" id="btnDeleteWebhook">
+                                <i class="fas fa-power-off"></i> Gỡ Webhook
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Add Channel -->
+            <div class="modal fade" id="modalAddChannel" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content border-0 shadow-lg" style="border-radius: 15px;">
+                        <div class="modal-header border-0 pb-0">
+                            <h5 class="modal-title font-weight-bold">THÊM KÊNH NHẬN THÔNG BÁO</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body pt-4">
+                            <form id="formAddChannel">
+                                <div class="form-group mb-3">
+                                    <label>Tên gợi nhớ (Ví dụ: Nhóm nhân viên)</label>
+                                    <input type="text" name="label" class="form-control" placeholder="Nhóm nhân viên">
+                                </div>
+                                <div class="form-group mb-4">
+                                    <label>Chat ID hoặc Channel Username (@name)</label>
+                                    <input type="text" name="chat_id" class="form-control" placeholder="-100123456789">
+                                    <small class="text-muted">Nhập Chat ID của Nhóm/Kênh. Đảm bảo Bot là quản trị viên trong đó.</small>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-block py-3 rounded-lg font-weight-bold">
+                                    <i class="fas fa-plus-circle mr-1"></i> XÁC NHẬN THÊM
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -228,19 +446,8 @@ $currentSecret = $siteConfig['telegram_webhook_secret'] ?? '';
 <?php require_once __DIR__ . '/../layout/foot.php'; ?>
 
 <script>
-    function togglePassword(id) {
-        const input = document.getElementById(id);
-        const icon = $(input).parent().find('i');
-        if (input.type === "password") {
-            input.type = "text";
-            icon.removeClass('fa-eye').addClass('fa-eye-slash');
-        } else {
-            input.type = "password";
-            icon.removeClass('fa-eye-slash').addClass('fa-eye');
-        }
-    }
-
     $(function () {
+        // --- System Settings ---
         $('#formTgSettings').on('submit', function (e) {
             e.preventDefault();
             const btn = $(this).find('button[type="submit"]');
@@ -248,29 +455,75 @@ $currentSecret = $siteConfig['telegram_webhook_secret'] ?? '';
 
             $.post('<?= url('admin/telegram/settings/update') ?>', $(this).serialize(), function (res) {
                 SwalHelper.toast(res.message, res.success ? 'success' : 'error');
-                btn.prop('disabled', false).html('<i class="fas fa-save"></i> LƯU CẤU HÌNH');
+                btn.prop('disabled', false).html('<i class="fas fa-save"></i> LƯU THAY ĐỔI');
             }, 'json').fail(() => {
                 SwalHelper.toast('Lỗi kết nối server', 'error');
-                btn.prop('disabled', false).html('<i class="fas fa-save"></i> LƯU CẤU HÌNH');
+                btn.prop('disabled', false).html('<i class="fas fa-save"></i> LƯU THAY ĐỔI');
             });
         });
 
-        function handleAction(url, btn, iconClass) {
+        // --- Broadcast ---
+        $('#formBroadcast').on('submit', function (e) {
+            e.preventDefault();
+            const btn = $(this).find('button[type="submit"]');
+            SwalHelper.confirm('Xác nhận Broadcast?', 'Tin nhắn sẽ được gửi đến TẤT CẢ người dùng.', () => {
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> ĐANG GỬI...');
+                $.post('<?= url('admin/telegram/broadcast') ?>', $(this).serialize(), function (res) {
+                    SwalHelper.toast(res.message, res.success ? 'success' : 'error');
+                    btn.prop('disabled', false).html('<i class="fas fa-broadcast-tower"></i> BẮT ĐẦU GỬI (BROADCAST)');
+                    if (res.success) $('#formBroadcast')[0].reset();
+                }, 'json').fail(() => {
+                    SwalHelper.toast('Lỗi kết nối', 'error');
+                    btn.prop('disabled', false).html('<i class="fas fa-broadcast-tower"></i> BẮT ĐẦU GỬI (BROADCAST)');
+                });
+            });
+        });
+
+        // --- Channels Management ---
+        $('#formAddChannel').on('submit', function (e) {
+            e.preventDefault();
+            const btn = $(this).find('button[type="submit"]');
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> ĐANG THÊM...');
+
+            $.post('<?= url('admin/telegram/notification-channels/add') ?>', $(this).serialize(), function (res) {
+                SwalHelper.toast(res.message, res.success ? 'success' : 'error');
+                btn.prop('disabled', false).html('<i class="fas fa-plus-circle mr-1"></i> XÁC NHẬN THÊM');
+                if (res.success) setTimeout(() => location.reload(), 1000);
+            }, 'json');
+        });
+
+        $('.ch-toggle').change(function () {
+            const id = $(this).data('id');
+            $.post('<?= url('admin/telegram/notification-channels/toggle') ?>', { id: id });
+        });
+
+        $('.ch-delete').click(function () {
+            const id = $(this).data('id');
+            SwalHelper.confirm('Xóa kênh này?', 'Kênh này sẽ không nhận thông báo nữa.', () => {
+                $.post('<?= url('admin/telegram/notification-channels/delete') ?>', { id: id }, function (res) {
+                    if (res.success) location.reload();
+                }, 'json');
+            });
+        });
+
+        // --- Quick Actions ---
+        function handleAction(url, btn, reload = false) {
             const originalHtml = $(btn).html();
             $(btn).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
 
             $.post(url, {}, function (res) {
                 SwalHelper.toast(res.message, res.success ? 'success' : 'error');
                 $(btn).prop('disabled', false).html(originalHtml);
-                if (res.success) setTimeout(() => location.reload(), 1500);
+                if (reload && res.success) setTimeout(() => location.reload(), 1500);
             }, 'json').fail(() => {
                 SwalHelper.toast('Lỗi thao tác', 'error');
                 $(btn).prop('disabled', false).html(originalHtml);
             });
         }
 
-        $('#btnSetWebhook').click(function () { handleAction('<?= url('admin/telegram/webhook/set') ?>', this); });
-        $('#btnDeleteWebhook').click(function () { handleAction('<?= url('admin/telegram/webhook/delete') ?>', this); });
+        $('#btnSetWebhook').click(function () { handleAction('<?= url('admin/telegram/webhook/set') ?>', this, true); });
+        $('#btnSyncBot').click(function () { handleAction('<?= url('admin/telegram/sync') ?>', this); });
+        $('#btnDeleteWebhook').click(function () { handleAction('<?= url('admin/telegram/webhook/delete') ?>', this, true); });
         $('#btnTestBot').click(function () { handleAction('<?= url('admin/telegram/test') ?>', this); });
     });
 </script>

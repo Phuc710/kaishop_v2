@@ -50,6 +50,33 @@ class TelegramBotService
         $this->timeService = class_exists('TimeService') ? TimeService::instance() : null;
     }
 
+    /**
+     * Set up bot commands and menu button.
+     * Called from Admin Panel to sync with Telegram.
+     */
+    public function initializeBot(): array
+    {
+        $commands = [
+            ['command' => 'start', 'description' => 'Bắt đầu & Hiện menu chính'],
+            ['command' => 'shop', 'description' => 'Xem danh mục sản phẩm'],
+            ['command' => 'wallet', 'description' => 'Kiểm tra số dư & Nạp tiền'],
+            ['command' => 'orders', 'description' => 'Lịch sử mua hàng'],
+            ['command' => 'help', 'description' => 'Hỗ trợ kỹ thuật'],
+        ];
+
+        $res = $this->telegram->setMyCommands($commands);
+        if (empty($res['ok'])) {
+            return $res;
+        }
+
+        // Configure the menu button to show "commands"
+        $this->telegram->apiCall('setChatMenuButton', [
+            'menu_button' => json_encode(['type' => 'commands'])
+        ]);
+
+        return $res;
+    }
+
     // =========================================================
     //  Entry Point
     // =========================================================
@@ -60,9 +87,18 @@ class TelegramBotService
             return;
         }
 
-        $telegramId = (int) ($update['message']['from']['id']
-            ?? $update['callback_query']['from']['id']
-            ?? 0);
+        // --- Track User ---
+        $tid = (int) ($update['message']['from']['id'] ?? $update['callback_query']['from']['id'] ?? 0);
+        if ($tid > 0) {
+            $from = $update['message']['from'] ?? $update['callback_query']['from'] ?? [];
+            (new TelegramUser())->upsert(
+                $tid,
+                $from['username'] ?? null,
+                $from['first_name'] ?? null
+            );
+        }
+
+        $telegramId = $tid;
         $chatId = (string) ($update['message']['chat']['id'] ?? $update['callback_query']['message']['chat']['id'] ?? '');
 
         if ($telegramId > 0) {

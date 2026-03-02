@@ -139,6 +139,7 @@ class PurchaseService
             $orderCode = $this->orderModel->generateOrderCode();
 
             $orderStatus = $requiresInfo ? 'pending' : 'processing';
+            $orderCreatedAtSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
             $orderColumns = [
                 'order_code',
                 'user_id',
@@ -171,7 +172,7 @@ class PurchaseService
                 (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''),
                 $requestedQty,
                 $customerInput !== '' ? $customerInput : null,
-                $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s'),
+                $orderCreatedAtSql,
             ];
 
             if ($this->hasColumn('orders', 'source_channel')) {
@@ -264,28 +265,49 @@ class PurchaseService
 
             $this->db->commit();
 
-            // Enqueue Telegram notification if user is linked
+            $orderShortCode = $this->makeShortOrderDisplayCode($orderCode);
+            $orderData = [
+                'id' => $orderId,
+                'order_code' => $orderCode,
+                'order_code_short' => $orderShortCode,
+                'product_name' => (string) ($product['name'] ?? ''),
+                'price' => $totalPrice,
+                'username' => $username,
+                'customer_input' => $customerInput,
+                'quantity' => $requestedQty,
+            ];
+
+            $orderedAtDisplay = $this->timeService
+                ? $this->timeService->formatDisplay($orderCreatedAtSql, 'H:i:s d/m/Y')
+                : date('H:i:s d/m/Y', strtotime($orderCreatedAtSql) ?: time());
+
+            $this->sendOrderSuccessMailNonBlocking($user, $product, [
+                'order_code' => $orderCode,
+                'order_code_short' => $orderShortCode,
+                'product_name' => (string) ($product['name'] ?? ('Product #' . $productId)),
+                'product_type' => $productType,
+                'requires_info' => $requiresInfo ? 1 : 0,
+                'delivery_mode' => (string) ($product['delivery_mode'] ?? ''),
+                'quantity' => $requestedQty,
+                'unit_price' => $price,
+                'total_price' => $totalPrice,
+                'status' => $requiresInfo ? 'pending' : 'completed',
+                'ordered_at' => $orderedAtDisplay,
+                'created_at' => $orderCreatedAtSql,
+                'customer_input' => $customerInput,
+                'delivery_content' => $requiresInfo ? '' : $deliveredPlain,
+                'source_link' => (string) ($product['source_link'] ?? ''),
+                'info_instructions' => (string) ($product['info_instructions'] ?? ''),
+            ], $sourceChannel);
+
+            // Enqueue Telegram notification
             try {
-                if (class_exists('UserTelegramLink') && class_exists('TelegramOutbox')) {
-                    $linkModel = new UserTelegramLink();
-                    $link = $linkModel->findByUserId($userId);
-                    if ($link) {
-                        $outbox = new TelegramOutbox();
-                        $notifMsg = "🛍 <b>ĐƠN HÀNG THÀNH CÔNG</b>\n\n";
-                        $notifMsg .= "Mã đơn: <code>{$orderCode}</code>\n";
-                        $notifMsg .= "📦Tên SP: <b>" . ($product['name'] ?? '') . "</b>\n";
-                        $notifMsg .= "💰Giá:  <b>" . number_format($totalPrice) . "đ</b>\n";
-                        $notifMsg .= "SL: <b>{$requestedQty}</b>\n";
-
-                        if ($requiresInfo) {
-                            $notifMsg .= "\n⏳ Đang chờ xử lý. Admin sẽ giao hàng sớm cho bạn.";
-                        } else if (!empty($deliveredPlain)) {
-                            $notifMsg .= "🔑 Nội dung:\n<code>" . htmlspecialchars($deliveredPlain) . "</code>\n";
-                        }
-                        $notifMsg .= "━━━━━━━━━━━━━━\n";
-                        $notifMsg .= "🙏 Cảm ơn bạn đã mua hàng!";
-
-                        $outbox->enqueue((int) $link['telegram_id'], $notifMsg);
+                if (class_exists('OrderNotificationService')) {
+                    $notifService = new OrderNotificationService();
+                    if ($requiresInfo) {
+                        $notifService->notifyAdminPendingOrder($orderData);
+                    } else {
+                        $notifService->notifyAdminNewOrder($orderData);
                     }
                 }
             } catch (Throwable $teleErr) {
@@ -307,56 +329,41 @@ class PurchaseService
                 'source_channel' => $sourceChannel,
             ]);
 
-            $orderShortCode = $this->makeShortOrderDisplayCode($orderCode);
-
             if ($requiresInfo) {
                 return [
                     'success' => true,
                     'pending' => true,
                     'message' => 'Đơn hàng đã tạo ở trạng thái chờ. Vui lòng chờ admin xử lý và giao nội dung.',
-                    'order' => [
-                        'id' => $orderId,
-                        'order_code' => $orderCode,
-                        'order_code_short' => $orderShortCode,
-                        'product_name' => (string) ($product['name'] ?? ''),
-                        'price' => $totalPrice,
+                    'order' => array_merge($orderData, [
                         'subtotal_price' => $subtotalPrice,
                         'discount_amount' => $discountAmount,
                         'giftcode' => $giftcodeMeta ? $giftcodeInput : null,
                         'giftcode_percent' => $giftcodeMeta ? (int) ($giftcodeMeta['giamgia'] ?? 0) : 0,
                         'unit_price' => $price,
-                        'quantity' => $requestedQty,
                         'status' => 'pending',
-                        'customer_input' => $customerInput,
                         'info_instructions' => (string) ($product['info_instructions'] ?? ''),
                         'created_at' => $this->timeService
                             ? $this->timeService->formatDisplay($this->timeService->nowTs(), 'H:i:s d/m/Y')
                             : date('H:i:s d/m/Y'),
-                    ],
+                    ]),
                 ];
             }
 
             return [
                 'success' => true,
                 'message' => 'Thanh toán thành công!',
-                'order' => [
-                    'id' => $orderId,
-                    'order_code' => $orderCode,
-                    'order_code_short' => $orderShortCode,
-                    'product_name' => (string) ($product['name'] ?? ''),
-                    'price' => $totalPrice,
+                'order' => array_merge($orderData, [
                     'subtotal_price' => $subtotalPrice,
                     'discount_amount' => $discountAmount,
                     'giftcode' => $giftcodeMeta ? $giftcodeInput : null,
                     'giftcode_percent' => $giftcodeMeta ? (int) ($giftcodeMeta['giamgia'] ?? 0) : 0,
                     'unit_price' => $price,
-                    'quantity' => $requestedQty,
                     'content' => $deliveredPlain,
                     'stock_id' => $firstStockId,
                     'created_at' => $this->timeService
                         ? $this->timeService->formatDisplay($this->timeService->nowTs(), 'H:i:s d/m/Y')
                         : date('H:i:s d/m/Y'),
-                ],
+                ]),
             ];
         } catch (Throwable $e) {
             if ($this->db->inTransaction()) {
@@ -641,6 +648,32 @@ class PurchaseService
         $exists = (int) $stmt->fetchColumn() > 0;
         $this->schemaColumnCache[$cacheKey] = $exists;
         return $exists;
+    }
+
+    /**
+     * @param array<string,mixed> $user
+     * @param array<string,mixed> $product
+     * @param array<string,mixed> $order
+     */
+    private function sendOrderSuccessMailNonBlocking(array $user, array $product, array $order, int $sourceChannel): void
+    {
+        if ($sourceChannel !== SourceChannelHelper::WEB) {
+            return;
+        }
+
+        $email = trim((string) ($user['email'] ?? ''));
+        if ($email === '') {
+            return;
+        }
+
+        try {
+            if (!class_exists('MailService')) {
+                require_once __DIR__ . '/MailService.php';
+            }
+            (new MailService())->sendOrderSuccess($user, $order, $product);
+        } catch (Throwable $e) {
+            // Non-blocking
+        }
     }
 }
 

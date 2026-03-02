@@ -292,6 +292,10 @@ class Order extends Model
                 $this->db->commit();
             }
 
+            if ($status !== 'completed') {
+                $this->sendFulfilledOrderMailNonBlocking($order, $nowSql, $deliveryContent);
+            }
+
             return [
                 'success' => true,
                 'message' => ($status === 'completed' ? 'Da cap nhat noi dung bao hanh.' : 'Da giao noi dung va hoan tat don hang.')
@@ -488,6 +492,74 @@ class Order extends Model
             return '';
         }
         return strtoupper(substr(hash('sha256', $orderCode), 0, 8));
+    }
+
+    /**
+     * @param array<string,mixed> $order
+     */
+    private function sendFulfilledOrderMailNonBlocking(array $order, string $fulfilledAt, string $deliveryContent): void
+    {
+        if (SourceChannelHelper::fromOrderRow($order) !== SourceChannelHelper::WEB) {
+            return;
+        }
+
+        $userId = (int) ($order['user_id'] ?? 0);
+        if ($userId <= 0) {
+            return;
+        }
+
+        try {
+            $userStmt = $this->db->prepare("SELECT `id`, `username`, `email` FROM `users` WHERE `id` = ? LIMIT 1");
+            $userStmt->execute([$userId]);
+            $user = $userStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+            if (!$user || trim((string) ($user['email'] ?? '')) === '') {
+                return;
+            }
+
+            $product = [];
+            $productId = (int) ($order['product_id'] ?? 0);
+            if ($productId > 0) {
+                $productStmt = $this->db->prepare("SELECT `id`, `name`, `image`, `product_type`, `requires_info`, `source_link`, `info_instructions` FROM `products` WHERE `id` = ? LIMIT 1");
+                $productStmt->execute([$productId]);
+                $product = $productStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+            }
+
+            $quantity = max(1, (int) ($order['quantity'] ?? 1));
+            $totalPrice = (int) ($order['price'] ?? 0);
+            $unitPrice = (int) floor($totalPrice / max(1, $quantity));
+            $orderedAtDisplay = $this->timeService
+                ? $this->timeService->formatDisplay($fulfilledAt, 'H:i:s d/m/Y')
+                : date('H:i:s d/m/Y', strtotime($fulfilledAt) ?: time());
+
+            if (!class_exists('MailService')) {
+                require_once __DIR__ . '/../Services/MailService.php';
+            }
+
+            (new MailService())->sendOrderSuccess($user, [
+                'order_code' => (string) ($order['order_code'] ?? ''),
+                'order_code_short' => $this->makeShortOrderDisplayCode((string) ($order['order_code'] ?? '')),
+                'product_name' => (string) ($order['product_name'] ?? ($product['name'] ?? 'San pham')),
+                'product_type' => (string) ($product['product_type'] ?? 'account'),
+                'requires_info' => (int) ($product['requires_info'] ?? 0),
+                'delivery_mode' => ($product !== [] && (string) ($product['product_type'] ?? '') === 'link')
+                    ? 'source_link'
+                    : (((int) ($product['requires_info'] ?? 0) === 1 || (string) ($order['status'] ?? '') === 'pending')
+                        ? 'manual_info'
+                        : 'account_stock'),
+                'quantity' => $quantity,
+                'unit_price' => $unitPrice,
+                'total_price' => $totalPrice,
+                'status' => 'completed',
+                'ordered_at' => $orderedAtDisplay,
+                'created_at' => (string) ($order['created_at'] ?? $fulfilledAt),
+                'customer_input' => (string) ($order['customer_input'] ?? ''),
+                'delivery_content' => $deliveryContent,
+                'source_link' => (string) ($product['source_link'] ?? ''),
+                'info_instructions' => (string) ($product['info_instructions'] ?? ''),
+            ], is_array($product) ? $product : []);
+        } catch (Throwable $e) {
+            // Non-blocking
+        }
     }
 
     /**

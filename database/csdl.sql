@@ -594,5 +594,26 @@ CREATE TABLE IF NOT EXISTS `telegram_outbox` (
   KEY `idx_status_trycount` (`status`, `try_count`, `created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Extra channels for staff/group notifications
+CREATE TABLE IF NOT EXISTS `telegram_notification_channels` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `chat_id` VARCHAR(64) NOT NULL,
+  `label` VARCHAR(100) NULL,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `uniq_chat_id` (`chat_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Tracks every unique Telegram ID that interacts with the bot for broadcasting
+CREATE TABLE IF NOT EXISTS `telegram_users` (
+  `telegram_id` BIGINT PRIMARY KEY,
+  `username` VARCHAR(64) NULL,
+  `first_name` VARCHAR(255) NULL,
+  `is_blocked` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `last_seen_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET FOREIGN_KEY_CHECKS = 1;
 COMMIT;
+

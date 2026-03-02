@@ -216,6 +216,37 @@ class TelegramService
         return $this->apiCall('deleteWebhook', $params);
     }
 
+    /**
+     * Set the bot commands list.
+     */
+    public function setMyCommands(array $commands, ?string $scope = null, ?string $languageCode = null): array
+    {
+        $payload = ['commands' => json_encode($commands, JSON_UNESCAPED_UNICODE)];
+        if ($scope !== null) {
+            $payload['scope'] = json_encode($scope);
+        }
+        if ($languageCode !== null) {
+            $payload['language_code'] = $languageCode;
+        }
+
+        return $this->apiCall('setMyCommands', $payload);
+    }
+
+    /**
+     * Get current bot commands.
+     */
+    public function getMyCommands(?string $scope = null, ?string $languageCode = null): array
+    {
+        $payload = [];
+        if ($scope !== null) {
+            $payload['scope'] = json_encode($scope);
+        }
+        if ($languageCode !== null) {
+            $payload['language_code'] = $languageCode;
+        }
+        return $this->apiCall('getMyCommands', $payload);
+    }
+
     public function apiCall(string $method, array $params = []): array
     {
         if (!$this->isConfigured()) {
