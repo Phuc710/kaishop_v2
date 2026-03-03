@@ -294,7 +294,9 @@ foreach ($authNavPaths as $p) {
                                     <?= $navLabel ?>
                                     <?php if ($embedImg !== ''): ?>
                                         <img src="<?= htmlspecialchars($embedImg, ENT_QUOTES, 'UTF-8') ?>" alt="icon"
-                                            style="height: 18px; margin-left: 4px; vertical-align: middle; margin-top: -2px;">
+                                            style="width: 20px; height: 20px; object-fit: contain; margin-left: 4px; vertical-align: middle; margin-top: -2px;"
+                                            draggable="false" class="ks-img-guard" decoding="async" loading="eager"
+                                            fetchpriority="high">
                                     <?php endif; ?>
                                 </a>
                             </li>
@@ -308,8 +310,8 @@ foreach ($authNavPaths as $p) {
                 <div class="mobile-sidebar-header justify-content-center">
                     <div class="mobile-sidebar-brand">
                         <img src="<?= asset($chungapi['logo']); ?>" alt="<?= $chungapi['ten_web'] ?? 'logo' ?>"
-                            draggable="false" class="ks-img-guard ks-mobile-sidebar-logo"
-                            decoding="async" loading="lazy" fetchpriority="low">
+                            draggable="false" class="ks-img-guard ks-mobile-sidebar-logo" decoding="async"
+                            loading="lazy" fetchpriority="low">
                     </div>
                 </div>
 

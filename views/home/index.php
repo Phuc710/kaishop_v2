@@ -3,6 +3,10 @@
 
 <head>
     <?php
+    $seoTitle = "KaiShop - Dịch vụ MMO, Source Code FREE, Nạp tiền tự động 24/7 Giá Rẻ";
+    $seoDescription = "KaiShop chuyên cung cấp dịch vụ MMO, mua bán Source Code FREE và nạp tiền tự động 24/7 uy tín. Hệ thống giao dịch nhanh chóng, bảo mật và giá cạnh tranh nhất.";
+    $seoKeywords = "mmo, source code free, nạp tiền tự động, nạp tiền 24/7, mua acc game, dịch vụ game giá rẻ, kaishop";
+
     $GLOBALS['pageAssets'] = array_merge($GLOBALS['pageAssets'] ?? [], [
         'vendor_quill' => false,
         'vendor_isotope' => false,
@@ -12,6 +16,36 @@
     ]);
     ?>
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>
+
+    <!-- Structured Data (JSON-LD) for SEO -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "KaiShop",
+      "url": "<?= url('') ?>",
+      "description": "<?= $seoDescription ?>",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "<?= url('') ?>?s={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "KaiShop",
+      "url": "<?= url('') ?>",
+      "logo": "<?= $chungapi['logo'] ?? asset('assets/images/logo.png') ?>",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "url": "https://t.me/kaishop07"
+      }
+    }
+    </script>
     <title> Trang Chủ | <?= $chungapi['ten_web']; ?></title>
     <style>
         .category-section-wrapper.d-none {
@@ -88,15 +122,43 @@
 <body> <?php require __DIR__ . '/../../hethong/nav.php'; ?>
     <main>
         <div class="container py-4 home-main-content">
+            <!-- Visually Hidden H1 for SEO -->
+            <h1 class="visually-hidden">KaiShop - Dịch vụ MMO, Source Code FREE, Nạp tiền tự động 24/7 Giá Rẻ</h1>
+
             <!-- Premium Hero Banner -->
             <?php if (!empty($chungapi['home_hero_html'])): ?>
                 <?= $chungapi['home_hero_html'] ?>
             <?php else: ?>
                 <div class="home-hero-banner mb-5">
                     <div class="hero-content">
-                        <h1>Khám phá Kho <span class="text-warning">Mã Nguồn</span> & Dịch Vụ Số</h1>
-                        <p>Giải pháp công nghệ chuyên nghiệp cho doanh nghiệp và cá nhân. Cam kết chất lượng, bảo hành 24/7.
-                        </p>
+                        <div class="hero-header-flex">
+                            <img src="https://media.giphy.com/media/0fnrt8FDzQBO8RSP9q/giphy.gif" alt="Thông báo"
+                                class="hero-notice-gif ks-img-guard" loading="lazy" decoding="async" draggable="false">
+                            <h1>Thông Báo Quan Trọng :</h1>
+                        </div>
+                        <div class="hero-disclaimer">
+                            <p><strong>【Tuyên bố miễn trừ trách nhiệm】</strong></p>
+                            <p>• Các sản phẩm được bán trên website này chỉ dùng cho mục đích hợp pháp như giải trí game,
+                                giao thương ngoại thương, marketing online. Nếu dùng vào mục đích bất hợp pháp, vui lòng
+                                đóng trang ngay lập tức!</p>
+                            <p>• Phải tuân thủ pháp luật trong nước khi sử dụng. Mọi hậu quả do sử dụng trái pháp luật sẽ
+                                tự chịu trách nhiệm, không liên quan gì đến website này!</p>
+                            <p>• Người mua tại website này, nếu bị phát hiện sử dụng vào mục đích bất hợp pháp, website sẽ
+                                phối hợp toàn lực với cơ quan chức năng để xử lý!</p>
+                            <div class="hero-contact-row mt-3">
+                                <a href="https://t.me/kaishop25" target="_blank" rel="noopener">
+                                    📢 <span class="contact-label">Channel</span>
+                                </a>
+                                <span class="text-white-50 opacity-25">•</span>
+                                <a href="https://t.me/kaishop07" target="_blank" rel="noopener">
+                                    <i class="fab fa-telegram-plane"></i> <span>@kaishop07</span>
+                                </a>
+                                <span class="text-white-50 opacity-25">•</span>
+                                <a href="#" onclick="return false;">
+                                    <i class="fab fa-discord"></i> <span>@thphuc37</span>
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             <?php endif; ?>

@@ -67,3 +67,4 @@ $adminPagesCssVersion = (string) @filemtime(dirname(__DIR__) . '/assets/css/admi
     crossorigin="anonymous">
 <link rel="stylesheet" href="<?= asset('assets/css/admin.css') ?>?v=<?= urlencode($adminCssVersion) ?>">
 <link rel="stylesheet" href="<?= asset('assets/css/admin-pages.css') ?>?v=<?= urlencode($adminPagesCssVersion) ?>">
+<link rel="stylesheet" href="<?= asset('assets/css/cursor.css') ?>">

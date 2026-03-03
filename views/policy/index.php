@@ -6,7 +6,7 @@
     $siteName = (string) ($chungapi['ten_web'] ?? 'KaiShop');
     $seoTitle = 'Chính Sách | ' . $siteName;
     $seoDescription = 'Tuyên bố miễn trừ trách nhiệm và chính sách sử dụng dịch vụ tại ' . $siteName . '.';
-    $seoKeywords = 'chính sách, quy định, miễn trừ trách nhiệm, ' . $siteName;
+    $seoKeywords = 'chính sách, quy định, miễn trừ trách nhiệm, mmo, dịch vụ game, nạp tiền tự động, ' . $siteName;
     $seoRobots = 'index, follow';
     ?>
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>
@@ -31,7 +31,8 @@
                 </p>
 
                 <h2>2. Chính sách sử dụng hợp pháp</h2>
-                <p>Người dùng cam kết không sử dụng sản phẩm/dịch vụ vào các mục đích trái pháp luật, bao gồm nhưng không giới hạn:</p>
+                <p>Người dùng cam kết không sử dụng sản phẩm/dịch vụ vào các mục đích trái pháp luật, bao gồm nhưng
+                    không giới hạn:</p>
                 <ul>
                     <li>Lừa đảo, chiếm đoạt tài sản</li>
                     <li>Phát tán nội dung vi phạm pháp luật hoặc xâm phạm quyền của bên thứ ba</li>
@@ -54,7 +55,8 @@
                 <div class="policy-notice">
                     <i class="fas fa-exclamation-triangle"></i>
                     <div>
-                        Khi tiếp tục sử dụng dịch vụ tại website, bạn xác nhận đã đọc, hiểu và đồng ý với các chính sách/quy định được công bố.
+                        Khi tiếp tục sử dụng dịch vụ tại website, bạn xác nhận đã đọc, hiểu và đồng ý với các chính
+                        sách/quy định được công bố.
                     </div>
                 </div>
             </div>

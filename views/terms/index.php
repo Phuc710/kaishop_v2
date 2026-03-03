@@ -6,7 +6,7 @@
     $siteName = (string) ($chungapi['ten_web'] ?? 'KaiShop');
     $seoTitle = 'Điều Khoản & Điều Kiện | ' . $siteName;
     $seoDescription = 'Điều khoản sử dụng dịch vụ, hoàn tiền, bảo hành và bảo mật tài khoản tại ' . $siteName . '.';
-    $seoKeywords = 'điều khoản, điều kiện, hoàn tiền, bảo hành, bảo mật, ' . $siteName;
+    $seoKeywords = 'điều khoản, điều kiện, hoàn tiền, bảo hành, bảo mật, mmo, nạp tiền 24/7, ' . $siteName;
     $seoRobots = 'index, follow';
     ?>
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>
@@ -23,7 +23,8 @@
                 <h1>Điều Khoản & Điều Kiện</h1>
 
                 <p>
-                    Khi truy cập hoặc mua hàng tại <strong><?= htmlspecialchars($siteName) ?></strong>, bạn đồng ý tuân thủ các điều khoản dưới đây.
+                    Khi truy cập hoặc mua hàng tại <strong><?= htmlspecialchars($siteName) ?></strong>, bạn đồng ý tuân
+                    thủ các điều khoản dưới đây.
                     Vui lòng đọc kỹ trước khi thanh toán và sử dụng dịch vụ.
                 </p>
 
@@ -31,14 +32,17 @@
                 <ul>
                     <li>
                         <strong>Hoàn tiền:</strong> Xử lý theo chính sách của website và mô tả từng sản phẩm.
-                        Các trường hợp mua nhầm / đổi ý / thao tác sai từ phía người dùng có thể không thuộc diện hoàn tiền.
+                        Các trường hợp mua nhầm / đổi ý / thao tác sai từ phía người dùng có thể không thuộc diện hoàn
+                        tiền.
                     </li>
                     <li>
                         <strong>Bảo hành:</strong> Áp dụng theo nội dung mô tả trên từng sản phẩm/dịch vụ (nếu có).
                     </li>
                     <li>
-                        <strong>Thời gian xử lý:</strong> Tùy theo trạng thái hệ thống và hình thức giao hàng (tự động/thủ công).
-                        Trong các trường hợp phát sinh (bảo trì, quá tải, lỗi nhà cung cấp), thời gian xử lý có thể kéo dài hơn dự kiến.
+                        <strong>Thời gian xử lý:</strong> Tùy theo trạng thái hệ thống và hình thức giao hàng (tự
+                        động/thủ công).
+                        Trong các trường hợp phát sinh (bảo trì, quá tải, lỗi nhà cung cấp), thời gian xử lý có thể kéo
+                        dài hơn dự kiến.
                     </li>
                 </ul>
 
@@ -51,7 +55,8 @@
 
                 <h2>3. Quyền của website</h2>
                 <p>
-                    Website có quyền từ chối hỗ trợ hoặc khóa tài khoản nếu phát hiện hành vi gian lận, lạm dụng, vi phạm pháp luật
+                    Website có quyền từ chối hỗ trợ hoặc khóa tài khoản nếu phát hiện hành vi gian lận, lạm dụng, vi
+                    phạm pháp luật
                     hoặc vi phạm các điều khoản công bố trên website.
                 </p>
 

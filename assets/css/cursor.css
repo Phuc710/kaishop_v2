@@ -1,0 +1,55 @@
+/* Global Custom Cursor Styles */
+
+:root {
+    --cursor-default: url('../cursor/default.cur'), auto;
+    --cursor-link: url('../cursor/link.cur'), pointer;
+    --cursor-text: url('../cursor/Text-Select.cur'), text;
+}
+
+/* Apply default cursor to the entire page */
+html,
+body {
+    cursor: var(--cursor-default) !important;
+}
+
+/* Link cursor for interactive elements */
+a,
+button,
+[role="button"],
+input[type="submit"],
+input[type="button"],
+input[type="reset"],
+.btn,
+.dropdown-item,
+.nav-link,
+.light-popup-close,
+.lp-btn-close-2h,
+.close,
+.clickable {
+    cursor: var(--cursor-link) !important;
+}
+
+/* Specific overrides for certain elements that might have their own cursor styles */
+a *,
+button * {
+    cursor: inherit !important;
+}
+
+/* Text select cursor for inputs and textareas */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+textarea,
+[contenteditable="true"] {
+    cursor: var(--cursor-text) !important;
+}
+
+/* Ensure that even when disabled, we follow the theme but maybe show allowed/not-allowed if needed */
+[disabled],
+.disabled {
+    cursor: not-allowed !important;
+}

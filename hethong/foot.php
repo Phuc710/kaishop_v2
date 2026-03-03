@@ -119,7 +119,8 @@
                                 alt="KaiShop" style="margin: 0 auto; display: block; max-width: 100%; height: auto;">
                         </a>
                         <p class="mx-auto" style="max-width: 320px;">
-                            <?= !empty($chungapi['mo_ta']) ? htmlspecialchars($chungapi['mo_ta']) : 'Hệ thống cung cấp Source Code, Tài khoản MMO, Công cụ và Dịch vụ chất lượng cao.'; ?>
+                            KaiShop - Chuyên cung cấp Source Code, Dịch vụ giá rẻ và Nạp tiền tự động nhanh chống
+                            24/7 uy tín Bảo mật.
                         </p>
                         <h6 class="mt-3"
                             style="background-color: rgba(255, 105, 0, 0.05); border-radius: 99px; padding: 8px 16px; display: inline-block; color: #ff6900; font-size: 14px; border: 1px solid rgba(255, 105, 0, 0.2);">

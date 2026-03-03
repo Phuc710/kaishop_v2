@@ -313,47 +313,126 @@
 /* ── Hero Banner ──────────────────────────────────── */
 .home-hero-banner {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    border-radius: 24px;
-    padding: 60px 50px;
+    border-radius: 16px;
+    padding: 25px 35px;
     color: #fff;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.home-hero-banner::after {
-    content: "";
-    position: absolute;
-    top: -50%;
-    right: -10%;
-    width: 400px;
-    height: 400px;
-    background: radial-gradient(circle, rgba(255, 105, 0, 0.15) 0%, rgba(255, 105, 0, 0) 70%);
-    z-index: 0;
-    border-radius: 50%;
-}
+
 
 .hero-content {
     position: relative;
     z-index: 1;
-    max-width: 650px;
 }
 
 .hero-content h1 {
-    font-size: clamp(2rem, 4vw, 2.8rem) !important;
-    font-weight: 850 !important;
-    color: #fff !important;
-    line-height: 1.1;
-    margin-bottom: 20px !important;
-    letter-spacing: -0.02em;
+    font-size: 2.2rem !important;
+    font-weight: 800 !important;
+    margin-bottom: 0 !important;
+    color: #ffc107 !important;
+    text-shadow: 0 2px 16px rgba(2, 6, 23, 0.45);
+    line-height: 1;
+    letter-spacing: -0.01em;
+    font-style: italic;
+}
+
+.hero-header-flex {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
 }
 
 .hero-content p {
-    font-size: 1.125rem;
-    color: rgba(226, 232, 240, 0.9);
-    line-height: 1.6;
+    font-size: 0.95rem;
+    color: rgba(226, 232, 240, 0.85);
+    line-height: 1.5;
     margin: 0;
     font-weight: 400;
+}
+
+.hero-notice-gif {
+    max-width: 45px !important;
+    border-radius: 8px;
+    margin-bottom: 0 !important;
+    filter: drop-shadow(0 0 10px rgba(255, 105, 0, 0.3));
+}
+
+.hero-disclaimer {
+    border-left: 3px solid #ff6b00;
+    padding-left: 14px;
+    margin-top: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 0 12px 12px 0;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.hero-disclaimer strong {
+    color: #ff6b00;
+    font-weight: 700;
+}
+
+.hero-disclaimer p {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.hero-contact-row {
+    font-size: 1rem;
+    font-weight: 500;
+    opacity: 1;
+    padding-top: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.hero-contact-row .contact-label {
+    color: #ffc107;
+    font-weight: 700;
+}
+
+.hero-contact-row a:nth-child(3) span {
+    color: #00aaff;
+}
+
+.hero-contact-row a:nth-child(5) span {
+    color: #7289da;
+}
+
+.hero-contact-row a {
+    color: #cbd5e1;
+    text-decoration: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.hero-contact-row a:hover {
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.hero-contact-row .fa-telegram-plane,
+.hero-contact-row .fa-telegram {
+    color: #00aaff;
+    filter: drop-shadow(0 0 5px rgba(0, 170, 255, 0.4));
+}
+
+.hero-contact-row .fa-discord {
+    color: #7289da;
+    filter: drop-shadow(0 0 5px rgba(114, 137, 218, 0.4));
 }
 
 /* ── Section Title Row ────────────────────────────── */
@@ -384,7 +463,42 @@
     }
 
     .home-hero-banner {
-        padding: 32px 20px;
+        padding: 20px 15px;
+        border-radius: 12px;
+        margin-bottom: 25px !important;
+    }
+
+    .hero-header-flex {
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .hero-header-flex h1 {
+        font-size: 1.5rem !important;
+    }
+
+    .hero-notice-gif {
+        max-width: 35px !important;
+    }
+
+    .hero-disclaimer p {
+        font-size: 0.875rem;
+        line-height: 1.4;
+    }
+
+    .hero-contact-row {
+        gap: 8px;
+        padding-top: 12px;
+    }
+
+    .hero-contact-row a {
+        font-size: 0.8rem;
+        padding: 4px 6px;
+    }
+
+    .hero-contact-row .text-white-50 {
+        display: none;
+        /* Hide dots on small screens */
     }
 }
 

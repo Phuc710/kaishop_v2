@@ -195,6 +195,7 @@ $fallbackFaviconHref = asset('assets/images/kaishop_favicon.png');
 <link rel="stylesheet" href="<?= asset('assets/css/home.css') ?>">
 <link rel="stylesheet" href="<?= asset('assets/css/user-pages.css') ?>">
 <link rel="stylesheet" href="<?= asset('assets/css/notify.css') ?>" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="<?= asset('assets/css/cursor.css') ?>">
 
 <?php if (!empty($resolvedAssetFlags['interactive_bundle']) && !empty($resolvedAssetFlags['vendor_glightbox'])): ?>
     <link rel="stylesheet" href="<?= asset('assets/css/glightbox.css') ?>">
