@@ -25,11 +25,11 @@ class TelegramAdminController extends Controller
 
         if (!isset($user['level']) || $user['level'] != 9) {
             http_response_code(403);
-            die('Truy cÃ¡ÂºÂ­p bÃ¡Â»â€¹ tÃ¡Â»Â« chÃ¡Â»â€˜i - ChÃ¡Â»â€° dÃƒÂ nh cho quÃ¡ÂºÂ£n trÃ¡Â»â€¹ viÃƒÂªn');
+            die('Truy cập bị từ chối - Chỉ dành cho quản trị viên');
         }
     }
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Settings Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // ——— Settings ———————————————————————————————————————————
 
     public function settings(): void
     {
@@ -140,7 +140,7 @@ class TelegramAdminController extends Controller
                 if ($field === 'telegram_webhook_path' && $value !== '') {
                     $normalized = trim($value, '/');
                     if ($normalized === '' || !preg_match('/^[A-Za-z0-9_\\-\\/]{3,120}$/', $normalized)) {
-                        $this->json(['success' => false, 'message' => 'Ã„ÂÃ†Â°Ã¡Â»Âng dÃ¡ÂºÂ«n Webhook khÃƒÂ´ng hÃ¡Â»Â£p lÃ¡Â»â€¡.']);
+                        $this->json(['success' => false, 'message' => 'Đường dẫn Webhook không hợp lệ.']);
                         return;
                     }
                     $value = $normalized;
@@ -152,10 +152,10 @@ class TelegramAdminController extends Controller
         }
         Config::clearSiteConfigCache();
 
-        $this->json(['success' => true, 'message' => 'Ã„ÂÃƒÂ£ cÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t cÃ¡ÂºÂ¥u hÃƒÂ¬nh Telegram']);
+        $this->json(['success' => true, 'message' => 'Đã cập nhật cấu hình Telegram']);
     }
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Webhook Actions Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // ——— Webhook Actions ————————————————————————————————————
 
     public function setWebhookAction(): void
     {
@@ -171,7 +171,7 @@ class TelegramAdminController extends Controller
                 $stmt->execute([$normalized]);
                 Config::clearSiteConfigCache();
             } else {
-                $this->json(['success' => false, 'message' => 'Ã„ÂÃ†Â°Ã¡Â»Âng dÃ¡ÂºÂ«n khÃƒÂ´ng hÃ¡Â»Â£p lÃ¡Â»â€¡.']);
+                $this->json(['success' => false, 'message' => 'Đường dẫn không hợp lệ.']);
                 return;
             }
         }
@@ -186,7 +186,7 @@ class TelegramAdminController extends Controller
 
         $this->json([
             'success' => !empty($result['ok']),
-            'message' => !empty($result['ok']) ? 'Ã„ÂÃƒÂ£ lÃ†Â°u vÃƒÂ  kÃƒÂ­ch hoÃ¡ÂºÂ¡t Webhook thÃƒÂ nh cÃƒÂ´ng!' : ($result['description'] ?? 'LÃ¡Â»â€”i tÃ¡Â»Â« Telegram API'),
+            'message' => !empty($result['ok']) ? 'Đã lưu và kích hoạt Webhook thành công!' : ($result['description'] ?? 'Lỗi từ Telegram API'),
         ]);
     }
 
@@ -196,7 +196,7 @@ class TelegramAdminController extends Controller
         $result = $this->telegram->deleteWebhook();
         $this->json([
             'success' => !empty($result['ok']),
-            'message' => !empty($result['ok']) ? 'Ã„ÂÃƒÂ£ tÃ¡ÂºÂ¡m dÃ¡Â»Â«ng hoÃ¡ÂºÂ¡t Ã„â€˜Ã¡Â»â„¢ng Webhook' : ($result['description'] ?? 'LÃ¡Â»â€”i'),
+            'message' => !empty($result['ok']) ? 'Đã tạm dừng hoạt động Webhook' : ($result['description'] ?? 'Lỗi'),
         ]);
     }
 
@@ -205,17 +205,17 @@ class TelegramAdminController extends Controller
         $this->requireAdmin();
         $chatId = get_setting('telegram_chat_id', '');
         if ($chatId === '') {
-            $this->json(['success' => false, 'message' => 'ChÃ†Â°a cÃ¡ÂºÂ¥u hÃƒÂ¬nh Chat ID']);
+            $this->json(['success' => false, 'message' => 'Chưa cấu hình Chat ID']);
             return;
         }
 
         $now = TimeService::instance()->nowSql();
-        $msg = "Ã¢Å“â€¦ <b>Test kÃ¡ÂºÂ¿t nÃ¡Â»â€˜i thÃƒÂ nh cÃƒÂ´ng!</b>\nTin nhÃ¡ÂºÂ¯n Ã„â€˜Ã†Â°Ã¡Â»Â£c gÃ¡Â»Â­i tÃ¡Â»Â« KaiShop Admin.\nÃ°Å¸â€¢â€™ ThÃ¡Â»Âi gian: {$now}";
+        $msg = "✅ <b>Test kết nối thành công!</b>\nTin nhắn được gửi từ KaiShop Admin.\n🕒 Thời gian: {$now}";
         $success = $this->telegram->sendTo($chatId, $msg);
 
         $this->json([
             'success' => (bool) $success,
-            'message' => $success ? 'Ã„ÂÃƒÂ£ gÃ¡Â»Â­i tin nhÃ¡ÂºÂ¯n test thÃƒÂ nh cÃƒÂ´ng' : 'GÃ¡Â»Â­i thÃ¡ÂºÂ¥t bÃ¡ÂºÂ¡i, hÃƒÂ£y kiÃ¡Â»Æ’m tra lÃ¡ÂºÂ¡i Token/Chat ID',
+            'message' => $success ? 'Đã gửi tin nhắn test thành công' : 'Gửi thất bại, hãy kiểm tra lại Token/Chat ID',
         ]);
     }
 
@@ -226,7 +226,7 @@ class TelegramAdminController extends Controller
         $result = $botLogic->initializeBot();
         $this->json([
             'success' => !empty($result['ok']),
-            'message' => !empty($result['ok']) ? 'Ã„ÂÃƒÂ£ Ã„â€˜Ã¡Â»â€œng bÃ¡Â»â„¢ Menu & LÃ¡Â»â€¡nh Bot thÃƒÂ nh cÃƒÂ´ng' : ($result['description'] ?? 'LÃ¡Â»â€”i Ã„â€˜Ã¡Â»â€œng bÃ¡Â»â„¢'),
+            'message' => !empty($result['ok']) ? 'Đã đồng bộ Menu & Lệnh Bot thành công' : ($result['description'] ?? 'Lỗi đồng bộ'),
         ]);
     }
 
@@ -280,7 +280,7 @@ class TelegramAdminController extends Controller
         ]);
     }
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Notification Channels Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // ——— Notification Channels ——————————————————————————————
 
     public function notificationChannels(): void
     {
@@ -296,7 +296,7 @@ class TelegramAdminController extends Controller
         $label = trim((string) $this->post('label', ''));
 
         if ($chatId === '') {
-            $this->json(['success' => false, 'message' => 'Chat ID/Channel khÃƒÂ´ng Ã„â€˜Ã†Â°Ã¡Â»Â£c Ã„â€˜Ã¡Â»Æ’ trÃ¡Â»â€˜ng']);
+            $this->json(['success' => false, 'message' => 'Chat ID/Channel không được để trống']);
             return;
         }
 
@@ -305,7 +305,7 @@ class TelegramAdminController extends Controller
 
         $this->json([
             'success' => $success,
-            'message' => $success ? 'Ã„ÂÃƒÂ£ thÃƒÂªm kÃƒÂªnh nhÃ¡ÂºÂ­n thÃƒÂ´ng bÃƒÂ¡o thÃƒÂ nh cÃƒÂ´ng' : 'KÃƒÂªnh nÃƒÂ y Ã„â€˜ÃƒÂ£ tÃ¡Â»â€œn tÃ¡ÂºÂ¡i hoÃ¡ÂºÂ·c cÃƒÂ³ lÃ¡Â»â€”i',
+            'message' => $success ? 'Đã thêm kênh nhận thông báo thành công' : 'Kênh này đã tồn tại hoặc có lỗi',
         ]);
     }
 
@@ -314,7 +314,7 @@ class TelegramAdminController extends Controller
         $this->requireAdmin();
         $id = (int) $this->post('id', 0);
         if ($id <= 0) {
-            $this->json(['success' => false, 'message' => 'ID khÃƒÂ´ng hÃ¡Â»Â£p lÃ¡Â»â€¡']);
+            $this->json(['success' => false, 'message' => 'ID không hợp lệ']);
             return;
         }
 
@@ -332,18 +332,18 @@ class TelegramAdminController extends Controller
         $label = trim((string) $this->post('label', ''));
 
         if ($id <= 0) {
-            $this->json(['success' => false, 'message' => 'ID khÃƒÂ´ng hÃ¡Â»Â£p lÃ¡Â»â€¡']);
+            $this->json(['success' => false, 'message' => 'ID không hợp lệ']);
             return;
         }
         if ($chatId === '') {
-            $this->json(['success' => false, 'message' => 'Chat ID khÃƒÂ´ng Ã„â€˜Ã†Â°Ã¡Â»Â£c Ã„â€˜Ã¡Â»Æ’ trÃ¡Â»â€˜ng']);
+            $this->json(['success' => false, 'message' => 'Chat ID không được để trống']);
             return;
         }
 
         $model = new TelegramNotificationChannel();
         $found = $model->find($id);
         if (!$found) {
-            $this->json(['success' => false, 'message' => 'KÃƒÂªnh khÃƒÂ´ng tÃ¡Â»â€œn tÃ¡ÂºÂ¡i']);
+            $this->json(['success' => false, 'message' => 'Kênh không tồn tại']);
             return;
         }
 
@@ -351,12 +351,12 @@ class TelegramAdminController extends Controller
             $success = $model->updateChannel($id, $chatId, $label !== '' ? $label : null);
             $this->json([
                 'success' => (bool) $success,
-                'message' => $success ? 'Ã„ÂÃƒÂ£ cÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t kÃƒÂªnh thÃƒÂ nh cÃƒÂ´ng' : 'KhÃƒÂ´ng thÃ¡Â»Æ’ cÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t kÃƒÂªnh',
+                'message' => $success ? 'Đã cập nhật kênh thành công' : 'Không thể cập nhật kênh',
             ]);
         } catch (Throwable $e) {
             $this->json([
                 'success' => false,
-                'message' => 'KhÃƒÂ´ng thÃ¡Â»Æ’ cÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t (cÃƒÂ³ thÃ¡Â»Æ’ trÃƒÂ¹ng Chat ID)',
+                'message' => 'Không thể cập nhật (có thể trùng Chat ID)',
             ]);
         }
     }
@@ -366,7 +366,7 @@ class TelegramAdminController extends Controller
         $this->requireAdmin();
         $id = (int) $this->post('id', 0);
         if ($id <= 0) {
-            $this->json(['success' => false, 'message' => 'ID khÃƒÂ´ng hÃ¡Â»Â£p lÃ¡Â»â€¡']);
+            $this->json(['success' => false, 'message' => 'ID không hợp lệ']);
             return;
         }
 
@@ -375,7 +375,7 @@ class TelegramAdminController extends Controller
         $this->json(['success' => $success]);
     }
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Orders Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // ——— Orders —————————————————————————————————————————————
 
     public function orders(): void
     {
@@ -410,7 +410,7 @@ class TelegramAdminController extends Controller
         ]);
     }
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ User Links Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // ——— User Links —————————————————————————————————————————
 
     public function sendMainChannelAlertAction(): void
     {
@@ -420,18 +420,18 @@ class TelegramAdminController extends Controller
         $message = trim((string) $this->post('message', ''));
 
         if ($chatId === '') {
-            $this->json(['success' => false, 'message' => 'ThiÃ¡ÂºÂ¿u Telegram Chat ID / Channel']);
+            $this->json(['success' => false, 'message' => 'Thiếu Telegram Chat ID / Channel']);
             return;
         }
         if ($message === '') {
-            $this->json(['success' => false, 'message' => 'NÃ¡Â»â„¢i dung ALERT khÃƒÂ´ng Ã„â€˜Ã†Â°Ã¡Â»Â£c Ã„â€˜Ã¡Â»Æ’ trÃ¡Â»â€˜ng']);
+            $this->json(['success' => false, 'message' => 'Nội dung ALERT không được để trống']);
             return;
         }
 
         $ok = (bool) $this->telegram->sendTo($chatId, $message);
         $this->json([
             'success' => $ok,
-            'message' => $ok ? 'Ã„ÂÃƒÂ£ gÃ¡Â»Â­i ALERT vÃƒÂ o Main Channel' : 'GÃ¡Â»Â­i ALERT thÃ¡ÂºÂ¥t bÃ¡ÂºÂ¡i, hÃƒÂ£y kiÃ¡Â»Æ’m tra token/chat id',
+            'message' => $ok ? 'Đã gửi ALERT vào Main Channel' : 'Gửi ALERT thất bại, hãy kiểm tra token/chat id',
         ]);
     }
 
@@ -559,7 +559,7 @@ class TelegramAdminController extends Controller
         $this->requireAdmin();
         $userId = (int) $this->post('user_id', 0);
         if ($userId <= 0) {
-            $this->json(['success' => false, 'message' => 'ThiÃ¡ÂºÂ¿u ID ngÃ†Â°Ã¡Â»Âi dÃƒÂ¹ng']);
+            $this->json(['success' => false, 'message' => 'Thiếu ID người dùng']);
             return;
         }
 
@@ -568,11 +568,11 @@ class TelegramAdminController extends Controller
 
         $this->json([
             'success' => $success,
-            'message' => $success ? 'Ã„ÂÃƒÂ£ hÃ¡Â»Â§y liÃƒÂªn kÃ¡ÂºÂ¿t thÃƒÂ nh cÃƒÂ´ng' : 'KhÃƒÂ´ng thÃ¡Â»Æ’ thÃ¡Â»Â±c hiÃ¡Â»â€¡n hÃ¡Â»Â§y liÃƒÂªn kÃ¡ÂºÂ¿t',
+            'message' => $success ? 'Đã hủy liên kết thành công' : 'Không thể thực hiện hủy liên kết',
         ]);
     }
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Outbox Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // ——— Outbox —————————————————————————————————————————————
 
     public function outbox(): void
     {
@@ -681,7 +681,7 @@ class TelegramAdminController extends Controller
             }
         }
 
-        $this->json(['success' => true, 'message' => 'Ã„ÂÃƒÂ£ Ã„â€˜Ã¡ÂºÂ·t lÃ¡ÂºÂ¡i trÃ¡ÂºÂ¡ng thÃƒÂ¡i Ã„â€˜Ã¡Â»Æ’ gÃ¡Â»Â­i lÃ¡ÂºÂ¡i']);
+        $this->json(['success' => true, 'message' => 'Đã đặt lại trạng thái để gửi lại']);
     }
 
     public function outboxDelete(): void
@@ -694,7 +694,7 @@ class TelegramAdminController extends Controller
 
         if ($idsRaw === 'all') {
             $db->exec("DELETE FROM `telegram_outbox` WHERE `status` IN ('sent', 'fail')");
-            $this->json(['success' => true, 'message' => 'Da xoa hang doi da xu ly']);
+            $this->json(['success' => true, 'message' => 'Đã xóa hàng đợi đã xử lý']);
             return;
         }
 
@@ -704,21 +704,21 @@ class TelegramAdminController extends Controller
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
             $stmt = $db->prepare("DELETE FROM `telegram_outbox` WHERE `id` IN ({$placeholders})");
             $stmt->execute($ids);
-            $this->json(['success' => true, 'message' => 'Da xoa cac ban ghi duoc chon']);
+            $this->json(['success' => true, 'message' => 'Đã xóa các bản ghi được chọn']);
         } else {
-            $this->json(['success' => false, 'message' => 'Vui long chon ban ghi can xoa']);
+            $this->json(['success' => false, 'message' => 'Vui lòng chọn bản ghi cần xóa']);
         }
     }
 
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Broadcast Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // ——— Broadcast ——————————————————————————————————————————
 
     public function broadcastAction(): void
     {
         $this->requireAdmin();
         $message = trim((string) $this->post('message', ''));
         if ($message === '') {
-            $this->json(['success' => false, 'message' => 'NÃ¡Â»â„¢i dung tin nhÃ¡ÂºÂ¯n khÃƒÂ´ng Ã„â€˜Ã†Â°Ã¡Â»Â£c Ã„â€˜Ã¡Â»Æ’ trÃ¡Â»â€˜ng']);
+            $this->json(['success' => false, 'message' => 'Nội dung tin nhắn không được để trống']);
             return;
         }
 
@@ -726,7 +726,7 @@ class TelegramAdminController extends Controller
         $tids = $userModel->getAllActive();
 
         if (empty($tids)) {
-            $this->json(['success' => false, 'message' => 'ChÃ†Â°a cÃƒÂ³ ngÃ†Â°Ã¡Â»Âi dÃƒÂ¹ng nÃƒÂ o (active) Ã„â€˜Ã¡Â»Æ’ gÃ¡Â»Â­i tin']);
+            $this->json(['success' => false, 'message' => 'Chưa có người dùng nào (active) để gửi tin']);
             return;
         }
 
@@ -737,7 +737,7 @@ class TelegramAdminController extends Controller
             $count++;
         }
 
-        $this->json(['success' => true, 'message' => "Ã„ÂÃƒÂ£ thÃƒÂªm {$count} tin nhÃ¡ÂºÂ¯n vÃƒÂ o hÃƒÂ ng Ã„â€˜Ã¡Â»Â£i gÃ¡Â»Â­i (Outbox)"]);
+        $this->json(['success' => true, 'message' => "Đã thêm {$count} tin nhắn vào hàng đợi gửi (Outbox)"]);
     }
 
     /**

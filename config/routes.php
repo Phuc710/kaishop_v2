@@ -5,7 +5,7 @@
  * Maps URLs to Controllers
  */
 
-return [
+$routes = [
     // ========== HOME ==========
     ['GET', '/', 'HomeController@index'],
     ['GET', '/category/{slug}', 'HomeController@category'],
@@ -169,3 +169,25 @@ return [
     // Keep this near the end to avoid catching admin/api routes like /admin/users
     ['GET', '/{categorySlug}/{productSlug}', 'ProductController@showBySlug'],
 ];
+
+
+// ========== DYNAMIC TELEGRAM WEBHOOK ROUTE ==========
+// Reads webhook path from DB settings and registers a matching route dynamically.
+// This allows admin to change the webhook URL in settings without code changes.
+try {
+    if (function_exists('get_setting')) {
+        $tgWebhookPath = trim((string) get_setting('telegram_webhook_path', ''));
+        if ($tgWebhookPath !== '' && $tgWebhookPath !== 'telegram/webhook') {
+            $dynamicRoute = '/api/' . ltrim($tgWebhookPath, '/');
+            // Insert before the catch-all slug route (second-to-last position)
+            array_splice($routes, -1, 0, [
+                ['POST', $dynamicRoute, 'TelegramBotController@handleWebhook'],
+            ]);
+        }
+    }
+} catch (Throwable $e) {
+    // Silently ignore if DB not ready yet (first setup, migration, etc.)
+}
+
+return $routes;
+

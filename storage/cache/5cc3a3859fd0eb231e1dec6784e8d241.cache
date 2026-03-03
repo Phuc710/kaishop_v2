@@ -1,0 +1,1 @@
+a:2:{s:2:"ok";b:1;s:6:"result";a:7:{s:3:"url";s:48:"https://kaishop.id.vn/api/bottelekaishop_default";s:22:"has_custom_certificate";b:0;s:20:"pending_update_count";i:4;s:15:"last_error_date";i:1772530069;s:18:"last_error_message";s:46:"Wrong response from the webhook: 403 Forbidden";s:15:"max_connections";i:40;s:10:"ip_address";s:12:"188.114.97.0";}}

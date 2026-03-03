@@ -294,6 +294,18 @@ function isTelegramWebhookPathForSecurity(string $path): bool
         '/api/telegram/webhook',
     ];
 
+    // Dynamic webhook path from DB settings
+    if (function_exists('get_setting')) {
+        try {
+            $dbPath = trim((string) get_setting('telegram_webhook_path', ''));
+            if ($dbPath !== '') {
+                $knownWebhookPaths[] = '/api/' . ltrim($dbPath, '/');
+            }
+        } catch (Throwable $e) {
+            // Ignore if DB not ready
+        }
+    }
+
     if (class_exists('TelegramConfig')) {
         $segment = trim((string) TelegramConfig::WEBHOOK_PATH_SEGMENT, '/');
         if ($segment !== '') {
@@ -311,6 +323,7 @@ function isTelegramWebhookPathForSecurity(string $path): bool
 
     return false;
 }
+
 
 function resolveInputSecurityProfile(string $path, string $method): ?array
 {

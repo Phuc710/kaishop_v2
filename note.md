@@ -23,7 +23,8 @@ $headers = @{
 
 Invoke-WebRequest -Uri $webhookUrl -Method Post -Headers $headers -Body $payload | Select-Object -ExpandProperty Content
 
-
+php /home/kaishopi/domains/kaishop.id.vn/public_html/public/telegram/cron.php >> /dev/null 2>&1
+https://kaishop.id.vn/api/sepay/webhook
 
 Mở CMD hoặc PowerShell tại thư mục dự án 
 cd c:\xampp\htdocs\kaishop_v2

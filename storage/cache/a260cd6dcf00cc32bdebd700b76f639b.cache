@@ -1,0 +1,1 @@
+a:2:{s:2:"ok";b:1;s:6:"result";a:11:{s:2:"id";i:8547601180;s:6:"is_bot";b:1;s:10:"first_name";s:6:"abc321";s:8:"username";s:13:"abc321123_bot";s:15:"can_join_groups";b:1;s:27:"can_read_all_group_messages";b:0;s:23:"supports_inline_queries";b:0;s:23:"can_connect_to_business";b:0;s:16:"has_main_web_app";b:0;s:18:"has_topics_enabled";b:0;s:29:"allows_users_to_create_topics";b:0;}}
