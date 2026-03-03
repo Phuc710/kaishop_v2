@@ -145,6 +145,7 @@ $routes = [
     ['GET', '/admin/telegram/settings', 'Admin\\TelegramAdminController@settings'],
     ['POST', '/admin/telegram/settings/update', 'Admin\\TelegramAdminController@updateSettings'],
     ['POST', '/admin/telegram/webhook/set', 'Admin\\TelegramAdminController@setWebhookAction'],
+    ['POST', '/admin/telegram/webhook/activate', 'Admin\\TelegramAdminController@activateWebhookAction'],
     ['POST', '/admin/telegram/webhook/delete', 'Admin\\TelegramAdminController@deleteWebhookAction'],
     ['POST', '/admin/telegram/test', 'Admin\\TelegramAdminController@testNotification'],
     ['POST', '/admin/telegram/sync', 'Admin\\TelegramAdminController@syncBotAction'],

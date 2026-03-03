@@ -190,6 +190,34 @@ class TelegramAdminController extends Controller
         ]);
     }
 
+    /**
+     * KÍCH HOẠT WEBHOOK — đăng ký ngay path hiện có trong DB, không cần nhập path mới.
+     */
+    public function activateWebhookAction(): void
+    {
+        $this->requireAdmin();
+
+        $baseUrl = rtrim(defined('BASE_URL') ? BASE_URL : '', '/');
+        $path = trim((string) get_setting('telegram_webhook_path', ''));
+
+        if ($path === '') {
+            $this->json(['success' => false, 'message' => 'Chưa có Webhook Path trong cấu hình. Hãy nhập path trước.']);
+            return;
+        }
+
+        $webhookUrl = $baseUrl . '/api/' . ltrim($path, '/');
+        $secret = trim((string) get_setting('telegram_webhook_secret', ''));
+
+        $result = $this->telegram->setWebhook($webhookUrl, $secret ?: null);
+
+        $this->json([
+            'success' => !empty($result['ok']),
+            'message' => !empty($result['ok'])
+                ? '⚡ Kích hoạt Webhook thành công! URL: ' . $webhookUrl
+                : ('Lỗi: ' . ($result['description'] ?? 'Telegram API không phản hồi')),
+        ]);
+    }
+
     public function deleteWebhookAction(): void
     {
         $this->requireAdmin();

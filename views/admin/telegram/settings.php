@@ -306,8 +306,12 @@ $tgCssVersion = (string) @filemtime(dirname(__DIR__, 3) . '/assets/css/telegram_
                         <div class="d-flex justify-content-end align-items-center" style="gap: 10px;">
                             <button class="btn btn-outline-danger px-4 font-weight-bold" id="btnDelWebhook">NGẮT KẾT
                                 NỐI</button>
-                            <button class="btn btn-success px-5 font-weight-bold py-2 shadow-sm" id="btnSetWebhook">
-                                <i class="fas fa-bolt mr-2"></i> LƯU & KÍCH HOẠT
+                            <button class="btn btn-outline-primary px-4 font-weight-bold" id="btnSetWebhook">
+                                <i class="fas fa-save mr-1"></i> LƯU PATH
+                            </button>
+                            <button class="btn btn-success px-5 font-weight-bold py-2 shadow-sm"
+                                id="btnActivateWebhook">
+                                <i class="fas fa-bolt mr-2"></i> KÍCH HOẠT WEBHOOK
                             </button>
                         </div>
                     </div>
@@ -657,16 +661,30 @@ $tgCssVersion = (string) @filemtime(dirname(__DIR__, 3) . '/assets/css/telegram_
             });
             if (btnSetWebhook) btnSetWebhook.addEventListener('click', async () => {
                 const path = (document.getElementById('webhookPathInput').value || '').trim();
-                if (!path) return SwalHelper.toast('Vui lòng nhập đường dẫn', 'error');
+                if (!path) return SwalHelper.toast('Vui lòng nhập đường dẫn webhook', 'error');
                 setLoading(btnSetWebhook, true);
                 try {
                     const res = await postRequest('<?= url('admin/telegram/webhook/set') ?>', { path });
                     SwalHelper.toast(res.message, res.success ? 'success' : 'error');
                     if (res.success) reloadKeepingTab(800);
                 } catch (err) {
-                    SwalHelper.toast('Lỗi cập nhật webhook', 'error');
+                    SwalHelper.toast('Lỗi lưu path', 'error');
                 } finally {
                     setLoading(btnSetWebhook, false);
+                }
+            });
+
+            const btnActivateWebhook = document.getElementById('btnActivateWebhook');
+            if (btnActivateWebhook) btnActivateWebhook.addEventListener('click', async () => {
+                setLoading(btnActivateWebhook, true, '<i class="fas fa-circle-notch fa-spin mr-1"></i> Đang kích hoạt...');
+                try {
+                    const res = await postRequest('<?= url('admin/telegram/webhook/activate') ?>', {});
+                    SwalHelper.toast(res.message, res.success ? 'success' : 'error');
+                    if (res.success) reloadKeepingTab(800);
+                } catch (err) {
+                    SwalHelper.toast('Lỗi kích hoạt webhook', 'error');
+                } finally {
+                    setLoading(btnActivateWebhook, false);
                 }
             });
 

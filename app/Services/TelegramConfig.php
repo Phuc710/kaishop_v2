@@ -224,8 +224,14 @@ final class TelegramConfig
     public static function webhookUrl(): string
     {
         $base = rtrim(defined('BASE_URL') ? BASE_URL : (string) self::env('BASE_URL'), '/');
-        // Ưu tiên route-based nếu server hỗ trợ; sử dụng random-named path mặc định
-        return $base . '/api/' . self::WEBHOOK_PATH_SEGMENT . '/index.php';
+
+        // Dynamic path from DB settings
+        $path = trim((string) get_setting('telegram_webhook_path', ''));
+        if ($path === '') {
+            $path = self::WEBHOOK_PATH_SEGMENT;
+        }
+
+        return $base . '/api/' . ltrim($path, '/');
     }
 
     // ================================================================
