@@ -155,13 +155,17 @@ final class TelegramConfig
 
     /**
      * Webhook secret token
+     * Ưu tiên DB (admin có thể đổi qua Settings) → fallback .env
+     * QUAN TRỌNG: phải dùng cùng 1 nguồn với lúc setWebhook, không được đọc 2 nguồn khác nhau.
      */
     public static function webhookSecret(): string
     {
-        $env = self::env('TELEGRAM_WEBHOOK_SECRET');
-        if ($env !== '')
-            return $env;
-        return trim((string) get_setting('telegram_webhook_secret', ''));
+        // DB trước — admin đổi trong Settings là có hiệu lực ngay
+        $db = trim((string) get_setting('telegram_webhook_secret', ''));
+        if ($db !== '')
+            return $db;
+        // Fallback .env nếu DB chưa có giá trị
+        return self::env('TELEGRAM_WEBHOOK_SECRET');
     }
 
     /**
