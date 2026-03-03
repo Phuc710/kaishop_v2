@@ -41,12 +41,14 @@ class Router
      */
     public function dispatch($uri)
     {
-        // Get the script directory (e.g., /kaishop_v2/public)
-        $scriptName = $_SERVER['SCRIPT_NAME']; // e.g., /kaishop_v2/public/index_new.php
-        $scriptDir = dirname($scriptName); // e.g., /kaishop_v2/public
+        // Get the script directory.
+        // rtrim with '/' ensures root deployments give '' not '/',
+        // preventing the leading slash from being stripped off all URIs.
+        $scriptName = $_SERVER['SCRIPT_NAME']; // e.g., /index.php or /kaishop_v2/index.php
+        $scriptDir = rtrim(dirname($scriptName), '/'); // e.g., '' or '/kaishop_v2'
 
-        // Remove script directory from URI to get the path
-        if (strpos($uri, $scriptDir) === 0) {
+        // Remove script directory prefix from URI (only when non-empty)
+        if ($scriptDir !== '' && strpos($uri, $scriptDir) === 0) {
             $uri = substr($uri, strlen($scriptDir));
         }
 
@@ -58,10 +60,16 @@ class Router
             $uri = '/';
         }
 
-        // Remove trailing slash
-        $uri = rtrim($uri, '/');
-        if (empty($uri)) {
+        // Ensure URI always starts with '/'
+        if ($uri === '' || $uri === false) {
             $uri = '/';
+        } elseif ($uri[0] !== '/') {
+            $uri = '/' . $uri;
+        }
+
+        // Remove trailing slash (but keep root '/')
+        if ($uri !== '/') {
+            $uri = rtrim($uri, '/');
         }
 
         $method = $_SERVER['REQUEST_METHOD'];

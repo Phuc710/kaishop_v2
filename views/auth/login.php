@@ -28,10 +28,13 @@ if ($isLocalAuthHost) {
 }
 
 $firebaseConfig = [
-    'apiKey'      => (string) EnvHelper::get('FIREBASE_API_KEY', ''),
-    'authDomain'  => (string) EnvHelper::get('FIREBASE_AUTH_DOMAIN', ''),
-    'projectId'   => (string) EnvHelper::get('FIREBASE_PROJECT_ID', ''),
-    'appId'       => (string) EnvHelper::get('FIREBASE_APP_ID', ''),
+    'apiKey' => (string) EnvHelper::get('FIREBASE_API_KEY', ''),
+    'authDomain' => (string) EnvHelper::get('FIREBASE_AUTH_DOMAIN', ''),
+    'projectId' => (string) EnvHelper::get('FIREBASE_PROJECT_ID', ''),
+    'storageBucket' => (string) EnvHelper::get('FIREBASE_STORAGE_BUCKET', ''),
+    'messagingSenderId' => (string) EnvHelper::get('FIREBASE_MESSAGING_SENDER_ID', ''),
+    'appId' => (string) EnvHelper::get('FIREBASE_APP_ID', ''),
+    'measurementId' => (string) EnvHelper::get('FIREBASE_MEASUREMENT_ID', ''),
 ];
 $googleAuthEnabled = $firebaseConfig['apiKey'] !== '' && $firebaseConfig['authDomain'] !== ''
     && $firebaseConfig['projectId'] !== '' && $firebaseConfig['appId'] !== '';
@@ -45,7 +48,7 @@ $GLOBALS['pageAssets'] = [
 <html lang="vi">
 
 <head>
-    <base href="../../../" />
+    <base href="<?= rtrim(BASE_URL, '/') ?>/ " />
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>
     <title><?= htmlspecialchars($seoTitle, ENT_QUOTES, 'UTF-8') ?></title>
     <script src="<?= BASE_URL ?>/assets/js/fingerprint.js"></script>
@@ -56,7 +59,7 @@ $GLOBALS['pageAssets'] = [
     <?php require __DIR__ . '/../../hethong/nav.php'; ?>
 
     <main class="auth-page">
-        <section class="py-5 bg-offWhite auth-page-section">
+        <section class="bg-offWhite auth-page-section">
             <div class="container auth-page-container">
                 <div class="row auth-page-row">
                     <div class="auth-page-col">
@@ -79,7 +82,8 @@ $GLOBALS['pageAssets'] = [
                                     </div>
 
                                     <div class="form-wrap form-focus pass-group">
-                                        <span class="form-icon"><i class="toggle-password fa-regular fa-eye-slash"></i></span>
+                                        <span class="form-icon"><i
+                                                class="toggle-password fa-regular fa-eye-slash"></i></span>
                                         <input type="password" id="password" class="pass-input form-control floating"
                                             autocomplete="current-password" placeholder=" " required>
                                         <label class="focus-label">Mật khẩu</label>
@@ -93,7 +97,8 @@ $GLOBALS['pageAssets'] = [
                                             </label>
                                         </div>
                                         <div class="form-wrap text-md-end">
-                                            <a href="<?= BASE_URL ?>/password-reset" class="forgot-link">Quên mật khẩu?</a>
+                                            <a href="<?= BASE_URL ?>/password-reset" class="forgot-link">Quên mật
+                                                khẩu?</a>
                                         </div>
                                     </div>
 
@@ -117,21 +122,22 @@ $GLOBALS['pageAssets'] = [
                                 <!-- Inline 2FA OTP box (fallback) -->
                                 <div id="login2faBox" class="auth-otp-box" style="display:none;">
                                     <form id="loginInlineOtpForm" onsubmit="verifyLoginOtp(); return false;">
-                                    <p class="mb-2 auth-otp-help">Nhập mã OTP đã gửi về Gmail để hoàn tất đăng nhập.</p>
-                                    <div class="form-wrap form-focus mb-2">
-                                        <span class="form-icon"><i class="fa-solid fa-shield-halved"></i></span>
-                                        <input type="text" id="loginOtpCode" class="form-control floating"
-                                            inputmode="numeric" maxlength="6" minlength="6"
-                                            pattern="[0-9]{6}" autocomplete="one-time-code" required>
-                                        <label class="focus-label">Mã OTP 6 số</label>
-                                    </div>
-                                    <button type="submit" id="verifyLoginOtpBtn"
-                                        class="btn btn-outline-primary w-100">
-                                        <span id="verifyOtpText">Xác minh OTP</span>
-                                        <span id="verifyOtpLoading" style="display:none;">
-                                            <i class="fa fa-spinner fa-spin"></i> Đang xác minh...
-                                        </span>
-                                    </button>
+                                        <p class="mb-2 auth-otp-help">Nhập mã OTP đã gửi về Gmail để hoàn tất đăng nhập.
+                                        </p>
+                                        <div class="form-wrap form-focus mb-2">
+                                            <span class="form-icon"><i class="fa-solid fa-shield-halved"></i></span>
+                                            <input type="text" id="loginOtpCode" class="form-control floating"
+                                                inputmode="numeric" maxlength="6" minlength="6" pattern="[0-9]{6}"
+                                                autocomplete="one-time-code" required>
+                                            <label class="focus-label">Mã OTP 6 số</label>
+                                        </div>
+                                        <button type="submit" id="verifyLoginOtpBtn"
+                                            class="btn btn-outline-primary w-100">
+                                            <span id="verifyOtpText">Xác minh OTP</span>
+                                            <span id="verifyOtpLoading" style="display:none;">
+                                                <i class="fa fa-spinner fa-spin"></i> Đang xác minh...
+                                            </span>
+                                        </button>
                                     </form>
                                 </div>
 
@@ -140,7 +146,8 @@ $GLOBALS['pageAssets'] = [
                                     <button type="button" id="googleLoginBtn" class="auth-google-btn"
                                         onclick="googleAuthLogin()">
                                         <span class="auth-google-btn__icon">
-                                            <img src="<?= BASE_URL ?>/assets/images/google-icon.svg" alt="Google" width="18" height="18" style="display:block;">
+                                            <img src="<?= BASE_URL ?>/assets/images/google-icon.svg" alt="Google" width="18"
+                                                height="18" style="display:block;">
                                         </span>
                                         <span class="auth-google-btn__text">Đăng nhập với Google</span>
                                         <span class="auth-google-btn__spinner" style="display:none;">
@@ -191,24 +198,24 @@ $GLOBALS['pageAssets'] = [
                 if (!btn) return;
                 btn.disabled = !!isLoading;
                 const spinner = btn.querySelector('.auth-google-btn__spinner');
-                const text    = btn.querySelector('.auth-google-btn__text');
+                const text = btn.querySelector('.auth-google-btn__text');
                 if (spinner) spinner.style.display = isLoading ? 'inline-flex' : 'none';
-                if (text)    text.style.opacity    = isLoading ? '0.75' : '1';
+                if (text) text.style.opacity = isLoading ? '0.75' : '1';
             }
 
             function showGoogleAuthError(error, fallbackMessage) {
                 const rawMessage = String(error?.message || '');
                 const rawCode = String(error?.code || '');
-                let message = fallbackMessage || 'Dang nhap Google that bai.';
+                let message = fallbackMessage || 'Đăng nhập Google thất bại.';
 
                 if (rawCode === 'auth/unauthorized-domain') {
-                    message = 'Domain hien tai chua duoc phep trong Firebase Auth. Hay them domain nay vao Authorized domains.';
+                    message = 'Domain hiện tại chưa được phép trong Firebase Auth. Hãy thêm domain này vào Authorized domains.';
                 } else if (rawCode === 'auth/operation-not-allowed') {
-                    message = 'Google Sign-in chua duoc bat trong Firebase Authentication.';
+                    message = 'Google Sign-in chưa được bật trong Firebase Authentication.';
                 } else if (rawMessage.includes('securetoken.googleapis.com') || rawMessage.includes('CORS')) {
                     message = isLocalHost
-                        ? 'Loi CORS Firebase (securetoken). Kiem tra Firebase Authorized domains va gioi han API key cho localhost/127.0.0.1.'
-                        : 'Loi CORS khi xac thuc Google. Kiem tra Authorized domains Firebase va cau hinh API key.';
+                        ? 'Lỗi CORS Firebase (securetoken). Kiểm tra Firebase Authorized domains và giới hạn API key cho localhost.'
+                        : 'Lỗi CORS khi xác thực Google. Kiểm tra Authorized domains Firebase và cấu hình API key.';
                 }
 
                 if (typeof SwalHelper !== 'undefined') {
@@ -234,7 +241,13 @@ $GLOBALS['pageAssets'] = [
                 }
                 if (deviceId) params.set('device_id', deviceId);
 
-                const res  = await fetch('<?= BASE_URL ?>/auth/google', {
+                // Include Turnstile token if available (required on production)
+                const turnstileInput = document.querySelector('[name="cf-turnstile-response"]');
+                if (turnstileInput && turnstileInput.value) {
+                    params.set('turnstile_token', turnstileInput.value);
+                }
+
+                const res = await fetch('<?= BASE_URL ?>/auth/google', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: params.toString()
@@ -242,11 +255,11 @@ $GLOBALS['pageAssets'] = [
                 const data = await res.json();
 
                 if (!data.success) {
-                    throw new Error(data.message || 'Dang nhap Google that bai.');
+                    throw new Error(data.message || 'Đăng nhập Google thất bại.');
                 }
 
                 if (data.requires_2fa && typeof showLoginOtpStep === 'function') {
-                    showLoginOtpStep(data.challenge_id, data.message || 'Da gui OTP den email.');
+                    showLoginOtpStep(data.challenge_id, data.message || 'Đã gửi OTP đến email.');
                     return;
                 }
 
@@ -264,7 +277,7 @@ $GLOBALS['pageAssets'] = [
                     await submitFirebaseGoogleToken(idToken);
                 } catch (e) {
                     console.error('[Google Auth] redirect result error:', e);
-                    showGoogleAuthError(e, 'Dang nhap Google that bai sau khi chuyen huong.');
+                    showGoogleAuthError(e, 'Đăng nhập Google thất bại sau khi chuyển hướng.');
                 } finally {
                     setGoogleBtnLoading(false);
                 }
@@ -279,7 +292,7 @@ $GLOBALS['pageAssets'] = [
                 } catch (e) {
                     setGoogleBtnLoading(false);
                     console.error('[Google Auth] login error:', e);
-                    showGoogleAuthError(e, 'Khong the dang nhap Google. Vui long thu lai.');
+                    showGoogleAuthError(e, 'Không thể đăng nhập Google. Vui lòng thử lại.');
                 }
             };
         </script>

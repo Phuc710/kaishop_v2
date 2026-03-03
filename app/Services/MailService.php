@@ -43,7 +43,7 @@ class MailService
         }
 
         $username = trim((string) ($user['username'] ?? ''));
-        $subject = '🎉 Welcome to ' . $this->siteName . ' – Tài khoản của bạn đã sẵn sàng!';
+        $subject = '[🎉 Welcome] Tài khoản của bạn đã sẵn sàng!';
         $body = $this->buildLayout(
             $subject,
             '🎉 Chào mừng bạn đến với ' . $this->siteName . '!',
@@ -64,7 +64,7 @@ class MailService
         }
 
         $resetUrl = rtrim($this->siteUrl, '/') . '/password-reset/' . rawurlencode($otpcode);
-        $subject = 'Khôi phục mật khẩu - ' . $this->siteName;
+        $subject = '[🔒 Mật khẩu] Khôi phục mật khẩu';
         $body = $this->buildLayout(
             $subject,
             'Yêu cầu đặt lại mật khẩu',
@@ -88,7 +88,7 @@ class MailService
 
         $minutes = max(1, (int) ceil($ttlSeconds / 60));
         $purposeText = $purpose === 'forgot_password' ? 'xác minh quên mật khẩu' : 'xác minh đăng nhập';
-        $subject = 'Mã OTP của bạn - ' . $this->siteName;
+        $subject = '[🔐 OTP] Mã xác minh của bạn';
         $body = $this->buildLayout(
             $subject,
             'Mã xác minh OTP',
@@ -142,7 +142,7 @@ class MailService
             'info_instructions' => (string) ($order['info_instructions'] ?? $product['info_instructions'] ?? ''),
         ];
 
-        $subject = "📦 Đơn hàng #{$orderCode} đã được giao thành công";
+        $subject = "[📦 Đơn hàng] #{$orderCode} đã hoàn tất";
         $headline = "Đơn hàng #{$orderCode} đã hoàn tất 🎉";
 
         if ($deliveryMode === 'source_link') {
@@ -168,50 +168,58 @@ class MailService
 
         return <<<HTML
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" xmlns="http://www.w3.org/1999/xhtml">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="robots" content="noindex,nofollow">
-    <title>{$safeSubject}</title>
-    <style>
-        body { margin: 0; padding: 0; background-color: #f6f9fc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-font-smoothing: antialiased; }
-        .wrapper { width: 100%; table-layout: fixed; background-color: #f6f9fc; padding-bottom: 40px; }
-        .main { background-color: #ffffff; margin: 0 auto; width: 100%; max-width: 600px; border-spacing: 0; color: #4a4a4a; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-top: 40px; }
-        .header { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 30px; text-align: center; color: #ffffff; }
-        .content { padding: 40px 30px; line-height: 1.6; }
-        .footer { padding: 20px; text-align: center; font-size: 13px; color: #94a3b8; background-color: #f8fafc; }
-        .button { display: inline-block; padding: 12px 24px; background-color: #2563eb; color: #ffffff !important; text-decoration: none; border-radius: 8px; font-weight: 600; margin-top: 20px; transition: background-color 0.3s; }
-        .info-box { background-color: #f1f5f9; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #2563eb; }
-        h1 { margin: 0; font-size: 24px; font-weight: 700; color: #ffffff; }
-        .text-center { text-align: center; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light only">
+<title>{$safeSubject}</title>
+<!--[if mso]><style>body,table,td{font-family:Segoe UI,Tahoma,sans-serif!important}</style><![endif]-->
+<style>
+:root{color-scheme:light only;supported-color-schemes:light only}
+body,table,td,div,p,span,a,h1,h2,h3{-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%}
+[data-ogsc] body,[data-ogsb] body{background-color:#f0f4f8!important;color:#334155!important}
+[data-ogsc] .ks-white-bg,[data-ogsb] .ks-white-bg{background-color:#ffffff!important}
+[data-ogsc] .ks-content-text,[data-ogsb] .ks-content-text{color:#334155!important}
+[data-ogsc] .ks-label-text,[data-ogsb] .ks-label-text{color:#64748b!important}
+[data-ogsc] .ks-value-text,[data-ogsb] .ks-value-text{color:#1e293b!important}
+@media only screen and (max-width:620px){
+    .ks-main-table{width:100%!important;border-radius:0!important}
+    .ks-content-cell{padding:28px 20px!important}
+    .ks-header-cell{padding:28px 20px!important}
+    .ks-header-title{font-size:18px!important}
+    .ks-footer-cell{padding:16px 20px!important}
+    .ks-order-box{padding:18px 16px!important}
+}
+</style>
 </head>
-<body>
-    <div class="wrapper">
-        <table class="main" role="presentation">
-            <tr>
-                <td class="header">
-                    <h1>{$safeHeadline}</h1>
-                </td>
-            </tr>
-            <tr>
-                <td class="content">
-                    {$content}
-                    <p style="margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 14px; color: #64748b;">
-                        Nếu cần hỗ trợ, đội ngũ <strong>{$safeSiteName}</strong> luôn sẵn sàng giúp bạn.<br>
-                        Thời gian gửi: {$currentTime}
-                    </p>
-                </td>
-            </tr>
-            <tr>
-                <td class="footer">
-                    <p>&copy; {$year} <strong>{$safeSiteName}</strong>. All rights reserved.</p>
-                    <p>Đây là email tự động, vui lòng không trả lời email này.</p>
-                </td>
-            </tr>
-        </table>
-    </div>
+<body style="margin:0;padding:0;background-color:#f0f4f8;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;-webkit-font-smoothing:antialiased;color:#334155;">
+<div style="width:100%;table-layout:fixed;background-color:#f0f4f8;padding:40px 10px;">
+    <table role="presentation" class="ks-main-table ks-white-bg" style="background-color:#ffffff;margin:0 auto;width:100%;max-width:600px;border-spacing:0;color:#334155;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+        <tr>
+            <td class="ks-header-cell" style="background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%);padding:36px 30px;text-align:center;">
+                <h1 class="ks-header-title" style="margin:0;font-size:22px;font-weight:800;color:#ffffff!important;letter-spacing:-0.3px;line-height:1.4;">{$safeHeadline}</h1>
+            </td>
+        </tr>
+        <tr>
+            <td class="ks-content-cell ks-white-bg ks-content-text" style="padding:36px 32px;line-height:1.7;font-size:15px;color:#334155;background-color:#ffffff;">
+                {$content}
+                <div style="margin-top:32px;border-top:1px solid #e2e8f0;padding-top:20px;font-size:13px;color:#94a3b8;text-align:center;">
+                    Nếu cần hỗ trợ, đội ngũ <strong style="color:#64748b;">{$safeSiteName}</strong> luôn sẵn sàng giúp bạn.<br>
+                    <span style="font-size:12px;">Thời gian gửi: {$currentTime}</span>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class="ks-footer-cell" style="padding:20px 32px;text-align:center;font-size:12px;color:#94a3b8;background-color:#f8fafc;border-top:1px solid #f1f5f9;">
+                <p style="margin:0 0 4px;">&copy; {$year} <strong>{$safeSiteName}</strong>. All rights reserved.</p>
+                <p style="margin:0;color:#cbd5e1;">Đây là email tự động, vui lòng không trả lời email này.</p>
+            </td>
+        </tr>
+    </table>
+</div>
 </body>
 </html>
 HTML;
@@ -227,10 +235,10 @@ HTML;
 <p>Tài khoản của bạn đã được tạo thành công tại <strong>{$this->siteName}</strong>.</p>
 <p>Chúng tôi rất vui khi được đồng hành cùng bạn!</p>
 <p>🚀 Bạn có thể bắt đầu khám phá sản phẩm, nạp tiền và trải nghiệm dịch vụ ngay hôm nay.</p>
-<div class="text-center">
-    <a href="{$safeHome}" class="button">Bắt đầu ngay tại đây</a>
+<div style="text-align:center;margin-top:24px;">
+    <a href="{$safeHome}" style="display:inline-block;padding:13px 32px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#ffffff!important;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Bắt đầu ngay tại đây</a>
 </div>
-<p style="margin-top: 20px;">Trân trọng,<br>Đội ngũ {$this->siteName}</p>
+<p style="margin-top:20px;color:#334155;">Trân trọng,<br>Đội ngũ {$this->siteName}</p>
 HTML;
     }
 
@@ -243,8 +251,8 @@ HTML;
 <p>Xin chào <strong>{$safeUser}</strong>,</p>
 <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn tại {$this->siteName}.</p>
 <p>Vui lòng nhấn vào nút bên dưới để tiến hành thay đổi mật khẩu:</p>
-<div class="text-center">
-    <a href="{$safeReset}" class="button">Đặt lại mật khẩu</a>
+<div style="text-align:center;margin-top:24px;">
+    <a href="{$safeReset}" style="display:inline-block;padding:13px 32px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#ffffff!important;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Đặt lại mật khẩu</a>
 </div>
 <p style="margin-top: 20px; color: #64748b; font-size: 13px;">Nếu nút trên không hoạt động, bạn có thể sao chép và dán liên kết sau vào trình duyệt:</p>
 <p style="word-break: break-all; font-size: 12px; color: #2563eb;">{$safeReset}</p>
@@ -261,9 +269,9 @@ HTML;
         return <<<HTML
 <p>Xin chào <strong>{$safeUser}</strong>,</p>
 <p>Để hoàn tất <strong>{$safePurpose}</strong>, vui lòng sử dụng mã OTP dưới đây:</p>
-<div class="text-center">
-    <div style="display: inline-block; background-color: #f1f5f9; border: 2px dashed #cbd5e1; border-radius: 12px; padding: 20px 40px; margin: 20px 0;">
-        <span style="font-size: 32px; letter-spacing: 8px; font-weight: 800; color: #1e293b; font-family: 'Courier New', Courier, monospace;">{$safeCode}</span>
+<div style="text-align:center;">
+    <div style="display:inline-block;background-color:#f1f5f9;border:2px dashed #cbd5e1;border-radius:12px;padding:20px 40px;margin:20px 0;">
+        <span style="font-size:32px;letter-spacing:8px;font-weight:800;color:#1e293b;font-family:'Courier New',Courier,monospace;">{$safeCode}</span>
     </div>
 </div>
 <p style="color: #ef4444; font-weight: 600;">Mã này có hiệu lực trong {$minutes} phút.</p>
@@ -297,9 +305,9 @@ HTML;
         $linkHtml = '';
         if ($link !== '') {
             $safeLink = $this->e($this->normalizeAssetUrl($link));
-            $linkHtml = '<div class="info-box">'
-                . '<strong>🔗 Link tải Source Code:</strong><br>'
-                . '<a href="' . $safeLink . '" style="color:#2563eb;word-break:break-all;">' . $safeLink . '</a>'
+            $linkHtml = '<div style="margin:20px 0;padding:18px 20px;border-radius:10px;background-color:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid #3b82f6;">'
+                . '<strong style="font-size:13px;color:#1e293b;text-transform:uppercase;letter-spacing:0.3px;">🔗 Link tải Source Code:</strong><br>'
+                . '<a href="' . $safeLink . '" style="color:#2563eb;word-break:break-all;font-size:13px;">' . $safeLink . '</a>'
                 . '</div>';
         }
 
@@ -344,15 +352,18 @@ HTML;
         $historyUrl = $this->e(rtrim($this->siteUrl, '/') . '/order-history');
 
         return <<<HTML
-<p>Xin chào <strong>{$username}</strong>,</p>
-<p>Đơn hàng <strong>#{$orderCode}</strong> của bạn tại KaiShop đã được xử lý và giao thành công 🎉</p>
-<div style="background-color: #f8fafc; border-radius: 8px; padding: 25px; margin: 20px 0;">
-    <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 18px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">🧾 Chi tiết đơn hàng</h3>
+<p style="font-size:15px;color:#334155;">Xin chào <strong style="color:#1e293b;">{$username}</strong>,</p>
+<p style="font-size:15px;color:#334155;">Đơn hàng <strong style="color:#2563eb;">#{$orderCode}</strong> của bạn tại <strong>{$this->siteName}</strong> đã được xử lý thành công 🎉</p>
+
+<div class="ks-order-box ks-white-bg" style="background-color:#f8fafc;border-radius:12px;padding:24px 28px;margin:24px 0;border:1px solid #e2e8f0;">
+    <h3 style="margin:0 0 18px 0;color:#1e293b;font-size:16px;font-weight:700;text-align:center;border-bottom:2px solid #e2e8f0;padding-bottom:12px;letter-spacing:0.3px;">🧾 Chi tiết đơn hàng</h3>
     {$this->renderOrderSummaryTable($data)}
 </div>
+
 {$extraContent}
-<div class="text-center">
-    <a href="{$historyUrl}" class="button">👉 Xem đơn hàng của bạn</a>
+
+<div style="text-align:center;margin-top:28px;">
+    <a href="{$historyUrl}" style="display:inline-block;padding:13px 32px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#ffffff!important;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;letter-spacing:0.3px;">👉 Xem đơn hàng của bạn</a>
 </div>
 HTML;
     }
@@ -374,19 +385,25 @@ HTML;
         $productImageHtml = '';
         if ($productImage !== '') {
             $safeProductImage = $this->e($productImage);
-            $productImageHtml = '<tr><td colspan="2" style="padding-bottom: 20px; text-align: center;">'
+            $productImageHtml = '<tr><td colspan="2" style="padding-bottom:16px;text-align:center;">'
                 . '<img src="' . $safeProductImage . '" alt="Product" style="max-width: 200px; border-radius: 8px; border: 1px solid #e2e8f0;">'
                 . '</td></tr>';
         }
 
-        return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size: 14px; color: #475569;">'
+        // Row styling for clean white light UI
+        $labelStyle = 'padding:10px 12px;color:#64748b;font-size:13px;font-weight:500;white-space:nowrap;';
+        $valueStyle = 'padding:10px 12px;text-align:right;font-size:13px;color:#1e293b;font-weight:600;';
+        $rowEven = 'background-color:#f8fafc;';
+        $rowOdd = 'background-color:#ffffff;';
+
+        return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#475569;border-radius:8px;overflow:hidden;">'
             . $productImageHtml
-            . '<tr><td style="padding: 8px 0; color: #1e293b; font-weight: 600;">Mã đơn hàng:</td><td style="padding: 8px 0; text-align: right; color: #2563eb; font-weight: 700;">#' . $orderCode . '</td></tr>'
-            . '<tr><td style="padding: 8px 0; color: #1e293b; font-weight: 600;">Sản phẩm:</td><td style="padding: 8px 0; text-align: right; font-weight: 600;">' . $productName . '</td></tr>'
-            . '<tr><td style="padding: 8px 0; color: #1e293b; font-weight: 600;">Số lượng:</td><td style="padding: 8px 0; text-align: right;">' . $quantity . '</td></tr>'
-            . '<tr><td style="padding: 8px 0; color: #1e293b; font-weight: 600;">Tổng tiền:</td><td style="padding: 8px 0; text-align: right; color: #ef4444; font-weight: 700; font-size: 16px;">' . $this->e($this->formatMoney($totalPrice)) . '</td></tr>'
-            . '<tr><td style="padding: 8px 0; color: #1e293b; font-weight: 600;">Thời gian giao:</td><td style="padding: 8px 0; text-align: right;">' . $orderedAt . '</td></tr>'
-            . '<tr><td style="padding: 8px 0; color: #1e293b; font-weight: 600;">Trạng thái:</td><td style="padding: 8px 0; text-align: right; color: #059669; font-weight: 700;">' . $status . '</td></tr>'
+            . '<tr style="' . $rowEven . '"><td style="' . $labelStyle . '">Mã đơn hàng</td><td style="' . $valueStyle . 'color:#2563eb;font-weight:800;">#' . $orderCode . '</td></tr>'
+            . '<tr style="' . $rowOdd . '"><td style="' . $labelStyle . '">Sản phẩm</td><td style="' . $valueStyle . 'font-weight:700;color:#1e293b;">' . $productName . '</td></tr>'
+            . '<tr style="' . $rowEven . '"><td style="' . $labelStyle . '">Số lượng</td><td style="' . $valueStyle . '">' . $quantity . '</td></tr>'
+            . '<tr style="' . $rowOdd . '"><td style="' . $labelStyle . '">Tổng tiền</td><td style="' . $valueStyle . 'color:#dc2626;font-weight:800;font-size:15px;">' . $this->e($this->formatMoney($totalPrice)) . '</td></tr>'
+            . '<tr style="' . $rowEven . '"><td style="' . $labelStyle . '">Thời gian</td><td style="' . $valueStyle . '">' . $orderedAt . '</td></tr>'
+            . '<tr style="' . $rowOdd . '"><td style="' . $labelStyle . '">Trạng thái</td><td style="' . $valueStyle . 'color:#059669;font-weight:800;">' . $status . '</td></tr>'
             . '</table>';
     }
 
@@ -394,9 +411,9 @@ HTML;
     {
         $safeTitle = $this->e($title);
         $safeContent = nl2br($this->e($content));
-        return '<div style="margin: 20px 0; padding: 15px; border-radius: 8px; background-color: #f1f5f9; border-left: 4px solid #3b82f6;">'
-            . '<div style="font-size: 14px; color: #1e293b; font-weight: 700; margin-bottom: 8px;">' . $safeTitle . '</div>'
-            . '<div style="font-size: 13px; color: #475569; line-height: 1.7; word-break: break-all; font-family: monospace;">' . $safeContent . '</div>'
+        return '<div style="margin:20px 0;padding:18px 20px;border-radius:10px;background-color:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid #3b82f6;">'
+            . '<div style="font-size:13px;color:#1e293b;font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.3px;">' . $safeTitle . '</div>'
+            . '<div style="font-size:13px;color:#475569;line-height:1.8;word-break:break-all;font-family:\'Courier New\',Courier,monospace;background:#ffffff;padding:12px 14px;border-radius:8px;border:1px solid #e2e8f0;">' . $safeContent . '</div>'
             . '</div>';
     }
 

@@ -30,7 +30,10 @@ $firebaseConfig = [
     'apiKey' => (string) EnvHelper::get('FIREBASE_API_KEY', ''),
     'authDomain' => (string) EnvHelper::get('FIREBASE_AUTH_DOMAIN', ''),
     'projectId' => (string) EnvHelper::get('FIREBASE_PROJECT_ID', ''),
+    'storageBucket' => (string) EnvHelper::get('FIREBASE_STORAGE_BUCKET', ''),
+    'messagingSenderId' => (string) EnvHelper::get('FIREBASE_MESSAGING_SENDER_ID', ''),
     'appId' => (string) EnvHelper::get('FIREBASE_APP_ID', ''),
+    'measurementId' => (string) EnvHelper::get('FIREBASE_MEASUREMENT_ID', ''),
 ];
 $googleAuthEnabled = $firebaseConfig['apiKey'] !== '' && $firebaseConfig['authDomain'] !== ''
     && $firebaseConfig['projectId'] !== '' && $firebaseConfig['appId'] !== '';
@@ -44,7 +47,7 @@ $GLOBALS['pageAssets'] = [
 <html lang="vi">
 
 <head>
-    <base href="../../../" />
+    <base href="<?= rtrim(BASE_URL, '/') ?>/ " />
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>
     <title><?= htmlspecialchars($seoTitle, ENT_QUOTES, 'UTF-8') ?></title>
     <script src="<?= BASE_URL ?>/assets/js/fingerprint.js"></script>
@@ -55,7 +58,7 @@ $GLOBALS['pageAssets'] = [
     <?php require __DIR__ . '/../../hethong/nav.php'; ?>
 
     <main class="auth-page">
-        <section class="py-5 bg-offWhite auth-page-section">
+        <section class="bg-offWhite auth-page-section">
             <div class="container auth-page-container">
                 <div class="row auth-page-row">
                     <div class="auth-page-col">
@@ -172,16 +175,16 @@ $GLOBALS['pageAssets'] = [
             function showGoogleAuthError(error, fallbackMessage) {
                 const rawMessage = String(error?.message || '');
                 const rawCode = String(error?.code || '');
-                let message = fallbackMessage || 'Dang ky Google that bai.';
+                let message = fallbackMessage || 'Đăng ký Google thất bại.';
 
                 if (rawCode === 'auth/unauthorized-domain') {
-                    message = 'Domain hien tai chua duoc phep trong Firebase Auth. Hay them domain nay vao Authorized domains.';
+                    message = 'Domain hiện tại chưa được phép trong Firebase Auth. Hãy thêm domain này vào Authorized domains.';
                 } else if (rawCode === 'auth/operation-not-allowed') {
-                    message = 'Google Sign-in chua duoc bat trong Firebase Authentication.';
+                    message = 'Google Sign-in chưa được bật trong Firebase Authentication.';
                 } else if (rawMessage.includes('securetoken.googleapis.com') || rawMessage.includes('CORS')) {
                     message = isLocalHost
-                        ? 'Loi CORS Firebase (securetoken). Kiem tra Firebase Authorized domains va gioi han API key cho localhost/127.0.0.1.'
-                        : 'Loi CORS khi xac thuc Google. Kiem tra Authorized domains Firebase va cau hinh API key.';
+                        ? 'Lỗi CORS Firebase (securetoken). Kiểm tra Firebase Authorized domains và giới hạn API key cho localhost.'
+                        : 'Lỗi CORS khi xác thực Google. Kiểm tra Authorized domains Firebase và cấu hình API key.';
                 }
 
                 if (typeof SwalHelper !== 'undefined') {
@@ -206,6 +209,12 @@ $GLOBALS['pageAssets'] = [
                 }
                 if (deviceId) params.set('device_id', deviceId);
 
+                // Include Turnstile token if available
+                const turnstileInput = document.querySelector('[name="cf-turnstile-response"]');
+                if (turnstileInput && turnstileInput.value) {
+                    params.set('turnstile_token', turnstileInput.value);
+                }
+
                 const res = await fetch('<?= BASE_URL ?>/auth/google', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -214,7 +223,7 @@ $GLOBALS['pageAssets'] = [
                 const data = await res.json();
 
                 if (!data.success) {
-                    throw new Error(data.message || 'Dang ky Google that bai.');
+                    throw new Error(data.message || 'Đăng ký Google thất bại.');
                 }
 
                 window.location.href = data.redirect || '<?= BASE_URL ?>/';
@@ -231,7 +240,7 @@ $GLOBALS['pageAssets'] = [
                     await submitFirebaseGoogleToken(idToken);
                 } catch (e) {
                     console.error('[Google Auth] redirect result error:', e);
-                    showGoogleAuthError(e, 'Dang ky Google that bai sau khi chuyen huong.');
+                    showGoogleAuthError(e, 'Đăng ký Google thất bại sau khi chuyển hướng.');
                 } finally {
                     setGoogleBtnLoading(false);
                 }
@@ -245,7 +254,7 @@ $GLOBALS['pageAssets'] = [
                 } catch (e) {
                     setGoogleBtnLoading(false);
                     console.error('[Google Auth] register error:', e);
-                    showGoogleAuthError(e, 'Khong the dang ky bang Google. Vui long thu lai.');
+                    showGoogleAuthError(e, 'Không thể đăng ký bằng Google. Vui lòng thử lại.');
                 }
             };
         </script>

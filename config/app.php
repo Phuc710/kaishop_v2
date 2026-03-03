@@ -9,7 +9,25 @@ require_once dirname(__DIR__) . '/app/Helpers/EnvHelper.php';
 EnvHelper::load(dirname(__DIR__) . '/.env');
 
 if (!defined('APP_DIR')) {
-    define('APP_DIR', (string) EnvHelper::get('APP_DIR', ''));
+    // ─── Smart APP_DIR Detection ──────────────────────────────────────────────
+    // Priority 1: Use .env value if explicitly set (not empty)
+    $envAppDir = (string) EnvHelper::get('APP_DIR', '');
+
+    if ($envAppDir !== '') {
+        // Explicit override in .env — normalize: ensure leading '/', strip trailing '/'
+        $envAppDir = '/' . ltrim(rtrim($envAppDir, '/'), '/');
+        define('APP_DIR', $envAppDir);
+    } else {
+        // Auto-detect based on hostname
+        $currentHost = PHP_SAPI === 'cli' ? 'cli' : strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+
+        // Known local/dev hostnames → use /kaishop_v2 subfolder
+        $localHosts = ['localhost', '127.0.0.1', '::1', 'kaishop_v2.localhost'];
+        $isLocal = in_array($currentHost, $localHosts, true)
+            || preg_match('/\.localhost$|\.local$|\.test$/', $currentHost);
+
+        define('APP_DIR', $isLocal ? '/kaishop_v2' : '');
+    }
 }
 
 // Start session with safer cookie flags

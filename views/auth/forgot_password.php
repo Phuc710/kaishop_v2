@@ -35,7 +35,7 @@ $GLOBALS['pageAssets'] = [
 <html lang="vi">
 
 <head>
-    <base href="../../../" />
+    <base href="<?= rtrim(BASE_URL, '/') ?>/" />
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>
     <title><?= htmlspecialchars($seoTitle, ENT_QUOTES, 'UTF-8') ?></title>
     <script src="<?= BASE_URL ?>/assets/js/auth-forms.js"></script>
@@ -45,7 +45,7 @@ $GLOBALS['pageAssets'] = [
     <?php require __DIR__ . '/../../hethong/nav.php'; ?>
 
     <main>
-        <section class="py-5 bg-offWhite">
+        <section class="bg-offWhite">
             <div class="container">
                 <div class="rounded-3">
                     <div class="row">
@@ -108,7 +108,7 @@ $GLOBALS['pageAssets'] = [
         </section>
     </main>
 
-    
+
     <script>
         window.KaiAuthForgotConfig = {
             resetUrl: '<?= BASE_URL ?>/password-reset',
