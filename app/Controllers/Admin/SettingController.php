@@ -18,22 +18,24 @@ class SettingController extends Controller
 
         if (!isset($user['level']) || (int) $user['level'] !== 9) {
             http_response_code(403);
-            die('Truy cáº­p bá»‹ tá»« chá»‘i - Chá»‰ dÃ nh cho quáº£n trá»‹ viÃªn');
+            die('Truy cập bị từ chối - Chỉ dành cho quản trị viên');
         }
     }
 
     public function index()
     {
         $this->requireAdmin();
-        if ($this->hasSensitiveQueryParams([
-            'telegram_bot_token',
-            'telegram_chat_id',
-            'telegram_admin_ids',
-            'telegram_order_cooldown',
-            'telegram_webhook_secret',
-            'pass_mail_auto',
-            'sepay_api_key',
-        ])) {
+        if (
+            $this->hasSensitiveQueryParams([
+                'telegram_bot_token',
+                'telegram_chat_id',
+                'telegram_admin_ids',
+                'telegram_order_cooldown',
+                'telegram_webhook_secret',
+                'pass_mail_auto',
+                'sepay_api_key',
+            ])
+        ) {
             $this->redirect(url('admin/setting'));
         }
         global $chungapi;
@@ -55,7 +57,7 @@ class SettingController extends Controller
         $this->requireAdmin();
 
         if (!$this->validateCsrf()) {
-            return $this->json(['status' => 'error', 'message' => 'Lá»—i xÃ¡c thá»±c (CSRF). Vui lÃ²ng táº£i láº¡i trang.']);
+            return $this->json(['status' => 'error', 'message' => 'Lỗi xác thực (CSRF). Vui lòng tải lại trang.']);
         }
 
         $action = $this->post('action');
@@ -91,8 +93,7 @@ class SettingController extends Controller
                     'home_hero_html',
                 ]);
 
-            case 'update_telegram':
-                return $this->updateTelegramSettings();
+
 
             case 'update_bank':
                 return $this->updateSettings([
@@ -111,7 +112,7 @@ class SettingController extends Controller
             case 'update_maintenance':
                 $res = $this->maintenanceService->saveConfig($data);
                 if ($res['success']) {
-                    Logger::info('System', 'update_maintenance', 'Cáº­p nháº­t cáº¥u hÃ¬nh báº£o trÃ¬');
+                    Logger::info('System', 'update_maintenance', 'Cập nhật cấu hình bảo trì');
                 }
                 return $this->json([
                     'status' => $res['success'] ? 'success' : 'error',
@@ -124,7 +125,7 @@ class SettingController extends Controller
                     Logger::info(
                         'System',
                         'toggle_maintenance_manual',
-                        !empty($data['maintenance_enabled']) ? 'Báº­t báº£o trÃ¬ thá»§ cÃ´ng' : 'Táº¯t báº£o trÃ¬ thá»§ cÃ´ng'
+                        !empty($data['maintenance_enabled']) ? 'Bật bảo trì thủ công' : 'Tắt bảo trì thủ công'
                     );
                 }
                 return $this->json([
@@ -136,7 +137,7 @@ class SettingController extends Controller
             case 'clear_maintenance':
                 $res = $this->maintenanceService->clearNow();
                 if ($res['success']) {
-                    Logger::info('System', 'clear_maintenance', 'Táº¯t cháº¿ Ä‘á»™ báº£o trÃ¬ ngay láº­p tá»©c');
+                    Logger::info('System', 'clear_maintenance', 'Tắt chế độ bảo trì ngay lập tức');
                 }
                 return $this->json([
                     'status' => $res['success'] ? 'success' : 'error',
@@ -144,7 +145,7 @@ class SettingController extends Controller
                 ]);
 
             default:
-                return $this->json(['status' => 'error', 'message' => 'HÃ nh Ä‘á»™ng khÃ´ng há»£p lá»‡']);
+                return $this->json(['status' => 'error', 'message' => 'Hành động không hợp lệ']);
         }
     }
 
@@ -187,96 +188,25 @@ class SettingController extends Controller
         }
 
         if (empty($sets)) {
-            return $this->json(['status' => 'error', 'message' => 'KhÃ´ng cÃ³ dá»¯ liá»‡u thay Ä‘á»•i']);
+            return $this->json(['status' => 'error', 'message' => 'Không có dữ liệu thay đổi']);
         }
 
         $sql = "UPDATE `setting` SET " . implode(', ', $sets) . " ORDER BY `id` ASC LIMIT 1";
 
         if ($connection->query($sql)) {
-            Logger::info('Admin', $action, 'Cáº­p nháº­t cÃ i Ä‘áº·t há»‡ thá»‘ng: ' . implode(', ', $keys));
+            Logger::info('Admin', $action, 'Cập nhật cài đặt hệ thống: ' . implode(', ', $keys));
 
             if (class_exists('Config')) {
                 Config::clearSiteConfigCache();
             }
 
-            return $this->json(['status' => 'success', 'message' => 'Cáº­p nháº­t thÃ nh cÃ´ng']);
+            return $this->json(['status' => 'success', 'message' => 'Cập nhật thành công']);
         }
 
-        return $this->json(['status' => 'error', 'message' => 'Lá»—i database: ' . $connection->error]);
+        return $this->json(['status' => 'error', 'message' => 'Lỗi database: ' . $connection->error]);
     }
 
-    private function updateTelegramSettings()
-    {
-        global $connection;
 
-        $token = trim((string) $this->post('telegram_bot_token', ''));
-        $chatId = trim((string) $this->post('telegram_chat_id', ''));
-        $clearToken = in_array((string) $this->post('clear_telegram_bot_token', '0'), ['1', 'true', 'on'], true);
-
-        if ($token !== '' && !preg_match('/^\d{6,}:[A-Za-z0-9_-]{20,}$/', $token)) {
-            return $this->json([
-                'status' => 'error',
-                'message' => 'Telegram Bot Token khÃ´ng há»£p lá»‡ (Ä‘á»‹nh dáº¡ng thÆ°á»ng lÃ  123456789:ABC...)',
-            ]);
-        }
-
-        $isNumericChatId = preg_match('/^-?\d+$/', $chatId) === 1;
-        $isChannelChat = preg_match('/^@[A-Za-z0-9_]{5,}$/', $chatId) === 1;
-        if ($chatId !== '' && !$isNumericChatId && !$isChannelChat) {
-            return $this->json([
-                'status' => 'error',
-                'message' => 'Telegram Chat ID khÃ´ng há»£p lá»‡ (vÃ­ dá»¥: -1001234567890 hoáº·c @channel_name)',
-            ]);
-        }
-
-        $sets = [];
-        $changedFields = [];
-
-        if ($clearToken) {
-            $sets[] = "`telegram_bot_token` = ''";
-            $changedFields[] = 'telegram_bot_token:cleared';
-        } elseif ($token !== '') {
-            $safeToken = $connection->real_escape_string($token);
-            $sets[] = "`telegram_bot_token` = '{$safeToken}'";
-            $changedFields[] = 'telegram_bot_token:updated';
-        }
-
-        if (isset($_POST['telegram_chat_id'])) {
-            $safeChatId = $connection->real_escape_string($chatId);
-            $sets[] = "`telegram_chat_id` = '{$safeChatId}'";
-            $changedFields[] = 'telegram_chat_id:updated';
-        }
-
-        if (empty($sets)) {
-            return $this->json([
-                'status' => 'error',
-                'message' => 'KhÃ´ng cÃ³ thay Ä‘á»•i nÃ o Ä‘á»ƒ lÆ°u',
-            ]);
-        }
-
-        $sql = "UPDATE `setting` SET " . implode(', ', $sets) . " ORDER BY `id` ASC LIMIT 1";
-        if (!$connection->query($sql)) {
-            return $this->json([
-                'status' => 'error',
-                'message' => 'Lá»—i database: ' . $connection->error,
-            ]);
-        }
-
-        if (class_exists('Config')) {
-            Config::clearSiteConfigCache();
-        }
-
-        Logger::info('Admin', 'update_telegram', 'Cáº­p nháº­t cáº¥u hÃ¬nh Telegram', [
-            'fields' => $changedFields,
-            'has_token' => $clearToken ? false : ($token !== '' ? true : null),
-            'has_chat_id' => $chatId !== '',
-        ]);
-
-        return $this->json([
-            'status' => 'success',
-            'message' => 'ÄÃ£ lÆ°u cáº¥u hÃ¬nh Telegram',
-        ]);
-    }
     /**
      * @param array<int,string> $keys
      */
@@ -290,4 +220,3 @@ class SettingController extends Controller
         return false;
     }
 }
-

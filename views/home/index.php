@@ -17,6 +17,71 @@
         .category-section-wrapper.d-none {
             display: none !important;
         }
+
+        .ds-card.search-hidden {
+            display: none !important;
+        }
+
+
+        .section-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .home-search-container {
+            position: relative;
+            max-width: 350px;
+            width: 100%;
+        }
+
+        .home-search-input {
+            width: 100%;
+            padding: 10px 15px 10px 40px;
+            border-radius: 50px !important;
+            border: 1px solid #eee;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+
+        .home-search-input:focus {
+            background: #fff;
+            border-color: var(--primary) !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            outline: none;
+        }
+
+        .home-search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #adb5bd;
+            transition: color 0.3s ease;
+            z-index: 5;
+        }
+
+        .home-search-input:focus+.home-search-icon {
+            color: var(--primary);
+        }
+
+        .search-result-info {
+            display: none;
+            padding: 15px;
+            background: rgba(233, 236, 239, 0.4);
+            border-radius: 12px;
+            margin: 20px 0;
+            border-left: 4px solid var(--primary);
+        }
+
+        .search-keyword-highlight {
+            color: var(--primary);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
     </style>
 </head>
 
@@ -30,24 +95,30 @@
                 <div class="home-hero-banner mb-5">
                     <div class="hero-content">
                         <h1>Khám phá Kho <span class="text-warning">Mã Nguồn</span> & Dịch Vụ Số</h1>
-                        <p>Giải pháp công nghệ chuyên nghiệp cho doanh nghiệp và cá nhân. Cam kết chất lượng, bảo hành 24/7.</p>
+                        <p>Giải pháp công nghệ chuyên nghiệp cho doanh nghiệp và cá nhân. Cam kết chất lượng, bảo hành 24/7.
+                        </p>
                     </div>
                 </div>
             <?php endif; ?>
 
             <!-- Smart Category Navigation -->
             <div class="section-title-row mb-3 mt-5">
-                <h5 class="fw-bold"><i class="fas fa-th-large me-2 text-primary"></i> Danh mục sản phẩm</h5>
+                <h5 class="fw-bold">🛒 Danh mục sản phẩm</h5>
+                <div class="home-search-container">
+                    <input type="text" id="homeSearchInput" class="home-search-input"
+                        placeholder="Tìm kiếm sản phẩm...">
+                    <i class="fas fa-search home-search-icon"></i>
+                </div>
             </div>
             <div class="category-nav-container">
                 <div class="category-nav-scroll">
                     <?php if (isset($is_category_page) && $is_category_page): ?>
                         <a href="<?= url('') ?>" class="category-pill">
-                            <i class="fas fa-border-all"></i> <span>Tất cả</span>
+                            <i class="fa-solid fa-cart-shopping"></i> <span>Tất cả</span>
                         </a>
                     <?php else: ?>
                         <a href="#" class="category-pill active" data-filter="all">
-                            <i class="fas fa-border-all"></i> <span>Tất cả</span>
+                            <i class="fa-solid fa-cart-shopping"></i> <span>Tất cả</span>
                         </a>
                     <?php endif; ?>
 
@@ -62,6 +133,13 @@
                     <?php endif; ?>
                 </div>
             </div>
+
+            <div id="searchResultInfo" class="search-result-info mt-3">
+                <span class="text-muted"><i class="fas fa-search me-2"></i> Sản phẩm liên quan đến từ khóa:</span>
+                <span id="searchKeywordLabel" class="search-keyword-highlight ms-1"></span>
+            </div>
+
+
 
             <!-- Products List -->
             <div class="ds-product-container mt-4">
@@ -152,7 +230,7 @@
                         <?php endif; ?>
                     <?php endforeach; ?>
                 <?php else: ?>
-                    <div class="text-center py-5">
+                    <div id="phpEmptyState" class="text-center py-5">
                         <div class="opacity-50 mb-3"><i class="fas fa-box-open fa-4x"></i></div>
                         <h5>Chưa có sản phẩm nào.</h5>
                     </div>
@@ -168,34 +246,104 @@
             const pills = document.querySelectorAll('.category-pill');
             const sections = document.querySelectorAll('.category-section-wrapper');
             const cards = document.querySelectorAll('.ds-card');
+            const searchInput = document.getElementById('homeSearchInput');
+            const resultInfo = document.getElementById('searchResultInfo');
+            const keywordLabel = document.getElementById('searchKeywordLabel');
 
-            // Handle Active State on Click
+            let currentFilter = 'all';
+            let currentKeyword = '';
+
+            function performFilter() {
+                let anyVisible = false;
+                const normalizedKeyword = currentKeyword.toLowerCase().trim();
+
+                // 1. Show/Hide Cards
+                cards.forEach(card => {
+                    const title = card.querySelector('.ds-card-title').textContent.toLowerCase();
+                    const matchesKeyword = title.includes(normalizedKeyword);
+
+                    if (matchesKeyword) {
+                        card.classList.remove('search-hidden');
+                    } else {
+                        card.classList.add('search-hidden');
+                    }
+                });
+
+                // 2. Show/Hide Sections (Categories)
+                sections.forEach(sec => {
+                    const isTargetCategory = (currentFilter === 'all' || sec.id === currentFilter);
+                    const visibleCardsInSection = sec.querySelectorAll('.ds-card:not(.search-hidden)');
+
+                    if (isTargetCategory && visibleCardsInSection.length > 0) {
+                        sec.classList.remove('d-none');
+                        anyVisible = true;
+                    } else {
+                        sec.classList.add('d-none');
+                    }
+                });
+
+                // 3. Update Result Label
+                if (currentKeyword.trim().length > 0) {
+                    resultInfo.style.display = 'block';
+                    keywordLabel.textContent = currentKeyword;
+                } else {
+                    resultInfo.style.display = 'none';
+                }
+
+                // 4. Update Empty State
+                const container = document.querySelector('.ds-product-container');
+                let existingEmpty = document.getElementById('emptySearchState');
+                let phpEmpty = document.getElementById('phpEmptyState');
+
+                if (!anyVisible) {
+                    if (phpEmpty) phpEmpty.style.display = 'none'; // Hide PHP empty state if search empty state is needed
+                    if (!existingEmpty) {
+                        const emptyHTML = `
+                            <div id="emptySearchState" class="text-center py-5">
+                                <div class="opacity-50 mb-3"><i class="fas fa-search-minus fa-4x"></i></div>
+                                <h5>Không tìm thấy sản phẩm phù hợp.</h5>
+                                <p class="text-muted">Vui lòng thử từ khóa khác hoặc đổi danh mục.</p>
+                            </div>
+                        `;
+                        container.insertAdjacentHTML('beforeend', emptyHTML);
+                    }
+                } else {
+                    if (existingEmpty) existingEmpty.remove();
+                    if (phpEmpty) phpEmpty.style.display = 'block'; // Show PHP empty state if it was original and we are not searching (though anyVisible would be false)
+                }
+
+                // If no search keyword, and anyVisible is false, and phpEmpty exists, show phpEmpty and remove searchEmpty
+                if (currentKeyword.trim().length === 0 && !anyVisible && phpEmpty) {
+                    if (existingEmpty) existingEmpty.remove();
+                    phpEmpty.style.display = 'block';
+                }
+
+            }
+
+            // Handle Category Click
             pills.forEach(pill => {
                 pill.addEventListener('click', function (e) {
                     const filter = this.getAttribute('data-filter');
-
-                    if (!filter) return; // Allow normal navigation for non-filtering pills
-
+                    if (!filter) return;
                     e.preventDefault();
                     pills.forEach(p => p.classList.remove('active'));
                     this.classList.add('active');
-
-                    if (filter === 'all') {
-                        sections.forEach(sec => sec.classList.remove('d-none'));
-                    } else {
-                        sections.forEach(sec => {
-                            if (sec.id === filter) {
-                                sec.classList.remove('d-none');
-                            } else {
-                                sec.classList.add('d-none');
-                            }
-                        });
-                    }
+                    currentFilter = filter;
+                    performFilter();
                 });
             });
 
+            // Handle Search typing
+            if (searchInput) {
+                searchInput.addEventListener('input', function () {
+                    currentKeyword = this.value;
+                    performFilter();
+                });
+            }
+
             // Light click animation for product cards.
             const clampPercent = (value) => Math.max(0, Math.min(100, value));
+
             cards.forEach(card => {
                 const animateCardClick = (clientX, clientY) => {
                     const rect = card.getBoundingClientRect();

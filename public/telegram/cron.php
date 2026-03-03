@@ -210,6 +210,7 @@ function runPolling(TelegramService $telegram, TelegramBotService $botLogic): vo
 
 if ($isPollMode) {
     echo "  NOTE: Polling mode is for DEVELOPMENT only. Do NOT use in production.\n";
+    $db = (new UserTelegramLink())->getConnection();
     while (true) {
         try {
             // Lấy token từ config để truyền vào curl_multi
@@ -220,6 +221,7 @@ if ($isPollMode) {
 
             processOutboxParallel($outboxModel, $botToken);
             runPolling($telegram, $botLogic);
+            saveLastCronRun($db);
             cleanupOldData($outboxModel);
         } catch (Throwable $e) {
             echo "  [Error] " . $e->getMessage() . "\n";

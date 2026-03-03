@@ -95,7 +95,7 @@ class NavConfig
                     ],
                     [
                         'href' => self::buildUrl('admin/telegram/links'),
-                        'label' => 'Liên kết người dùng',
+                        'label' => 'Lịch sử liên kết',
                         'active_prefixes' => ['admin/telegram/links'],
                     ],
                     [

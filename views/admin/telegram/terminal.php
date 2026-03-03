@@ -3,7 +3,41 @@
  * View: Telegram Bot — Terminal Log
  * Route: admin/telegram/terminal
  */
-$pageTitle = '⚡ Bot Terminal';
+
+function renderLogRow(array $row): string
+{
+    $ts = date('H:i:s', strtotime($row['created_at'] ?? ''));
+    $lvl = htmlspecialchars($row['level'] ?? 'INFO');
+    $dir = ($row['type'] ?? 'INCOMING') === 'INCOMING' ? 'IN' : 'OUT';
+    $cat = htmlspecialchars(strtoupper($row['category'] ?? 'GEN'));
+    $msg = htmlspecialchars($row['message'] ?? '');
+    $data = trim((string) ($row['data'] ?? ''));
+
+    $dataHtml = '';
+    if ($data !== '') {
+        // Pretty-print JSON if applicable
+        $decoded = json_decode($data, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            $data = json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        }
+        $dataHtml = '<div class="tg-log-data">' . htmlspecialchars($data) . '</div>';
+    }
+
+    return <<<HTML
+<div class="tg-log-row" data-id="{$row['id']}">
+    <span class="tg-log-ts">{$ts}</span>
+    <span class="tg-log-lvl tg-log-lvl--{$lvl}">[{$lvl}]</span>
+    <span class="tg-log-dir tg-log-dir--{$dir}">&gt; {$dir}</span>
+    <span class="tg-log-cat">{$cat}</span>
+    <span class="tg-log-msg">
+        {$msg}
+        {$dataHtml}
+    </span>
+</div>
+HTML;
+}
+
+$pageTitle = 'Bot Terminal';
 require_once __DIR__ . '/../layout/head.php';
 
 $breadcrumbs = [
@@ -242,12 +276,32 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
 
     .tg-empty-state i {
         font-size: 2.5rem;
-        color: #30363d;
+        color: #a9a9a9ff;
     }
 
     .tg-empty-state p {
-        color: #484f58;
+        color: #ffffffff;
         font-size: 13px;
+    }
+
+    /* ─── Period filter ────────────────────────────────────── */
+    .tg-period-select {
+        background: #21262d;
+        color: #8b949e;
+        border: 1px solid #30363d;
+        border-radius: 6px;
+        font-size: 11px;
+        padding: 2px 8px;
+        cursor: pointer;
+        outline: none;
+        font-family: inherit;
+        transition: border-color .15s;
+    }
+
+    .tg-period-select:hover,
+    .tg-period-select:focus {
+        border-color: #58a6ff;
+        color: #c9d1d9;
     }
 </style>
 
@@ -264,9 +318,16 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                     <span class="tg-terminal-dot tg-terminal-dot--green"></span>
                 </div>
                 <span class="tg-terminal-title">
-                    <i class="fas fa-bolt mr-1"></i> Telegram Bot Terminal — Live Activity Log
+                    Telegram Bot Terminal — Live Activity Log
                 </span>
                 <div class="tg-terminal-actions">
+                    <!-- Period filter -->
+                    <select class="tg-period-select" id="periodSelect" title="Lọc theo thời gian">
+                        <option value="all" <?= ($period ?? 'all') === 'all' ? 'selected' : '' ?>>📋 Tất cả</option>
+                        <option value="today" <?= ($period ?? 'all') === 'today' ? 'selected' : '' ?>>📅 Hôm nay</option>
+                        <option value="week" <?= ($period ?? 'all') === 'week' ? 'selected' : '' ?>>📆 7 ngày</option>
+                        <option value="month" <?= ($period ?? 'all') === 'month' ? 'selected' : '' ?>>🗓 30 ngày</option>
+                    </select>
                     <button class="btn btn-sm btn-outline-secondary" id="btnClearView"
                         style="color:#8b949e;border-color:#30363d;font-size:11px;"
                         title="Xóa màn hình terminal (không xóa DB)">
@@ -309,40 +370,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
     </div>
 </section>
 
-<?php
-function renderLogRow(array $row, bool $echo = false): string
-{
-    $ts = date('H:i:s', strtotime($row['created_at'] ?? ''));
-    $lvl = htmlspecialchars($row['level'] ?? 'INFO');
-    $dir = ($row['type'] ?? 'INCOMING') === 'INCOMING' ? 'IN' : 'OUT';
-    $cat = htmlspecialchars(strtoupper($row['category'] ?? 'GEN'));
-    $msg = htmlspecialchars($row['message'] ?? '');
-    $data = trim((string) ($row['data'] ?? ''));
 
-    $dataHtml = '';
-    if ($data !== '') {
-        // Pretty-print JSON if applicable
-        $decoded = json_decode($data, true);
-        if (json_last_error() === JSON_ERROR_NONE) {
-            $data = json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-        }
-        $dataHtml = '<div class="tg-log-data">' . htmlspecialchars($data) . '</div>';
-    }
-
-    return <<<HTML
-<div class="tg-log-row" data-id="{$row['id']}">
-    <span class="tg-log-ts">{$ts}</span>
-    <span class="tg-log-lvl tg-log-lvl--{$lvl}">[{$lvl}]</span>
-    <span class="tg-log-dir tg-log-dir--{$dir}">&gt; {$dir}</span>
-    <span class="tg-log-cat">{$cat}</span>
-    <span class="tg-log-msg">
-        {$msg}
-        {$dataHtml}
-    </span>
-</div>
-HTML;
-}
-?>
 
 <script>
     (function () {
@@ -375,6 +403,19 @@ HTML;
             logCount = 0;
             countEl.textContent = 0;
         });
+
+        // ─── Period filter ─────────────────────────────────
+        const periodSel = document.getElementById('periodSelect');
+        let currentPeriod = periodSel ? periodSel.value : 'all';
+
+        if (periodSel) {
+            periodSel.addEventListener('change', () => {
+                const url = new URL(window.location.href);
+                currentPeriod = periodSel.value || 'all';
+                url.searchParams.set('period', currentPeriod);
+                window.location.href = url.toString();
+            });
+        }
 
         // ─── Color by level ────────────────────────────────────────
         function levelClass(lvl) {
@@ -420,8 +461,21 @@ HTML;
 
         async function poll() {
             try {
-                const res = await fetch(`<?= url('admin/telegram/terminal/poll') ?>?after=${maxId}&_t=${Date.now()}`);
+                const pollUrl = `<?= url('admin/telegram/terminal/poll') ?>?after=${maxId}&period=${encodeURIComponent(currentPeriod)}&_t=${Date.now()}`;
+                const res = await fetch(pollUrl, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    cache: 'no-store',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
+                if (!data || data.success !== true || !Array.isArray(data.rows)) {
+                    throw new Error('Invalid poll response');
+                }
 
                 if (offline) {
                     offline = false;
@@ -437,7 +491,7 @@ HTML;
                         body.appendChild(renderRow(r));
                         logCount++;
                     });
-                    maxId = data.maxId || maxId;
+                    maxId = Number.isFinite(Number(data.maxId)) ? Number(data.maxId) : maxId;
                     countEl.textContent = logCount;
                     if (autoScroll) scrollDown();
                 }

@@ -12,15 +12,7 @@ $breadcrumbs = [
 require_once __DIR__ . '/layout/head.php';
 require_once __DIR__ . '/layout/breadcrumb.php';
 
-$telegramTokenStored = trim((string) ($chungapi['telegram_bot_token'] ?? ''));
-$telegramChatIdStored = trim((string) ($chungapi['telegram_chat_id'] ?? ''));
-$telegramConfigured = $telegramTokenStored !== '' && $telegramChatIdStored !== '';
-$maskedTelegramToken = '';
-if ($telegramTokenStored !== '') {
-    $head = substr($telegramTokenStored, 0, 6);
-    $tail = substr($telegramTokenStored, -4);
-    $maskedTelegramToken = $head . '***' . $tail;
-}
+
 ?>
 
 <style>
@@ -105,7 +97,8 @@ if ($telegramTokenStored !== '') {
         <div class="row">
             <div class="col-md-12">
                 <div class="card custom-card">
-                    <form id="form-general" class="form-horizontal" enctype="multipart/form-data" method="post" action="<?= url('admin/setting/update') ?>">
+                    <form id="form-general" class="form-horizontal" enctype="multipart/form-data" method="post"
+                        action="<?= url('admin/setting/update') ?>">
                         <div class="card-header border-0">
                             <h3 class="card-title text-uppercase font-weight-bold">
                                 THÔNG TIN CƠ BẢN
@@ -372,60 +365,7 @@ if ($telegramTokenStored !== '') {
                     </div>
                 </form>
 
-                <form id="form-telegram" method="post" action="<?= url('admin/setting/update') ?>">
-                    <div class="card custom-card mt-3">
-                        <div class="card-header border-0">
-                            <h3 class="card-title text-uppercase font-weight-bold">
-                                TELEGRAM BOT ALERT
-                            </h3>
-                        </div>
-                        <div class="card-body pt-0">
-                            <div class="alert alert-warning py-2" style="border-radius: 8px;">
-                                <i class="fas fa-shield-alt mr-1"></i>
-                                Bảo mật: Bot token sẽ không hiển thị lại trên giao diện.
-                            </div>
 
-                            <div class="mb-3">
-                                <span
-                                    class="badge <?= $telegramConfigured ? 'badge-success' : 'badge-secondary' ?> mr-1">
-                                    <?= $telegramConfigured ? 'ĐÃ CẤU HÌNH' : 'CHƯA CẤU HÌNH' ?>
-                                </span>
-                                <?php if ($maskedTelegramToken !== ''): ?>
-                                    <span class="small text-muted">Token hiện tại:
-                                        <?= htmlspecialchars($maskedTelegramToken) ?></span>
-                                <?php endif; ?>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="font-weight-bold small text-uppercase">Telegram Bot Token</label>
-                                <input type="password" class="form-control" name="telegram_bot_token"
-                                    placeholder="Để trống để giữ token hiện tại" autocomplete="new-password">
-                                <small class="text-muted">Định dạng thường: `123456789:AA...`</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="font-weight-bold small text-uppercase">Telegram Chat ID / Channel</label>
-                                <input type="text" class="form-control" name="telegram_chat_id"
-                                    placeholder="-1001234567890 hoặc @channel_name"
-                                    value="<?= htmlspecialchars($telegramChatIdStored) ?>">
-                            </div>
-
-                            <div class="custom-control custom-checkbox">
-                                <input class="custom-control-input" type="checkbox" value="1"
-                                    id="clear_telegram_bot_token" name="clear_telegram_bot_token">
-                                <label for="clear_telegram_bot_token" class="custom-control-label">
-                                    Xóa token hiện tại (chỉ giữ Chat ID)
-                                </label>
-                            </div>
-                        </div>
-                        <div class="card-footer bg-transparent border-0 text-right">
-                            <button type="submit" class="btn btn-primary shadow-sm px-4 font-weight-bold"
-                                style="border-radius: 8px;">
-                                <i class="fas fa-save mr-1"></i> LƯU TELEGRAM
-                            </button>
-                        </div>
-                    </div>
-                </form>
             </div>
 
             <!-- BANK & PROMO SETTINGS -->
@@ -687,7 +627,7 @@ if ($telegramTokenStored !== '') {
         handleFormSubmit('form-general', 'update_general');
         handleFormSubmit('form-smtp', 'update_smtp');
         handleFormSubmit('form-notification', 'update_notification');
-        handleFormSubmit('form-telegram', 'update_telegram');
+
         handleFormSubmit('form-bank', 'update_bank');
         handleFormSubmit('form-maintenance', 'update_maintenance', () => setTimeout(() => location.reload(), 700));
     });

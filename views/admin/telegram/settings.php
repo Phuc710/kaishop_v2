@@ -77,10 +77,29 @@ $tgCssVersion = (string) @filemtime(dirname(__DIR__, 3) . '/assets/css/telegram_
                     <code class="small d-block text-truncate bg-light p-1 rounded border"
                         style="max-width: 100%;"><?= htmlspecialchars($webhookLink) ?></code>
                 </div>
-                <div class="mt-auto">
-                    <span class="tg-endpoint-status <?= $webhookStatusClass ?> w-100 text-center py-1">
-                        <?= $webhookStatusText ?>
-                    </span>
+                <?php
+                $webhookPulse = 'status-offline';
+                if ($webhookMatch) {
+                    $webhookPulse = 'status-active';
+                } elseif ($webhookRegistered) {
+                    $webhookPulse = 'status-stalled';
+                }
+                ?>
+                <div class="d-flex align-items-center mt-auto">
+                    <div class="status-circle <?= $webhookPulse ?> small mr-3"
+                        style="width: 35px; height: 35px; font-size: 0.9rem;">
+                        <i class="fas fa-link"></i>
+                    </div>
+                    <div>
+                        <span class="tg-endpoint-status <?= $webhookStatusClass ?> small py-1 px-2 mb-1 d-inline-block"
+                            style="border-radius: 4px; font-size: 0.65rem;">
+                            <?= $webhookStatusText ?>
+                        </span>
+                        <div class="small text-muted">
+                            Endpoint: <span
+                                class="text-dark font-weight-bold"><?= $webhookMatch ? 'KẾT NỐI OK' : ($webhookRegistered ? 'SAI PATH' : 'CHƯA CÓ') ?></span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -126,6 +145,46 @@ $tgCssVersion = (string) @filemtime(dirname(__DIR__, 3) . '/assets/css/telegram_
                     </div>
                 </div>
             </div>
+
+            <!-- Card 5: Worker Status -->
+            <div class="tg-stat-card border-left-danger overflow-hidden">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="tg-stat-icon bg-danger-soft text-danger mb-0 mr-3">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="tg-stat-label">Trạng thái Worker</div>
+                </div>
+                <?php
+                $lastCronRun = $lastCronRun ?? null;
+                $workerStatus = 'OFF_LINE';
+                $workerClass = 'tg-status-pill--bot-off';
+                $pulseClass = 'status-offline';
+
+                if ($lastCronRun) {
+                    $diff = time() - strtotime($lastCronRun);
+                    if ($diff < 120) {
+                        $workerStatus = 'ACTIVE';
+                        $workerClass = 'tg-status-pill--bot-ok';
+                        $pulseClass = 'status-active';
+                    } elseif ($diff < 600) {
+                        $workerStatus = 'STALLED';
+                        $workerClass = 'tg-status-pill--mtn-on';
+                        $pulseClass = 'status-stalled';
+                    }
+                }
+                ?>
+                <div class="d-flex align-items-center mt-auto">
+                    <div>
+                        <span class="tg-status-pill <?= $workerClass ?> small py-1 px-2 mb-1 d-inline-block">
+                            <?= $workerStatus ?>
+                        </span>
+                        <div class="small text-muted">
+                            Lần cuối: <span
+                                class="text-dark font-weight-bold"><?= $lastCronRun ? date('H:i:s d/m', strtotime($lastCronRun)) : 'N/A' ?></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- 2. Tab Navigation -->
@@ -148,12 +207,13 @@ $tgCssVersion = (string) @filemtime(dirname(__DIR__, 3) . '/assets/css/telegram_
             <!-- TAB: GENERAL -->
             <div class="tg-tab-pane active" id="tab-general">
                 <div class="card custom-card shadow-sm border-0">
-                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap"
+                        style="gap: 10px;">
                         <h3 class="card-title font-weight-bold mb-0">Cấu hình kết nối Bot</h3>
-                        <div class="btn-group">
-                            <button type="button" class="btn btn-outline-primary btn-sm" id="btnTestConn"><i
+                        <div class="d-flex align-items-center justify-content-end flex-wrap ml-auto" style="gap: 8px;">
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="btnSendTestMessage"><i
                                     class="fas fa-paper-plane mr-1"></i> Gửi Test</button>
-                            <button type="button" class="btn btn-outline-info btn-sm" id="btnSyncBot"><i
+                            <button type="button" class="btn btn-outline-info btn-sm" id="btnSyncBotMenu"><i
                                     class="fas fa-sync-alt mr-1"></i> Đồng bộ Menu</button>
                         </div>
                     </div>
@@ -269,12 +329,14 @@ $tgCssVersion = (string) @filemtime(dirname(__DIR__, 3) . '/assets/css/telegram_
                                         <p class="text-muted small mb-0">Khi bật, Bot sẽ từ chối các lệnh và trả về tin
                                             nhắn bảo trì.</p>
                                     </div>
-                                    <div class="custom-control custom-switch custom-switch-lg">
-                                        <input type="hidden" name="telegram_maintenance_enabled" value="0">
-                                        <input type="checkbox" class="custom-control-input"
-                                            name="telegram_maintenance_enabled" id="mtnSwitch" value="1"
-                                            <?= $botMaintenanceOn ? 'checked' : '' ?>>
-                                        <label class="custom-control-label" for="mtnSwitch"></label>
+                                    <div class="maintenance-toggle-premium">
+                                        <button type="button" id="btnMtnToggle"
+                                            class="btn btn-sm px-4 font-weight-bold <?= $botMaintenanceOn ? 'btn-danger' : 'btn-success' ?>"
+                                            style="min-width: 160px; border-radius: 50px; box-shadow: 0 4px 12px <?= $botMaintenanceOn ? 'rgba(220, 53, 69, 0.3)' : 'rgba(40, 167, 69, 0.3)' ?>;">
+                                            <?= $botMaintenanceOn ? '<i class="fas fa-pause-circle mr-1"></i> BẢO TRÌ' : '<i class="fas fa-play-circle mr-1"></i> HOẠT ĐỘNG' ?>
+                                        </button>
+                                        <input type="hidden" name="telegram_maintenance_enabled" id="mtnStatusHidden"
+                                            value="<?= $botMaintenanceOn ? 1 : 0 ?>">
                                     </div>
                                 </div>
                                 <div class="form-group mb-0">
@@ -558,36 +620,41 @@ $tgCssVersion = (string) @filemtime(dirname(__DIR__, 3) . '/assets/css/telegram_
                 });
             });
 
-            const btnTestConn = document.getElementById('btnTestConn');
-            const btnSyncBot = document.getElementById('btnSyncBot');
+            const btnSendTestMessage = document.getElementById('btnSendTestMessage');
+            const btnSyncBotMenu = document.getElementById('btnSyncBotMenu');
             const btnSetWebhook = document.getElementById('btnSetWebhook');
             const btnDelWebhook = document.getElementById('btnDelWebhook');
             const btnDisconnectBot = document.getElementById('btnDisconnectBot');
-
-            if (btnTestConn) btnTestConn.addEventListener('click', async () => {
-                setLoading(btnTestConn, true);
+            async function runBotQuickAction(buttonEl, actionUrl, loadingHtml, errorMessage) {
+                if (!buttonEl) return;
+                setLoading(buttonEl, true, loadingHtml);
                 try {
-                    const res = await postRequest('<?= url('admin/telegram/test') ?>', {});
+                    const res = await postRequest(actionUrl, {});
                     SwalHelper.toast(res.message, res.success ? 'success' : 'error');
                 } catch (err) {
-                    SwalHelper.toast('Lỗi test kết nối', 'error');
+                    SwalHelper.toast(errorMessage, 'error');
                 } finally {
-                    setLoading(btnTestConn, false);
+                    setLoading(buttonEl, false);
                 }
+            }
+
+            if (btnSendTestMessage) btnSendTestMessage.addEventListener('click', async () => {
+                await runBotQuickAction(
+                    btnSendTestMessage,
+                    '<?= url('admin/telegram/test') ?>',
+                    '<i class="fas fa-circle-notch fa-spin mr-1"></i> Đang gửi...',
+                    'Lỗi test kết nối'
+                );
             });
 
-            if (btnSyncBot) btnSyncBot.addEventListener('click', async () => {
-                setLoading(btnSyncBot, true);
-                try {
-                    const res = await postRequest('<?= url('admin/telegram/sync') ?>', {});
-                    SwalHelper.toast(res.message, res.success ? 'success' : 'error');
-                } catch (err) {
-                    SwalHelper.toast('Lỗi đồng bộ bot', 'error');
-                } finally {
-                    setLoading(btnSyncBot, false);
-                }
+            if (btnSyncBotMenu) btnSyncBotMenu.addEventListener('click', async () => {
+                await runBotQuickAction(
+                    btnSyncBotMenu,
+                    '<?= url('admin/telegram/sync') ?>',
+                    '<i class="fas fa-circle-notch fa-spin mr-1"></i> Đang đồng bộ...',
+                    'Lỗi đồng bộ bot'
+                );
             });
-
             if (btnSetWebhook) btnSetWebhook.addEventListener('click', async () => {
                 const path = (document.getElementById('webhookPathInput').value || '').trim();
                 if (!path) return SwalHelper.toast('Vui lòng nhập đường dẫn', 'error');
@@ -754,6 +821,67 @@ $tgCssVersion = (string) @filemtime(dirname(__DIR__, 3) . '/assets/css/telegram_
                 });
             }
 
+            // Maintenance Toggle Logic (Single Button)
+            const btnMtnToggle = document.getElementById('btnMtnToggle');
+            const mtnStatusHidden = document.getElementById('mtnStatusHidden');
+
+            async function toggleMaintenance() {
+                if (!mtnStatusHidden || !btnMtnToggle) return;
+
+                const currentValue = parseInt(mtnStatusHidden.value);
+                const newValue = currentValue === 1 ? 0 : 1;
+                const originalValue = mtnStatusHidden.value;
+
+                mtnStatusHidden.value = newValue;
+
+                // Visual feedback (Loading)
+                const originalHtml = btnMtnToggle.innerHTML;
+                btnMtnToggle.disabled = true;
+                btnMtnToggle.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-1"></i> Đang xử lý...';
+
+                const form = mtnStatusHidden.closest('form');
+                try {
+                    const res = await postRequest(form.action, new FormData(form));
+                    if (res.success) {
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: newValue === 1 ? 'Bot đã chuyển sang BẢO TRÌ' : 'Bot đã HOẠT ĐỘNG trở lại',
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true
+                        });
+
+                        // Update Button UI
+                        btnMtnToggle.className = 'btn btn-sm px-4 font-weight-bold ' + (newValue === 1 ? 'btn-danger' : 'btn-success');
+                        btnMtnToggle.style.boxShadow = '0 4px 12px ' + (newValue === 1 ? 'rgba(220, 53, 69, 0.3)' : 'rgba(40, 167, 69, 0.3)');
+                        btnMtnToggle.innerHTML = newValue === 1
+                            ? '<i class="fas fa-pause-circle mr-1"></i> BẢO TRÌ'
+                            : '<i class="fas fa-play-circle mr-1"></i> HOẠT ĐỘNG';
+
+                        // Update Top Stats Grid Pill
+                        const mtnPills = document.querySelectorAll('.tg-status-pill--mtn-on, .tg-status-pill--mtn-off');
+                        mtnPills.forEach(pill => {
+                            pill.className = 'tg-status-pill small py-1 ' + (newValue === 1 ? 'tg-status-pill--mtn-on' : 'tg-status-pill--mtn-off');
+                            pill.textContent = 'BẢO TRÌ: ' + (newValue === 1 ? 'ON' : 'OFF');
+                        });
+                    } else {
+                        SwalHelper.toast(res.message, 'error');
+                        mtnStatusHidden.value = originalValue;
+                        btnMtnToggle.innerHTML = originalHtml;
+                    }
+                } catch (err) {
+                    SwalHelper.toast('Lỗi hệ thống', 'error');
+                    mtnStatusHidden.value = originalValue;
+                    btnMtnToggle.innerHTML = originalHtml;
+                } finally {
+                    btnMtnToggle.disabled = false;
+                }
+            }
+
+            if (btnMtnToggle) btnMtnToggle.addEventListener('click', toggleMaintenance);
+
             document.querySelectorAll('.ch-toggle').forEach(el => {
                 el.addEventListener('change', async () => {
                     try {
@@ -814,3 +942,81 @@ $tgCssVersion = (string) @filemtime(dirname(__DIR__, 3) . '/assets/css/telegram_
 </script>
 
 <?php require_once __DIR__ . '/../layout/foot.php'; ?>
+
+<style>
+    /* Worker Status Animations */
+    .status-circle {
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        position: relative;
+        z-index: 2;
+    }
+
+    .status-active {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+
+    .status-stalled {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+
+    .status-offline {
+        background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+    }
+
+    .status-active::after,
+    .status-stalled::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 50%;
+        z-index: 1;
+        animation: pulse-ring 2s infinite;
+    }
+
+    .status-active::after {
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.4);
+    }
+
+    .status-stalled::after {
+        box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.4);
+    }
+
+    @keyframes pulse-ring {
+        0% {
+            transform: scale(0.95);
+            opacity: 1;
+        }
+
+        70% {
+            transform: scale(1.1);
+            opacity: 0;
+        }
+
+        100% {
+            transform: scale(0.95);
+            opacity: 0;
+        }
+    }
+
+    /* Maintenance Toggle Premium */
+    .btn-toggle-off.active {
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-toggle-on.active {
+        box-shadow: 0 0 10px rgba(220, 53, 69, 0.3);
+    }
+
+    .maintenance-toggle-premium .btn {
+        transition: all 0.3s ease;
+        border-radius: 6px;
+        letter-spacing: 0.5px;
+    }
+</style>

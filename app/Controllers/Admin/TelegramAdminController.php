@@ -25,11 +25,11 @@ class TelegramAdminController extends Controller
 
         if (!isset($user['level']) || $user['level'] != 9) {
             http_response_code(403);
-            die('Truy cáº­p bá»‹ tá»« chá»‘i - Chá»‰ dÃ nh cho quáº£n trá»‹ viÃªn');
+            die('Truy cÃ¡ÂºÂ­p bÃ¡Â»â€¹ tÃ¡Â»Â« chÃ¡Â»â€˜i - ChÃ¡Â»â€° dÃƒÂ nh cho quÃ¡ÂºÂ£n trÃ¡Â»â€¹ viÃƒÂªn');
         }
     }
 
-    // â”€â”€â”€ Settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Settings Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     public function settings(): void
     {
@@ -47,6 +47,7 @@ class TelegramAdminController extends Controller
         }
 
         $siteConfig = Config::getSiteConfig();
+        $lastCronRun = $siteConfig['last_cron_run'] ?? null;
 
         // 1. Core Bot & Webhook Info
         $botInfo = $this->telegram->getMe();
@@ -84,6 +85,7 @@ class TelegramAdminController extends Controller
             'totalLinks' => $totalLinks,
             'totalUsers' => $totalUsers,
             'orderStats' => $orderStats,
+            'lastCronRun' => $lastCronRun,
         ]);
     }
 
@@ -138,7 +140,7 @@ class TelegramAdminController extends Controller
                 if ($field === 'telegram_webhook_path' && $value !== '') {
                     $normalized = trim($value, '/');
                     if ($normalized === '' || !preg_match('/^[A-Za-z0-9_\\-\\/]{3,120}$/', $normalized)) {
-                        $this->json(['success' => false, 'message' => 'ÄÆ°á»ng dáº«n Webhook khÃ´ng há»£p lá»‡.']);
+                        $this->json(['success' => false, 'message' => 'Ã„ÂÃ†Â°Ã¡Â»Âng dÃ¡ÂºÂ«n Webhook khÃƒÂ´ng hÃ¡Â»Â£p lÃ¡Â»â€¡.']);
                         return;
                     }
                     $value = $normalized;
@@ -150,10 +152,10 @@ class TelegramAdminController extends Controller
         }
         Config::clearSiteConfigCache();
 
-        $this->json(['success' => true, 'message' => 'ÄÃ£ cáº­p nháº­t cáº¥u hÃ¬nh Telegram']);
+        $this->json(['success' => true, 'message' => 'Ã„ÂÃƒÂ£ cÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t cÃ¡ÂºÂ¥u hÃƒÂ¬nh Telegram']);
     }
 
-    // â”€â”€â”€ Webhook Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Webhook Actions Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     public function setWebhookAction(): void
     {
@@ -169,7 +171,7 @@ class TelegramAdminController extends Controller
                 $stmt->execute([$normalized]);
                 Config::clearSiteConfigCache();
             } else {
-                $this->json(['success' => false, 'message' => 'ÄÆ°á»ng dáº«n khÃ´ng há»£p lá»‡.']);
+                $this->json(['success' => false, 'message' => 'Ã„ÂÃ†Â°Ã¡Â»Âng dÃ¡ÂºÂ«n khÃƒÂ´ng hÃ¡Â»Â£p lÃ¡Â»â€¡.']);
                 return;
             }
         }
@@ -184,7 +186,7 @@ class TelegramAdminController extends Controller
 
         $this->json([
             'success' => !empty($result['ok']),
-            'message' => !empty($result['ok']) ? 'ÄÃ£ lÆ°u vÃ  kÃ­ch hoáº¡t Webhook thÃ nh cÃ´ng!' : ($result['description'] ?? 'Lá»—i tá»« Telegram API'),
+            'message' => !empty($result['ok']) ? 'Ã„ÂÃƒÂ£ lÃ†Â°u vÃƒÂ  kÃƒÂ­ch hoÃ¡ÂºÂ¡t Webhook thÃƒÂ nh cÃƒÂ´ng!' : ($result['description'] ?? 'LÃ¡Â»â€”i tÃ¡Â»Â« Telegram API'),
         ]);
     }
 
@@ -194,7 +196,7 @@ class TelegramAdminController extends Controller
         $result = $this->telegram->deleteWebhook();
         $this->json([
             'success' => !empty($result['ok']),
-            'message' => !empty($result['ok']) ? 'ÄÃ£ táº¡m dá»«ng hoáº¡t Ä‘á»™ng Webhook' : ($result['description'] ?? 'Lá»—i'),
+            'message' => !empty($result['ok']) ? 'Ã„ÂÃƒÂ£ tÃ¡ÂºÂ¡m dÃ¡Â»Â«ng hoÃ¡ÂºÂ¡t Ã„â€˜Ã¡Â»â„¢ng Webhook' : ($result['description'] ?? 'LÃ¡Â»â€”i'),
         ]);
     }
 
@@ -203,17 +205,17 @@ class TelegramAdminController extends Controller
         $this->requireAdmin();
         $chatId = get_setting('telegram_chat_id', '');
         if ($chatId === '') {
-            $this->json(['success' => false, 'message' => 'ChÆ°a cáº¥u hÃ¬nh Chat ID']);
+            $this->json(['success' => false, 'message' => 'ChÃ†Â°a cÃ¡ÂºÂ¥u hÃƒÂ¬nh Chat ID']);
             return;
         }
 
         $now = TimeService::instance()->nowSql();
-        $msg = "âœ… <b>Test káº¿t ná»‘i thÃ nh cÃ´ng!</b>\nTin nháº¯n Ä‘Æ°á»£c gá»­i tá»« KaiShop Admin.\nðŸ• Thá»i gian: {$now}";
+        $msg = "Ã¢Å“â€¦ <b>Test kÃ¡ÂºÂ¿t nÃ¡Â»â€˜i thÃƒÂ nh cÃƒÂ´ng!</b>\nTin nhÃ¡ÂºÂ¯n Ã„â€˜Ã†Â°Ã¡Â»Â£c gÃ¡Â»Â­i tÃ¡Â»Â« KaiShop Admin.\nÃ°Å¸â€¢â€™ ThÃ¡Â»Âi gian: {$now}";
         $success = $this->telegram->sendTo($chatId, $msg);
 
         $this->json([
             'success' => (bool) $success,
-            'message' => $success ? 'Đã gửi tin nhắn test thành công' : 'Gửi thất bại, hãy kiểm tra lại Token/Chat ID',
+            'message' => $success ? 'Ã„ÂÃƒÂ£ gÃ¡Â»Â­i tin nhÃ¡ÂºÂ¯n test thÃƒÂ nh cÃƒÂ´ng' : 'GÃ¡Â»Â­i thÃ¡ÂºÂ¥t bÃ¡ÂºÂ¡i, hÃƒÂ£y kiÃ¡Â»Æ’m tra lÃ¡ÂºÂ¡i Token/Chat ID',
         ]);
     }
 
@@ -224,39 +226,61 @@ class TelegramAdminController extends Controller
         $result = $botLogic->initializeBot();
         $this->json([
             'success' => !empty($result['ok']),
-            'message' => !empty($result['ok']) ? 'Đã đồng bộ Menu & Lệnh Bot thành công' : ($result['description'] ?? 'Lỗi đồng bộ'),
+            'message' => !empty($result['ok']) ? 'Ã„ÂÃƒÂ£ Ã„â€˜Ã¡Â»â€œng bÃ¡Â»â„¢ Menu & LÃ¡Â»â€¡nh Bot thÃƒÂ nh cÃƒÂ´ng' : ($result['description'] ?? 'LÃ¡Â»â€”i Ã„â€˜Ã¡Â»â€œng bÃ¡Â»â„¢'),
         ]);
     }
 
     public function terminal(): void
     {
         $this->requireAdmin();
+        $allowed = ['all', 'today', 'week', 'month'];
+        $period = $this->get('period', 'all');
+        if (!in_array($period, $allowed, true)) {
+            $period = 'all';
+        }
+
         $logModel = new TelegramLog();
-        $logs = $logModel->fetchRecent(150);
-        $maxId = $logModel->maxId();
+        $logs = $logModel->fetchFiltered($period);
+        $maxId = $logModel->maxIdFiltered($period);
+
+        $siteConfig = Config::getSiteConfig();
+        $lastCronRun = $siteConfig['last_cron_run'] ?? null;
+
         $this->view('admin/telegram/terminal', [
             'logs' => $logs,
             'maxId' => $maxId,
+            'period' => $period,
+            'lastCronRun' => $lastCronRun,
         ]);
     }
 
     public function terminalPoll(): void
     {
         $this->requireAdmin();
-        $afterId = (int) ($_GET['after'] ?? 0);
+        $allowed = ['all', 'today', 'week', 'month'];
+        $period = $this->get('period', 'all');
+        if (!in_array($period, $allowed, true)) {
+            $period = 'all';
+        }
+        $afterId = max(0, (int) $this->get('after', 0));
         $logModel = new TelegramLog();
-        $rows = $logModel->fetchAfter($afterId, 100);
+        $rows = $logModel->fetchAfterFiltered($afterId, $period, 100);
         $newMax = $afterId;
         foreach ($rows as $r) {
-            if ((int) $r['id'] > $newMax)
+            if ((int) $r['id'] > $newMax) {
                 $newMax = (int) $r['id'];
+            }
         }
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['rows' => $rows, 'maxId' => $newMax], JSON_UNESCAPED_UNICODE);
-        exit;
+
+        $this->json([
+            'success' => true,
+            'rows' => $rows,
+            'maxId' => $newMax,
+            'period' => $period,
+        ]);
     }
 
-    // ─── Notification Channels ───────────────────────────────────────────────
+    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Notification Channels Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     public function notificationChannels(): void
     {
@@ -272,7 +296,7 @@ class TelegramAdminController extends Controller
         $label = trim((string) $this->post('label', ''));
 
         if ($chatId === '') {
-            $this->json(['success' => false, 'message' => 'Chat ID/Channel khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng']);
+            $this->json(['success' => false, 'message' => 'Chat ID/Channel khÃƒÂ´ng Ã„â€˜Ã†Â°Ã¡Â»Â£c Ã„â€˜Ã¡Â»Æ’ trÃ¡Â»â€˜ng']);
             return;
         }
 
@@ -281,7 +305,7 @@ class TelegramAdminController extends Controller
 
         $this->json([
             'success' => $success,
-            'message' => $success ? 'ÄÃ£ thÃªm kÃªnh nháº­n thÃ´ng bÃ¡o thÃ nh cÃ´ng' : 'KÃªnh nÃ y Ä‘Ã£ tá»“n táº¡i hoáº·c cÃ³ lá»—i',
+            'message' => $success ? 'Ã„ÂÃƒÂ£ thÃƒÂªm kÃƒÂªnh nhÃ¡ÂºÂ­n thÃƒÂ´ng bÃƒÂ¡o thÃƒÂ nh cÃƒÂ´ng' : 'KÃƒÂªnh nÃƒÂ y Ã„â€˜ÃƒÂ£ tÃ¡Â»â€œn tÃ¡ÂºÂ¡i hoÃ¡ÂºÂ·c cÃƒÂ³ lÃ¡Â»â€”i',
         ]);
     }
 
@@ -290,7 +314,7 @@ class TelegramAdminController extends Controller
         $this->requireAdmin();
         $id = (int) $this->post('id', 0);
         if ($id <= 0) {
-            $this->json(['success' => false, 'message' => 'ID khÃ´ng há»£p lá»‡']);
+            $this->json(['success' => false, 'message' => 'ID khÃƒÂ´ng hÃ¡Â»Â£p lÃ¡Â»â€¡']);
             return;
         }
 
@@ -308,18 +332,18 @@ class TelegramAdminController extends Controller
         $label = trim((string) $this->post('label', ''));
 
         if ($id <= 0) {
-            $this->json(['success' => false, 'message' => 'ID khÃ´ng há»£p lá»‡']);
+            $this->json(['success' => false, 'message' => 'ID khÃƒÂ´ng hÃ¡Â»Â£p lÃ¡Â»â€¡']);
             return;
         }
         if ($chatId === '') {
-            $this->json(['success' => false, 'message' => 'Chat ID khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng']);
+            $this->json(['success' => false, 'message' => 'Chat ID khÃƒÂ´ng Ã„â€˜Ã†Â°Ã¡Â»Â£c Ã„â€˜Ã¡Â»Æ’ trÃ¡Â»â€˜ng']);
             return;
         }
 
         $model = new TelegramNotificationChannel();
         $found = $model->find($id);
         if (!$found) {
-            $this->json(['success' => false, 'message' => 'KÃªnh khÃ´ng tá»“n táº¡i']);
+            $this->json(['success' => false, 'message' => 'KÃƒÂªnh khÃƒÂ´ng tÃ¡Â»â€œn tÃ¡ÂºÂ¡i']);
             return;
         }
 
@@ -327,12 +351,12 @@ class TelegramAdminController extends Controller
             $success = $model->updateChannel($id, $chatId, $label !== '' ? $label : null);
             $this->json([
                 'success' => (bool) $success,
-                'message' => $success ? 'ÄÃ£ cáº­p nháº­t kÃªnh thÃ nh cÃ´ng' : 'KhÃ´ng thá»ƒ cáº­p nháº­t kÃªnh',
+                'message' => $success ? 'Ã„ÂÃƒÂ£ cÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t kÃƒÂªnh thÃƒÂ nh cÃƒÂ´ng' : 'KhÃƒÂ´ng thÃ¡Â»Æ’ cÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t kÃƒÂªnh',
             ]);
         } catch (Throwable $e) {
             $this->json([
                 'success' => false,
-                'message' => 'KhÃ´ng thá»ƒ cáº­p nháº­t (cÃ³ thá»ƒ trÃ¹ng Chat ID)',
+                'message' => 'KhÃƒÂ´ng thÃ¡Â»Æ’ cÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t (cÃƒÂ³ thÃ¡Â»Æ’ trÃƒÂ¹ng Chat ID)',
             ]);
         }
     }
@@ -342,7 +366,7 @@ class TelegramAdminController extends Controller
         $this->requireAdmin();
         $id = (int) $this->post('id', 0);
         if ($id <= 0) {
-            $this->json(['success' => false, 'message' => 'ID khÃ´ng há»£p lá»‡']);
+            $this->json(['success' => false, 'message' => 'ID khÃƒÂ´ng hÃ¡Â»Â£p lÃ¡Â»â€¡']);
             return;
         }
 
@@ -351,7 +375,43 @@ class TelegramAdminController extends Controller
         $this->json(['success' => $success]);
     }
 
-    // â”€â”€â”€ User Links â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Orders Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+
+    public function orders(): void
+    {
+        $this->requireAdmin();
+        $db = (new UserTelegramLink())->getConnection();
+
+        // Check if DB schema supports telegram tracking
+        $stmtCol = $db->query("SHOW COLUMNS FROM `orders` LIKE 'source_channel'");
+        $hasSource = $stmtCol->fetch();
+        $filterMode = $hasSource ? 'active' : 'none';
+
+        if ($filterMode === 'active') {
+            $sql = "SELECT o.*, u.username as buyer_username
+                    FROM `orders` o
+                    LEFT JOIN `users` u ON u.id = o.user_id
+                    WHERE o.`source_channel` = 1
+                    ORDER BY o.`id` DESC LIMIT 500";
+            $stmt = $db->prepare($sql);
+            $stmt->execute();
+            $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } else {
+            $orders = [];
+        }
+
+        $siteConfig = Config::getSiteConfig();
+        $lastCronRun = $siteConfig['last_cron_run'] ?? null;
+
+        $this->view('admin/telegram/orders', [
+            'orders' => $orders,
+            'filterMode' => $filterMode,
+            'lastCronRun' => $lastCronRun,
+        ]);
+    }
+
+    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ User Links Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+
     public function sendMainChannelAlertAction(): void
     {
         $this->requireAdmin();
@@ -360,18 +420,18 @@ class TelegramAdminController extends Controller
         $message = trim((string) $this->post('message', ''));
 
         if ($chatId === '') {
-            $this->json(['success' => false, 'message' => 'Thiếu Telegram Chat ID / Channel']);
+            $this->json(['success' => false, 'message' => 'ThiÃ¡ÂºÂ¿u Telegram Chat ID / Channel']);
             return;
         }
         if ($message === '') {
-            $this->json(['success' => false, 'message' => 'Nội dung ALERT không được để trống']);
+            $this->json(['success' => false, 'message' => 'NÃ¡Â»â„¢i dung ALERT khÃƒÂ´ng Ã„â€˜Ã†Â°Ã¡Â»Â£c Ã„â€˜Ã¡Â»Æ’ trÃ¡Â»â€˜ng']);
             return;
         }
 
         $ok = (bool) $this->telegram->sendTo($chatId, $message);
         $this->json([
             'success' => $ok,
-            'message' => $ok ? 'Đã gửi ALERT vào Main Channel' : 'Gửi ALERT thất bại, hãy kiểm tra token/chat id',
+            'message' => $ok ? 'Ã„ÂÃƒÂ£ gÃ¡Â»Â­i ALERT vÃƒÂ o Main Channel' : 'GÃ¡Â»Â­i ALERT thÃ¡ÂºÂ¥t bÃ¡ÂºÂ¡i, hÃƒÂ£y kiÃ¡Â»Æ’m tra token/chat id',
         ]);
     }
 
@@ -383,27 +443,114 @@ class TelegramAdminController extends Controller
         $db = $linkModel->getConnection();
 
         $keyword = trim((string) $this->get('q', ''));
-        $where = '';
-        $params = [];
+        $unlinkFilter = trim((string) $this->get('unlink', 'all'));
+        $period = trim((string) $this->get('period', 'all'));
+        $limit = (int) $this->get('limit', 10);
 
-        if ($keyword !== '') {
-            $where = "WHERE l.`telegram_id` LIKE ? OR l.`telegram_username` LIKE ? OR u.`username` LIKE ? OR u.`email` LIKE ?";
-            $likeQ = "%{$keyword}%";
-            $params = [$likeQ, $likeQ, $likeQ, $likeQ];
+        $allowedUnlinkFilters = ['all', 'unlink', 'link'];
+        if (!in_array($unlinkFilter, $allowedUnlinkFilters, true)) {
+            $unlinkFilter = 'all';
         }
 
-        $sql = "SELECT l.*, u.username AS web_username, u.email AS web_email
-                FROM `user_telegram_links` l
-                LEFT JOIN `users` u ON u.id = l.user_id
-                {$where}
-                ORDER BY l.id DESC LIMIT 100";
+        $allowedPeriods = ['all', 'today', '7', '15', '30'];
+        if (!in_array($period, $allowedPeriods, true)) {
+            $period = 'all';
+        }
+
+        $allowedLimits = [10, 20, 50, 100];
+        if (!in_array($limit, $allowedLimits, true)) {
+            $limit = 10;
+        }
+
+        $whereParts = [];
+        $params = [];
+
+        if ($unlinkFilter === 'unlink') {
+            $whereParts[] = 'l.`id` IS NULL';
+        } elseif ($unlinkFilter === 'link') {
+            $whereParts[] = 'l.`id` IS NOT NULL';
+        }
+
+        if ($keyword !== '') {
+            $likeQ = "%{$keyword}%";
+            $whereParts[] = "(CAST(u.`id` AS CHAR) LIKE ? OR u.`username` LIKE ? OR u.`email` LIKE ? OR CAST(l.`telegram_id` AS CHAR) LIKE ? OR l.`telegram_username` LIKE ?)";
+            $params = array_merge($params, [$likeQ, $likeQ, $likeQ, $likeQ, $likeQ]);
+        }
+
+        if ($period === 'today') {
+            $whereParts[] = 'DATE(COALESCE(l.`linked_at`, u.`created_at`)) = CURDATE()';
+        } elseif (in_array($period, ['7', '15', '30'], true)) {
+            $days = (int) $period;
+            $whereParts[] = "COALESCE(l.`linked_at`, u.`created_at`) >= DATE_SUB(NOW(), INTERVAL {$days} DAY)";
+        }
+
+        $whereSql = !empty($whereParts) ? ('WHERE ' . implode(' AND ', $whereParts)) : '';
+
+        $sql = "SELECT
+                    u.`id` AS `user_id`,
+                    u.`username` AS `web_username`,
+                    u.`email` AS `web_email`,
+                    u.`created_at` AS `user_created_at`,
+                    l.`id` AS `link_id`,
+                    l.`telegram_id`,
+                    l.`telegram_username`,
+                    l.`first_name`,
+                    l.`linked_at`,
+                    l.`last_active`
+                FROM `users` u
+                LEFT JOIN `user_telegram_links` l ON l.`user_id` = u.`id`
+                {$whereSql}
+                ORDER BY
+                    CASE WHEN l.`id` IS NULL THEN 1 ELSE 0 END ASC,
+                    l.`linked_at` DESC,
+                    u.`id` DESC
+                LIMIT {$limit}";
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
         $links = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        $totalUsers = (int) $db->query("SELECT COUNT(*) FROM `users`")->fetchColumn();
+        $totalLinked = (int) $db->query("SELECT COUNT(*) FROM `user_telegram_links`")->fetchColumn();
+        $totalUnlinked = max(0, $totalUsers - $totalLinked);
+        $filteredCount = count($links);
+
+        if ($this->isAjax()) {
+            $this->json([
+                'success' => true,
+                'rows' => $links,
+                'stats' => [
+                    'total_users' => $totalUsers,
+                    'total_linked' => $totalLinked,
+                    'total_unlinked' => $totalUnlinked,
+                    'filtered_count' => $filteredCount,
+                ],
+                'filters' => [
+                    'q' => $keyword,
+                    'unlink' => $unlinkFilter,
+                    'period' => $period,
+                    'limit' => $limit,
+                ],
+            ]);
+        }
+
+        $siteConfig = Config::getSiteConfig();
+        $lastCronRun = $siteConfig['last_cron_run'] ?? null;
+
         $this->view('admin/telegram/links', [
             'links' => $links,
             'keyword' => $keyword,
+            'filters' => [
+                'unlink' => $unlinkFilter,
+                'period' => $period,
+                'limit' => $limit,
+            ],
+            'stats' => [
+                'total_users' => $totalUsers,
+                'total_linked' => $totalLinked,
+                'total_unlinked' => $totalUnlinked,
+                'filtered_count' => $filteredCount,
+            ],
+            'lastCronRun' => $lastCronRun,
         ]);
     }
 
@@ -412,7 +559,7 @@ class TelegramAdminController extends Controller
         $this->requireAdmin();
         $userId = (int) $this->post('user_id', 0);
         if ($userId <= 0) {
-            $this->json(['success' => false, 'message' => 'Thiáº¿u ID ngÆ°á»i dÃ¹ng']);
+            $this->json(['success' => false, 'message' => 'ThiÃ¡ÂºÂ¿u ID ngÃ†Â°Ã¡Â»Âi dÃƒÂ¹ng']);
             return;
         }
 
@@ -421,11 +568,11 @@ class TelegramAdminController extends Controller
 
         $this->json([
             'success' => $success,
-            'message' => $success ? 'ÄÃ£ há»§y liÃªn káº¿t thÃ nh cÃ´ng' : 'KhÃ´ng thá»ƒ thá»±c hiá»‡n há»§y liÃªn káº¿t',
+            'message' => $success ? 'Ã„ÂÃƒÂ£ hÃ¡Â»Â§y liÃƒÂªn kÃ¡ÂºÂ¿t thÃƒÂ nh cÃƒÂ´ng' : 'KhÃƒÂ´ng thÃ¡Â»Æ’ thÃ¡Â»Â±c hiÃ¡Â»â€¡n hÃ¡Â»Â§y liÃƒÂªn kÃ¡ÂºÂ¿t',
         ]);
     }
 
-    // â”€â”€â”€ Outbox â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Outbox Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     public function outbox(): void
     {
@@ -434,32 +581,84 @@ class TelegramAdminController extends Controller
         $outboxModel = new TelegramOutbox();
         $db = $outboxModel->getConnection();
 
-        $statusFilter = trim((string) $this->get('status', ''));
-        $validStatuses = ['pending', 'sent', 'fail'];
-        $where = '';
+        $statusFilter = trim((string) $this->get('status', 'all'));
+        $period = trim((string) $this->get('period', 'all'));
+        $search = trim((string) $this->get('search', ''));
+
+        $whereBlocks = [];
         $params = [];
 
-        if (in_array($statusFilter, $validStatuses, true)) {
-            $where = "WHERE `status` = ?";
-            $params = [$statusFilter];
+        if ($statusFilter !== 'all' && in_array($statusFilter, ['pending', 'sent', 'fail'], true)) {
+            $whereBlocks[] = "o.`status` = ?";
+            $params[] = $statusFilter;
         }
 
-        $sql = "SELECT * FROM `telegram_outbox` {$where} ORDER BY `id` DESC LIMIT 200";
+        if ($period !== 'all') {
+            switch ($period) {
+                case 'today':
+                    $whereBlocks[] = "DATE(o.`created_at`) = CURDATE()";
+                    break;
+                case 'yesterday':
+                    $whereBlocks[] = "DATE(o.`created_at`) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)";
+                    break;
+                case 'week':
+                    $whereBlocks[] = "o.`created_at` >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+                    break;
+                case 'month':
+                    $whereBlocks[] = "o.`created_at` >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+                    break;
+            }
+        }
+
+        if ($search !== '') {
+            $whereBlocks[] = "(CAST(o.`telegram_id` AS CHAR) LIKE ? OR o.`message` LIKE ? OR u.`username` LIKE ?)";
+            $likeSearch = "%{$search}%";
+            $params[] = $likeSearch;
+            $params[] = $likeSearch;
+            $params[] = $likeSearch;
+        }
+
+        $whereSql = !empty($whereBlocks) ? "WHERE " . implode(' AND ', $whereBlocks) : "";
+
+        $sql = "SELECT o.*, u.username as web_username
+                FROM `telegram_outbox` o
+                LEFT JOIN `user_telegram_links` l ON l.telegram_id = o.telegram_id
+                LEFT JOIN `users` u ON u.id = l.user_id
+                {$whereSql}
+                ORDER BY o.`id` DESC LIMIT 300";
+
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
         $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $stats = $outboxModel->getStats();
-        $search = trim((string) $this->get('search', ''));
+        $siteConfig = Config::getSiteConfig();
+        $lastCronRun = $siteConfig['last_cron_run'] ?? null;
+
+        if ($this->isAjax()) {
+            $this->json([
+                'success' => true,
+                'rows' => $messages,
+                'stats' => $stats,
+                'lastCronRun' => $lastCronRun,
+                'filters' => [
+                    'status' => $statusFilter,
+                    'period' => $period,
+                    'search' => $search,
+                ],
+            ]);
+        }
 
         $this->view('admin/telegram/outbox', [
-            'chungapi' => Config::getSiteConfig(),
+            'chungapi' => $siteConfig,
             'stats' => $stats,
             'messages' => $messages,
+            'lastCronRun' => $lastCronRun,
             'filters' => [
                 'status' => $statusFilter,
-                'search' => $search
-            ]
+                'period' => $period,
+                'search' => $search,
+            ],
         ]);
     }
 
@@ -482,33 +681,44 @@ class TelegramAdminController extends Controller
             }
         }
 
-        $this->json(['success' => true, 'message' => 'ÄÃ£ Ä‘áº·t láº¡i tráº¡ng thÃ¡i Ä‘á»ƒ gá»­i láº¡i']);
+        $this->json(['success' => true, 'message' => 'Ã„ÂÃƒÂ£ Ã„â€˜Ã¡ÂºÂ·t lÃ¡ÂºÂ¡i trÃ¡ÂºÂ¡ng thÃƒÂ¡i Ã„â€˜Ã¡Â»Æ’ gÃ¡Â»Â­i lÃ¡ÂºÂ¡i']);
     }
 
     public function outboxDelete(): void
     {
         $this->requireAdmin();
-        $ids = array_filter(array_map('intval', explode(',', (string) $this->post('ids', ''))));
+        $idsRaw = $this->post('ids', '');
+
+        $outboxModel = new TelegramOutbox();
+        $db = $outboxModel->getConnection();
+
+        if ($idsRaw === 'all') {
+            $db->exec("DELETE FROM `telegram_outbox` WHERE `status` IN ('sent', 'fail')");
+            $this->json(['success' => true, 'message' => 'Da xoa hang doi da xu ly']);
+            return;
+        }
+
+        $ids = array_filter(array_map('intval', explode(',', (string) $idsRaw)));
 
         if (!empty($ids)) {
-            $outboxModel = new TelegramOutbox();
-            $db = $outboxModel->getConnection();
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
             $stmt = $db->prepare("DELETE FROM `telegram_outbox` WHERE `id` IN ({$placeholders})");
             $stmt->execute($ids);
+            $this->json(['success' => true, 'message' => 'Da xoa cac ban ghi duoc chon']);
+        } else {
+            $this->json(['success' => false, 'message' => 'Vui long chon ban ghi can xoa']);
         }
-
-        $this->json(['success' => true, 'message' => 'ÄÃ£ xÃ³a cÃ¡c báº£n ghi Ä‘Æ°á»£c chá»n']);
     }
 
-    // â”€â”€â”€ Broadcast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Broadcast Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     public function broadcastAction(): void
     {
         $this->requireAdmin();
         $message = trim((string) $this->post('message', ''));
         if ($message === '') {
-            $this->json(['success' => false, 'message' => 'Ná»™i dung tin nháº¯n khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng']);
+            $this->json(['success' => false, 'message' => 'NÃ¡Â»â„¢i dung tin nhÃ¡ÂºÂ¯n khÃƒÂ´ng Ã„â€˜Ã†Â°Ã¡Â»Â£c Ã„â€˜Ã¡Â»Æ’ trÃ¡Â»â€˜ng']);
             return;
         }
 
@@ -516,7 +726,7 @@ class TelegramAdminController extends Controller
         $tids = $userModel->getAllActive();
 
         if (empty($tids)) {
-            $this->json(['success' => false, 'message' => 'ChÆ°a cÃ³ ngÆ°á»i dÃ¹ng nÃ o (active) Ä‘á»ƒ gá»­i tin']);
+            $this->json(['success' => false, 'message' => 'ChÃ†Â°a cÃƒÂ³ ngÃ†Â°Ã¡Â»Âi dÃƒÂ¹ng nÃƒÂ o (active) Ã„â€˜Ã¡Â»Æ’ gÃ¡Â»Â­i tin']);
             return;
         }
 
@@ -527,7 +737,7 @@ class TelegramAdminController extends Controller
             $count++;
         }
 
-        $this->json(['success' => true, 'message' => "ÄÃ£ thÃªm {$count} tin nháº¯n vÃ o hÃ ng Ä‘á»£i gá»­i (Outbox)"]);
+        $this->json(['success' => true, 'message' => "Ã„ÂÃƒÂ£ thÃƒÂªm {$count} tin nhÃ¡ÂºÂ¯n vÃƒÂ o hÃƒÂ ng Ã„â€˜Ã¡Â»Â£i gÃ¡Â»Â­i (Outbox)"]);
     }
 
     /**
