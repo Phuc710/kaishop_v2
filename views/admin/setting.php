@@ -89,6 +89,14 @@ require_once __DIR__ . '/layout/breadcrumb.php';
         font-size: 24px;
         margin-bottom: 5px;
     }
+
+    /* Clean white background for the SMTP (send mail) card */
+    #form-smtp .card,
+    #form-smtp .card-header,
+    #form-smtp .card-body,
+    #form-smtp .card-footer {
+        background: #fff !important;
+    }
 </style>
 
 <section class="content pb-4 mt-3">
@@ -222,6 +230,23 @@ require_once __DIR__ . '/layout/breadcrumb.php';
                                         <input type="url" class="form-control" name="youtube_admin"
                                             placeholder="https://youtube.com/@..."
                                             value="<?= htmlspecialchars($chungapi['youtube_admin'] ?? ''); ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="font-weight-bold small text-uppercase">TELEGRAM HỖ TRỢ
+                                            (@username)</label>
+                                        <input type="text" class="form-control" name="support_tele"
+                                            placeholder="https://t.me/yourtelegram"
+                                            value="<?= htmlspecialchars($chungapi['support_tele'] ?? ''); ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="font-weight-bold small text-uppercase">USERNAME DISCORD</label>
+                                        <input type="text" class="form-control" name="discord_admin"
+                                            placeholder="thphuc37"
+                                            value="<?= htmlspecialchars($chungapi['discord_admin'] ?? ''); ?>">
                                     </div>
                                 </div>
 

@@ -55,40 +55,67 @@ if (!is_dir($imageDir) && !@mkdir($imageDir, 0777, true) && !is_dir($imageDir)) 
 
 $action = trim((string) ($_POST['action'] ?? ''));
 
-function convertToWebP($source, $destination, $quality = 80)
+function convertToWebP($source, $destination, $quality = 82, $targetW = 800, $targetH = 450)
 {
     $info = @getimagesize($source);
     if (!$info || empty($info['mime'])) {
         return false;
     }
     $mime = $info['mime'];
+    $srcW = (int) $info[0];
+    $srcH = (int) $info[1];
 
     switch ($mime) {
         case 'image/jpeg':
-            $image = @imagecreatefromjpeg($source);
+            $srcImage = @imagecreatefromjpeg($source);
             break;
         case 'image/png':
-            $image = @imagecreatefrompng($source);
-            if (!$image) return false;
-            imagepalettetotruecolor($image);
-            imagealphablending($image, true);
-            imagesavealpha($image, true);
+            $srcImage = @imagecreatefrompng($source);
+            if ($srcImage) {
+                imagepalettetotruecolor($srcImage);
+                imagealphablending($srcImage, true);
+                imagesavealpha($srcImage, true);
+            }
             break;
         case 'image/gif':
-            $image = @imagecreatefromgif($source);
+            $srcImage = @imagecreatefromgif($source);
             break;
         case 'image/webp':
-            return @copy($source, $destination);
+            $srcImage = @imagecreatefromwebp($source);
+            break;
         default:
             return false;
     }
 
-    if (!$image) {
+    if (!$srcImage) {
         return false;
     }
 
-    $result = @imagewebp($image, $destination, $quality);
-    imagedestroy($image);
+    // Create white canvas at target size
+    $canvas = imagecreatetruecolor($targetW, $targetH);
+    if (!$canvas) {
+        imagedestroy($srcImage);
+        return false;
+    }
+
+    // Fill with white background (handles transparent PNGs nicely)
+    $white = imagecolorallocate($canvas, 255, 255, 255);
+    imagefill($canvas, 0, 0, $white);
+
+    // Calculate scaling to fit source inside target while preserving aspect ratio
+    $scale = min($targetW / $srcW, $targetH / $srcH);
+    $newW = (int) round($srcW * $scale);
+    $newH = (int) round($srcH * $scale);
+
+    // Center the resized image on the canvas
+    $offsetX = (int) round(($targetW - $newW) / 2);
+    $offsetY = (int) round(($targetH - $newH) / 2);
+
+    imagecopyresampled($canvas, $srcImage, $offsetX, $offsetY, 0, 0, $newW, $newH, $srcW, $srcH);
+    imagedestroy($srcImage);
+
+    $result = @imagewebp($canvas, $destination, $quality);
+    imagedestroy($canvas);
     return (bool) $result;
 }
 

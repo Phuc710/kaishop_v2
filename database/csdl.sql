@@ -382,6 +382,8 @@ CREATE TABLE IF NOT EXISTS `setting` (
   `telegram_purchase_session_ttl` INT NOT NULL DEFAULT 900 COMMENT 'TTL phiên mua hàng bot (giây), mặc định 15 phút',
   `telegram_maintenance_enabled` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0=Bot hoạt động, 1=Bot bảo trì',
   `telegram_maintenance_message` TEXT NULL COMMENT 'Thông báo khi bot ở chế độ bảo trì',
+  `support_tele` varchar(255) DEFAULT NULL COMMENT 'Link Telegram hỗ trợ khách hàng',
+  `discord_admin` varchar(100) DEFAULT NULL COMMENT 'Username Discord hỗ trợ',
   `last_cron_run` DATETIME NULL COMMENT 'Timestamp lần cuối cron.php chạy (Worker Health)',
   `created_at` datetime DEFAULT current_timestamp(),
   `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),

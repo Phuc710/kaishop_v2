@@ -60,6 +60,37 @@ class TelegramService
     }
 
     /**
+     * Send a message and return the message_id (0 on failure).
+     * Used for the edit-message pattern where callers need to track
+     * which message to edit later.
+     */
+    public function sendToWithResult(string $chatId, string $message, array $options = []): int
+    {
+        $payload = [
+            'chat_id' => $chatId,
+            'text' => trim($message),
+            'parse_mode' => $options['parse_mode'] ?? 'HTML',
+            'disable_web_page_preview' => !empty($options['disable_web_page_preview']) ? 'true' : 'false',
+        ];
+
+        if (!empty($options['reply_markup'])) {
+            $payload['reply_markup'] = is_string($options['reply_markup'])
+                ? $options['reply_markup']
+                : json_encode($options['reply_markup'], JSON_UNESCAPED_UNICODE);
+        }
+
+        if (!empty($options['disable_notification'])) {
+            $payload['disable_notification'] = 'true';
+        }
+
+        $result = $this->apiCall('sendMessage', $payload);
+        if (!empty($result['ok']) && isset($result['result']['message_id'])) {
+            return (int) $result['result']['message_id'];
+        }
+        return 0;
+    }
+
+    /**
      * Send photo by URL or file_id to a specific chat.
      */
     public function sendPhotoTo(string $chatId, string $photo, ?string $caption = null, array $options = []): bool
@@ -114,6 +145,29 @@ class TelegramService
         }
 
         return !empty($result['ok']);
+    }
+
+    /**
+     * Edit existing message if messageId > 0, otherwise send new message.
+     * If editMessage fails, falls back to sendTo so user always sees the response.
+     *
+     * @param array|null $keyboard  Inline keyboard markup array (not encoded)
+     */
+    public function editOrSend(string $chatId, int $messageId, string $text, ?array $keyboard = null): bool
+    {
+        if ($messageId > 0) {
+            $edited = $this->editMessage($chatId, $messageId, $text, $keyboard);
+            if ($edited) {
+                return true;
+            }
+            // Edit failed — fallback to sendTo
+        }
+
+        $options = [];
+        if ($keyboard !== null) {
+            $options['reply_markup'] = $keyboard;
+        }
+        return $this->sendTo($chatId, $text, $options);
     }
 
     /**

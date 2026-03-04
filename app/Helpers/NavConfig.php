@@ -9,7 +9,9 @@ class NavConfig
     private static function buildUrl(string $path = ''): string
     {
         if (function_exists('url')) {
-            return (string) url($path);
+            $result = (string) url($path);
+            // Đảm bảo home link không bao giờ là chuỗi rỗng
+            return $result !== '' ? $result : '/';
         }
 
         $base = defined('APP_DIR') ? rtrim((string) APP_DIR, '/') : '';
@@ -26,6 +28,32 @@ class NavConfig
     {
         return ['/login', '/login-otp', '/register', '/password-reset'];
     }
+
+    /**
+     * Determines if a navigation item should be marked as active.
+     */
+    public static function isPublicLinkActive(array $item, string $currentPath): bool
+    {
+        $href = (string) ($item['href'] ?? '');
+        $currentPathRaw = parse_url($currentPath, PHP_URL_PATH) ?: '/';
+
+        // Check exact match
+        if ($currentPath === $href || $currentPathRaw === $href) {
+            return true;
+        }
+
+        // Check children for dropdowns (recursive)
+        $children = (array) ($item['children'] ?? []);
+        foreach ($children as $child) {
+            if (self::isPublicLinkActive($child, $currentPath)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
 
     public static function adminSidebarItems(): array
     {

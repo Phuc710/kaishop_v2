@@ -180,7 +180,7 @@ class TelegramAdminController extends Controller
         $baseUrl = rtrim(defined('BASE_URL') ? BASE_URL : '', '/');
         $path = get_setting('telegram_webhook_path', 'bottelekaishop_default');
         $webhookUrl = $baseUrl . '/api/' . ltrim($path, '/');
-        $secret = get_setting('telegram_webhook_secret', '');
+        $secret = TelegramConfig::webhookSecret();
 
         $result = $this->telegram->setWebhook($webhookUrl, $secret ?: null);
 
@@ -206,7 +206,7 @@ class TelegramAdminController extends Controller
         }
 
         $webhookUrl = $baseUrl . '/api/' . ltrim($path, '/');
-        $secret = trim((string) get_setting('telegram_webhook_secret', ''));
+        $secret = TelegramConfig::webhookSecret();
 
         $result = $this->telegram->setWebhook($webhookUrl, $secret ?: null);
 
@@ -231,8 +231,8 @@ class TelegramAdminController extends Controller
     public function testNotification(): void
     {
         $this->requireAdmin();
-        $chatId = get_setting('telegram_chat_id', '');
-        if ($chatId === '') {
+        $chatId = (string) TelegramConfig::primaryAdminId();
+        if ($chatId === '' || $chatId === '0') {
             $this->json(['success' => false, 'message' => 'Chưa cấu hình Chat ID']);
             return;
         }
@@ -444,7 +444,7 @@ class TelegramAdminController extends Controller
     {
         $this->requireAdmin();
 
-        $chatId = trim((string) $this->post('chat_id', get_setting('telegram_chat_id', '')));
+        $chatId = trim((string) $this->post('chat_id', (string) TelegramConfig::primaryAdminId()));
         $message = trim((string) $this->post('message', ''));
 
         if ($chatId === '') {

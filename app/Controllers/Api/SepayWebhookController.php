@@ -174,13 +174,13 @@ class SepayWebhookController extends Controller
                 $link = $linkModel->findByUserId($userId);
                 if ($link) {
                     $outbox = new TelegramOutbox();
-                    $notifMsg = "💰 <b>NẠP TIỀN THÀNH CÔNG</b>\n\n";
-                    $notifMsg .= "Số tiền: <b>" . number_format($transferAmount) . "đ</b>\n";
+                    $notifMsg = "🎉🎊 <b>NẠP TIỀN THÀNH CÔNG</b> 🎊🎉\n\n";
+                    $notifMsg .= "💰 Số tiền: <b>" . number_format($transferAmount) . "đ</b>\n";
                     if ($bonusAmount > 0) {
-                        $notifMsg .= "Khuyến mãi: <b>" . number_format($bonusAmount) . "đ</b>\n";
+                        $notifMsg .= "🎁 Khuyến mãi: <b>" . number_format($bonusAmount) . "đ</b>\n";
                     }
-                    $notifMsg .= "Thực nhận: <b>" . number_format($totalCredit) . "đ</b>\n";
-                    $notifMsg .= "Số dư hiện tại: <b>" . number_format($afterBalance) . "đ</b>";
+                    $notifMsg .= "✅ Thực nhận: <b>" . number_format($totalCredit) . "đ</b>\n";
+                    $notifMsg .= "🎉 Số dư hiện tại: <b>" . number_format($afterBalance) . "đ</b>\n\n";
 
                     $outbox->enqueue((int) $link['telegram_id'], $notifMsg);
                 }
@@ -188,7 +188,6 @@ class SepayWebhookController extends Controller
         } catch (Throwable $teleErr) {
             // Non-blocking
         }
-
 
         // 10. Mark deposit as completed
         $this->depositModel->markComplete((int) $deposit['id'], $sepayId);
@@ -239,7 +238,17 @@ class SepayWebhookController extends Controller
             'source_channel' => $sourceChannel,
         ]);
 
-        // 13. Return success
+        // 13. Log to Terminal
+        if (class_exists('TelegramLog')) {
+            $logMsg = "💰 NẠP THÀNH CÔNG: " . ($username) . " + " . number_format($totalCredit) . "đ (Mã: " . $depositCode . ")";
+            (new TelegramLog())->log($logMsg, 'INFO', 'INCOMING', 'DEPOSIT', [
+                'sepay_id' => $sepayId,
+                'amount' => $transferAmount,
+                'total_credit' => $totalCredit
+            ]);
+        }
+
+        // 14. Return success
         http_response_code(200);
         return $this->json(['success' => true, 'message' => 'Deposit credited']);
     }

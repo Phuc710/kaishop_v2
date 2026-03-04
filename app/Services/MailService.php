@@ -160,7 +160,6 @@ class MailService
     public function buildLayout(string $subject, string $headline, string $content): string
     {
         $safeSubject = $this->e($subject);
-        $safeHeadline = $this->e($headline);
         $safeSiteName = $this->e($this->siteName);
         $safeSiteUrl = $this->e($this->siteUrl !== '' ? $this->siteUrl : '#');
         $year = date('Y');
@@ -188,8 +187,6 @@ body,table,td,div,p,span,a,h1,h2,h3{-webkit-text-size-adjust:100%;-ms-text-size-
 @media only screen and (max-width:620px){
     .ks-main-table{width:100%!important;border-radius:0!important}
     .ks-content-cell{padding:28px 20px!important}
-    .ks-header-cell{padding:28px 20px!important}
-    .ks-header-title{font-size:18px!important}
     .ks-footer-cell{padding:16px 20px!important}
     .ks-order-box{padding:18px 16px!important}
 }
@@ -199,23 +196,18 @@ body,table,td,div,p,span,a,h1,h2,h3{-webkit-text-size-adjust:100%;-ms-text-size-
 <div style="width:100%;table-layout:fixed;background-color:#f0f4f8;padding:40px 10px;">
     <table role="presentation" class="ks-main-table ks-white-bg" style="background-color:#ffffff;margin:0 auto;width:100%;max-width:600px;border-spacing:0;color:#334155;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
         <tr>
-            <td class="ks-header-cell" style="background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%);padding:36px 30px;text-align:center;">
-                <h1 class="ks-header-title" style="margin:0;font-size:22px;font-weight:800;color:#ffffff!important;letter-spacing:-0.3px;line-height:1.4;">{$safeHeadline}</h1>
-            </td>
-        </tr>
-        <tr>
             <td class="ks-content-cell ks-white-bg ks-content-text" style="padding:36px 32px;line-height:1.7;font-size:15px;color:#334155;background-color:#ffffff;">
                 {$content}
                 <div style="margin-top:32px;border-top:1px solid #e2e8f0;padding-top:20px;font-size:13px;color:#94a3b8;text-align:center;">
-                    Nếu cần hỗ trợ, đội ngũ <strong style="color:#64748b;">{$safeSiteName}</strong> luôn sẵn sàng giúp bạn.<br>
+                    Nếu cần hỗ trợ, đội ngũ <a href="{$safeSiteUrl}" style="color:#64748b;font-weight:700;text-decoration:none;">{$safeSiteName}</a> luôn sẵn sàng giúp bạn.<br>
                     <span style="font-size:12px;">Thời gian gửi: {$currentTime}</span>
                 </div>
             </td>
         </tr>
         <tr>
-            <td class="ks-footer-cell" style="padding:20px 32px;text-align:center;font-size:12px;color:#94a3b8;background-color:#f8fafc;border-top:1px solid #f1f5f9;">
+            <td class="ks-footer-cell" style="padding:20px 32px;text-align:center;font-size:12px;color:#000000;background-color:#f8fafc;border-top:1px solid #f1f5f9;">
                 <p style="margin:0 0 4px;">&copy; {$year} <strong>{$safeSiteName}</strong>. All rights reserved.</p>
-                <p style="margin:0;color:#cbd5e1;">Đây là email tự động, vui lòng không trả lời email này.</p>
+                <p style="margin:0;color:#000000;">Đây là email tự động, vui lòng không trả lời email này.</p>
             </td>
         </tr>
     </table>
@@ -231,14 +223,13 @@ HTML;
         $safeHome = $this->e($this->siteUrl !== '' ? $this->siteUrl : '#');
 
         return <<<HTML
-<p>Xin chào <strong>{$safeUser}</strong>,</p>
-<p>Tài khoản của bạn đã được tạo thành công tại <strong>{$this->siteName}</strong>.</p>
+<p>👋 Xin chào <strong>{$safeUser}</strong>,</p>
+<p>🎉 Tài khoản của bạn đã được tạo thành công tại <strong>{$this->siteName}</strong>.</p>
 <p>Chúng tôi rất vui khi được đồng hành cùng bạn!</p>
 <p>🚀 Bạn có thể bắt đầu khám phá sản phẩm, nạp tiền và trải nghiệm dịch vụ ngay hôm nay.</p>
 <div style="text-align:center;margin-top:24px;">
     <a href="{$safeHome}" style="display:inline-block;padding:13px 32px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#ffffff!important;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Bắt đầu ngay tại đây</a>
 </div>
-<p style="margin-top:20px;color:#334155;">Trân trọng,<br>Đội ngũ {$this->siteName}</p>
 HTML;
     }
 
@@ -248,14 +239,12 @@ HTML;
         $safeReset = $this->e($resetUrl);
 
         return <<<HTML
-<p>Xin chào <strong>{$safeUser}</strong>,</p>
+<p>👋 Xin chào <strong>{$safeUser}</strong>,</p>
 <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn tại {$this->siteName}.</p>
 <p>Vui lòng nhấn vào nút bên dưới để tiến hành thay đổi mật khẩu:</p>
 <div style="text-align:center;margin-top:24px;">
     <a href="{$safeReset}" style="display:inline-block;padding:13px 32px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#ffffff!important;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Đặt lại mật khẩu</a>
 </div>
-<p style="margin-top: 20px; color: #64748b; font-size: 13px;">Nếu nút trên không hoạt động, bạn có thể sao chép và dán liên kết sau vào trình duyệt:</p>
-<p style="word-break: break-all; font-size: 12px; color: #2563eb;">{$safeReset}</p>
 <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
 HTML;
     }
@@ -305,7 +294,7 @@ HTML;
         $linkHtml = '';
         if ($link !== '') {
             $safeLink = $this->e($this->normalizeAssetUrl($link));
-            $linkHtml = '<div style="margin:20px 0;padding:18px 20px;border-radius:10px;background-color:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid #3b82f6;">'
+            $linkHtml = '<div style="margin:20px 0;padding:18px 20px;border-radius:10px;background-color:#ffffff;border:1px solid #e2e8f0;border-left:4px solid #3b82f6;">'
                 . '<strong style="font-size:13px;color:#1e293b;text-transform:uppercase;letter-spacing:0.3px;">🔗 Link tải Source Code:</strong><br>'
                 . '<a href="' . $safeLink . '" style="color:#2563eb;word-break:break-all;font-size:13px;">' . $safeLink . '</a>'
                 . '</div>';
@@ -355,7 +344,7 @@ HTML;
 <p style="font-size:15px;color:#334155;">Xin chào <strong style="color:#1e293b;">{$username}</strong>,</p>
 <p style="font-size:15px;color:#334155;">Đơn hàng <strong style="color:#2563eb;">#{$orderCode}</strong> của bạn tại <strong>{$this->siteName}</strong> đã được xử lý thành công 🎉</p>
 
-<div class="ks-order-box ks-white-bg" style="background-color:#f8fafc;border-radius:12px;padding:24px 28px;margin:24px 0;border:1px solid #e2e8f0;">
+<div class="ks-order-box ks-white-bg" style="background-color:#ffffff;border-radius:12px;padding:24px 28px;margin:24px 0;border:1px solid #e2e8f0;">
     <h3 style="margin:0 0 18px 0;color:#1e293b;font-size:16px;font-weight:700;text-align:center;border-bottom:2px solid #e2e8f0;padding-bottom:12px;letter-spacing:0.3px;">🧾 Chi tiết đơn hàng</h3>
     {$this->renderOrderSummaryTable($data)}
 </div>
@@ -393,7 +382,7 @@ HTML;
         // Row styling for clean white light UI
         $labelStyle = 'padding:10px 12px;color:#64748b;font-size:13px;font-weight:500;white-space:nowrap;';
         $valueStyle = 'padding:10px 12px;text-align:right;font-size:13px;color:#1e293b;font-weight:600;';
-        $rowEven = 'background-color:#f8fafc;';
+        $rowEven = 'background-color:#ffffff;';
         $rowOdd = 'background-color:#ffffff;';
 
         return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#475569;border-radius:8px;overflow:hidden;">'
@@ -411,7 +400,7 @@ HTML;
     {
         $safeTitle = $this->e($title);
         $safeContent = nl2br($this->e($content));
-        return '<div style="margin:20px 0;padding:18px 20px;border-radius:10px;background-color:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid #3b82f6;">'
+        return '<div style="margin:20px 0;padding:18px 20px;border-radius:10px;background-color:#ffffff;border:1px solid #e2e8f0;border-left:4px solid #3b82f6;">'
             . '<div style="font-size:13px;color:#1e293b;font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.3px;">' . $safeTitle . '</div>'
             . '<div style="font-size:13px;color:#475569;line-height:1.8;word-break:break-all;font-family:\'Courier New\',Courier,monospace;background:#ffffff;padding:12px 14px;border-radius:8px;border:1px solid #e2e8f0;">' . $safeContent . '</div>'
             . '</div>';

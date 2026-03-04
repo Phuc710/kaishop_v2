@@ -75,6 +75,8 @@ if (!class_exists('Config')) {
                 'tele_admin' => 'https://t.me/kaishop25',
                 'youtube_admin' => 'https://www.youtube.com/@KaiOfficial-0x',
                 'tiktok_admin' => 'https://www.tiktok.com/@kai_01s.',
+                'support_tele' => 'https://t.me/kaishop07',
+                'discord_admin' => 'thphuc37',
             ];
 
             if (!($connection instanceof mysqli)) {

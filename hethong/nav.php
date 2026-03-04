@@ -216,6 +216,29 @@ foreach ($authNavPaths as $p) {
             margin: 0;
         }
     }
+
+    /* Active State Highlights */
+    .navbar-nav .nav-link.active {
+        color: #ff6900 !important;
+        font-weight: 700;
+    }
+
+    .dropdown-item.active {
+        background-color: rgba(255, 105, 0, 0.08);
+        color: #ff6900 !important;
+        font-weight: 600;
+    }
+
+    .mobile-nav-list .nav-link.active-item {
+        background-color: rgba(255, 105, 0, 0.05);
+        border-left: 4px solid #ff6900;
+        color: #ff6900 !important;
+    }
+
+    .mobile-nav-list .nav-link.active-item .nav-text,
+    .mobile-nav-list .nav-link.active-item .nav-icon {
+        color: #ff6900 !important;
+    }
 </style>
 <div class="loader-wrapper">
     <span class="site-loader"> </span>
@@ -249,10 +272,13 @@ foreach ($authNavPaths as $p) {
                         $navLabel = htmlspecialchars((string) ($navItem['label'] ?? ''), ENT_QUOTES, 'UTF-8');
                         $embedImg = (string) ($navItem['embed_img'] ?? '');
                         ?>
-                        <?php if ($navType === 'dropdown'): ?>
+                        <?php
+                        $isActive = NavConfig::isPublicLinkActive($navItem, $requestPathNav);
+                        if ($navType === 'dropdown'):
+                            ?>
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
-                                    data-bs-auto-close="outside" aria-expanded="false">
+                                <a class="nav-link dropdown-toggle<?= $isActive ? ' active' : '' ?>" href="#" role="button"
+                                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                                     <?= $navLabel ?>
                                     <?php if ($embedImg !== ''): ?>
                                         <img src="<?= htmlspecialchars($embedImg, ENT_QUOTES, 'UTF-8') ?>" alt="icon"
@@ -265,11 +291,14 @@ foreach ($authNavPaths as $p) {
                                         $childLabel = htmlspecialchars((string) ($child['label'] ?? ''), ENT_QUOTES, 'UTF-8');
                                         $childIcon = (string) ($child['icon'] ?? '');
                                         $childImg = (string) ($child['embed_img'] ?? '');
+                                        $childHref = (string) ($child['href'] ?? '#');
+                                        $isChildActive = NavConfig::isPublicLinkActive($child, $requestPathNav);
                                         $isBinance = strpos(strtolower($childLabel), 'binance') !== false;
                                         ?>
                                         <li>
-                                            <a href="<?= htmlspecialchars((string) ($child['href'] ?? '#'), ENT_QUOTES, 'UTF-8') ?>"
-                                                class="dropdown-item d-flex align-items-center">
+                                            <a href="<?= htmlspecialchars($childHref, ENT_QUOTES, 'UTF-8') ?>"
+                                                class="dropdown-item d-flex align-items-center<?= $isChildActive ? ' active' : '' ?>">
+
                                                 <?php if ($childImg !== '' || $childIcon !== ''): ?>
                                                     <span class="me-2 d-flex align-items-center justify-content-center"
                                                         style="width: 24px;">
@@ -289,7 +318,7 @@ foreach ($authNavPaths as $p) {
                             </li>
                         <?php else: ?>
                             <li class="nav-item">
-                                <a class="nav-link"
+                                <a class="nav-link<?= $isActive ? ' active' : '' ?>"
                                     href="<?= htmlspecialchars((string) ($navItem['href'] ?? '#'), ENT_QUOTES, 'UTF-8') ?>">
                                     <?= $navLabel ?>
                                     <?php if ($embedImg !== ''): ?>
@@ -324,10 +353,14 @@ foreach ($authNavPaths as $p) {
                         $embedImg = (string) ($navItem['embed_img'] ?? '');
                         $collapseId = "navCollapse_" . $index;
                         ?>
-                        <?php if ($navType === 'dropdown'): ?>
+                        <?php
+                        $isActive = NavConfig::isPublicLinkActive($navItem, $requestPathNav);
+                        if ($navType === 'dropdown'):
+                            ?>
                             <li class="nav-item">
-                                <a class="nav-link dropdown-toggle-custom" data-bs-toggle="collapse" href="#<?= $collapseId ?>"
-                                    role="button" aria-expanded="false">
+                                <a class="nav-link dropdown-toggle-custom<?= $isActive ? ' active-item' : '' ?>"
+                                    data-bs-toggle="collapse" href="#<?= $collapseId ?>" role="button"
+                                    aria-expanded="<?= $isActive ? 'true' : 'false' ?>">
                                     <div class="nav-link-content">
                                         <span class="nav-icon">
                                             <?php if ($navMobileIcon !== ''): ?>
@@ -338,18 +371,20 @@ foreach ($authNavPaths as $p) {
                                     </div>
                                     <i class="fa-solid fa-chevron-down arrow-icon"></i>
                                 </a>
-                                <div class="collapse sub-menu-collapse" id="<?= $collapseId ?>">
+                                <div class="collapse sub-menu-collapse<?= $isActive ? ' show' : '' ?>" id="<?= $collapseId ?>">
                                     <ul class="sub-nav-list">
                                         <?php foreach ((array) ($navItem['children'] ?? []) as $child): ?>
                                             <?php
                                             $childLabel = htmlspecialchars((string) ($child['label'] ?? ''), ENT_QUOTES, 'UTF-8');
                                             $childIcon = (string) ($child['icon'] ?? '');
                                             $childImg = (string) ($child['embed_img'] ?? '');
+                                            $childHref = (string) ($child['href'] ?? '#');
+                                            $isChildActive = NavConfig::isPublicLinkActive($child, $requestPathNav);
                                             $isBinance = strpos(strtolower($childLabel), 'binance') !== false;
                                             ?>
                                             <li class="sub-nav-item">
-                                                <a href="<?= htmlspecialchars((string) ($child['href'] ?? '#'), ENT_QUOTES, 'UTF-8') ?>"
-                                                    class="sub-nav-link">
+                                                <a href="<?= htmlspecialchars($childHref, ENT_QUOTES, 'UTF-8') ?>"
+                                                    class="sub-nav-link<?= $isChildActive ? ' active' : '' ?>">
                                                     <?php if ($childImg !== '' || $childIcon !== ''): ?>
                                                         <span class="child-icon">
                                                             <?php if ($childImg !== ''): ?>
@@ -369,7 +404,7 @@ foreach ($authNavPaths as $p) {
                             </li>
                         <?php else: ?>
                             <li class="nav-item">
-                                <a class="nav-link"
+                                <a class="nav-link<?= $isActive ? ' active-item' : '' ?>"
                                     href="<?= htmlspecialchars((string) ($navItem['href'] ?? '#'), ENT_QUOTES, 'UTF-8') ?>">
                                     <div class="nav-link-content">
                                         <span class="nav-icon">

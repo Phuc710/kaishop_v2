@@ -10,10 +10,16 @@ if (isset($userPageAssetFlags) && is_array($userPageAssetFlags)) {
     $GLOBALS['pageAssets'] = array_merge($GLOBALS['pageAssets'] ?? [], $userPageAssetFlags);
 }
 
-$userPageTitle = (string) ($userPageTitle ?? 'Thong tin tai khoan');
+$userPageTitle = (string) ($userPageTitle ?? 'Thông tin tài khoản');
 $activePage = (string) ($activePage ?? 'profile');
-$userPageFaviconOverride = isset($userPageFaviconOverride) ? trim((string) $userPageFaviconOverride) : '';
+
+// Handle Favicon Synchronicity
+if (!isset($userPageFaviconOverride) || trim((string) $userPageFaviconOverride) === '') {
+    $userPageFaviconOverride = asset('assets/images/kaishop_favicon.png');
+}
+$userPageFaviconOverride = trim((string) $userPageFaviconOverride);
 ?>
+
 <!DOCTYPE html>
 <html lang="vi">
 

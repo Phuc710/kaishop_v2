@@ -85,29 +85,6 @@ require __DIR__ . '/layout/header.php';
     </div>
 </div>
 
-<style>
-    /* Auto-scaling table */
-    .user-history-table-wrap {
-        overflow-x: auto;
-    }
-
-    #history-table {
-        width: auto !important;
-        min-width: max-content;
-        table-layout: auto !important;
-    }
-
-    #history-table th,
-    #history-table td {
-        white-space: nowrap !important;
-    }
-
-    /* Content column can wrap if it's too long but still prefers expansion */
-    #history-table td:last-child {
-        white-space: normal !important;
-        min-width: 300px;
-    }
-</style>
 
 <script>
     $(document).ready(function () {

@@ -44,8 +44,7 @@ class PendingDeposit extends Model
         int $amount,
         int $bonusPercent = 0,
         int $sourceChannel = SourceChannelHelper::WEB
-    )
-    {
+    ) {
         // Cancel any existing pending deposits for this user
         $this->cancelAllPendingByUser($userId);
 
@@ -160,15 +159,29 @@ class PendingDeposit extends Model
     /**
      * Expire all deposits older than 5 minutes.
      */
-    public function markExpired(): void
+    public function markExpired(): array
     {
         $ts = $this->timeService ? $this->timeService->nowTs() : time();
         $cutoff = date('Y-m-d H:i:s', $ts - $this->getPendingTtlSeconds());
-        $stmt = $this->db->prepare("
-            UPDATE `{$this->table}` SET `status` = 'expired'
+
+        // Fetch deposits about to expire (for notification)
+        $fetchStmt = $this->db->prepare("
+            SELECT * FROM `{$this->table}`
             WHERE `status` = 'pending' AND `created_at` < :cutoff
         ");
-        $stmt->execute(['cutoff' => $cutoff]);
+        $fetchStmt->execute(['cutoff' => $cutoff]);
+        $justExpired = $fetchStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        // Now mark them as expired
+        if (!empty($justExpired)) {
+            $stmt = $this->db->prepare("
+                UPDATE `{$this->table}` SET `status` = 'expired'
+                WHERE `status` = 'pending' AND `created_at` < :cutoff
+            ");
+            $stmt->execute(['cutoff' => $cutoff]);
+        }
+
+        return $justExpired;
     }
 
     /**

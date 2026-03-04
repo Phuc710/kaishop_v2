@@ -29,12 +29,24 @@ class HomeController extends Controller
             $productsByCategory[$product['category_id']][] = $product;
         }
 
+        // Lấy bot info để hiển thị username trong banner (fail-safe)
+        $botInfo = [];
+        try {
+            $tgService = telegram_service();
+            if ($tgService) {
+                $botInfo = $tgService->getMe();
+            }
+        } catch (\Throwable $e) {
+            // ignore - banner vẫn hiển thị bình thường
+        }
+
         $this->view('home/index', [
             'categories' => $categories,
             'productsByCategory' => $productsByCategory,
             'stockStats' => $stockStats,
             'user' => $user, // Pass user data to view
-            'chungapi' => $chungapi
+            'chungapi' => $chungapi,
+            'botInfo' => $botInfo,
         ]);
     }
 
@@ -79,13 +91,25 @@ class HomeController extends Controller
             $productsByCategory[$product['category_id']][] = $product;
         }
 
+        // Lấy bot info để hiển thị username trong banner (fail-safe)
+        $botInfo = [];
+        try {
+            $tgService = telegram_service();
+            if ($tgService) {
+                $botInfo = $tgService->getMe();
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
         $this->view('home/index', [
             'categories' => $categories,
             'productsByCategory' => $productsByCategory,
             'stockStats' => $stockStats,
             'user' => $user,
             'chungapi' => $chungapi,
-            'is_category_page' => true
+            'is_category_page' => true,
+            'botInfo' => $botInfo,
         ]);
     }
 }

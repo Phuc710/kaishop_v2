@@ -113,8 +113,11 @@
 
         .search-keyword-highlight {
             color: var(--primary);
-            font-weight: 700;
+            font-weight: bolder;
             text-transform: uppercase;
+            word-break: break-all;
+            overflow-wrap: break-word;
+            max-width: 100%;
         }
     </style>
 </head>
@@ -138,25 +141,82 @@
                         </div>
                         <div class="hero-disclaimer">
                             <p><strong>【Tuyên bố miễn trừ trách nhiệm】</strong></p>
-                            <p>• Các sản phẩm được bán trên website này chỉ dùng cho mục đích hợp pháp như giải trí game,
-                                giao thương ngoại thương, marketing online. Nếu dùng vào mục đích bất hợp pháp, vui lòng
-                                đóng trang ngay lập tức!</p>
-                            <p>• Phải tuân thủ pháp luật trong nước khi sử dụng. Mọi hậu quả do sử dụng trái pháp luật sẽ
-                                tự chịu trách nhiệm, không liên quan gì đến website này!</p>
-                            <p>• Người mua tại website này, nếu bị phát hiện sử dụng vào mục đích bất hợp pháp, website sẽ
-                                phối hợp toàn lực với cơ quan chức năng để xử lý!</p>
-                            <div class="hero-contact-row mt-3">
-                                <a href="https://t.me/kaishop25" target="_blank" rel="noopener">
-                                    📢 <span class="contact-label">Channel</span>
-                                </a>
-                                <span class="text-white-50 opacity-25">•</span>
-                                <a href="https://t.me/kaishop07" target="_blank" rel="noopener">
-                                    <i class="fab fa-telegram-plane"></i> <span>@kaishop07</span>
-                                </a>
-                                <span class="text-white-50 opacity-25">•</span>
-                                <a href="#" onclick="return false;">
-                                    <i class="fab fa-discord"></i> <span>@thphuc37</span>
-                                </a>
+
+                            <p>✅ Các sản phẩm được bán trên website này chỉ dùng cho mục đích hợp pháp như: giải trí game,
+                                giao thương ngoại thương, marketing online.</p>
+
+                            <p>⛔ <strong style="color: #ff4d4d;">Nghiêm cấm</strong> sử dụng cho
+                                các mục đích bất hợp pháp, lừa đảo, gian lận hoặc
+                                vi phạm pháp luật.</p>
+
+                            <p>🔒 Nếu phát hiện người dùng sử dụng sản phẩm cho mục đích bất hợp pháp, hệ thống sẽ
+                                <strong style="color: #ff4d4d; text-decoration: underline;">khóa tài khoản</strong> và
+                                <strong style="color: #ff4d4d; text-decoration: underline;">từ chối hỗ trợ</strong>!
+                            </p>
+
+                            <?php
+                            $heroBotName = '';
+                            $heroBotUsername = '';
+                            if (!empty($botInfo['ok'])) {
+                                $heroBotName = $botInfo['result']['first_name'] ?? 'Bot';
+                                $heroBotUsername = $botInfo['result']['username'] ?? '';
+                            }
+                            ?>
+
+                            <!-- Quick Links Row -->
+                            <div class="hero-links-row d-flex flex-wrap align-items-center mb-3 mt-4"
+                                style="gap: 1.5rem; font-size: 1.1rem; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
+                                <?php if ($heroBotUsername !== ''): ?>
+                                    <div class="hero-link-item text-white fw-bold" style="font-weight: 700;">
+                                        🤖
+                                        <a href="https://t.me/<?= htmlspecialchars($heroBotUsername) ?>" target="_blank"
+                                            rel="noopener" style="color: #ffc107; text-decoration: none; font-weight: 800;">
+                                            BOT Telegram Auto
+                                        </a>
+                                    </div>
+                                <?php endif; ?>
+
+                                <div class="hero-link-item text-white fw-bold" style="font-weight: 700;">
+                                    <a href="https://tmail.kaishop.id.vn" target="_blank" rel="noopener"
+                                        style="color: #0dcaf0; text-decoration: none; font-weight: 800;">
+                                        📩 KaiMail OTP
+                                    </a>
+                                </div>
+
+                                <div class="hero-link-item">
+                                    <a href="<?= htmlspecialchars($chungapi['tele_admin'] ?? '#') ?>" target="_blank"
+                                        rel="noopener" style="color: #4facfe; text-decoration: none; font-weight: 800;">
+                                        📢 Official Channel
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="support-section text-white mt-3"
+                                style="font-size: 1.1rem; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
+                                <p class="mb-1 fw-bold" style="color: #fff; font-weight: 700;">👑 Support:</p>
+                                <?php
+                                $supportTele = $chungapi['support_tele'] ?? '';
+                                $supportTeleUser = '';
+                                if (preg_match('/t\.me\/([^\/\s\?]+)/', $supportTele, $matches)) {
+                                    $supportTeleUser = '@' . $matches[1];
+                                } elseif (strpos($supportTele, '@') === 0) {
+                                    $supportTeleUser = $supportTele;
+                                    $supportTele = 'https://t.me/' . ltrim($supportTele, '@');
+                                } else {
+                                    $supportTeleUser = '@' . $supportTele;
+                                    $supportTele = 'https://t.me/' . $supportTele;
+                                }
+                                ?>
+                                <p class="mb-1 ml-3 fw-bold" style="font-weight: 700;">• Telegram:
+                                    <a href="<?= htmlspecialchars($supportTele) ?>" target="_blank" rel="noopener"
+                                        style="color: #0dcaf0; text-decoration: none; font-weight: 800;">
+                                        <?= htmlspecialchars($supportTeleUser) ?>
+                                    </a>
+                                </p>
+                                <p class="mb-0 ml-3 fw-bold" style="font-weight: 700;">• Discord:
+                                    <span
+                                        style="color: #0e9dff; font-weight: 800;">@<?= htmlspecialchars(ltrim($chungapi['discord_admin'] ?? 'thphuc37', '@')) ?></span>
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -189,12 +249,27 @@
                             <a href="#cat-<?= $cat['id'] ?>"
                                 class="category-pill <?= (isset($is_category_page) && $is_category_page) ? 'active' : '' ?>"
                                 data-filter="cat-wrap-<?= $cat['id'] ?>">
-                                <i class="fas fa-tags"></i> <span><?= htmlspecialchars($cat['name']) ?></span>
+                                <?php if (!empty($cat['icon'])): ?>
+                                    <img src="<?= $cat['icon'] ?>" alt="" style="width: 18px; height: 18px; object-fit: contain;">
+                                <?php else: ?>
+                                    <i class="fas fa-folder"></i>
+                                <?php endif; ?>
+                                <span><?= htmlspecialchars($cat['name']) ?></span>
                             </a>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
+
+                <?php if (!empty($categories) && count($categories) >= 5): ?>
+                    <button type="button" class="category-nav-see-all mt-2" id="catSeeAllBtn">
+                        <i class="fas fa-th-large"></i>
+                        <span id="catSeeAllLabel">Xem tất cả</span>
+                        <i class="fas fa-chevron-down" id="catSeeAllChevron"
+                            style="font-size:11px; transition: transform 0.3s;"></i>
+                    </button>
+                <?php endif; ?>
             </div>
+
 
             <div id="searchResultInfo" class="search-result-info mt-3">
                 <span class="text-muted"><i class="fas fa-search me-2"></i> Sản phẩm liên quan đến từ khóa:</span>
@@ -211,7 +286,15 @@
                             <div class="category-section-wrapper" id="cat-wrap-<?= $category['id'] ?>">
                                 <div id="cat-<?= $category['id'] ?>" class="ds-section-header mt-5 mb-4">
                                     <div class="d-flex align-items-center">
-                                        <h3 class="ds-category-title mb-0"><?= htmlspecialchars($category['name']) ?></h3>
+                                        <h3 class="ds-category-title mb-0">
+                                            <?php if (!empty($category['icon'])): ?>
+                                                <img src="<?= $category['icon'] ?>" alt=""
+                                                    style="width: 28px; height: 28px; object-fit: contain; margin-right: 10px;">
+                                            <?php else: ?>
+                                                <i class="fas fa-folder me-2"></i>
+                                            <?php endif; ?>
+                                            <?= htmlspecialchars($category['name']) ?>
+                                        </h3>
                                     </div>
                                 </div>
 
@@ -305,6 +388,19 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // ── Category "Xem tất cả" toggle on mobile ──────────────
+            const catScroll = document.querySelector('.category-nav-scroll');
+            const catSeeAllBtn = document.getElementById('catSeeAllBtn');
+            if (catSeeAllBtn && catScroll) {
+                catSeeAllBtn.addEventListener('click', function () {
+                    const isExpanded = catScroll.classList.toggle('is-expanded');
+                    document.getElementById('catSeeAllLabel').textContent = isExpanded ? 'Thu gọn' : 'Xem tất cả';
+                    const chevron = document.getElementById('catSeeAllChevron');
+                    if (chevron) chevron.style.transform = isExpanded ? 'rotate(180deg)' : 'rotate(0deg)';
+                });
+            }
+
+
             const pills = document.querySelectorAll('.category-pill');
             const sections = document.querySelectorAll('.category-section-wrapper');
             const cards = document.querySelectorAll('.ds-card');
@@ -321,18 +417,22 @@
 
                 // 1. Show/Hide Cards
                 cards.forEach(card => {
+                    card.classList.remove('animate-in'); // Reset animation
                     const title = card.querySelector('.ds-card-title').textContent.toLowerCase();
                     const matchesKeyword = title.includes(normalizedKeyword);
 
                     if (matchesKeyword) {
                         card.classList.remove('search-hidden');
+                        // Trigger reflow to restart animation if needed
+                        void card.offsetWidth;
+                        card.classList.add('animate-in');
                     } else {
                         card.classList.add('search-hidden');
                     }
                 });
 
                 // 2. Show/Hide Sections (Categories)
-                sections.forEach(sec => {
+                sections.forEach((sec, idx) => {
                     const isTargetCategory = (currentFilter === 'all' || sec.id === currentFilter);
                     const visibleCardsInSection = sec.querySelectorAll('.ds-card:not(.search-hidden)');
 

@@ -488,6 +488,17 @@ if ($rawDescHtml !== '') {
             margin-bottom: 0;
         }
 
+        .pd-desc a {
+            color: #ff6900;
+            font-weight: 700;
+            text-decoration: none !important;
+
+        }
+
+        .pd-desc a:hover {
+            color: #e65f00;
+        }
+
         .pd-buy-btn {
             border-radius: 12px;
             height: 48px;

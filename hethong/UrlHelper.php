@@ -35,7 +35,9 @@ class UrlHelper
             return $path;
         }
         $cleanPath = ltrim((string) $path, '/');
-        return self::getBasePath() . ($cleanPath ? '/' . $cleanPath : '');
+        $result = self::getBasePath() . ($cleanPath ? '/' . $cleanPath : '');
+        // Khi APP_DIR rỗng (production root) và path rỗng → trả về '/' tránh href=""
+        return $result !== '' ? $result : '/';
     }
 
     /**

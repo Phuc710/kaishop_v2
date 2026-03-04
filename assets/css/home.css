@@ -72,6 +72,27 @@
     transform: scale(1);
 }
 
+/* ── Card Filtering Animation ─────────────────────── */
+.ds-card.animate-in {
+    animation: cardFadeUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes cardFadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.search-hidden {
+    display: none !important;
+}
+
 /* ── Card Image Wrapper ───────────────────────────── */
 .ds-card-img-wrap {
     position: relative;
@@ -140,8 +161,7 @@
 
 /* ── Title — explicit class to beat global h4 rules ─ */
 .ds-card-title {
-    font-size: 14.5px !important;
-    /* beat style.css h4 { font-size:20px } */
+    font-size: 16px !important;
     font-weight: 600 !important;
     color: #1a1a2e !important;
     margin: 0 0 10px !important;
@@ -157,11 +177,11 @@
 /* ── Stock Row ────────────────────────────────────── */
 .ds-stock-row {
     font-size: 12.5px;
-    color: #666;
+    color: #4b4b4b;
     margin-bottom: 10px;
     display: flex;
     align-items: center;
-    border-top: 1px dashed #eee;
+    border-top: 1px dashed #c9c9c9;
     padding-top: 10px;
     gap: 6px;
 }
@@ -190,9 +210,9 @@
 }
 
 .ds-price {
-    font-size: 15px;
+    font-size: 18px;
     font-weight: 800;
-    color: #111;
+    color: #0d28fd;
     letter-spacing: -0.3px;
 }
 
@@ -310,6 +330,52 @@
     opacity: 1;
 }
 
+/* ── Mobile Category "Xem All" Collapse ───────────── */
+@media (max-width: 767px) {
+    .category-nav-scroll {
+        flex-wrap: wrap;
+        overflow-x: visible;
+        max-height: 160px;
+        /* ~2 rows of pills */
+        overflow: hidden;
+        transition: max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .category-nav-scroll.is-expanded {
+        max-height: 1000px;
+        /* large enough for any list */
+    }
+}
+
+.category-nav-see-all {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    background: #fff0e6;
+    color: #ff6900;
+    border: 1.5px dashed #ff6900;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.category-nav-see-all:hover {
+    background: #ff6900;
+    color: #fff;
+    text-decoration: none;
+}
+
+@media (max-width: 767px) {
+    .category-nav-see-all {
+        display: inline-flex;
+    }
+}
+
 /* ── Hero Banner ──────────────────────────────────── */
 .home-hero-banner {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
@@ -320,6 +386,7 @@
     overflow: hidden;
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.08);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 
@@ -350,14 +417,16 @@
 
 .hero-content p {
     font-size: 0.95rem;
-    color: rgba(226, 232, 240, 0.85);
+    color: #ffffff;
+    /* Pure white for clarity */
     line-height: 1.5;
     margin: 0;
-    font-weight: 400;
+    font-weight: 600;
+    /* Bolder */
 }
 
 .hero-notice-gif {
-    max-width: 45px !important;
+    max-width: 30px !important;
     border-radius: 8px;
     margin-bottom: 0 !important;
     filter: drop-shadow(0 0 10px rgba(255, 105, 0, 0.3));
@@ -374,13 +443,16 @@
 }
 
 .hero-disclaimer strong {
-    color: #ff6b00;
+    color: #00ff14;
     font-weight: 700;
 }
 
 .hero-disclaimer p {
     font-size: 1rem;
-    color: rgba(255, 255, 255, 0.8);
+    color: #ffffff;
+    /* Brighter white */
+    font-weight: 600;
+    /* Bolder */
 }
 
 .hero-contact-row {
@@ -450,12 +522,12 @@
     }
 
     .ds-card-title {
-        font-size: 13px !important;
+        font-size: 16px !important;
         min-height: 36px;
     }
 
     .ds-price {
-        font-size: 13px;
+        font-size: 15px;
     }
 
     .ds-old-price {
@@ -478,7 +550,7 @@
     }
 
     .hero-notice-gif {
-        max-width: 35px !important;
+        max-width: 25px !important;
     }
 
     .hero-disclaimer p {
@@ -499,6 +571,17 @@
     .hero-contact-row .text-white-50 {
         display: none;
         /* Hide dots on small screens */
+    }
+
+    .hero-links-row {
+        flex-wrap: nowrap !important;
+        gap: 0.5rem !important;
+        font-size: 0.8rem !important;
+        justify-content: space-between;
+    }
+
+    .hero-link-item {
+        white-space: nowrap;
     }
 }
 

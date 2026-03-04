@@ -5,10 +5,10 @@ $userPageAssetFlags = [
     'flatpickr' => true,
     'interactive_bundle' => false,
 ];
-$userPageFaviconOverride = asset('assets/images/kaishop_favicon.png') . '&page=history-orders';
 $activePage = 'order-history';
 require __DIR__ . '/layout/header.php';
 ?>
+
 
 <div class="profile-card" id="order-history-page">
     <div class="profile-card-header profile-card-header--with-actions">
@@ -86,82 +86,6 @@ require __DIR__ . '/layout/header.php';
         </div>
     </div>
 </div>
-
-<style>
-    #order-history-page .profile-card-body,
-    #order-history-page .profile-card-body *:not(i) {
-        font-family: 'Signika', sans-serif !important;
-        font-size: 13px !important;
-    }
-
-    #order-history-page .dataTables_wrapper .dataTables_info,
-    #order-history-page .dataTables_wrapper .paginate_button,
-    #order-history-page .user-toolbar-label,
-    #order-history-page .user-toolbar-select,
-    #order-history-page .form-control,
-    #order-history-page .btn {
-        font-family: 'Signika', sans-serif !important;
-        font-size: 13px !important;
-    }
-
-    #order-history-page #order-history-table .user-order-status {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 3px 12px;
-        border-radius: 99px;
-        border: 1px solid #dbe3ee;
-        background: #f8fafc;
-        color: #334155;
-        font-size: 11px !important;
-        font-weight: 700;
-        line-height: 1.2;
-    }
-
-    #order-history-page #order-history-table .user-order-status.is-pending,
-    #order-history-page #order-history-table .small {
-        border-color: #facc15;
-        background: #fffbeb;
-        color: #b45309 !important;
-    }
-
-    #order-history-page #order-history-table .user-order-status.is-completed,
-    #order-history-page #order-history-table .small[style*="#00ad5c"],
-    #order-history-page #order-history-table .small[style*="#00AD5C"] {
-        border-color: #86efac;
-        background: #f0fdf4;
-        color: #16a34a !important;
-    }
-
-    #order-history-page #order-history-table .small {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 3px 12px;
-        border-radius: 99px;
-        border-width: 1px;
-        border-style: solid;
-        font-size: 11px !important;
-        font-weight: 700;
-        line-height: 1.2;
-    }
-
-    /* Auto-scaling table */
-    #order-history-page .user-history-table-wrap {
-        overflow-x: auto;
-    }
-
-    #order-history-page #order-history-table {
-        width: auto !important;
-        min-width: max-content;
-        table-layout: auto !important;
-    }
-
-    #order-history-page #order-history-table th,
-    #order-history-page #order-history-table td {
-        white-space: nowrap !important;
-    }
-</style>
 
 <script>
     $(document).ready(function () {
@@ -247,70 +171,76 @@ require __DIR__ . '/layout/header.php';
                         const id = Number(row.id || 0);
                         const downloadUrl = BASE_URL + '/history-orders/download/' + encodeURIComponent(id);
                         return ''
-                            + '<button type="button" class="order-action-btn js-view-order" data-id="' + id + '" title="Xem chi tiết" style="color: #007bff; background: #ebf5ff; border-color: #cce5ff;"><i class="fas fa-eye"></i></button>'
-                            + '<a class="order-action-btn text-success mx-1" href="' + downloadUrl + '" title="Tải nội dung" style="background: #ecfdf5; border-color: #a7f3d0;"><i class="fas fa-download"></i></a>'
-                            + '<button type="button" class="order-action-btn js-delete-order text-danger" data-id="' + id + '" title="Ẩn lịch sử" style="background: #fef2f2; border-color: #fecaca;"><i class="fas fa-trash"></i></button>';
+                            + '<button type="button" class="order-action-btn js-view-order" data-id="' + id + '"
+                        title = "Xem chi tiết" style = "color: #007bff; background: #ebf5ff; border-color: #cce5ff;" > <i
+                            class="fas fa-eye"></i></button > '
+                                + '<a class="order-action-btn text-success mx-1" href="' + downloadUrl + '" title="Tải nội dung"
+                        style = "background: #ecfdf5; border-color: #a7f3d0;" > <i class="fas fa-download"></i></a > '
+                            + '<button type="button" class="order-action-btn js-delete-order text-danger" data-id="' + id + '"
+                        title = "Ẩn lịch sử" style = "background: #fef2f2; border-color: #fecaca;" > <i
+                            class="fas fa-trash"></i></button > ';
                     }
                 }
             ],
             order: [],
             ordering: false,
             pageLength: 10,
-            dom: 't<"d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3"<"text-muted small"i><"d-flex align-items-center gap-3"p>>',
-            language: {
-                info: 'Hiển thị _START_ - _END_ trong tổng số _TOTAL_ đơn hàng',
-                infoEmpty: 'Chưa có đơn hàng nào',
-                emptyTable: 'Không có dữ liệu đơn hàng',
-                paginate: { next: '&rsaquo;', previous: '&lsaquo;' }
-            }
-        });
-
-        if (window.flatpickr) {
-            const fpLocale = (flatpickr.l10ns && (flatpickr.l10ns.vn || flatpickr.l10ns.VN))
-                ? (flatpickr.l10ns.vn || flatpickr.l10ns.VN)
-                : undefined;
-            datePicker = flatpickr('#filter-date', {
-                mode: 'range',
-                dateFormat: 'Y-m-d',
-                locale: fpLocale,
-                onChange: function (selectedDates) {
-                    if (selectedDates.length === 2 || selectedDates.length === 0) {
-                        table.draw();
-                    }
-                }
-            });
+            dom: 't<"d-flex flex-column flex-md-row justify-content-between align-items-center mt-4
+                    gap- 3"<"text - muted small"i><"d - flex align - items - center gap - 3"p>>',
+                        language: {
+            info: 'Hiển thị _START_ - _END_ trong tổng số _TOTAL_ đơn hàng',
+            infoEmpty: 'Chưa có đơn hàng nào',
+            emptyTable: 'Không có dữ liệu đơn hàng',
+            paginate: { next: '&rsaquo;', previous: '&lsaquo;' }
         }
+                        });
 
-        $('#f-length').on('change', function () {
-            table.page.len($(this).val()).draw();
-        });
-        const debouncedSearchDraw = debounce(function () { table.draw(); }, 280);
-
-        $('#f-sort').on('change', function () { table.draw(); });
-        $('#filter-keyword').on('input', debouncedSearchDraw);
-        $('#filter-keyword').on('keydown', function (e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                table.draw();
+    if (window.flatpickr) {
+        const fpLocale = (flatpickr.l10ns && (flatpickr.l10ns.vn || flatpickr.l10ns.VN))
+            ? (flatpickr.l10ns.vn || flatpickr.l10ns.VN)
+            : undefined;
+        datePicker = flatpickr('#filter-date', {
+            mode: 'range',
+            dateFormat: 'Y-m-d',
+            locale: fpLocale,
+            onChange: function (selectedDates) {
+                if (selectedDates.length === 2 || selectedDates.length === 0) {
+                    table.draw();
+                }
             }
         });
-        $('#btn-clear').on('click', function () {
-            $('#filter-keyword').val('');
-            $('#f-sort').val('all');
-            datePicker.clear();
-            table.draw();
-        });
+    }
 
-
-
-        $('#order-history-table').on('click', '.js-view-order', function () {
-            viewOrderDetail($(this).data('id'));
-        });
-
-        $('#order-history-table').on('click', '.js-delete-order', function () {
-            deleteOrderHistory($(this).data('id'), table);
-        });
+    $('#f-length').on('change', function () {
+        table.page.len($(this).val()).draw();
     });
+    const debouncedSearchDraw = debounce(function () { table.draw(); }, 280);
+
+    $('#f-sort').on('change', function () { table.draw(); });
+    $('#filter-keyword').on('input', debouncedSearchDraw);
+    $('#filter-keyword').on('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            table.draw();
+        }
+    });
+    $('#btn-clear').on('click', function () {
+        $('#filter-keyword').val('');
+        $('#f-sort').val('all');
+        datePicker.clear();
+        table.draw();
+    });
+
+
+
+    $('#order-history-table').on('click', '.js-view-order', function () {
+        viewOrderDetail($(this).data('id'));
+    });
+
+    $('#order-history-table').on('click', '.js-delete-order', function () {
+        deleteOrderHistory($(this).data('id'), table);
+    });
+                        });
 
     function fmtMoney(v) {
         return new Intl.NumberFormat('vi-VN').format(Number(v || 0)) + 'đ';
@@ -321,20 +251,21 @@ require __DIR__ . '/layout/header.php';
         if (normalized === 'completed') return 'is-completed';
         if (normalized === 'pending') return 'is-pending';
         if (normalized === 'processing') return 'is-processing';
-        if (normalized === 'cancelled' || normalized === 'canceled' || normalized === 'failed') return 'is-cancelled';
+        if (normalized === 'cancelled' || normalized === 'canceled' || normalized === 'failed') return
+        'is-cancelled';
         return 'is-default';
     }
 
     function renderOrderStatusBadge(label, status) {
         const text = String(label || status || '--');
-        return '<span class="user-order-status ' + getOrderStatusClass(status) + '">' + escapeHtml(text) + '</span>';
+        return '<span class="user-order-status ' + getOrderStatusClass(status) + '">' + escapeHtml(text)
+            + '</span>';
     }
 
     function escapeHtml(v) {
         return String(v == null ? '' : v)
             .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
+            .replace(/</g, '&lt;').replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;');
     }
 
@@ -387,7 +318,8 @@ require __DIR__ . '/layout/header.php';
 
         try {
             SwalHelper.loading('Đang tải chi tiết đơn hàng...');
-            const data = await fetchJson(BASE_URL + '/api/history-orders/detail/' + encodeURIComponent(id), { method: 'GET' });
+            const data = await fetchJson(BASE_URL + '/api/history-orders/detail/' + encodeURIComponent(id),
+                { method: 'GET' });
             SwalHelper.closeLoading();
 
             if (!data.success || !data.order) {
@@ -399,19 +331,57 @@ require __DIR__ . '/layout/header.php';
             const detailHtml = ''
                 + '<div class="user-order-detail">'
                 + '<div class="user-order-detail__grid">'
-                + '<div><div class="user-order-detail__label">Sản phẩm</div><div class="user-order-detail__value">' + escapeHtml(order.product_name || '') + '</div></div>'
-                + '<div><div class="user-order-detail__label">Số lượng</div><div class="user-order-detail__value">' + escapeHtml(order.quantity || 0) + '</div></div>'
-                + '<div><div class="user-order-detail__label">Mã đơn hàng</div><div class="user-order-detail__value">' + escapeHtml(order.order_code_short || order.order_code || '') + '</div></div>'
-                + '<div><div class="user-order-detail__label">Trạng thái</div><div class="user-order-detail__value">' + renderOrderStatusBadge(order.status_label || order.status || '', order.status) + '</div></div>'
-                + '<div><div class="user-order-detail__label">Ngày đặt</div><div class="user-order-detail__value">' + escapeHtml(order.created_at_display || order.created_at || '') + '</div></div>'
-                + (order.fulfilled_at_display ? '<div><div class="user-order-detail__label">Ngày giao</div><div class="user-order-detail__value">' + escapeHtml(order.fulfilled_at_display) + '</div></div>' : '')
-                + '<div><div class="user-order-detail__label">Thanh toán</div><div class="user-order-detail__value text-success fw-bold">' + fmtMoney(order.price || 0) + '</div></div>'
+                + '<div>
+                < div class="user-order-detail__label" > Sản phẩm</div >
+                    <div class="user-order-detail__value">' + escapeHtml(order.product_name || '') + '
+                    </div>
+                                </div > '
+                + '<div>
+                < div class="user-order-detail__label" > Số lượng</div >
+                    <div class="user-order-detail__value">' + escapeHtml(order.quantity || 0) + '</div>
+                                </div > '
+                + '<div>
+                < div class="user-order-detail__label" > Mã đơn hàng</div >
+                    <div class="user-order-detail__value">' + escapeHtml(order.order_code_short ||
+                        order.order_code || '') + '</div>
+                                </div > '
+                + '<div>
+                < div class="user-order-detail__label" > Trạng thái</div >
+                    <div class="user-order-detail__value">' + renderOrderStatusBadge(order.status_label
+                        || order.status || '', order.status) + '</div>
+                                </div > '
+                + '<div>
+                < div class="user-order-detail__label" > Ngày đặt</div >
+                    <div class="user-order-detail__value">' + escapeHtml(order.created_at_display ||
+                        order.created_at || '') + '</div>
+                                </div > '
+                + (order.fulfilled_at_display ? '<div>
+                    < div class="user-order-detail__label" > Ngày giao</div >
+                        <div class="user-order-detail__value">' + escapeHtml(order.fulfilled_at_display) + '
+                        </div>
+                                </div > ' : '')
+                + '<div>
+                < div class="user-order-detail__label" > Thanh toán</div >
+                    <div class="user-order-detail__value text-success fw-bold">' + fmtMoney(order.price
+                        || 0) + '</div>
+                                </div > '
                 + '</div>'
-                + (order.customer_input && order.customer_input.trim() !== '' && order.customer_input.trim().toLowerCase() !== 'không có' ?
-                    '<div class="user-order-detail__block"><div class="user-order-detail__label">Thông tin bạn gửi</div><div class="user-order-detail__textarea">' + nl2brSafe(order.customer_input) + '</div></div>'
-                    : '')
-                + '<div class="user-order-detail__block"><div class="user-order-detail__label">Nội dung bàn giao</div><div class="user-order-detail__textarea">' + nl2brSafe(order.delivery_content || 'Chưa có nội dung bàn giao') + '</div></div>'
-                + (order.cancel_reason ? '<div class="user-order-detail__block"><div class="user-order-detail__label">Lý do hủy / phản hồi</div><div class="user-order-detail__textarea">' + nl2brSafe(order.cancel_reason) + '</div></div>' : '')
+                + (order.customer_input && order.customer_input.trim() !== '' &&
+                    order.customer_input.trim().toLowerCase() !== 'không có' ?
+                    '<div class="user-order-detail__block">
+                    < div class="user-order-detail__label" > Thông tin bạn gửi</div >
+                        <div class="user-order-detail__textarea">' + nl2brSafe(order.customer_input) + '</div>
+                            </div > '
+                            : '')
+            + '<div class="user-order-detail__block">
+                < div class="user-order-detail__label" > Nội dung bàn giao</div >
+                    <div class="user-order-detail__textarea">' + nl2brSafe(order.delivery_content || 'Chưa
+                        có nội dung bàn giao') + '</div>
+                            </div > '
+                + (order.cancel_reason ? '<div class="user-order-detail__block">
+                    < div class="user-order-detail__label" > Lý do hủy / phản hồi</div >
+                        <div class="user-order-detail__textarea">' + nl2brSafe(order.cancel_reason) + '</div>
+                            </div > ' : '')
                 + '</div>';
 
             Swal.fire({

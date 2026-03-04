@@ -77,6 +77,8 @@ class SettingController extends Controller
                     'sdt_admin',
                     'email_cf',
                     'mo_ta',
+                    'support_tele',
+                    'discord_admin',
                 ]);
 
             case 'update_smtp':

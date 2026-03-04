@@ -23,6 +23,7 @@ $isPollMode = in_array('--poll', $argv ?? [], true);
 
 $telegram = new TelegramService();
 $outboxModel = new TelegramOutbox();
+$depositModel = new PendingDeposit();
 $botLogic = new TelegramBotService($telegram);
 
 $timeService = TimeService::instance();
@@ -144,6 +145,46 @@ function cleanupOldData(TelegramOutbox $outboxModel): void
 }
 
 // =========================================================
+//  2b. Notify users about expired deposits
+// =========================================================
+
+function notifyExpiredDeposits(PendingDeposit $depositModel, TelegramOutbox $outboxModel): void
+{
+    $justExpired = $depositModel->markExpired();
+    if (empty($justExpired)) {
+        return;
+    }
+
+    echo '  [Deposit] ' . count($justExpired) . " deposit(s) just expired\n";
+
+    $linkModel = new UserTelegramLink();
+
+    foreach ($justExpired as $dep) {
+        $userId = (int) ($dep['user_id'] ?? 0);
+        if ($userId <= 0) {
+            continue;
+        }
+
+        $link = $linkModel->findByUserId($userId);
+        if (!$link) {
+            continue; // User not linked to Telegram
+        }
+
+        $code = htmlspecialchars((string) ($dep['deposit_code'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $amount = number_format((int) ($dep['amount'] ?? 0));
+
+        $msg = "⏰ <b>GIAO DỊCH NẠP TIỀN ĐÃ HẾT HẠN</b>\n\n";
+        $msg .= "📋 Mã nạp: <code>{$code}</code>\n";
+        $msg .= "💰 Số tiền: <b>{$amount}đ</b>\n\n";
+        $msg .= "Phiên nạp tiền đã quá 5 phút và tự động bị hủy.\n";
+        $msg .= "👇 Bấm nút bên dưới để nạp lại.";
+
+        $outboxModel->enqueue((int) $link['telegram_id'], $msg);
+        echo "    [Notify] Deposit #{$dep['id']} ({$code}) → User #{$userId}\n";
+    }
+}
+
+// =========================================================
 //  3. Lưu timestamp last_cron_run (Worker Health Monitor)
 // =========================================================
 
@@ -220,6 +261,7 @@ if ($isPollMode) {
             }
 
             processOutboxParallel($outboxModel, $botToken);
+            notifyExpiredDeposits($depositModel, $outboxModel);
             runPolling($telegram, $botLogic);
             saveLastCronRun($db);
             cleanupOldData($outboxModel);
@@ -237,6 +279,7 @@ if ($isPollMode) {
         }
 
         processOutboxParallel($outboxModel, $botToken);
+        notifyExpiredDeposits($depositModel, $outboxModel);
         cleanupOldData($outboxModel);
 
         // Lưu last_cron_run cho Worker Health monitor

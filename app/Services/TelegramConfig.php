@@ -101,10 +101,12 @@ final class TelegramConfig
      */
     public static function botToken(): string
     {
-        $env = self::env('TELEGRAM_BOT_TOKEN');
-        if ($env !== '')
-            return $env;
-        return trim((string) get_setting('telegram_bot_token', ''));
+        $db = trim((string) get_setting('telegram_bot_token', ''));
+        if ($db !== '') {
+            return $db;
+        }
+
+        return self::env('TELEGRAM_BOT_TOKEN');
     }
 
     /**
@@ -112,10 +114,17 @@ final class TelegramConfig
      */
     public static function primaryAdminId(): int
     {
+        $db = trim((string) get_setting('telegram_chat_id', ''));
+        if ($db !== '') {
+            return (int) $db;
+        }
+
         $env = self::env('TELEGRAM_CHAT_ID');
-        if ($env !== '')
+        if ($env !== '') {
             return (int) $env;
-        return (int) get_setting('telegram_chat_id', 0);
+        }
+
+        return 0;
     }
 
     /**
@@ -131,8 +140,11 @@ final class TelegramConfig
         if ($primary > 0)
             $ids[] = $primary;
 
-        // Multiple admins từ DB
+        // Multiple admins from DB, fallback .env when DB is empty.
         $extra = trim((string) get_setting('telegram_admin_ids', ''));
+        if ($extra === '') {
+            $extra = self::env('TELEGRAM_ADMIN_IDS');
+        }
         if ($extra !== '') {
             foreach (explode(',', $extra) as $id) {
                 $id = (int) trim($id);
@@ -257,3 +269,4 @@ final class TelegramConfig
     {
     }
 }
+

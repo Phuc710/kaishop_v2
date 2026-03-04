@@ -59,9 +59,11 @@
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     height: 100%;
-    padding: 4px 12px 12px 12px;
+    padding: 10px 12px 12px 12px;
+    /* Adjusted to align first item text with main card */
     display: flex;
     flex-direction: column;
+    margin-top: 0 !important;
 }
 
 .user-sidebar .sidebar-item {
@@ -111,6 +113,7 @@
     border: 1px solid #e2e8f0;
     overflow: hidden;
     margin-bottom: 24px;
+    margin-top: 0 !important;
 }
 
 .profile-card-header {
@@ -197,12 +200,15 @@
 
 /* ── GLOBAL LAYOUT ───────────────────────────────────── */
 .user-page-grid {
-    align-items: flex-start;
+    align-items: flex-start !important;
+    display: flex;
 }
 
 .user-page-sidebar-col,
 .user-page-content-col {
-    align-self: flex-start;
+    align-self: flex-start !important;
+    margin-top: 0 !important;
+    padding-top: 24px !important;
 }
 
 /* PC-only sticky sidebar */
@@ -2001,30 +2007,37 @@ body.auth-layout .header-primary {
     text-decoration: none;
 }
 
-.user-order-status {
+/* ── HISTORY & ORDER STATUS ────────────────────────── */
+.user-order-status,
+.user-history-table .small {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    min-height: 24px;
     padding: 3px 12px;
     border-radius: 99px;
     border: 1px solid #dbe3ee;
     background: #f8fafc;
     color: #334155;
-    font-size: 15px;
+    font-size: 12px !important;
     font-weight: 700;
     line-height: 1.2;
+    white-space: nowrap;
+    font-family: 'Signika', sans-serif !important;
 }
 
 .user-order-status.is-pending {
     border-color: #facc15;
     background: #fffbeb;
-    color: #b45309;
+    color: #b45309 !important;
 }
 
-.user-order-status.is-completed {
+.user-order-status.is-completed,
+.user-history-table tbody td .small[style*="#00ad5c"],
+.user-history-table tbody td .small[style*="#00AD5C"] {
     border-color: #86efac;
     background: #f0fdf4;
-    color: #16a34a;
+    color: #16a34a !important;
 }
 
 .user-order-status.is-processing {
@@ -2040,29 +2053,60 @@ body.auth-layout .header-primary {
 }
 
 .user-order-detail__value .user-order-status {
-    font-size: 14px;
+    font-size: 12px !important;
+}
+
+/* ── HISTORY TABLES ─────────────────────────────────── */
+.user-history-table-wrap {
+    overflow-x: auto;
+}
+
+.user-history-table {
+    width: auto !important;
+    min-width: 100%;
+    table-layout: auto !important;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-family: 'Signika', sans-serif !important;
+    background: #fff;
+}
+
+.user-history-table thead th {
+    background-color: #f8fafc !important;
+    color: #64748b !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #e2e8f0 !important;
+    padding: 14px 16px !important;
+    font-size: 12px !important;
+}
+
+.user-history-table tbody td {
+    padding: 12px 16px !important;
+    font-size: 13.5px !important;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    white-space: nowrap !important;
+}
+
+.user-history-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Allow long reason/content columns to wrap */
+.user-history-table td.text-wrap,
+#history-table td:last-child {
+    white-space: normal !important;
+    min-width: 250px;
+    max-width: 400px;
 }
 
 /* Fallback: support old history markup (<div class="small" style="color:#00ad5c">...) */
 .user-history-table tbody td .small {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 3px 12px;
-    border-radius: 99px;
-    border: 1px solid #facc15;
+    border-color: #facc15;
     background: #fffbeb;
     color: #b45309 !important;
-    font-size: 15px;
-    font-weight: 700;
-    line-height: 1.2;
-}
-
-.user-history-table tbody td .small[style*="#00ad5c"],
-.user-history-table tbody td .small[style*="#00AD5C"] {
-    border-color: #86efac;
-    background: #f0fdf4;
-    color: #16a34a !important;
 }
 
 .user-order-detail {
