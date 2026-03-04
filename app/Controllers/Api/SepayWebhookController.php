@@ -11,6 +11,9 @@ class SepayWebhookController extends Controller
     private ?BalanceChangeService $balanceChangeService = null;
     private array $schemaCache = [];
 
+    /** @var array<string,bool> Schema existence cache (static: shared per PHP process lifetime) */
+    private static array $staticSchemaCache = [];
+
     public function __construct()
     {
         $this->depositModel = new PendingDeposit();
@@ -105,8 +108,7 @@ class SepayWebhookController extends Controller
             return $this->json(['success' => true, 'message' => 'No deposit code matched']);
         }
 
-        // 6. Find pending deposit (and expire old ones first)
-        $this->depositModel->markExpired();
+        // 6. Find pending deposit (markExpired is handled by cron — skip here to save DB time)
         $deposit = $this->depositModel->findByCode($depositCode);
 
         if (!$deposit) {
@@ -167,26 +169,33 @@ class SepayWebhookController extends Controller
         $stmt->execute([$totalCredit, $transferAmount, $userId]);
         $afterBalance = $beforeBalance + $totalCredit;
 
-        // Enqueue Telegram notification if user is linked
+        // Notify via Telegram: try DIRECT send first (< 1s), fallback to outbox queue
         try {
             if (class_exists('UserTelegramLink') && class_exists('TelegramOutbox')) {
                 $linkModel = new UserTelegramLink();
                 $link = $linkModel->findByUserId($userId);
                 if ($link) {
-                    $outbox = new TelegramOutbox();
+                    $telegramId = (int) $link['telegram_id'];
                     $notifMsg = "🎉🎊 <b>NẠP TIỀN THÀNH CÔNG</b> 🎊🎉\n\n";
                     $notifMsg .= "💰 Số tiền: <b>" . number_format($transferAmount) . "đ</b>\n";
                     if ($bonusAmount > 0) {
                         $notifMsg .= "🎁 Khuyến mãi: <b>" . number_format($bonusAmount) . "đ</b>\n";
                     }
                     $notifMsg .= "✅ Thực nhận: <b>" . number_format($totalCredit) . "đ</b>\n";
-                    $notifMsg .= "🎉 Số dư hiện tại: <b>" . number_format($afterBalance) . "đ</b>\n\n";
+                    $notifMsg .= "💼 Số dư hiện tại: <b>" . number_format($afterBalance) . "đ</b>\n\n";
+                    $notifMsg .= "👇 <i>Mua ngay tại cửa hàng!</i>";
 
-                    $outbox->enqueue((int) $link['telegram_id'], $notifMsg);
+                    // Try direct send (non-blocking, max 3s) — avoids 0-60s cron delay
+                    $directSent = $this->sendTelegramDirect($telegramId, $notifMsg);
+
+                    // Fallback to outbox if direct send fails
+                    if (!$directSent) {
+                        (new TelegramOutbox())->enqueue($telegramId, $notifMsg);
+                    }
                 }
             }
         } catch (Throwable $teleErr) {
-            // Non-blocking
+            // Non-blocking — never let TG error break deposit
         }
 
         // 10. Mark deposit as completed
@@ -256,10 +265,18 @@ class SepayWebhookController extends Controller
     private function hasColumn(string $table, string $column): bool
     {
         $cacheKey = $table . '.' . $column;
+
+        // 1st: static cache (survives within same PHP process)
+        if (array_key_exists($cacheKey, self::$staticSchemaCache)) {
+            return self::$staticSchemaCache[$cacheKey];
+        }
+
+        // 2nd: instance cache
         if (array_key_exists($cacheKey, $this->schemaCache)) {
             return $this->schemaCache[$cacheKey];
         }
 
+        // Last resort: query information_schema
         $stmt = Database::getInstance()->getConnection()->prepare("
             SELECT COUNT(*)
             FROM information_schema.columns
@@ -273,7 +290,57 @@ class SepayWebhookController extends Controller
         ]);
         $exists = (int) $stmt->fetchColumn() > 0;
         $this->schemaCache[$cacheKey] = $exists;
+        self::$staticSchemaCache[$cacheKey] = $exists;
         return $exists;
+    }
+
+    /**
+     * Fire-and-forget Telegram sendMessage (non-blocking, max 3s timeout).
+     * Returns true if Telegram returned ok:true.
+     */
+    private function sendTelegramDirect(int $telegramId, string $message): bool
+    {
+        $botToken = '';
+        if (function_exists('get_setting')) {
+            $botToken = trim((string) get_setting('telegram_bot_token', ''));
+        }
+        if ($botToken === '' && class_exists('EnvHelper')) {
+            $botToken = trim((string) EnvHelper::get('TELEGRAM_BOT_TOKEN', ''));
+        }
+        if ($botToken === '' || !function_exists('curl_init')) {
+            return false;
+        }
+
+        $url = 'https://api.telegram.org/bot' . $botToken . '/sendMessage';
+        $ch = curl_init($url);
+        if ($ch === false) {
+            return false;
+        }
+
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => http_build_query([
+                'chat_id' => $telegramId,
+                'text' => $message,
+                'parse_mode' => 'HTML',
+                'disable_web_page_preview' => 'true',
+            ]),
+            CURLOPT_TIMEOUT => 3,     // max 3s — not 5s to keep webhook fast
+            CURLOPT_CONNECTTIMEOUT => 2,
+            CURLOPT_NOSIGNAL => 1,     // required for sub-second timeouts
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+
+        $raw = curl_exec($ch);
+        curl_close($ch);
+
+        if (!$raw) {
+            return false;
+        }
+
+        $resp = json_decode((string) $raw, true);
+        return !empty($resp['ok']);
     }
 
     private function ensureHistorySourceChannelSchema(): void

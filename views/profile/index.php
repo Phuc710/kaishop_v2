@@ -91,9 +91,10 @@ require __DIR__ . '/layout/header.php';
                 <div class="col-md-6">
                     <label class="form-label user-label">Đăng nhập gần nhất</label>
                     <div class="custom-input-wrap">
-                        <input type="text" class="form-control custom-readonly"
-                            value="<?= htmlspecialchars((string) ($user['ip'] ?? 'Chưa cập nhật'), ENT_QUOTES, 'UTF-8'); ?>"
-                            readonly>
+                        <?php
+                        $displayValue = !empty($user['last_login']) ? TimeService::instance()->formatDisplay($user['last_login'], 'H:i d/m/Y') : 'Chưa cập nhật';
+                        ?>
+                        <input type="text" class="form-control custom-readonly" value="<?= $displayValue ?>" readonly>
                     </div>
                 </div>
             </form>

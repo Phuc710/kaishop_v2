@@ -468,13 +468,11 @@ foreach ($authNavPaths as $p) {
                                 ?>
                                 <img src="<?= htmlspecialchars($userAvatar, ENT_QUOTES, 'UTF-8') ?>" decoding="async"
                                     class="rounded-circle w-40" style="margin-right: 8px;" alt="">
-                                <span class="text-center">
-                                    <p class="text-uppercase"
-                                        style="font-weight: bold; color: #333; line-height: 1; border-radius: 6px; display: inline-block; font-size: 13px;">
-                                        <?= $username; ?>
-                                    </p>
-                                    <p style=" color: #ff6900; font-weight: 800; font-size: 13px; line-height: 1;
-                                    margin-top: 2px;"><strong><?= tien($user['money']); ?>đ</strong></p>
+                                <span style="display:flex; flex-direction:column; align-items:flex-start; line-height:1;">
+                                    <span class="text-uppercase"
+                                        style="font-weight:bold; color:#333; font-size:13px; line-height:1;"><?= $username; ?></span>
+                                    <span
+                                        style="color:#ff6900; font-weight:800; font-size:13px; line-height:1; margin-top:2px;"><strong><?= tien($user['money']); ?>đ</strong></span>
                                 </span>
                             </button>
 

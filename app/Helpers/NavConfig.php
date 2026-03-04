@@ -307,6 +307,7 @@ class NavConfig
                 'active_key' => 'profile',
                 'href' => self::buildUrl('profile'),
                 'icon' => 'fas fa-user',
+                'color' => '#3b82f6', // Blue
                 'label' => 'Thông tin cá nhân',
             ],
             [
@@ -314,6 +315,7 @@ class NavConfig
                 'active_key' => 'history',
                 'href' => self::buildUrl('history-balance'),
                 'icon' => 'fas fa-wallet',
+                'color' => '#f59e0b', // Amber
                 'label' => 'Biến động số dư',
             ],
             [
@@ -321,6 +323,7 @@ class NavConfig
                 'active_key' => 'order-history',
                 'href' => self::buildUrl('history-orders'),
                 'icon' => 'fas fa-receipt',
+                'color' => '#10b981', // Green
                 'label' => 'Lịch sử đơn hàng',
             ],
             [
@@ -328,6 +331,7 @@ class NavConfig
                 'active_key' => 'balance',
                 'href' => self::buildUrl('balance/bank'),
                 'icon' => 'fas fa-university',
+                'color' => '#ef4444', // Red
                 'label' => 'Nạp tiền',
             ],
             [
@@ -335,6 +339,7 @@ class NavConfig
                 'active_key' => 'password',
                 'href' => self::buildUrl('password'),
                 'icon' => 'fas fa-key',
+                'color' => '#14b8a6', // Teal
                 'label' => 'Thay đổi mật khẩu',
             ],
             [
@@ -342,12 +347,14 @@ class NavConfig
                 'active_key' => 'telegram',
                 'href' => self::buildUrl('profile?section=telegram'),
                 'icon' => 'fab fa-telegram-plane',
+                'color' => '#0ea5e9', // Sky Blue
                 'label' => 'Liên kết Telegram',
             ],
             [
                 'type' => 'logout',
                 'href' => self::buildUrl('logout'),
                 'icon' => 'fas fa-sign-out-alt',
+                'color' => '#ef4444', // Red
                 'label' => 'Đăng xuất',
             ],
         ];

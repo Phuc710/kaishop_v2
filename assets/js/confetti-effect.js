@@ -22,10 +22,10 @@
     function fire(options) {
         if (typeof confetti !== 'function') return;
 
-        const count = 250;
+        const count = 150;
         const defaults = {
             origin: { y: 0.7 },
-            spread: 90,
+            spread: 70,
             ticks: 200,
             gravity: 1.2,
             decay: 0.94,

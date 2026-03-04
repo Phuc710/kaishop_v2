@@ -32,15 +32,3 @@ Gõ lệnh sau:
 bash
 php public/telegram/cron.php --poll
 
-CREATE TABLE IF NOT EXISTS `telegram_logs` (
-  [id](cci:1://file:///c:/xampp/htdocs/kaishop_v2/app/Helpers/NavConfig.php:273:4-325:5) BIGINT AUTO_INCREMENT PRIMARY KEY,
-  `level` ENUM('INFO','WARN','ERROR') NOT NULL DEFAULT 'INFO',
-  `type` ENUM('INCOMING','OUTGOING') NOT NULL DEFAULT 'INCOMING',
-  `category` VARCHAR(50) NOT NULL DEFAULT 'GENERAL',
-  `message` TEXT NOT NULL,
-  `data` LONGTEXT DEFAULT NULL,
-  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  KEY `idx_tl_level_created` (`level`, `created_at`),
-  KEY `idx_tl_type_created` (`type`, `created_at`),
-  KEY `idx_tl_created` (`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

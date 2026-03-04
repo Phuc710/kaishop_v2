@@ -103,6 +103,52 @@ function processOutboxParallel(TelegramOutbox $outboxModel, string $botToken): v
 }
 
 // =========================================================
+//  Helper: gửi Telegram API trực tiếp với inline keyboard
+// =========================================================
+
+function sendTelegramWithButton(string $botToken, int $telegramId, string $msg, array $keyboard): bool
+{
+    if ($botToken === '' || !function_exists('curl_init')) {
+        return false;
+    }
+
+    $url = 'https://api.telegram.org/bot' . $botToken . '/sendMessage';
+    $ch = curl_init($url);
+    if ($ch === false) {
+        return false;
+    }
+
+    $payload = json_encode([
+        'chat_id' => $telegramId,
+        'text' => $msg,
+        'parse_mode' => 'HTML',
+        'disable_web_page_preview' => true,
+        'reply_markup' => ['inline_keyboard' => $keyboard],
+    ]);
+
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $payload,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+        CURLOPT_TIMEOUT => 5,
+        CURLOPT_CONNECTTIMEOUT => 3,
+        CURLOPT_NOSIGNAL => 1,
+        CURLOPT_SSL_VERIFYPEER => true,
+    ]);
+
+    $raw = curl_exec($ch);
+    curl_close($ch);
+
+    if (!$raw) {
+        return false;
+    }
+
+    $resp = json_decode((string) $raw, true);
+    return !empty($resp['ok']);
+}
+
+// =========================================================
 //  2. Cleanup — OTP hết hạn + Outbox cũ
 // =========================================================
 
@@ -148,8 +194,10 @@ function cleanupOldData(TelegramOutbox $outboxModel): void
 //  2b. Notify users about expired deposits
 // =========================================================
 
-function notifyExpiredDeposits(PendingDeposit $depositModel, TelegramOutbox $outboxModel): void
+function notifyExpiredDeposits(PendingDeposit $depositModel, TelegramOutbox $outboxModel, string $botToken): void
 {
+    // Also mark expired here since SepayWebhookController no longer calls it
+    // (removed from webhook to reduce per-request latency)
     $justExpired = $depositModel->markExpired();
     if (empty($justExpired)) {
         return;
@@ -170,17 +218,34 @@ function notifyExpiredDeposits(PendingDeposit $depositModel, TelegramOutbox $out
             continue; // User not linked to Telegram
         }
 
+        $telegramId = (int) $link['telegram_id'];
         $code = htmlspecialchars((string) ($dep['deposit_code'] ?? ''), ENT_QUOTES, 'UTF-8');
         $amount = number_format((int) ($dep['amount'] ?? 0));
 
-        $msg = "⏰ <b>GIAO DỊCH NẠP TIỀN ĐÃ HẾT HẠN</b>\n\n";
+        $msg = "⏰ <b>GIAO DỊCH NẠP TIỀN ĐÃ HẾ T HẠN</b>\n\n";
         $msg .= "📋 Mã nạp: <code>{$code}</code>\n";
         $msg .= "💰 Số tiền: <b>{$amount}đ</b>\n\n";
         $msg .= "Phiên nạp tiền đã quá 5 phút và tự động bị hủy.\n";
         $msg .= "👇 Bấm nút bên dưới để nạp lại.";
 
-        $outboxModel->enqueue((int) $link['telegram_id'], $msg);
-        echo "    [Notify] Deposit #{$dep['id']} ({$code}) → User #{$userId}\n";
+        // Keyboard: Nạp lại (trigger deposit flow) + Menu
+        $keyboard = [
+            [
+                ['text' => '💳 Nạp lại', 'callback_data' => 'deposit'],
+                ['text' => '🏠 Menu', 'callback_data' => 'menu'],
+            ]
+        ];
+
+        // Try direct send with keyboard (outbox doesn't support reply_markup)
+        $sent = sendTelegramWithButton($botToken, $telegramId, $msg, $keyboard);
+
+        if (!$sent) {
+            // Fallback: send plain text via outbox (no button, but still notifies)
+            $outboxModel->enqueue($telegramId, $msg);
+            echo "    [Notify-Fallback] Deposit #{$dep['id']} ({$code}) → User #{$userId}\n";
+        } else {
+            echo "    [Notify] Deposit #{$dep['id']} ({$code}) → User #{$userId}\n";
+        }
     }
 }
 
@@ -261,7 +326,7 @@ if ($isPollMode) {
             }
 
             processOutboxParallel($outboxModel, $botToken);
-            notifyExpiredDeposits($depositModel, $outboxModel);
+            notifyExpiredDeposits($depositModel, $outboxModel, $botToken);
             runPolling($telegram, $botLogic);
             saveLastCronRun($db);
             cleanupOldData($outboxModel);
@@ -279,7 +344,7 @@ if ($isPollMode) {
         }
 
         processOutboxParallel($outboxModel, $botToken);
-        notifyExpiredDeposits($depositModel, $outboxModel);
+        notifyExpiredDeposits($depositModel, $outboxModel, $botToken);
         cleanupOldData($outboxModel);
 
         // Lưu last_cron_run cho Worker Health monitor

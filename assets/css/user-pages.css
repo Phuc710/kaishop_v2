@@ -85,7 +85,7 @@
     width: 22px;
     font-size: 15px;
     margin-right: 10px;
-    color: #94a3b8;
+    /* color: #94a3b8;  -- Removed to allow dynamic colors */
     transition: all 0.2s;
 }
 
@@ -102,9 +102,7 @@
     background: #f1f5f9;
 }
 
-.user-sidebar .sidebar-item.active i {
-    color: #4b5563;
-}
+
 
 /* ── PROFILE CARD ────────────────────────────────────── */
 .profile-card {

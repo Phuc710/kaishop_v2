@@ -196,12 +196,13 @@ body,table,td,div,p,span,a,h1,h2,h3{-webkit-text-size-adjust:100%;-ms-text-size-
 <div style="width:100%;table-layout:fixed;background-color:#f0f4f8;padding:40px 10px;">
     <table role="presentation" class="ks-main-table ks-white-bg" style="background-color:#ffffff;margin:0 auto;width:100%;max-width:600px;border-spacing:0;color:#334155;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
         <tr>
+            <td style="padding:0;text-align:center;">
+                <img src="https://i.imghippo.com/files/vgUu1217Q.jpg" alt="Header" style="width:100%;max-width:600px;display:block;">
+            </td>
+        </tr>
+        <tr>
             <td class="ks-content-cell ks-white-bg ks-content-text" style="padding:36px 32px;line-height:1.7;font-size:15px;color:#334155;background-color:#ffffff;">
                 {$content}
-                <div style="margin-top:32px;border-top:1px solid #e2e8f0;padding-top:20px;font-size:13px;color:#94a3b8;text-align:center;">
-                    Nếu cần hỗ trợ, đội ngũ <a href="{$safeSiteUrl}" style="color:#64748b;font-weight:700;text-decoration:none;">{$safeSiteName}</a> luôn sẵn sàng giúp bạn.<br>
-                    <span style="font-size:12px;">Thời gian gửi: {$currentTime}</span>
-                </div>
             </td>
         </tr>
         <tr>
