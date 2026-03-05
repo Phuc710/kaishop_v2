@@ -93,6 +93,8 @@ foreach ($authNavPaths as $p) {
         border-radius: 8px;
     }
 
+
+
     .slider-nav-thumbnails img {
         width: 80px;
         height: auto;
@@ -239,6 +241,37 @@ foreach ($authNavPaths as $p) {
     .mobile-nav-list .nav-link.active-item .nav-icon {
         color: #ff6900 !important;
     }
+
+    .navbar .navbar-nav .nav-link {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center;
+        gap: 8px;
+        margin: 0 12px !important;
+        white-space: nowrap;
+        position: relative;
+    }
+
+    .navbar .navbar-nav .nav-link img {
+        width: 20px;
+        height: 20px;
+        object-fit: contain;
+        margin: 0 !important;
+        order: 2;
+        /* Put image after label */
+    }
+
+    /* Fixed the overlapping <i> icon (caret) */
+    .navbar .dropdown-toggle::after {
+        position: static !important;
+        margin-left: 6px !important;
+        vertical-align: middle !important;
+        display: inline-block !important;
+        line-height: inherit !important;
+        top: auto !important;
+        order: 3;
+        /* Put caret after image */
+    }
 </style>
 <div class="loader-wrapper">
     <span class="site-loader"> </span>
@@ -281,8 +314,7 @@ foreach ($authNavPaths as $p) {
                                     data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                                     <?= $navLabel ?>
                                     <?php if ($embedImg !== ''): ?>
-                                        <img src="<?= htmlspecialchars($embedImg, ENT_QUOTES, 'UTF-8') ?>" alt="icon"
-                                            style="height: 18px; margin-left: 4px; vertical-align: middle; margin-top: -2px;">
+                                        <img src="<?= htmlspecialchars($embedImg, ENT_QUOTES, 'UTF-8') ?>" alt="icon">
                                     <?php endif; ?>
                                 </a>
                                 <ul class="dropdown-menu">
@@ -323,7 +355,6 @@ foreach ($authNavPaths as $p) {
                                     <?= $navLabel ?>
                                     <?php if ($embedImg !== ''): ?>
                                         <img src="<?= htmlspecialchars($embedImg, ENT_QUOTES, 'UTF-8') ?>" alt="icon"
-                                            style="width: 20px; height: 20px; object-fit: contain; margin-left: 4px; vertical-align: middle; margin-top: -2px;"
                                             draggable="false" class="ks-img-guard" decoding="async" loading="eager"
                                             fetchpriority="high">
                                     <?php endif; ?>
