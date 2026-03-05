@@ -134,6 +134,7 @@ class DepositController extends Controller
 
     private function renderBalancePage(string $routeMethod = 'bank')
     {
+        $this->setNoCache();
         $user = $this->requireUser();
         $siteConfig = Config::getSiteConfig();
         $methodCode = $this->routeSegmentToMethodCode($routeMethod);

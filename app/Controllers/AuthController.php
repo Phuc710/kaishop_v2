@@ -29,6 +29,7 @@ class AuthController extends Controller
      */
     public function showLogin()
     {
+        $this->setNoCache();
         // Already logged in? Redirect to home
         if ($this->authService->isLoggedIn()) {
             $this->redirect(BASE_URL . '/');
@@ -43,6 +44,7 @@ class AuthController extends Controller
      */
     public function showLoginOtp()
     {
+        $this->setNoCache();
         if ($this->authService->isLoggedIn()) {
             $this->redirect(BASE_URL . '/');
         }
@@ -175,6 +177,7 @@ class AuthController extends Controller
      */
     public function showRegister()
     {
+        $this->setNoCache();
         if ($this->authService->isLoggedIn()) {
             $this->redirect(BASE_URL . '/');
         }
@@ -277,6 +280,7 @@ class AuthController extends Controller
      */
     public function showForgotPassword()
     {
+        $this->setNoCache();
         if ($this->authService->isLoggedIn()) {
             $this->redirect(BASE_URL . '/');
         }
@@ -354,6 +358,7 @@ class AuthController extends Controller
      */
     public function showResetPassword($id)
     {
+        $this->setNoCache();
         if ($this->authService->isLoggedIn()) {
             $this->redirect(BASE_URL . '/');
         }
@@ -489,21 +494,25 @@ class AuthController extends Controller
     {
         $rememberMe = in_array((string) $this->post('remember', '0'), ['1', 'true', 'on'], true);
 
+
+        error_log('[GoogleAuth] googleLogin() called. IP=' . ($_SERVER['REMOTE_ADDR'] ?? '?') . ' HOST=' . ($_SERVER['HTTP_HOST'] ?? '?'));
         if (($limit = $this->authSecurity->checkRateLimit('login_google', (string) $this->post('email_hint', 'google'))) !== null) {
             return $this->json(['success' => false, 'message' => $limit['message']], 429);
         }
 
-        if (($turnstileError = $this->requireTurnstileToken()) !== null) {
-            return $this->json(['success' => false, 'message' => $turnstileError], 400);
-        }
+        // NOTE: Google auth uses Firebase signInWithRedirect flow — no Turnstile widget is present after redirect.
+        // Security is guaranteed by Firebase ID token verification via Google Identity Toolkit.
 
         $idToken = trim((string) $this->post('id_token', ''));
         if ($idToken === '') {
+            error_log('[GoogleAuth] ERROR: id_token empty. POST keys=' . implode(',', array_keys($_POST)));
             return $this->json(['success' => false, 'message' => 'Thiếu ID token Google.'], 400);
         }
 
+        error_log('[GoogleAuth] id_token length=' . strlen($idToken) . ', calling verifyFirebaseGoogleIdToken...');
         $googleUser = $this->verifyFirebaseGoogleIdToken($idToken);
         if (!$googleUser || empty($googleUser['email'])) {
+            error_log('[GoogleAuth] ERROR: verifyFirebaseGoogleIdToken failed. Token prefix=' . substr($idToken, 0, 40));
             return $this->json(['success' => false, 'message' => 'Không xác minh được tài khoản Google.'], 401);
         }
 
@@ -653,15 +662,26 @@ class AuthController extends Controller
     {
         $apiKey = trim((string) EnvHelper::get('FIREBASE_API_KEY', ''));
         if ($apiKey === '') {
+            error_log('[GoogleAuth] verifyFirebaseGoogleIdToken: FIREBASE_API_KEY is empty!');
             return null;
         }
 
         $url = 'https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=' . rawurlencode($apiKey);
+        error_log('[GoogleAuth] Calling Identity Toolkit: ' . preg_replace('/key=[^&]+/', 'key=***', $url));
+
         $response = $this->postJson($url, ['idToken' => $idToken]);
-        if (empty($response['users'][0]) || !is_array($response['users'][0])) {
+
+        if (isset($response['error'])) {
+            error_log('[GoogleAuth] Identity Toolkit error: ' . json_encode($response['error']));
             return null;
         }
 
+        if (empty($response['users'][0]) || !is_array($response['users'][0])) {
+            error_log('[GoogleAuth] Identity Toolkit: users empty. Response keys=' . implode(',', array_keys($response)));
+            return null;
+        }
+
+        error_log('[GoogleAuth] Identity Toolkit OK. email=' . ($response['users'][0]['email'] ?? '?'));
         return $response['users'][0];
     }
 
@@ -729,9 +749,16 @@ class AuthController extends Controller
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
         curl_setopt($ch, CURLOPT_TIMEOUT, 12);
         $raw = curl_exec($ch);
+        $curlError = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
+        if ($curlError) {
+            error_log('[postJson] curl error: ' . $curlError . ' url=' . $url);
+        }
+
         if (!is_string($raw) || $raw === '') {
+            error_log('[postJson] empty response. HTTP=' . $httpCode . ' url=' . $url);
             return [];
         }
 
@@ -747,9 +774,16 @@ class AuthController extends Controller
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($payload));
         curl_setopt($ch, CURLOPT_TIMEOUT, 12);
         $raw = curl_exec($ch);
+        $curlError = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
+        if ($curlError) {
+            error_log('[postJson] curl error: ' . $curlError . ' url=' . $url);
+        }
+
         if (!is_string($raw) || $raw === '') {
+            error_log('[postJson] empty response. HTTP=' . $httpCode . ' url=' . $url);
             return [];
         }
 

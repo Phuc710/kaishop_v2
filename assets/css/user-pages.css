@@ -1699,6 +1699,43 @@ body.auth-layout .header-primary {
     }
 }
 
+/* ── AUTH: very small phones ≤ 480px ─────────────────── */
+@media (max-width: 480px) {
+    .auth-page-col {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    .auth-page .login-card {
+        padding: 24px 16px;
+        border-radius: 18px;
+    }
+
+    .auth-page .login-heading h3 {
+        font-size: 21px;
+    }
+
+    .auth-page .login-heading p {
+        font-size: 13.5px;
+    }
+
+    .auth-page .form-control {
+        min-height: 50px;
+        font-size: 15px;
+    }
+
+    .auth-page .btn.btn-primary,
+    .auth-page .btn.btn-outline-primary,
+    .auth-page .auth-google-btn {
+        min-height: 50px;
+        font-size: 15px;
+    }
+
+    .auth-page .acc-in {
+        font-size: 14px;
+    }
+}
+
 /* Maintenance notice banner (global user/public footer) */
 .maintenance-notice-banner {
     position: fixed;

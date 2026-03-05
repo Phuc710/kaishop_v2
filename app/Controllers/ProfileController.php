@@ -31,6 +31,7 @@ class ProfileController extends Controller
      */
     public function index()
     {
+        $this->setNoCache();
         $this->authService->requireAuth();
         $user = $this->authService->getCurrentUser();
         $siteConfig = Config::getSiteConfig();

@@ -45,6 +45,16 @@ class Controller
     }
 
     /**
+     * Set no-cache headers (use on sensitive/private pages)
+     */
+    protected function setNoCache(): void
+    {
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+    }
+
+    /**
      * Redirect to URL
      * @param string $url URL to redirect to
      */

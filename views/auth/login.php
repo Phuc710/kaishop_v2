@@ -183,7 +183,7 @@ $GLOBALS['pageAssets'] = [
     <?php if ($googleAuthEnabled): ?>
         <script type="module">
             import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
-            import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+            import { getAuth, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
 
             const firebaseConfig = <?= json_encode($firebaseConfig, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
             const app = initializeApp(firebaseConfig);
@@ -203,26 +203,17 @@ $GLOBALS['pageAssets'] = [
                 if (text) text.style.opacity = isLoading ? '0.75' : '1';
             }
 
-            function showGoogleAuthError(error, fallbackMessage) {
-                const rawMessage = String(error?.message || '');
-                const rawCode = String(error?.code || '');
-                let message = fallbackMessage || 'Đăng nhập Google thất bại.';
+            function showGoogleAuthError(e) {
+                const code = e?.code || '';
+                const msg = e?.message || '';
+                let text = 'Đăng nhập Google thất bại.';
 
-                if (rawCode === 'auth/unauthorized-domain') {
-                    message = 'Domain hiện tại chưa được phép trong Firebase Auth. Hãy thêm domain này vào Authorized domains.';
-                } else if (rawCode === 'auth/operation-not-allowed') {
-                    message = 'Google Sign-in chưa được bật trong Firebase Authentication.';
-                } else if (rawMessage.includes('securetoken.googleapis.com') || rawMessage.includes('CORS')) {
-                    message = isLocalHost
-                        ? 'Lỗi CORS Firebase (securetoken). Kiểm tra Firebase Authorized domains và giới hạn API key cho localhost.'
-                        : 'Lỗi CORS khi xác thực Google. Kiểm tra Authorized domains Firebase và cấu hình API key.';
-                }
+                if (code === 'auth/unauthorized-domain') text = 'Domain chưa được phép trong Firebase. Thêm vào Authorized domains.';
+                else if (code === 'auth/operation-not-allowed') text = 'Google Sign-in chưa được bật trong Firebase Authentication.';
+                else if (code === 'auth/popup-blocked') text = 'Popup bị chặn — vui lòng cho phép popup và thử lại.';
+                else if (msg.includes('securetoken') || msg.includes('CORS')) text = 'Lỗi CORS Firebase. Kiểm tra Authorized domains và API key.';
 
-                if (typeof SwalHelper !== 'undefined') {
-                    SwalHelper.error(message);
-                    return;
-                }
-                alert(message);
+                SwalHelper.error(text);
             }
 
             async function submitFirebaseGoogleToken(idToken) {
@@ -266,33 +257,17 @@ $GLOBALS['pageAssets'] = [
                 window.location.href = data.redirect || '<?= BASE_URL ?>/';
             }
 
-            // On page load: check if we just returned from Google redirect
-            (async function handleRedirectOnLoad() {
+            // Button click -> open Google popup
+            window.googleAuthLogin = async function () {
+                setGoogleBtnLoading(true);
                 try {
-                    const result = await getRedirectResult(auth);
-                    if (!result) return;
-
-                    setGoogleBtnLoading(true);
+                    const result = await signInWithPopup(auth, provider);
                     const idToken = await result.user.getIdToken(true);
                     await submitFirebaseGoogleToken(idToken);
                 } catch (e) {
-                    console.error('[Google Auth] redirect result error:', e);
-                    showGoogleAuthError(e, 'Đăng nhập Google thất bại sau khi chuyển hướng.');
+                    if (e?.code !== 'auth/popup-closed-by-user') showGoogleAuthError(e);
                 } finally {
                     setGoogleBtnLoading(false);
-                }
-            })();
-
-            // Button click -> redirect to Google
-            window.googleAuthLogin = async function () {
-                try {
-                    setGoogleBtnLoading(true);
-                    await signInWithRedirect(auth, provider);
-                    // Browser navigates away - nothing runs after this line
-                } catch (e) {
-                    setGoogleBtnLoading(false);
-                    console.error('[Google Auth] login error:', e);
-                    showGoogleAuthError(e, 'Không thể đăng nhập Google. Vui lòng thử lại.');
                 }
             };
         </script>
