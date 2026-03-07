@@ -732,7 +732,7 @@ class TelegramBotService
     {
         $isAdmin = TelegramConfig::isAdmin($telegramId);
 
-        $msg = "🌟 <b>TRỢ GIÚP — DANH SÁCH LỆNH</b>\n\n";
+        $msg = "✨ <b>TRỢ GIÚP — DANH SÁCH LỆNH</b>\n\n";
         $msg .= "🛍 /shop    — Cửa hàng\n";
         $msg .= "💰 /balance — Ví của tôi\n";
         $msg .= "💳 /bank    — Nạp tiền ngân hàng (VND)\n";
