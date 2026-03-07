@@ -70,8 +70,23 @@ class HistoryController extends Controller
         $userData = $this->userModel->findByUsername($username);
         $currentBalance = (int) ($userData['money'] ?? 0);
 
-        // Stable running balances from current balance in DESC chronological order
-        $allCalculatedRows = $this->historyModel->calculateRunningBalances($allFilteredRows, $currentBalance);
+        // Build result — LSBD rows have stored before/after, legacy rows need in-memory calculation
+        $hasMixedData = false;
+        foreach ($allFilteredRows as $r) {
+            if (empty($r['has_stored_balances'])) {
+                $hasMixedData = true;
+                break;
+            }
+        }
+
+        // If any legacy rows exist, fall back to full in-memory running balance
+        if ($hasMixedData) {
+            $allCalculatedRows = $this->historyModel->calculateRunningBalances($allFilteredRows, $currentBalance);
+        } else {
+            // All rows from LSBD — stored balances are authoritative, no recalculation needed
+            $allCalculatedRows = $allFilteredRows;
+        }
+
         $data = array_slice($allCalculatedRows, $start, $length);
 
         // Format data for DataTables
@@ -102,6 +117,9 @@ class HistoryController extends Controller
             }
             $timeAgo = $timeMeta['ts'] ? $timeService->diffForHumans($timeMeta['ts']) : ($normalizedTime !== '' ? FormatHelper::timeAgo($normalizedTime) : '');
 
+            // source_channel badge: 0=Web, 1=Telegram
+            $sourceChannel = (int) ($row['source_channel'] ?? 0);
+
             $formattedData[] = [
                 'time' => FormatHelper::eventTime($row['event_time'] ?? null, $rawTime),
                 'time_raw' => $timeDisplay,
@@ -115,7 +133,9 @@ class HistoryController extends Controller
                 'change_amount' => $change,
                 'after' => FormatHelper::currentBalance($afterBalance),
                 'after_amount' => $afterBalance,
-                'reason' => htmlspecialchars($reasonText, ENT_QUOTES, 'UTF-8')
+                'reason' => htmlspecialchars($reasonText, ENT_QUOTES, 'UTF-8'),
+                'source' => (string) ($row['source'] ?? ''),
+                'source_channel' => $sourceChannel,
             ];
         }
 

@@ -412,17 +412,17 @@ if ($rawDescHtml !== '') {
 
         .pd-summary-row.total {
             font-weight: 800;
-            color: #00ad5c;
-            font-size: 25px;
+            color: #000;
+            font-size: 20px;
         }
 
         .pd-summary-row.total span {
-            color: #151a2d;
+            color: inherit;
         }
 
         #sumTotal {
-            color: #000;
-            font-size: 22px;
+            color: inherit;
+            font-size: inherit;
         }
 
         .pd-summary-row.discount {
@@ -649,7 +649,8 @@ if ($rawDescHtml !== '') {
                         <div class="pd-meta-line">
                             <div>
                                 <div class="pd-note">Giá bán</div>
-                                <div class="pd-price" id="pdUnitPriceText"><?= number_format($priceVnd) ?>đ</div>
+                                <div class="pd-price" id="pdUnitPriceText"
+                                    data-price-vnd="<?= $priceVnd ?>"><?= number_format($priceVnd) ?>đ</div>
                             </div>
                             <?php if ($deliveryMode !== 'source_link'): ?>
                                 <div class="pd-stock">
@@ -739,7 +740,7 @@ if ($rawDescHtml !== '') {
                         <div class="pd-summary mb-3">
                             <div class="pd-summary-row total">
                                 <span>Tổng tiền: </span>
-                                <strong id="sumTotal"><?= number_format($priceVnd * $purchaseMinQty) ?>đ</strong>
+                            <strong id="sumTotal" data-price-vnd="<?= $priceVnd * $purchaseMinQty ?>"><?= number_format($priceVnd * $purchaseMinQty) ?>đ</strong>
                             </div>
                         </div>
 
@@ -765,6 +766,7 @@ if ($rawDescHtml !== '') {
     </main>
 
     <?php require __DIR__ . '/../../hethong/foot.php'; ?>
+    <script src="<?= asset('assets/js/currency.js') ?>" defer></script>
 
     <script>
         const PRODUCT_DETAIL = {
@@ -790,8 +792,33 @@ if ($rawDescHtml !== '') {
         let APPLY_GIFTCODE_LOADING = false;
 
         function fmtMoney(value) {
+            if (window.KAI_CURRENCY && window.KAI_CURRENCY.isUsd()) {
+                return window.KAI_CURRENCY.formatUsd(Number(value || 0));
+            }
             return new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + 'đ';
         }
+
+        // When currency toggle button is clicked, re-render all computed prices
+        window.KAI_CURRENCY_CHANGED = function(isUsd, rate) {
+            // Re-render the total price based on current qty
+            var qtyInput = getQtyInput();
+            var qty = qtyInput ? Math.max(1, parseInt(qtyInput.value) || 1) : 1;
+            var unitPrice = PRODUCT_DETAIL.price || 0;
+            var totalVnd = unitPrice * qty;
+            if (APPLIED_GIFTCODE_PREVIEW) {
+                var disc = APPLIED_GIFTCODE_PREVIEW.discount_amount || 0;
+                totalVnd = Math.max(0, totalVnd - disc);
+            }
+            var sumEl = document.getElementById('sumTotal');
+            if (sumEl) {
+                sumEl.setAttribute('data-price-vnd', totalVnd);
+                sumEl.textContent = fmtMoney(totalVnd);
+            }
+            var priceEl = document.getElementById('pdUnitPriceText');
+            if (priceEl) {
+                priceEl.textContent = fmtMoney(unitPrice);
+            }
+        };
 
         function getQtyInput() {
             return document.getElementById('purchaseQty');
@@ -1351,8 +1378,26 @@ if ($rawDescHtml !== '') {
 
             if (plusBtn) {
                 plusBtn.addEventListener('click', function () {
-                    const next = getRequestedQuantity() + 1;
-                    if (qtyInput) qtyInput.value = normalizeQty(next);
+                    const current = getRequestedQuantity();
+                    const next = current + 1;
+                    const normalized = normalizeQty(next);
+                    
+                    if (next > normalized && normalized === current) {
+                        if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.toast === 'function') {
+                            SwalHelper.toast('Đã đạt giới hạn tối đa', 'warning');
+                        } else if (window.Swal && Swal.fire) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Đã đạt giới hạn tối đa',
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 2000
+                            });
+                        }
+                    }
+
+                    if (qtyInput) qtyInput.value = normalized;
                     clearAppliedGiftcodePreview();
                     updateSummaryPreview();
                 });

@@ -111,7 +111,7 @@ class TimeService
         }
     }
 
-    public function format($value, string $format = 'Y-m-d H:i:s', ?string $targetTimezone = null, ?string $assumeTimezone = null): string
+    public function format($value, string $format = 'd/m/Y H:i', ?string $targetTimezone = null, ?string $assumeTimezone = null): string
     {
         $ts = $this->toTimestamp($value, $assumeTimezone);
         if ($ts === null) {
@@ -123,7 +123,7 @@ class TimeService
             ->format($format);
     }
 
-    public function formatDisplay($value, string $format = 'Y-m-d H:i:s', ?string $assumeTimezone = null): string
+    public function formatDisplay($value, string $format = 'd/m/Y H:i', ?string $assumeTimezone = null): string
     {
         return $this->format($value, $format, $this->displayTz->getName(), $assumeTimezone);
     }
@@ -164,7 +164,7 @@ class TimeService
      *
      * @return array{ts:int|null,iso:string,iso_utc:string,display:string}
      */
-    public function normalizeApiTime($value, ?string $assumeTimezone = null, string $displayFormat = 'Y-m-d H:i:s'): array
+    public function normalizeApiTime($value, ?string $assumeTimezone = null, string $displayFormat = 'd/m/Y H:i'): array
     {
         $ts = $this->toTimestamp($value, $assumeTimezone);
         if ($ts === null) {

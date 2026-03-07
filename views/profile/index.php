@@ -13,18 +13,76 @@ require __DIR__ . '/layout/header.php';
     <?php require __DIR__ . '/balance.php'; ?>
     <script src="<?= asset('assets/js/balance-success.js') ?>"></script>
     <script src="<?= asset('assets/js/balance-bank.js') ?>"></script>
+    <script src="<?= asset('assets/js/balance-binance.js') ?>"></script>
 <?php else: ?>
+    <style>
+        .kai-simple-currency-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px 15px;
+            background: #fff;
+            border: 1.5px solid #000;
+            border-radius: 12px;
+            color: #000 !important;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            outline: none !important;
+            min-height: 40px;
+        }
+
+        .kai-simple-currency-toggle:hover {
+            background: #f8f9fa;
+            transform: scale(1.02);
+        }
+
+        .kai-simple-currency-toggle img,
+        #currency-toggle-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+            font-size: 1.2rem;
+            line-height: 1;
+            border-color: 2px solid #000 !important;
+
+        }
+
+
+        .kai-simple-currency-toggle.is-usd {
+            background: #eff6ff;
+            border-color: 2px solid #000 !important;
+        }
+    </style>
     <?php
     $currentBalance = (int) ($user['money'] ?? 0);
     $totalDeposit = (int) ($user['tong_nap'] ?? 0);
     $usedBalance = max(0, $totalDeposit - $currentBalance);
     $twofaEnabled = (int) ($user['twofa_enabled'] ?? 0) === 1;
+    $walletExchangeRate = (int) get_setting('binance_rate_vnd', 25000);
+    if ($walletExchangeRate <= 0)
+        $walletExchangeRate = 25000;
     ?>
 
-    <div class="profile-card">
+    <div class="profile-card" data-wallet-card data-exchange-rate="<?= $walletExchangeRate ?>">
         <div class="profile-card-header profile-card-header--with-actions">
             <div>
                 <h5 class="text-dark mb-1">VÍ CỦA TÔI</h5>
+            </div>
+            <div class="profile-card-header-actions">
+                <button type="button" id="btn-toggle-currency" class="kai-simple-currency-toggle"
+                    title="Chuyển đổi tiền tệ">
+                    <span id="currency-toggle-icon">
+                        <img src="<?= asset('assets/images/vn.png') ?>" alt="VND">
+                    </span>
+                    <span id="currency-toggle-label">VND</span>
+                </button>
             </div>
         </div>
         <div class="profile-card-body p-4">
@@ -32,19 +90,24 @@ require __DIR__ . '/layout/header.php';
                 <div class="col-xl-4 col-md-6">
                     <div class="stat-box neutral">
                         <div class="user-label user-label--sm">Số dư hiện tại</div>
-                        <div class="balance-amount " style="color: #198754 !important;"><?= tien($currentBalance); ?>đ</div>
+                        <div class="balance-amount" style="color: #198754 !important;" data-wallet-amount
+                            data-price-vnd="<?= $currentBalance ?>"><?= tien($currentBalance); ?></div>
                     </div>
                 </div>
                 <div class="col-xl-4 col-md-6">
                     <div class="stat-box neutral">
                         <div class="user-label user-label--sm">Tổng tiền nạp</div>
-                        <div class="balance-amount"><?= tien($totalDeposit); ?>đ</div>
+                        <div class="balance-amount" data-wallet-amount data-price-vnd="<?= $totalDeposit ?>">
+                            <?= tien($totalDeposit); ?>
+                        </div>
                     </div>
                 </div>
                 <div class="col-xl-4 col-md-12">
                     <div class="stat-box neutral">
                         <div class="user-label user-label--sm">Số dư đã sử dụng</div>
-                        <div class="balance-amount"><?= tien($usedBalance); ?>đ</div>
+                        <div class="balance-amount" data-wallet-amount data-price-vnd="<?= $usedBalance ?>">
+                            <?= tien($usedBalance); ?>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -63,6 +126,15 @@ require __DIR__ . '/layout/header.php';
         <div class="profile-card-body p-4">
             <form id="profile-form" class="row g-4" novalidate>
                 <input type="hidden" name="twofa_enabled" value="<?= $twofaEnabled ? '1' : '0' ?>">
+
+                <div class="col-md-12">
+                    <label class="form-label user-label">Họ và tên</label>
+                    <div class="custom-input-wrap">
+                        <input type="text" name="full_name" id="full_name_input" class="form-control custom-readonly"
+                            value="<?= htmlspecialchars((string) ($user['full_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                            readonly>
+                    </div>
+                </div>
 
                 <div class="col-md-6">
                     <label class="form-label user-label">Tên đăng nhập</label>
@@ -453,6 +525,7 @@ require __DIR__ . '/layout/header.php';
             let editMode = false;
             const form = document.getElementById('profile-form');
             const emailInput = document.getElementById('email_input');
+            const fullNameInput = document.getElementById('full_name_input');
             const editBtn = document.getElementById('btn-edit');
 
             function setEditMode(enabled) {
@@ -464,15 +537,24 @@ require __DIR__ . '/layout/header.php';
                 if (editMode) {
                     emailInput.removeAttribute('readonly');
                     emailInput.classList.remove('custom-readonly');
+                    if (fullNameInput) {
+                        fullNameInput.removeAttribute('readonly');
+                        fullNameInput.classList.remove('custom-readonly');
+                    }
                     editBtn.innerHTML = 'Lưu thay đổi';
                     editBtn.classList.remove('btn-edit-profile');
                     editBtn.classList.add('btn-save-green');
-                    emailInput.focus();
+                    if (fullNameInput) fullNameInput.focus();
+                    else emailInput.focus();
                     return;
                 }
 
                 emailInput.setAttribute('readonly', 'readonly');
                 emailInput.classList.add('custom-readonly');
+                if (fullNameInput) {
+                    fullNameInput.setAttribute('readonly', 'readonly');
+                    fullNameInput.classList.add('custom-readonly');
+                }
                 editBtn.innerHTML = 'Chỉnh sửa thông tin';
                 editBtn.classList.remove('btn-save-green');
                 editBtn.classList.add('btn-edit-profile');

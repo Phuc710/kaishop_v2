@@ -241,6 +241,8 @@ $fallbackFaviconHref = asset('assets/images/kaishop_favicon.png');
     const BASE_URL = '<?= url('') ?>';
     const ASSET_URL = '<?= asset('') ?>';
     const AJAX_URL = '<?= ajax_url('') ?>';
+    window.KAI_ASSET_URL = ASSET_URL;
+    window.KAI_EXCHANGE_RATE = <?= (int) max(1, (int) get_setting('binance_rate_vnd', 25000)) ?>;
     window.KS_TIME_CONFIG = Object.assign({}, window.KS_TIME_CONFIG || {}, {
         appTimezone: '<?= htmlspecialchars(function_exists('app_timezone') ? app_timezone() : date_default_timezone_get(), ENT_QUOTES, 'UTF-8') ?>',
         displayTimezone: '<?= htmlspecialchars(function_exists('app_display_timezone') ? app_display_timezone() : date_default_timezone_get(), ENT_QUOTES, 'UTF-8') ?>',
@@ -249,6 +251,7 @@ $fallbackFaviconHref = asset('assets/images/kaishop_favicon.png');
     });
 </script>
 <script src="<?= asset('assets/js/time-utils.js') ?>" defer></script>
+<script src="<?= asset('assets/js/currency.js') ?>" defer></script>
 <script src="<?= asset('assets/js/maintenance-runtime.js') ?>" defer></script>
 <script src="<?= asset('assets/js/confetti-effect.js') ?>" defer></script>
 

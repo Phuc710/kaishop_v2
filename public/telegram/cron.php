@@ -1,20 +1,13 @@
 <?php
 
 /**
- * Telegram Outbox Worker & Long Polling Tool — Production Optimized
+ * Telegram worker + cron tasks.
  *
- * Cron (production — mỗi phút):
- *   * * * * * php /path/to/public/telegram/cron.php >> /var/log/kaishop-tg.log 2>&1
+ * Cron mode:
+ *   php public/telegram/cron.php
  *
- * Polling (dev/local — loop vô hạn):
+ * Polling mode (dev):
  *   php public/telegram/cron.php --poll
- *
- * Tối ưu:
- *  - curl_multi_*: Gửi outbox song song (parallel), giảm tổng thời gian chờ từ N×5s → ~5s
- *  - CURLOPT_TIMEOUT = 5s mỗi request (không để treo)
- *  - Lưu `last_cron_run` vào setting để Worker Health monitor
- *  - Đóng PDO connection sau mỗi phase để tránh connection leak
- *  - Cleanup OTP hết hạn + outbox cũ hàng ngày (1 lần/ngày)
  */
 
 require_once __DIR__ . '/../../config/app.php';
@@ -29,23 +22,65 @@ $botLogic = new TelegramBotService($telegram);
 $timeService = TimeService::instance();
 echo '[' . $timeService->nowSql() . '] KaiShop Telegram Worker (' . ($isPollMode ? 'POLLING' : 'CRON') . ")\n";
 
-// =========================================================
-//  1. Gửi Outbox — PARALLEL via curl_multi
-// =========================================================
+/**
+ * Prevent overlapping cron executions (especially when sweep window is enabled).
+ *
+ * @return array{handle:resource,path:string}|null
+ */
+function acquireSingleRunLock(string $lockName): ?array
+{
+    $lockPath = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $lockName . '.lock';
+    $handle = @fopen($lockPath, 'c+');
+    if ($handle === false) {
+        return null;
+    }
+
+    if (!flock($handle, LOCK_EX | LOCK_NB)) {
+        fclose($handle);
+        return null;
+    }
+
+    @ftruncate($handle, 0);
+    @fwrite($handle, (string) getmypid());
+    @fflush($handle);
+
+    return [
+        'handle' => $handle,
+        'path' => $lockPath,
+    ];
+}
+
+/**
+ * @param array{handle:resource,path:string}|null $lock
+ */
+function releaseSingleRunLock(?array $lock): void
+{
+    if (!is_array($lock) || !isset($lock['handle'])) {
+        return;
+    }
+
+    $handle = $lock['handle'];
+    @flock($handle, LOCK_UN);
+    @fclose($handle);
+}
 
 function processOutboxParallel(TelegramOutbox $outboxModel, string $botToken): void
 {
-    $pending = $outboxModel->fetchPending(30); // Max 30 per cron cycle
+    if ($botToken === '' || !function_exists('curl_multi_init')) {
+        return;
+    }
+
+    $pending = $outboxModel->fetchPending(30);
     if (empty($pending)) {
         return;
     }
 
-    echo '  [Outbox] Sending ' . count($pending) . " messages (parallel)...\n";
+    echo '  [Outbox] Sending ' . count($pending) . " message(s)\n";
 
     $baseUrl = 'https://api.telegram.org/bot' . $botToken . '/sendMessage';
     $multiHandle = curl_multi_init();
     $handles = [];
-    $idMap = []; // curl handle index -> outbox row id
+    $idMap = [];
 
     foreach ($pending as $idx => $msg) {
         $payload = http_build_query([
@@ -60,7 +95,7 @@ function processOutboxParallel(TelegramOutbox $outboxModel, string $botToken): v
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => $payload,
-            CURLOPT_TIMEOUT => 5,          // Max 5s per message — không để treo
+            CURLOPT_TIMEOUT => 5,
             CURLOPT_CONNECTTIMEOUT => 3,
             CURLOPT_SSL_VERIFYPEER => true,
         ]);
@@ -70,17 +105,17 @@ function processOutboxParallel(TelegramOutbox $outboxModel, string $botToken): v
         $idMap[$idx] = (int) $msg['id'];
     }
 
-    // Execute all curl handles in parallel
     $running = 0;
     do {
         $status = curl_multi_exec($multiHandle, $running);
-        if ($status === CURLM_CALL_MULTI_PERFORM)
+        if ($status === CURLM_CALL_MULTI_PERFORM) {
             continue;
-        if ($running > 0)
+        }
+        if ($running > 0) {
             curl_multi_select($multiHandle, 1.0);
+        }
     } while ($running > 0 && $status === CURLM_OK);
 
-    // Process results
     foreach ($handles as $idx => $ch) {
         $raw = curl_multi_getcontent($ch);
         $response = $raw ? json_decode($raw, true) : null;
@@ -88,7 +123,7 @@ function processOutboxParallel(TelegramOutbox $outboxModel, string $botToken): v
 
         if (!empty($response['ok'])) {
             $outboxModel->markSent($outboxId);
-            echo "    [OK] Outbox #{$outboxId} → Chat " . $pending[$idx]['telegram_id'] . "\n";
+            echo "    [OK] Outbox #{$outboxId}\n";
         } else {
             $errDesc = $response['description'] ?? (curl_error($ch) ?: 'Unknown error');
             $outboxModel->markFailed($outboxId, $errDesc);
@@ -101,10 +136,6 @@ function processOutboxParallel(TelegramOutbox $outboxModel, string $botToken): v
 
     curl_multi_close($multiHandle);
 }
-
-// =========================================================
-//  Helper: gửi Telegram API trực tiếp với inline keyboard
-// =========================================================
 
 function sendTelegramWithButton(string $botToken, int $telegramId, string $msg, array $keyboard): bool
 {
@@ -148,16 +179,11 @@ function sendTelegramWithButton(string $botToken, int $telegramId, string $msg, 
     return !empty($resp['ok']);
 }
 
-// =========================================================
-//  2. Cleanup — OTP hết hạn + Outbox cũ
-// =========================================================
-
 function cleanupOldData(TelegramOutbox $outboxModel): void
 {
-    // Chỉ cleanup 1 lần/ngày (giờ 03:xx)
-    $timeService = TimeService::instance();
-    if ((int) $timeService->nowDateTime()->format('G') !== 3)
+    if ((int) TimeService::instance()->nowDateTime()->format('G') !== 3) {
         return;
+    }
 
     $deletedOutbox = $outboxModel->cleanOldSent(7);
     if ($deletedOutbox > 0) {
@@ -170,34 +196,27 @@ function cleanupOldData(TelegramOutbox $outboxModel): void
         echo "  [Cleanup] Removed {$deletedOtp} expired OTP codes\n";
     }
 
-    // Cleanup rate-limit files cũ quá 10 phút
     $rlDir = '/tmp/kaishop_tg_rl';
     if (is_dir($rlDir)) {
-        $timeService = TimeService::instance();
-        $cutoff = $timeService->nowTs() - 600;
+        $cutoff = TimeService::instance()->nowTs() - 600;
         foreach (glob($rlDir . '/*.json') ?: [] as $file) {
-            if (@filemtime($file) < $cutoff)
+            if (@filemtime($file) < $cutoff) {
                 @unlink($file);
+            }
         }
-        // Cleanup cooldown files > 1h
         if (is_dir($rlDir . '/cooldown')) {
-            $cutoffCooldown = $timeService->nowTs() - 3600;
+            $cutoffCooldown = TimeService::instance()->nowTs() - 3600;
             foreach (glob($rlDir . '/cooldown/*.ts') ?: [] as $file) {
-                if (@filemtime($file) < $cutoffCooldown)
+                if (@filemtime($file) < $cutoffCooldown) {
                     @unlink($file);
+                }
             }
         }
     }
 }
 
-// =========================================================
-//  2b. Notify users about expired deposits
-// =========================================================
-
 function notifyExpiredDeposits(PendingDeposit $depositModel, TelegramOutbox $outboxModel, string $botToken): void
 {
-    // Also mark expired here since SepayWebhookController no longer calls it
-    // (removed from webhook to reduce per-request latency)
     $justExpired = $depositModel->markExpired();
     if (empty($justExpired)) {
         return;
@@ -215,43 +234,122 @@ function notifyExpiredDeposits(PendingDeposit $depositModel, TelegramOutbox $out
 
         $link = $linkModel->findByUserId($userId);
         if (!$link) {
-            continue; // User not linked to Telegram
+            continue;
         }
 
         $telegramId = (int) $link['telegram_id'];
         $code = htmlspecialchars((string) ($dep['deposit_code'] ?? ''), ENT_QUOTES, 'UTF-8');
-        $amount = number_format((int) ($dep['amount'] ?? 0));
+        $amount = number_format((int) ($dep['amount'] ?? 0), 0, '.', ',');
+        $method = strtolower(trim((string) ($dep['method'] ?? 'bank_sepay')));
 
-        $msg = "⏰ <b>GIAO DỊCH NẠP TIỀN ĐÃ HẾ T HẠN</b>\n\n";
-        $msg .= "📋 Mã nạp: <code>{$code}</code>\n";
-        $msg .= "💰 Số tiền: <b>{$amount}đ</b>\n\n";
-        $msg .= "Phiên nạp tiền đã quá 5 phút và tự động bị hủy.\n";
-        $msg .= "👇 Bấm nút bên dưới để nạp lại.";
+        if ($method === DepositService::METHOD_BINANCE) {
+            $usdtAmount = number_format((float) ($dep['usdt_amount'] ?? 0), 2, '.', '');
+            $msg = "⏰ <b>YÊU CẦU NẠP BINANCE PAY ĐÃ HẾT HẠN</b>\n\n";
+            $msg .= "📋 Mã nạp: <code>{$code}</code>\n";
+            $msg .= "💵 Số tiền đăng ký: <b>{$amount}đ</b>\n";
+            $msg .= "💰 USDT yêu cầu: <b>{$usdtAmount} USDT</b>\n\n";
+            $msg .= "Lệnh đã quá 5 phút và tự động hủy.\n";
+            $msg .= "Nếu đã chuyển tiền, vui lòng liên hệ hỗ trợ kèm TXID.";
+        } else {
+            $msg = "⏰ <b>GIAO DỊCH NẠP TIỀN ĐÃ HẾT HẠN</b>\n\n";
+            $msg .= "📋 Mã nạp: <code>{$code}</code>\n";
+            $msg .= "💵 Số tiền: <b>{$amount}đ</b>\n\n";
+            $msg .= "Phiên nạp tiền đã quá 5 phút và tự động bị hủy.\n";
+            $msg .= "👇 Bấm nút bên dưới để nạp lại.";
+        }
 
-        // Keyboard: Nạp lại (trigger deposit flow) + Menu
+        $retryCallback = ($method === DepositService::METHOD_BINANCE) ? 'binance_start' : 'deposit';
         $keyboard = [
             [
-                ['text' => '💳 Nạp lại', 'callback_data' => 'deposit'],
+                ['text' => '💳 Nạp lại', 'callback_data' => $retryCallback],
                 ['text' => '🏠 Menu', 'callback_data' => 'menu'],
             ]
         ];
 
-        // Try direct send with keyboard (outbox doesn't support reply_markup)
         $sent = sendTelegramWithButton($botToken, $telegramId, $msg, $keyboard);
 
         if (!$sent) {
-            // Fallback: send plain text via outbox (no button, but still notifies)
             $outboxModel->enqueue($telegramId, $msg);
-            echo "    [Notify-Fallback] Deposit #{$dep['id']} ({$code}) → User #{$userId}\n";
+            echo "    [Notify-Fallback] Deposit #" . (int) ($dep['id'] ?? 0) . "\n";
         } else {
-            echo "    [Notify] Deposit #{$dep['id']} ({$code}) → User #{$userId}\n";
+            echo "    [Notify] Deposit #" . (int) ($dep['id'] ?? 0) . "\n";
         }
     }
 }
 
-// =========================================================
-//  3. Lưu timestamp last_cron_run (Worker Health Monitor)
-// =========================================================
+function processPendingBinanceDeposits(PendingDeposit $depositModel): void
+{
+    static $lastRunTs = 0;
+    $nowTs = TimeService::instance()->nowTs();
+    if ($lastRunTs > 0 && ($nowTs - $lastRunTs) < 10) {
+        return;
+    }
+    $lastRunTs = $nowTs;
+
+    if (!class_exists('DepositService') || !class_exists('User')) {
+        return;
+    }
+
+    $siteConfig = Config::getSiteConfig();
+    $depositService = new DepositService($depositModel);
+    $binanceService = $depositService->makeBinanceService($siteConfig);
+    if (!$binanceService || !$binanceService->isEnabled()) {
+        return;
+    }
+
+    $pending = $depositModel->fetchPendingByMethod(DepositService::METHOD_BINANCE, 30);
+    if (empty($pending)) {
+        return;
+    }
+
+    $minCreatedTs = TimeService::instance()->nowTs();
+    foreach ($pending as $row) {
+        $createdTs = TimeService::instance()->toTimestamp((string) ($row['created_at'] ?? ''));
+        if ($createdTs !== null) {
+            $minCreatedTs = min($minCreatedTs, $createdTs);
+        }
+    }
+
+    $transactions = $binanceService->getRecentTransactions(
+        ($minCreatedTs - 120) * 1000,
+        (TimeService::instance()->nowTs() + 30) * 1000,
+        100
+    );
+    if (empty($transactions)) {
+        return;
+    }
+
+    $userModel = new User();
+    $matchedCount = 0;
+
+    foreach ($pending as $dep) {
+        if ($depositModel->isLogicallyExpired($dep)) {
+            continue;
+        }
+        $tx = $binanceService->findMatchingTransaction($dep, $transactions);
+        if (!$tx) {
+            continue;
+        }
+
+        $userId = (int) ($dep['user_id'] ?? 0);
+        $user = $userId > 0 ? $userModel->find($userId) : null;
+        if (!is_array($user) || empty($user['id'])) {
+            continue;
+        }
+
+        $result = $binanceService->processTransaction($tx, $dep, $user);
+        if (!empty($result['success'])) {
+            $matchedCount++;
+            echo "    [Binance] Credited deposit #" . (int) ($dep['id'] ?? 0) . " for user " . (string) ($user['username'] ?? '') . "\n";
+        } else {
+            echo "    [Binance] Match failed for deposit #" . (int) ($dep['id'] ?? 0) . ': ' . (string) ($result['message'] ?? 'unknown') . "\n";
+        }
+    }
+
+    if ($matchedCount > 0) {
+        echo "  [Binance] Processed {$matchedCount} pending deposit(s)\n";
+    }
+}
 
 function saveLastCronRun(PDO $db): void
 {
@@ -260,14 +358,9 @@ function saveLastCronRun(PDO $db): void
         $stmt = $db->prepare("UPDATE `setting` SET `last_cron_run`=? ORDER BY `id` ASC LIMIT 1");
         $stmt->execute([$now]);
     } catch (Throwable $e) {
-        // Non-blocking — không ảnh hưởng luồng chính
         error_log('[cron] Could not save last_cron_run: ' . $e->getMessage());
     }
 }
-
-// =========================================================
-//  4. Long Polling (chỉ dùng cho dev/local)
-// =========================================================
 
 function runPolling(TelegramService $telegram, TelegramBotService $botLogic): void
 {
@@ -279,12 +372,12 @@ function runPolling(TelegramService $telegram, TelegramBotService $botLogic): vo
         $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
         $lastUpdateId = (int) ($row['telegram_last_update_id'] ?? 0);
     } catch (Throwable $e) {
-        echo "  [Polling] Warning: Could not load last update ID — " . $e->getMessage() . "\n";
+        echo "  [Polling] Warning: Could not load last update ID - " . $e->getMessage() . "\n";
     }
 
     $response = $telegram->apiCall('getUpdates', [
         'offset' => $lastUpdateId + 1,
-        'timeout' => 30,        // long-poll: 30s
+        'timeout' => 30,
         'limit' => 50,
     ]);
 
@@ -310,22 +403,54 @@ function runPolling(TelegramService $telegram, TelegramBotService $botLogic): vo
     }
 }
 
-// =========================================================
-//  Execution
-// =========================================================
+function runCronSweepWindow(
+    PendingDeposit $depositModel,
+    TelegramOutbox $outboxModel,
+    string $botToken,
+    int $windowSeconds,
+    int $intervalSeconds
+): void {
+    $windowSeconds = max(0, min(300, $windowSeconds));
+    $intervalSeconds = max(5, min(30, $intervalSeconds));
+
+    $startedAt = TimeService::instance()->nowTs();
+    $deadline = $startedAt + $windowSeconds;
+
+    do {
+        processPendingBinanceDeposits($depositModel);
+        notifyExpiredDeposits($depositModel, $outboxModel, $botToken);
+        processOutboxParallel($outboxModel, $botToken);
+
+        if ($windowSeconds <= 0) {
+            break;
+        }
+
+        $now = TimeService::instance()->nowTs();
+        $remaining = $deadline - $now;
+        if ($remaining <= 0) {
+            break;
+        }
+
+        sleep(min($intervalSeconds, $remaining));
+    } while (true);
+
+    if ($windowSeconds > 0) {
+        echo "  [Binance] Sweep window done ({$windowSeconds}s, every {$intervalSeconds}s)\n";
+    }
+}
 
 if ($isPollMode) {
-    echo "  NOTE: Polling mode is for DEVELOPMENT only. Do NOT use in production.\n";
+    echo "  NOTE: Polling mode is for development only.\n";
     $db = (new UserTelegramLink())->getConnection();
     while (true) {
         try {
-            // Lấy token từ config để truyền vào curl_multi
             $botToken = trim((string) get_setting('telegram_bot_token', ''));
             if ($botToken === '') {
                 $botToken = trim((string) EnvHelper::get('TELEGRAM_BOT_TOKEN', ''));
             }
 
             processOutboxParallel($outboxModel, $botToken);
+            processPendingBinanceDeposits($depositModel);
             notifyExpiredDeposits($depositModel, $outboxModel, $botToken);
             runPolling($telegram, $botLogic);
             saveLastCronRun($db);
@@ -333,29 +458,36 @@ if ($isPollMode) {
         } catch (Throwable $e) {
             echo "  [Error] " . $e->getMessage() . "\n";
         }
-        usleep(500000); // 0.5s
+        usleep(500000);
     }
 } else {
-    // Cron mode: chạy 1 lần rồi thoát
+    $lock = acquireSingleRunLock('kaishop_telegram_cron');
+    if ($lock === null) {
+        echo "  [Skip] Another cron instance is still running.\n";
+        echo '[' . TimeService::instance()->nowSql() . "] Done.\n";
+        exit(0);
+    }
+
     try {
         $botToken = trim((string) get_setting('telegram_bot_token', ''));
         if ($botToken === '') {
             $botToken = trim((string) EnvHelper::get('TELEGRAM_BOT_TOKEN', ''));
         }
 
-        processOutboxParallel($outboxModel, $botToken);
-        notifyExpiredDeposits($depositModel, $outboxModel, $botToken);
+        $sweepWindowSeconds = (int) EnvHelper::get('BINANCE_SWEEP_WINDOW_SECONDS', 50);
+        $sweepIntervalSeconds = (int) EnvHelper::get('BINANCE_SWEEP_INTERVAL_SECONDS', 10);
+        runCronSweepWindow($depositModel, $outboxModel, $botToken, $sweepWindowSeconds, $sweepIntervalSeconds);
+
         cleanupOldData($outboxModel);
 
-        // Lưu last_cron_run cho Worker Health monitor
         $db = (new UserTelegramLink())->getConnection();
         saveLastCronRun($db);
         unset($db);
-
     } catch (Throwable $e) {
         echo '  [Error] ' . $e->getMessage() . "\n";
+    } finally {
+        releaseSingleRunLock($lock);
     }
 
-    $timeService = TimeService::instance();
-    echo '[' . $timeService->nowSql() . "] Done.\n";
+    echo '[' . TimeService::instance()->nowSql() . "] Done.\n";
 }

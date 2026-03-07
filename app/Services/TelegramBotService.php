@@ -1,21 +1,30 @@
 <?php
 
 /**
- * TelegramBotService - KaiShop Bot Core Logic
+ * TelegramBotService — KaiShop Bot Core Logic
  *
  * Architecture:
- *  - Standalone Flow: User Telegram mới để tự động tạo Shadow Account để mua hàng ngay
+ *  - Standalone Flow: Shadow Account tự động cho user mới
  *  - Role-Based Menus: /start và /menu hiển thị khác nhau cho User/Admin
  *  - Shared Backend: 100% dùng chung Model/Service với Web
  *  - File-based Rate Limit: tồn tại giữa các webhook request độc lập
  *  - Purchase Cooldown: chặn double-click mua hàng
  *  - Deposit TTL 5 phút: đồng bộ với Web, SePay webhook tự từ chối nếu quá hạn
  *
- * @see TelegramConfig - tất cả constants và getters tập trung
- * @see TelegramService - API wrapper cấp thấp (sendTo, buildInlineKeyboard)
+ * @see TelegramConfig   — tất cả constants và getters tập trung
+ * @see TelegramService  — API wrapper cấp thấp (sendTo, buildInlineKeyboard)
+ *
+ * Traits (mỗi file ~600–900 dòng):
+ *  - TelegramBotServiceDepositTrait  — Nạp tiền ngân hàng + Binance Pay
+ *  - TelegramBotServiceShopTrait     — Shop, mua hàng, danh mục, sản phẩm
+ *  - TelegramBotServiceAdminTrait    — Lệnh admin: stats, broadcast, setbank
  */
 class TelegramBotService
 {
+    use TelegramBotServiceDepositTrait;
+    use TelegramBotServiceShopTrait;
+    use TelegramBotServiceAdminTrait;
+
     // =========================================================
     //  Dependencies
     // =========================================================
@@ -31,7 +40,6 @@ class TelegramBotService
     private Order $orderModel;
     private AccountEcosystemService $accountEcosystemService;
     private ?TimeService $timeService = null;
-
     private TelegramAccountService $accService;
 
     public function __construct(TelegramService $telegram)
@@ -50,6 +58,10 @@ class TelegramBotService
         $this->timeService = class_exists('TimeService') ? TimeService::instance() : null;
     }
 
+    // =========================================================
+    //  Bot Initialization
+    // =========================================================
+
     /**
      * Set up bot commands and menu button.
      * Called from Admin Panel to sync with Telegram.
@@ -57,11 +69,16 @@ class TelegramBotService
     public function initializeBot(): array
     {
         $commands = [
-            ['command' => 'start', 'description' => 'Bắt đầu & Hiện menu chính'],
-            ['command' => 'shop', 'description' => 'Xem danh mục sản phẩm'],
-            ['command' => 'wallet', 'description' => 'Kiểm tra số dư & Nạp tiền'],
-            ['command' => 'orders', 'description' => 'Lịch sử mua hàng'],
-            ['command' => 'help', 'description' => 'Hỗ trợ kỹ thuật'],
+            ['command' => 'start', 'description' => 'Mở bot + menu chính'],
+            ['command' => 'menu', 'description' => 'Mở menu nhanh'],
+            ['command' => 'shop', 'description' => 'Duyệt danh mục sản phẩm'],
+            ['command' => 'wallet', 'description' => 'Xem số dư ví'],
+            ['command' => 'deposit', 'description' => 'Nạp tiền qua ngân hàng'],
+            ['command' => 'binance', 'description' => 'Nạp tiền qua Binance Pay'],
+            ['command' => 'orders', 'description' => 'Lịch sử đơn hàng gần nhất'],
+            ['command' => 'link', 'description' => 'Liên kết Telegram với tài khoản Web'],
+            ['command' => 'unlink', 'description' => 'Hủy liên kết tài khoản'],
+            ['command' => 'help', 'description' => 'Danh sách lệnh trợ giúp'],
         ];
 
         $res = $this->telegram->setMyCommands($commands);
@@ -69,7 +86,20 @@ class TelegramBotService
             return $res;
         }
 
-        // Configure the menu button to show "commands"
+        $adminCommands = array_merge($commands, [
+            ['command' => 'stats', 'description' => 'Thống kê hệ thống (Admin)'],
+            ['command' => 'broadcast', 'description' => 'Gửi thông báo hàng loạt (Admin)'],
+            ['command' => 'maintenance', 'description' => 'Bật/tắt bảo trì (Admin)'],
+            ['command' => 'setbank', 'description' => 'Cập nhật thông tin ngân hàng (Admin)'],
+        ]);
+
+        foreach (TelegramConfig::adminIds() as $adminId) {
+            $this->telegram->apiCall('setMyCommands', [
+                'commands' => json_encode($adminCommands, JSON_UNESCAPED_UNICODE),
+                'scope' => json_encode(['type' => 'chat', 'chat_id' => (int) $adminId], JSON_UNESCAPED_UNICODE),
+            ]);
+        }
+
         $this->telegram->apiCall('setChatMenuButton', [
             'menu_button' => json_encode(['type' => 'commands'])
         ]);
@@ -87,7 +117,7 @@ class TelegramBotService
             return;
         }
 
-        // --- Track User ---
+        // Track User
         $tid = (int) ($update['message']['from']['id'] ?? $update['callback_query']['from']['id'] ?? 0);
         if ($tid > 0) {
             $from = $update['message']['from'] ?? $update['callback_query']['from'] ?? [];
@@ -104,14 +134,12 @@ class TelegramBotService
         if ($telegramId > 0) {
             $rateState = $this->checkUserRateLimit($telegramId, $update);
             if (empty($rateState['allowed'])) {
-                // Chỉ gửi cảnh báo nếu chưa gửi trong vòng 5 giây qua
                 if ($chatId !== '' && $this->checkAndSetCooldown("rl_warn_{$telegramId}", 5)) {
                     $retryAfter = max(1, (int) ($rateState['retry_after'] ?? 1));
                     $actionName = (string) ($rateState['action'] ?? 'request');
                     $message = "⚠️ <b>Bạn đang thao tác quá nhanh!</b>\n";
                     $message .= "Hành động: <b>{$actionName}</b>\n";
                     $message .= "Vui lòng chờ <b>{$retryAfter} giây</b> rồi thử lại.";
-
                     $this->telegram->sendTo($chatId, $message);
                 }
                 return;
@@ -119,7 +147,6 @@ class TelegramBotService
         }
 
         if ($telegramId > 0 && $chatId === '') {
-            // Invalid update shape; ignore quietly.
             return;
         }
 
@@ -141,25 +168,21 @@ class TelegramBotService
         $text = trim((string) ($message['text'] ?? ''));
         $fromName = trim(($message['from']['first_name'] ?? '') . ' ' . ($message['from']['last_name'] ?? ''));
 
-        // Cập nhật last_active + tạo shadow account nếu chưa có
         $this->upsertTelegramUser($message['from']);
-
-        // Ghi log terminal
         $this->writeLog("[MSG] {$fromName} ({$telegramId}): {$text}", 'INFO', 'INCOMING', 'MESSAGE');
 
-        // 1. Kiểm tra trạng thái bảo trì (Chỉ áp dụng cho người dùng thường)
         if (TelegramConfig::isMaintenanceEnabled() && !TelegramConfig::isAdmin($telegramId)) {
             $this->telegram->sendTo($chatId, TelegramConfig::maintenanceMessage());
             return;
         }
 
         if (!str_starts_with($text, '/')) {
-            if ($this->handleDepositAmountInput($chatId, $telegramId, $text)) {
+            if ($this->handleBinanceInput($chatId, $telegramId, $text))
                 return;
-            }
-            if ($this->handlePurchaseInput($chatId, $telegramId, $text)) {
+            if ($this->handleDepositAmountInput($chatId, $telegramId, $text))
                 return;
-            }
+            if ($this->handlePurchaseInput($chatId, $telegramId, $text))
+                return;
             $this->handleMenuText($chatId, $telegramId, $text);
             return;
         }
@@ -174,6 +197,7 @@ class TelegramBotService
             '/shop' => $this->cmdShop($chatId),
             '/wallet' => $this->cmdWallet($chatId, $telegramId),
             '/deposit' => $this->cmdDeposit($chatId, $telegramId, $args),
+            '/binance' => $this->cmdBinance($chatId, $telegramId, $args),
             '/orders' => $this->cmdOrders($chatId, $telegramId),
             '/link' => $this->cmdLink($chatId, $telegramId, $args, $message['from']),
             '/unlink' => $this->cmdUnlink($chatId, $telegramId),
@@ -197,37 +221,30 @@ class TelegramBotService
             $this->cmdMenu($chatId, $telegramId);
             return;
         }
-
         if ($text === 'shop' || $text === 'cửa hàng' || $text === 'cua hang') {
             $this->cmdShop($chatId);
             return;
         }
-
         if ($text === 'ví' || $text === 'vi' || $text === 'số dư' || $text === 'so du') {
             $this->cmdWallet($chatId, $telegramId);
             return;
         }
-
         if ($text === 'nạp tiền' || $text === 'nap tien') {
             $this->startDepositInputMode($chatId, $telegramId);
             return;
         }
-
         if ($text === 'đơn hàng' || $text === 'don hang') {
             $this->cmdOrders($chatId, $telegramId);
             return;
         }
-
         if ($text === 'liên kết web' || $text === 'lien ket web') {
             $this->cmdLink($chatId, $telegramId, [], []);
             return;
         }
-
         if ($text === 'trợ giúp' || $text === 'tro giup' || $text === 'help') {
             $this->cmdHelp($chatId, $telegramId);
             return;
         }
-
         if ($text === 'back' || $text === 'quay lại' || $text === 'quay lai' || $text === 'trở lại' || $text === 'tro lai') {
             $this->showMainMenu($chatId, $telegramId, '', true);
             return;
@@ -250,7 +267,6 @@ class TelegramBotService
 
         $this->upsertTelegramUser($query['from']);
 
-        // 1. Kiểm tra trạng thái bảo trì
         if (TelegramConfig::isMaintenanceEnabled() && !TelegramConfig::isAdmin($telegramId)) {
             $this->telegram->answerCallbackQuery($callbackId, "Hệ thống đang bảo trì, vui lòng thử lại sau.", true);
             return;
@@ -262,20 +278,41 @@ class TelegramBotService
             $this->telegram->answerCallbackQuery($callbackId);
             return;
         }
-
         if (preg_match('/^do_buy_(\d+)_(\d+)$/', $data, $m)) {
             $this->cbDoBuy($chatId, $telegramId, (int) $m[1], (int) $m[2], $messageId);
             $this->telegram->answerCallbackQuery($callbackId);
             return;
         }
-
         if (preg_match('/^do_unlink_(bot|web)$/', $data, $m)) {
             $this->cbDoUnlink($chatId, $telegramId, (string) $m[1], $messageId);
             $this->telegram->answerCallbackQuery($callbackId);
             return;
         }
-
-        // Quick deposit callbacks: deposit_{amount}
+        if ($data === 'deposit_menu') {
+            $this->showDepositMethodMenu($chatId, $telegramId, $messageId);
+            $this->telegram->answerCallbackQuery($callbackId);
+            return;
+        }
+        if ($data === 'deposit_bank') {
+            $this->startDepositInputMode($chatId, $telegramId, $messageId);
+            $this->telegram->answerCallbackQuery($callbackId);
+            return;
+        }
+        if ($data === 'binance_start') {
+            $this->cmdBinance($chatId, $telegramId, []);
+            $this->telegram->answerCallbackQuery($callbackId);
+            return;
+        }
+        if (preg_match('/^bin_amount_([0-9]+(?:\.[0-9]{1,2})?)$/', $data, $m)) {
+            $this->cmdBinance($chatId, $telegramId, [(string) $m[1]]);
+            $this->telegram->answerCallbackQuery($callbackId);
+            return;
+        }
+        if (preg_match('/^bin_check_([A-Za-z0-9_-]{3,64})$/', $data, $m)) {
+            $this->cbBinanceCheck($chatId, $telegramId, (string) $m[1], $messageId);
+            $this->telegram->answerCallbackQuery($callbackId);
+            return;
+        }
         if (preg_match('/^deposit_(\d+)$/', $data, $m)) {
             $amount = (int) $m[1];
             if ($amount >= DepositService::MIN_AMOUNT) {
@@ -300,14 +337,13 @@ class TelegramBotService
                 $this->cbProduct($chatId, (int) ($parts[1] ?? 0), $messageId);
                 break;
             case 'buy':
-                // buy_{prodId}_{qty}
                 $this->cbBuyConfirm($chatId, $telegramId, (int) ($parts[1] ?? 0), (int) ($parts[2] ?? 1), null, $messageId);
                 break;
             case 'wallet':
                 $this->cmdWallet($chatId, $telegramId, $messageId);
                 break;
             case 'deposit':
-                $this->startDepositInputMode($chatId, $telegramId, $messageId);
+                $this->showDepositMethodMenu($chatId, $telegramId, $messageId);
                 break;
             case 'orders':
                 $this->cmdOrders($chatId, $telegramId, $messageId);
@@ -318,6 +354,7 @@ class TelegramBotService
             case 'menu':
             case 'back':
                 $this->clearDepositInputMode($telegramId);
+                $this->clearBinanceSession($telegramId);
                 $fromName = trim(($query['from']['first_name'] ?? '') . ' ' . ($query['from']['last_name'] ?? ''));
                 $this->showMainMenu($chatId, $telegramId, $fromName, true, $messageId);
                 break;
@@ -330,34 +367,29 @@ class TelegramBotService
             case 'stats':
                 $this->cmdStats($chatId, $telegramId);
                 break;
-            // Ignore unknown callback
         }
 
         $this->telegram->answerCallbackQuery($callbackId);
     }
 
     // =========================================================
-    //  USER Commands
+    //  User Commands (Core)
     // =========================================================
 
-    /**
-     * /start — Chào mừng + Hướng dẫn sử dụng
-     */
+    /** /start — Chào mừng + mở menu */
     private function cmdStart(string $chatId, int $telegramId, string $name): void
     {
         $this->showMainMenu($chatId, $telegramId, $name, true);
     }
 
-    /**
-     * /menu — Menu bàn phím + inline theo vai trò
-     */
+    /** /menu — Menu bàn phím + inline theo vai trò */
     private function cmdMenu(string $chatId, int $telegramId): void
     {
         $this->showMainMenu($chatId, $telegramId, '', false);
     }
 
     /**
-     * Main menu renderer (supports greeting mode for /start and Back action).
+     * Main menu renderer.
      * When $messageId > 0, edits existing message in-place (no chat spam).
      */
     private function showMainMenu(string $chatId, int $telegramId, string $name = '', bool $withGreeting = false, int $messageId = 0): void
@@ -374,16 +406,15 @@ class TelegramBotService
         if ($withGreeting) {
             $username = trim((string) ($user['username'] ?? ''));
             $displayName = trim($name) !== '' ? trim($name) : $username;
-            if ($displayName === '') {
+            if ($displayName === '')
                 $displayName = 'bạn';
-            }
 
             $money = number_format((int) ($user['money'] ?? 0)) . "đ";
 
             $msg = "👋 Xin chào <b>" . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') . "</b>!\n";
             $msg .= "Chào mừng bạn đến với <b>" . htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') . "</b> 🤖.\n\n";
             $msg .= "👤 Tài khoản: <b>" . htmlspecialchars($username, ENT_QUOTES, 'UTF-8') . "</b>\n";
-            $msg .= "💵 Số dư: <b>" . $money . "</b>\n\n";
+            $msg .= "💵 Số dư: <b>{$money}</b>\n\n";
             $msg .= "━━━━━━━━━━━━━━\n";
             $msg .= "👇 Chọn chức năng bên dưới để bắt đầu";
         } else {
@@ -397,9 +428,7 @@ class TelegramBotService
         }
     }
 
-    /**
-     * @return array<int,array<int,array<string,string>>>
-     */
+    /** @return array<int,array<int,array<string,string>>> */
     private function buildMainInlineRows(int $telegramId, string $username = ''): array
     {
         $isLinked = $username !== '' && !str_starts_with($username, 'tg_');
@@ -430,29 +459,13 @@ class TelegramBotService
         return $inlineRows;
     }
 
-    /**
-     * @return array<int,array<int,string>>
-     */
-    private function buildMainReplyRows(): array
-    {
-        return [
-            ['Shop', 'Vi'],
-            ['Nap tien', 'Don hang'],
-            ['Lien ket Web', 'Tro giup'],
-        ];
-    }
-
-    /**
-     * @return array<string,string>
-     */
+    /** @return array<string,string> */
     private function backHomeButton(): array
     {
         return ['text' => '◀️ Quay lại', 'callback_data' => 'back_home'];
     }
 
-    /**
-     * @return array<string,mixed>
-     */
+    /** @return array<string,mixed> */
     private function buildPayNowBackKeyboard(string $payUrl = ''): array
     {
         $rows = [];
@@ -466,9 +479,7 @@ class TelegramBotService
         return TelegramService::buildInlineKeyboard($rows);
     }
 
-    /**
-     * /shop — Danh mục sản phẩm
-     */
+    /** /shop — Danh mục sản phẩm */
     private function cmdShop(string $chatId, int $messageId = 0): void
     {
         $categories = $this->categoryModel->getActive();
@@ -486,7 +497,6 @@ class TelegramBotService
         foreach ($categories as $cat) {
             $rows[] = [['text' => '📦 ' . $cat['name'], 'callback_data' => 'cat_' . $cat['id']]];
         }
-
         $rows[] = [['text' => '⬅️ Quay lại menu chính', 'callback_data' => 'back_home']];
 
         $msg = "🛍️ <b>TẤT CẢ DANH MỤC</b>\n\n👇 Vui lòng chọn danh mục:";
@@ -499,15 +509,12 @@ class TelegramBotService
         }
     }
 
-    /**
-     * /wallet — Xem thông tin ví
-     */
+    /** /wallet — Xem thông tin ví */
     private function cmdWallet(string $chatId, int $telegramId, int $messageId = 0): void
     {
         $user = $this->resolveLinkedUser($chatId, $telegramId);
-        if (!$user) {
+        if (!$user)
             return;
-        }
 
         $msg = "💰 <b>THÔNG TIN VÍ CỦA BẠN</b>\n\n";
         $msg .= "👤 Tài khoản: <b>" . htmlspecialchars((string) ($user['username'] ?? ''), ENT_QUOTES, 'UTF-8') . "</b>\n";
@@ -529,585 +536,7 @@ class TelegramBotService
         }
     }
 
-    private function handleDepositAmountInput(string $chatId, int $telegramId, string $text): bool
-    {
-        if (!$this->isDepositInputMode($telegramId)) {
-            return false;
-        }
-
-        $text = trim($text);
-        if ($text === '') {
-            $this->telegram->sendTo($chatId, "⚠️ Vui lòng nhập số tiền cần nạp (tối thiểu <b>" . number_format(DepositService::MIN_AMOUNT) . "đ</b>).\n\nVí dụ: <code>50000</code>", [
-                'reply_markup' => $this->buildDepositQuickMarkup()
-            ]);
-            return true;
-        }
-
-        $normalized = function_exists('mb_strtolower')
-            ? mb_strtolower($text, 'UTF-8')
-            : strtolower(trim($text));
-
-        if (in_array($normalized, ['hủy', 'huy', 'thoát', 'thoat', 'cancel', 'quay lại', 'quay lai'], true)) {
-            $this->clearDepositInputMode($telegramId);
-            $this->telegram->sendTo($chatId, "✅ Đã hủy thao tác nạp tiền.");
-            return true;
-        }
-
-        $amount = (int) preg_replace('/\D/', '', $text);
-        if ($amount <= 0) {
-            $this->telegram->sendTo($chatId, "⚠️ Số tiền không hợp lệ. Vui lòng nhập số, ví dụ: <code>50000</code>.", [
-                'reply_markup' => $this->buildDepositQuickMarkup()
-            ]);
-            return true;
-        }
-
-        $minAmount = DepositService::MIN_AMOUNT;
-        if ($amount < $minAmount) {
-            $this->telegram->sendTo($chatId, "⚠️ Số tiền nạp tối thiểu là <b>" . number_format($minAmount) . "đ</b>.\n\nVui lòng nhập lại số tiền ≥ " . number_format($minAmount) . "đ.", [
-                'reply_markup' => $this->buildDepositQuickMarkup()
-            ]);
-            return true;
-        }
-
-        $this->clearDepositInputMode($telegramId);
-        $this->cmdDeposit($chatId, $telegramId, [(string) $amount]);
-        return true;
-    }
-
-    /**
-     * Show deposit menu with quick-amount buttons and min amount label.
-     * Uses editMessage when triggered from callback (messageId > 0).
-     */
-    private function startDepositInputMode(string $chatId, int $telegramId, int $messageId = 0): void
-    {
-        $this->setDepositInputMode($telegramId);
-
-        $minFormatted = number_format(DepositService::MIN_AMOUNT);
-
-        $msg = "💳 <b>NẠP TIỀN VÀO VÍ</b>\n\n";
-        $msg .= "📌 Nạp tối thiểu: <b>{$minFormatted}đ</b>\n\n";
-        $msg .= "👇 Chọn nhanh hoặc nhập số tiền bạn muốn nạp:";
-
-        $markup = $this->buildDepositQuickMarkup();
-
-        if ($messageId > 0) {
-            $this->telegram->editOrSend($chatId, $messageId, $msg, $markup);
-        } else {
-            $this->telegram->sendTo($chatId, $msg, ['reply_markup' => $markup]);
-        }
-    }
-
-    /**
-     * @return array<string,mixed>
-     */
-    private function buildDepositQuickMarkup(): array
-    {
-        $quickButtons = [
-            ['text' => '20K', 'callback_data' => 'deposit_20000'],
-            ['text' => '50K', 'callback_data' => 'deposit_50000'],
-            ['text' => '100K', 'callback_data' => 'deposit_100000'],
-            ['text' => '500K', 'callback_data' => 'deposit_500000'],
-        ];
-
-        return TelegramService::buildInlineKeyboard([
-            $quickButtons,
-            [$this->backHomeButton()],
-        ]);
-    }
-
-    private function depositInputDir(): string
-    {
-        return TelegramConfig::rateDir() . DIRECTORY_SEPARATOR . 'deposit_input';
-    }
-
-    private function depositInputFile(int $telegramId): string
-    {
-        return $this->depositInputDir() . DIRECTORY_SEPARATOR . $telegramId . '.json';
-    }
-
-    private function setDepositInputMode(int $telegramId, int $ttl = 300): void
-    {
-        $dir = $this->depositInputDir();
-        if (!is_dir($dir)) {
-            @mkdir($dir, 0700, true);
-        }
-
-        $now = $this->timeService ? $this->timeService->nowTs() : time();
-        $payload = [
-            'created_at' => $now,
-            'expires_at' => $now + max(60, $ttl),
-        ];
-
-        @file_put_contents($this->depositInputFile($telegramId), json_encode($payload), LOCK_EX);
-    }
-
-    private function clearDepositInputMode(int $telegramId): void
-    {
-        $file = $this->depositInputFile($telegramId);
-        if (is_file($file)) {
-            @unlink($file);
-        }
-    }
-
-    private function isDepositInputMode(int $telegramId): bool
-    {
-        $file = $this->depositInputFile($telegramId);
-        if (!is_file($file)) {
-            return false;
-        }
-
-        $raw = @file_get_contents($file);
-        $data = $raw ? json_decode($raw, true) : null;
-        if (!is_array($data)) {
-            @unlink($file);
-            return false;
-        }
-
-        $now = $this->timeService ? $this->timeService->nowTs() : time();
-        $expiresAt = (int) ($data['expires_at'] ?? 0);
-        if ($expiresAt <= 0 || $expiresAt < $now) {
-            @unlink($file);
-            return false;
-        }
-
-        return true;
-    }
-
-    // --- PURCHASE INPUT ---
-
-    private function purchaseInputDir(): string
-    {
-        return TelegramConfig::rateDir() . DIRECTORY_SEPARATOR . 'purchase_input';
-    }
-
-    private function purchaseInputFile(int $telegramId): string
-    {
-        return $this->purchaseInputDir() . DIRECTORY_SEPARATOR . $telegramId . '.json';
-    }
-
-    private function isPurchaseInputMode(int $telegramId): bool
-    {
-        return is_file($this->purchaseInputFile($telegramId));
-    }
-
-    private function setPurchaseSession(int $telegramId, array $data): void
-    {
-        $dir = $this->purchaseInputDir();
-        if (!is_dir($dir)) {
-            @mkdir($dir, 0700, true);
-        }
-        $now = $this->timeService ? $this->timeService->nowTs() : time();
-        $ttl = TelegramConfig::purchaseSessionTtl();
-        $data['created_at'] = (int) ($data['created_at'] ?? $now);
-        $data['updated_at'] = $now;
-        $data['expires_at'] = $now + $ttl;
-        @file_put_contents($this->purchaseInputFile($telegramId), json_encode($data), LOCK_EX);
-    }
-
-    private function getPurchaseSession(int $telegramId): ?array
-    {
-        $file = $this->purchaseInputFile($telegramId);
-        if (!is_file($file)) {
-            return null;
-        }
-        $raw = @file_get_contents($file);
-        if (!$raw)
-            return null;
-        $data = json_decode($raw, true);
-        if (!$data)
-            return null;
-
-        $ttl = TelegramConfig::purchaseSessionTtl();
-        $createdAt = (int) ($data['created_at'] ?? 0);
-        $expiresAt = (int) ($data['expires_at'] ?? 0);
-        $now = $this->timeService ? $this->timeService->nowTs() : time();
-        if ($expiresAt <= 0 && $createdAt > 0) {
-            $expiresAt = $createdAt + $ttl;
-            $data['expires_at'] = $expiresAt;
-        }
-
-        if ($expiresAt > 0 && $now >= $expiresAt) {
-            $this->clearPurchaseSession($telegramId);
-            return null;
-        }
-
-        // Sliding expiration: user still interacting -> extend TTL window.
-        $data['updated_at'] = $now;
-        $data['expires_at'] = $now + $ttl;
-        @file_put_contents($file, json_encode($data), LOCK_EX);
-
-        return $data;
-    }
-
-    private function purchaseSessionTimeoutText(): string
-    {
-        $ttl = TelegramConfig::purchaseSessionTtl();
-        $minutes = (int) ceil($ttl / 60);
-        return "⏰ <b>Giao dịch hết hạn!</b>\nPhiên mua hàng của bạn đã quá {$minutes} phút và tự động bị hủy.";
-    }
-
-    private function clearPurchaseSession(int $telegramId): void
-    {
-        $file = $this->purchaseInputFile($telegramId);
-        if (is_file($file)) {
-            @unlink($file);
-        }
-    }
-
-    private function resolvePurchaseMessageId(int $messageId = 0, ?array $session = null): int
-    {
-        if ($messageId > 0) {
-            return $messageId;
-        }
-        return (int) ($session['message_id'] ?? 0);
-    }
-
-    private function attachPurchaseMessageId(array $session, int $messageId): array
-    {
-        if ($messageId > 0) {
-            $session['message_id'] = $messageId;
-        }
-        return $session;
-    }
-
-    private function handlePurchaseInput(string $chatId, int $telegramId, string $text): bool
-    {
-        $file = $this->purchaseInputFile($telegramId);
-        $wasInMode = is_file($file);
-
-        $session = $this->getPurchaseSession($telegramId);
-        if (!$session) {
-            // Silently clear if existed but expired, and let other handlers process
-            if ($wasInMode) {
-                $this->clearPurchaseSession($telegramId);
-            }
-            return false;
-        }
-        $messageId = $this->resolvePurchaseMessageId(0, $session);
-
-        $text = trim($text);
-        if ($text === '') {
-            return true;
-        }
-
-        $normalized = mb_strtolower($text, 'UTF-8');
-        if (in_array($normalized, ['hủy', 'huy', 'thoát', 'thoat', 'back', 'quay lại', 'quay lai'], true)) {
-            $prodId = (int) ($session['prod_id'] ?? 0);
-            $this->clearPurchaseSession($telegramId);
-            $this->showCategoryListForProduct($chatId, $prodId, $messageId);
-            return true;
-        }
-
-        $step = $session['step'] ?? '';
-        $prodId = (int) ($session['prod_id'] ?? 0);
-        $p = $this->productModel->find($prodId);
-        if (!$p) {
-            $this->clearPurchaseSession($telegramId);
-            return false;
-        }
-
-        if ($step === 'qty') {
-            try {
-                $rules = $this->getQuantityRules($p);
-                if (!preg_match('/^[0-9]+$/', $text)) {
-                    $this->telegram->editOrSend($chatId, $messageId, "⚠️ Vui lòng chỉ nhập số (ví dụ: <b>1</b>, <b>2</b>, <b>10</b>).\n\n" . $this->formatQuantityRuleHint($rules));
-                    return true;
-                }
-
-                $qty = (int) $text;
-                if ($qty <= 0) {
-                    $this->telegram->editOrSend($chatId, $messageId, "⚠️ Số lượng phải lớn hơn 0.\n\n" . $this->formatQuantityRuleHint($rules));
-                    return true;
-                }
-
-                $validation = $this->validateRequestedQuantity($p, $qty);
-                if (!$validation['ok']) {
-                    $this->telegram->editOrSend($chatId, $messageId, (string) ($validation['message'] ?? '⚠️ Số lượng không hợp lệ.'));
-                    return true;
-                }
-            } catch (Throwable $e) {
-                error_log('Telegram qty validation failed: ' . $e->getMessage());
-                $this->telegram->editOrSend($chatId, $messageId, "⚠️ Không thể kiểm tra giới hạn mua lúc này. Vui lòng thử lại sau.");
-                return true;
-            }
-
-            $session['qty'] = $qty;
-            if ((int) ($p['requires_info'] ?? 0) === 1) {
-                $session['step'] = 'info';
-                $this->setPurchaseSession($telegramId, $this->attachPurchaseMessageId($session, $messageId));
-                $instr = trim((string) ($p['info_instructions'] ?? ''));
-                $prompt = "📝 <b>NHẬP THÔNG TIN YÊU CẦU</b>\n\n";
-                if ($instr !== '') {
-                    $prompt .= "<i>" . htmlspecialchars($instr) . "</i>\n\n";
-                }
-                $prompt .= "👇 Vui lòng nhập nội dung để admin xử lý:";
-                $cancelCallback = ((int) ($p['category_id'] ?? 0) > 0)
-                    ? ('cat_' . (int) $p['category_id'])
-                    : 'shop';
-                $this->telegram->editOrSend($chatId, $messageId, $prompt, TelegramService::buildInlineKeyboard([
-                    [['text' => '❌ Hủy bỏ', 'callback_data' => $cancelCallback]],
-                ]));
-            } else {
-                $session['step'] = 'confirm';
-                $this->setPurchaseSession($telegramId, $this->attachPurchaseMessageId($session, $messageId));
-                $this->cbBuyConfirm($chatId, $telegramId, $prodId, $qty, null, $messageId);
-            }
-            return true;
-        }
-
-        if ($step === 'info') {
-            $session['info'] = $text;
-            $session['step'] = 'confirm';
-            $this->setPurchaseSession($telegramId, $this->attachPurchaseMessageId($session, $messageId));
-            $this->cbBuyConfirm($chatId, $telegramId, $prodId, (int) $session['qty'], $text, $messageId);
-            return true;
-        }
-
-        if ($step === 'gift') {
-            $giftcode = strtoupper(trim($text));
-            if ($giftcode === '') {
-                $this->telegram->editOrSend($chatId, $messageId, "⚠️ Vui lòng nhập mã giảm giá hợp lệ.");
-                return true;
-            }
-
-            $qty = max(1, (int) ($session['qty'] ?? 1));
-            try {
-                $quote = $this->purchaseService->quoteForDisplay($prodId, [
-                    'quantity' => $qty,
-                    'giftcode' => $giftcode,
-                ]);
-
-                if (empty($quote['success'])) {
-                    $message = (string) ($quote['message'] ?? 'Mã giảm giá không hợp lệ.');
-                    $this->telegram->editOrSend($chatId, $messageId, "❌ <b>MÃ GIẢM GIÁ KHÔNG HỢP LỆ</b>\n{$message}\n\nVui lòng nhập lại mã khác hoặc bấm Quay lại.");
-                    return true;
-                }
-            } catch (Throwable $e) {
-                error_log('Telegram giftcode quote failed: ' . $e->getMessage());
-                $this->telegram->editOrSend($chatId, $messageId, "⚠️ Không thể kiểm tra mã giảm giá lúc này. Vui lòng thử lại sau.");
-                return true;
-            }
-
-            $session['giftcode'] = $giftcode;
-            $session['step'] = 'confirm';
-            $this->setPurchaseSession($telegramId, $this->attachPurchaseMessageId($session, $messageId));
-            $this->cbBuyConfirm($chatId, $telegramId, $prodId, $qty, $session['info'] ?? null, $messageId);
-            return true;
-        }
-
-        return false;
-    }
-
-    private function showCategoryListForProduct(string $chatId, int $prodId, int $messageId = 0): void
-    {
-        if ($prodId > 0) {
-            $product = $this->productModel->find($prodId);
-            $catId = (int) ($product['category_id'] ?? 0);
-            if ($catId > 0) {
-                $this->cbCategory($chatId, $catId, $messageId);
-                return;
-            }
-        }
-        $this->cmdShop($chatId, $messageId);
-    }
-
-    private function getQuantityRules(array $product): array
-    {
-        $product = Product::normalizeRuntimeRow($product);
-        $inventory = new ProductInventoryService(new ProductStock());
-
-        $minQty = max(1, (int) ($product['min_purchase_qty'] ?? 1));
-        $maxQtyConfig = max(0, (int) ($product['max_purchase_qty'] ?? 0));
-        $availableStock = $inventory->getAvailableStock($product);
-        $effectiveMax = Product::isStockManagedProduct($product)
-            ? $inventory->getDynamicMaxQty($product, $maxQtyConfig)
-            : $maxQtyConfig;
-
-        $isPurchasable = true;
-        if ($availableStock !== null && $availableStock <= 0) {
-            $isPurchasable = false;
-        }
-        if ($effectiveMax <= 0 && $availableStock !== null) {
-            $isPurchasable = false;
-        }
-        if ($effectiveMax > 0 && $minQty > $effectiveMax) {
-            $isPurchasable = false;
-        }
-
-        return [
-            'min_qty' => $minQty,
-            'max_qty' => $effectiveMax,
-            'available_stock' => $availableStock,
-            'max_config' => $maxQtyConfig,
-            'is_purchasable' => $isPurchasable,
-        ];
-    }
-
-    private function formatQuantityRuleHint(array $rules): string
-    {
-        $minQty = max(1, (int) ($rules['min_qty'] ?? 1));
-        $maxQty = (int) ($rules['max_qty'] ?? 0);
-        $stock = $rules['available_stock'] ?? null;
-
-        $maxText = $maxQty > 0 ? number_format($maxQty) : (($stock === null) ? 'Không giới hạn' : '0');
-        $stockText = $stock === null ? 'Vô hạn' : number_format(max(0, (int) $stock));
-
-        return "• Min: <b>{$minQty}</b> | Max: <b>{$maxText}</b>";
-    }
-
-    private function validateRequestedQuantity(array $product, int $qty): array
-    {
-        $rules = $this->getQuantityRules($product);
-        $hint = $this->formatQuantityRuleHint($rules);
-        $minQty = (int) ($rules['min_qty'] ?? 1);
-        $maxQty = (int) ($rules['max_qty'] ?? 0);
-
-        if (!($rules['is_purchasable'] ?? false)) {
-            return [
-                'ok' => false,
-                'message' => "⚠️ Sản phẩm hiện không đủ SL tồn kho/giới hạn hiện tại.\n\n{$hint}",
-            ];
-        }
-
-        if ($qty < $minQty) {
-            return [
-                'ok' => false,
-                'message' => "⚠️ Số lượng tối thiểu là <b>{$minQty}</b>.\n\n{$hint}",
-            ];
-        }
-
-        if ($maxQty > 0 && $qty > $maxQty) {
-            return [
-                'ok' => false,
-                'message' => "⚠️ Số lượng tối đa là <b>{$maxQty}</b>.\n\n{$hint}",
-            ];
-        }
-
-        return ['ok' => true, 'message' => ''];
-    }
-
-    private function startGiftCodeInputMode(string $chatId, int $telegramId, int $prodId, int $qty, int $messageId = 0): void
-    {
-        $session = $this->getPurchaseSession($telegramId);
-        $messageId = $this->resolvePurchaseMessageId($messageId, $session ?? []);
-        if (!$session) {
-            $this->telegram->editOrSend($chatId, $messageId, $this->purchaseSessionTimeoutText() . "\nVui lòng chọn lại sản phẩm để tiếp tục.");
-            $this->showCategoryListForProduct($chatId, $prodId, $messageId);
-            return;
-        }
-
-        $session['step'] = 'gift';
-        $this->setPurchaseSession($telegramId, $this->attachPurchaseMessageId($session, $messageId));
-
-        $this->telegram->editOrSend($chatId, $messageId, "🏷️ <b>NHẬP MÃ GIẢM GIÁ</b>\n\n👇 Vui lòng nhập mã giảm giá của bạn:", TelegramService::buildInlineKeyboard([
-            [['text' => '◀️ Quay lại', 'callback_data' => 'buy_' . $prodId . '_' . $qty]],
-        ]));
-    }
-    /**
-     * /deposit <số_tiền> - Tạo mã chuyển khoản ngân hàng (TTL 5 phút)
-     */
-    private function cmdDeposit(string $chatId, int $telegramId, array $args): void
-    {
-        $user = $this->resolveLinkedUser($chatId, $telegramId);
-        if (!$user) {
-            return;
-        }
-
-        $amount = (int) preg_replace('/\D/', '', $args[0] ?? '0');
-        if ($amount < DepositService::MIN_AMOUNT) {
-            $this->telegram->sendTo(
-                $chatId,
-                "⚠️ Số tiền nạp tối thiểu <b>" . number_format(DepositService::MIN_AMOUNT) . "đ</b>.\n\nVí dụ: <code>/deposit 50000</code>"
-            );
-            return;
-        }
-
-        $siteConfig = Config::getSiteConfig();
-        $result = $this->depositService->createBankDeposit($user, $amount, $siteConfig, SourceChannelHelper::BOTTELE);
-
-        if (!$result['success']) {
-            $this->writeLog("❌ Nạp tiền thất bại: " . ($result['message'] ?? 'Lỗi không xác định'), 'WARN', 'OUTGOING', 'DEPOSIT', ['user_id' => $user['id'], 'amount' => $amount]);
-            $this->telegram->sendTo($chatId, "❌ " . htmlspecialchars((string) ($result['message'] ?? 'Không bắt đầu được phiên nạp tiền.')));
-            return;
-        }
-
-        $d = $result['data'];
-        $this->writeLog("💳 " . ($user['username'] ?? 'User') . " bắt đầu nạp " . number_format($amount) . "đ (Mã: " . ($d['deposit_code'] ?? '???') . ")", 'INFO', 'INCOMING', 'DEPOSIT');
-        $qrUrl = trim((string) ($d['qr_url'] ?? ''));
-        $ttlSeconds = (int) ($d['ttl_seconds'] ?? 300);
-        if ($ttlSeconds <= 0) {
-            $ttlSeconds = 300;
-        }
-
-        $message = $this->buildDepositInstructionMessage($d, $ttlSeconds);
-        $photoSent = false;
-        $depositKeyboard = $this->buildPayNowBackKeyboard($qrUrl);
-
-        if ($qrUrl !== '' && str_starts_with($qrUrl, 'http')) {
-            $telegramQrUrl = $this->toTelegramQrUrl($qrUrl);
-            $photoSent = $this->telegram->sendPhotoTo($chatId, $telegramQrUrl, $message, [
-                'reply_markup' => $depositKeyboard,
-            ]);
-
-            if (!$photoSent && $telegramQrUrl !== $qrUrl) {
-                $photoSent = $this->telegram->sendPhotoTo($chatId, $qrUrl, $message, [
-                    'reply_markup' => $depositKeyboard,
-                ]);
-            }
-        }
-
-        if (!$photoSent) {
-            if ($qrUrl !== '' && str_starts_with($qrUrl, 'http')) {
-                $message .= "\n\nQR: " . htmlspecialchars($qrUrl, ENT_QUOTES, 'UTF-8');
-            }
-            $this->telegram->sendTo($chatId, $message, [
-                'reply_markup' => $depositKeyboard,
-            ]);
-        }
-    }
-
-    /**
-     * Ưu tiên QR template đầy đủ khi gửi Telegram để người dùng nhìn rõ thông tin.
-     */
-    private function toTelegramQrUrl(string $qrUrl): string
-    {
-        // Use a more compact template if it's a VietQR URL
-        if (strpos($qrUrl, 'vietqr.net') !== false) {
-            return str_replace(['-compact2.png', '-qr_only.png'], '-compact.png', $qrUrl);
-        }
-        return $qrUrl;
-    }
-
-    /**
-     * Format nội dung nạp tiền chuẩn icon + text cho Telegram.
-     *
-     * @param array<string,mixed> $depositData
-     */
-    private function buildDepositInstructionMessage(array $depositData, int $ttlSeconds): string
-    {
-        $ttlMinutes = max(1, (int) ceil($ttlSeconds / 60));
-        $bankName = htmlspecialchars((string) ($depositData['bank_name'] ?? ''), ENT_QUOTES, 'UTF-8');
-        $bankOwner = htmlspecialchars((string) ($depositData['bank_owner'] ?? ''), ENT_QUOTES, 'UTF-8');
-        $bankAccount = htmlspecialchars((string) ($depositData['bank_account'] ?? ''), ENT_QUOTES, 'UTF-8');
-        $depositCode = htmlspecialchars((string) ($depositData['deposit_code'] ?? ''), ENT_QUOTES, 'UTF-8');
-        $amount = number_format((int) ($depositData['amount'] ?? 0)) . "đ";
-
-        $msg = "🏦 <b>THÔNG TIN CHUYỂN KHOẢN</b>\n\n";
-        $msg .= "🏛 Ngân hàng: <b>{$bankName}</b>\n";
-        $msg .= "👤 Chủ TK: <b>{$bankOwner}</b>\n";
-        $msg .= "💳 Số TK: <code>{$bankAccount}</code>\n";
-        $msg .= "💰 Số tiền: <b>{$amount}</b>\n";
-        $msg .= "📝 Nội dung: <code>{$depositCode}</code>\n";
-        $msg .= "━━━━━━━━━━━━━━\n";
-        $msg .= "⚠️ <b>QUAN TRỌNG:</b> Mã hết hạn sau <b>{$ttlMinutes} phút</b>!\n";
-        $msg .= "🚫 <b>Nội dung chuyển khoản phải chính xác để cộng tiền tự động.</b>";
-
-        return $msg;
-    }
-
-    /**
-     * /orders - 5 đơn hàng gần nhất
-     */
+    /** /orders — 5 đơn hàng gần nhất */
     private function cmdOrders(string $chatId, int $telegramId, int $messageId = 0): void
     {
         $user = $this->resolveLinkedUser($chatId, $telegramId);
@@ -1118,9 +547,7 @@ class TelegramBotService
 
         if (empty($orders)) {
             $this->telegram->sendTo($chatId, "📦 Bạn chưa có đơn hàng nào.\n\n👉 Chọn cửa hàng để mua sản phẩm", [
-                'reply_markup' => TelegramService::buildInlineKeyboard([
-                    [$this->backHomeButton()]
-                ]),
+                'reply_markup' => TelegramService::buildInlineKeyboard([[$this->backHomeButton()]]),
             ]);
             return;
         }
@@ -1143,7 +570,7 @@ class TelegramBotService
 
             $msg .= "{$statusIcon} Mã đơn: <code>{$orderCode}</code>\n";
             $msg .= "📦 Tên SP: <b>{$productName}</b>\n";
-            $msg .= "💰 Giá:  <b>{$price}</b>\n";
+            $msg .= "💰 Giá: <b>{$price}</b>\n";
             $msg .= "🔢 SL: <b>{$quantity}</b>\n";
             $msg .= "🔑 Nội dung:\n<code>{$content}</code>\n";
             $msg .= "━━━━━━━━━━━━━━\n";
@@ -1166,9 +593,8 @@ class TelegramBotService
     private function formatOrderContentForTelegram(string $content, int $limit = 500): string
     {
         $clean = trim($content);
-        if ($clean === '') {
+        if ($clean === '')
             return 'Chưa có nội dung.';
-        }
 
         if (function_exists('mb_strlen') && function_exists('mb_substr')) {
             if (mb_strlen($clean, 'UTF-8') > $limit) {
@@ -1181,9 +607,11 @@ class TelegramBotService
         return htmlspecialchars($clean, ENT_QUOTES, 'UTF-8');
     }
 
-    /**
-     * /link <otp> - Liên kết tài khoản Web bằng mã OTP
-     */
+    // =========================================================
+    //  Link / Unlink Commands
+    // =========================================================
+
+    /** /link <otp> — Liên kết tài khoản Web bằng mã OTP */
     private function cmdLink(string $chatId, int $telegramId, array $args, array $from): void
     {
         $code = trim($args[0] ?? '');
@@ -1195,14 +623,10 @@ class TelegramBotService
             $this->telegram->sendTo(
                 $chatId,
                 "🔗 <b>LIÊN KẾT TÀI KHOẢN WEB</b>\n\n"
-                . "1️⃣ Đăng nhập web (<code>{$domain}</code>) > Hồ sơ > Liên kết Telegram.\n"
+                . "1️⃣ Đăng nhập web (<code>{$domain}</code>) › Hồ sơ › Liên kết Telegram.\n"
                 . "2️⃣ Lấy mã OTP và gửi lệnh: <code>/link 123456</code>.\n\n"
                 . "Sau khi liên kết, tài khoản Web và Telegram sẽ đồng bộ ví!",
-                [
-                    'reply_markup' => TelegramService::buildInlineKeyboard([
-                        [$this->backHomeButton()]
-                    ]),
-                ]
+                ['reply_markup' => TelegramService::buildInlineKeyboard([[$this->backHomeButton()]])]
             );
             return;
         }
@@ -1237,7 +661,7 @@ class TelegramBotService
         $linked = $this->linkModel->linkUser($targetUserId, $telegramId, $from['username'] ?? null, $firstName);
 
         if (!$linked) {
-            $this->writeLog("❌ Liên kết thất bại cho User #" . $targetUserId, 'WARN', 'INCOMING', 'AUTH');
+            $this->writeLog("❌ Liên kết thất bại cho User #{$targetUserId}", 'WARN', 'INCOMING', 'AUTH');
             $this->telegram->sendTo($chatId, "❌ Liên kết thất bại. Vui lòng thử lại sau.");
             return;
         }
@@ -1256,9 +680,7 @@ class TelegramBotService
         $this->cmdMenu($chatId, $telegramId);
     }
 
-    /**
-     * /unlink - Hủy liên kết Telegram - Web (Step 1: Choice)
-     */
+    /** /unlink — Hủy liên kết Telegram (Step 1: Chọn nơi giữ tiền) */
     private function cmdUnlink(string $chatId, int $telegramId): void
     {
         $link = $this->linkModel->findByTelegramId($telegramId);
@@ -1270,7 +692,7 @@ class TelegramBotService
         $firstName = htmlspecialchars($link['first_name'] ?? $link['telegram_username'] ?? 'Người dùng');
         $msg = "❓ <b>HỦY LIÊN KẾT TÀI KHOẢN</b>\n\n"
             . "Sau khi hủy liên kết, bạn muốn <b>số dư ví hiện tại</b> sẽ nằm ở đâu?\n\n"
-            . "1. <b>🤖 {$firstName}</b>: Tiền sẽ được chuyển sang tài khoản Bot hiện tại của bạn.\n"
+            . "1. <b>🤖 {$firstName}</b>: Tiền sẽ được chuyển sang tài khoản Bot hiện tại.\n"
             . "2. <b>🌐 Tài khoản WEB</b>: Tiền sẽ ở lại tài khoản Web hiện tại.\n\n"
             . "⚠️ <i>Lưu ý: Hành động này không thể hoàn tác.</i>";
 
@@ -1285,15 +707,13 @@ class TelegramBotService
         $this->telegram->sendTo($chatId, $msg, ['reply_markup' => $markup]);
     }
 
-    /**
-     * Step 2: Action (No confirmation step as per user request)
-     */
+    /** Step 2: Thực hiện hủy liên kết */
     private function cbDoUnlink(string $chatId, int $telegramId, string $dest, int $messageId): void
     {
         $res = $this->accService->unlinkWithChoice($telegramId, $dest);
 
         if ($res['success']) {
-            $this->writeLog("🔓 User " . $telegramId . " đã hủy liên kết tài khoản", 'INFO', 'INCOMING', 'AUTH');
+            $this->writeLog("🔓 User {$telegramId} đã hủy liên kết tài khoản", 'INFO', 'INCOMING', 'AUTH');
             $msg = "✅ <b>ĐÃ HỦY LIÊN KẾT</b>\n\n"
                 . ($dest === 'bot' ? "Tiền đã được chuyển vào tài khoản ví Bot của bạn." : "Tiền vẫn nằm tại tài khoản Web của bạn.")
                 . "\n\nBạn có thể liên kết lại bất cứ lúc nào.";
@@ -1304,33 +724,31 @@ class TelegramBotService
             $this->telegram->sendTo($chatId, "❌ " . $res['message']);
         }
     }
-    /**
-     * /help - Danh sách tất cả lệnh (phân theo quyền)
-     */
+
+    /** /help — Danh sách lệnh */
     private function cmdHelp(string $chatId, int $telegramId, int $messageId = 0): void
     {
         $isAdmin = TelegramConfig::isAdmin($telegramId);
 
-        $msg = "🌟 <b>TRỢ GIÚP - DANH SÁCH LỆNH</b>\n\n";
-        $msg .= "🛍 /shop - Cửa hàng\n";
-        $msg .= "💰 /wallet - Ví của tôi\n";
-        $msg .= "💳 /deposit - Nạp tiền\n";
-        $msg .= "📦 /orders - Lịch sử giao dịch\n";
-        $msg .= "📋 /menu - Mở menu nhanh\n";
-        $msg .= "🔗 /link - Liên kết Web\n";
-        $msg .= "❓ /help - Trợ giúp\n";
+        $msg = "🌟 <b>TRỢ GIÚP — DANH SÁCH LỆNH</b>\n\n";
+        $msg .= "🛍 /shop    — Cửa hàng\n";
+        $msg .= "💰 /wallet  — Ví của tôi\n";
+        $msg .= "💳 /deposit — Nạp tiền ngân hàng\n";
+        $msg .= "🟡 /binance — Nạp tiền Binance Pay\n";
+        $msg .= "📦 /orders  — Lịch sử đơn hàng\n";
+        $msg .= "📋 /menu    — Mở menu nhanh\n";
+        $msg .= "🔗 /link    — Liên kết Web\n";
+        $msg .= "❓ /help    — Trợ giúp\n";
 
         if ($isAdmin) {
             $msg .= "\n👑 <b>LỆNH ADMIN:</b>\n";
-            $msg .= "📊 /stats - Thống kê\n";
-            $msg .= "📢 /broadcast &lt;nội_dung&gt; - Gửi thông báo\n";
-            $msg .= "🛠 /maintenance on|off - Chế độ bảo trì\n";
-            $msg .= "🏦 /setbank &lt;bank|stk|chủ&gt; - Đổi ngân hàng\n";
+            $msg .= "📊 /stats                   — Thống kê\n";
+            $msg .= "📢 /broadcast &lt;nội_dung&gt; — Gửi thông báo\n";
+            $msg .= "🛠 /maintenance on|off       — Bảo trì\n";
+            $msg .= "🏦 /setbank &lt;bank|stk|chủ&gt; — Đổi ngân hàng\n";
         }
 
-        $markup = TelegramService::buildInlineKeyboard([
-            [$this->backHomeButton()]
-        ]);
+        $markup = TelegramService::buildInlineKeyboard([[$this->backHomeButton()]]);
 
         if ($messageId > 0) {
             $this->telegram->editOrSend($chatId, $messageId, $msg, $markup);
@@ -1340,522 +758,12 @@ class TelegramBotService
     }
 
     // =========================================================
-    //  Inline Callback Handlers
+    //  Shadow Account Management
     // =========================================================
 
     /**
-     * cat_{id} - Danh sách sản phẩm theo danh mục
-     */
-    private function cbCategory(string $chatId, int $catId, int $messageId = 0): void
-    {
-        $products = $this->productModel->getFiltered(['category_id' => $catId, 'status' => 'ON']);
-        if (empty($products)) {
-            $this->telegram->sendTo($chatId, "⚠️ Danh mục này hiện chưa có sản phẩm nào.", [
-                'reply_markup' => TelegramService::buildInlineKeyboard([
-                    [
-                        ['text' => '⬅️ Quay lại', 'callback_data' => 'shop'],
-                    ]
-                ]),
-            ]);
-            return;
-        }
-
-        $inventory = new ProductInventoryService(new ProductStock());
-
-        $rows = [];
-        foreach ($products as $p) {
-            $stock = $inventory->getAvailableStock($p);
-            $isOutOfStock = ($stock !== null && $stock <= 0);
-
-            $stockText = $stock === null ? 'Vô hạn' : number_format($stock);
-            $priceText = number_format((float) $p['price_vnd']) . 'đ';
-
-            // Theo format yêu cầu: Tên | Giá | 📦 SL (Thêm❌ Hết Hàng nếu hết)
-            $btnText = "{$p['name']} | {$priceText} | 📦 {$stockText}";
-            if ($isOutOfStock) {
-                $btnText .= " (❌ Hết Hàng)";
-            }
-
-            $rows[] = [
-                [
-                    'text' => $btnText,
-                    'callback_data' => 'prod_' . $p['id'],
-                ]
-            ];
-        }
-
-        // Nút cập nhật và nút quay lại
-        $rows[] = [['text' => '🔄 Cập nhật sản phẩm', 'callback_data' => 'cat_' . $catId]];
-        $rows[] = [['text' => '⬅️ Thay đổi Danh mục', 'callback_data' => 'shop']];
-
-        $msg = "🛍️ <b>DANH SÁCH SẢN PHẨM</b>\n\n👇 Chọn sản phẩm bên dưới:";
-        $markup = TelegramService::buildInlineKeyboard($rows);
-
-        if ($messageId > 0) {
-            $this->telegram->editOrSend($chatId, $messageId, $msg, $markup);
-        } else {
-            $this->telegram->sendTo($chatId, $msg, ['reply_markup' => $markup]);
-        }
-    }
-
-    /**
-     * prod_{id} - Chi tiết sản phẩm
-     */
-    private function cbProduct(string $chatId, int $prodId, int $messageId = 0): void
-    {
-        $p = $this->productModel->find($prodId);
-        if (!$p || $p['status'] !== 'ON') {
-            $errMsg = "❌ Sản phẩm không tồn tại hoặc đã ngừng bán.";
-            if ($messageId > 0) {
-                $this->telegram->editOrSend($chatId, $messageId, $errMsg);
-            } else {
-                $this->telegram->sendTo($chatId, $errMsg);
-            }
-            return;
-        }
-
-        $inventory = new ProductInventoryService(new ProductStock());
-        $stock = $inventory->getAvailableStock($p);
-
-        $msg = "🛍️ <b>" . htmlspecialchars($p['name']) . "</b>\n\n";
-        $msg .= "💎 Giá: <b>" . number_format((float) $p['price_vnd']) . "đ</b>\n";
-
-        $stockText = 'Hết hàng';
-        if ($stock === null) {
-            $stockText = 'Vô hạn';
-        } elseif ($stock > 0) {
-            $stockText = number_format($stock) . ' sản phẩm';
-        }
-        $msg .= "📦 Kho: <b>{$stockText}</b>\n\n";
-
-        $desc = strip_tags((string) ($p['description'] ?? ''));
-        if ($desc !== '') {
-            $msg .= "📝 <b>Mô tả:</b>\n<i>" . htmlspecialchars(mb_substr($desc, 0, 300)) . (mb_strlen($desc) > 300 ? '...' : '') . "</i>\n";
-        }
-
-        $rows = [];
-        if ($stock === null || $stock > 0) {
-            // Redirect to confirm (or quantity input if needed)
-            $rows[] = [['text' => '🛒 MUA NGAY', 'callback_data' => 'buy_' . $p['id'] . '_1']];
-        }
-        $rows[] = [['text' => '⬅️ Quay lại', 'callback_data' => 'cat_' . ($p['category_id'] ?? 0)]];
-
-        $markup = TelegramService::buildInlineKeyboard($rows);
-
-        $image = trim((string) ($p['image'] ?? ''));
-        if ($image !== '' && $messageId <= 0) {
-            $photoUrl = str_starts_with($image, 'http') ? $image : (rtrim(BASE_URL, '/') . '/' . ltrim($image, '/'));
-
-            // Telegram cannot fetch from localhost. Skip photo if so to avoid API error.
-            // On callback flows ($messageId > 0), we keep editing existing text message
-            // to avoid creating a new chat message.
-            if (!str_contains($photoUrl, 'localhost') && !str_contains($photoUrl, '127.0.0.1')) {
-                if (
-                    $this->telegram->sendPhotoTo($chatId, $photoUrl, $msg, [
-                        'reply_markup' => $markup,
-                    ])
-                ) {
-                    return;
-                }
-            }
-        }
-
-        if ($messageId > 0) {
-            $this->telegram->editOrSend($chatId, $messageId, $msg, $markup);
-        } else {
-            $this->telegram->sendTo($chatId, $msg, ['reply_markup' => $markup]);
-        }
-    }
-
-    /**
-     * buy_{prodId}_{qty} - Màn xác nhận mua hàng
-     */
-    private function cbBuyConfirm(string $chatId, int $telegramId, int $prodId, int $qty, ?string $customerInfo = null, int $messageId = 0): void
-    {
-        $user = $this->resolveLinkedUser($chatId, $telegramId);
-        if (!$user) {
-            return;
-        }
-
-        $p = $this->productModel->find($prodId);
-        if (!$p) {
-            return;
-        }
-
-        $session = $this->getPurchaseSession($telegramId);
-        $messageId = $this->resolvePurchaseMessageId($messageId, $session ?? []);
-        $hasActiveSessionForProduct = is_array($session) && (int) ($session['prod_id'] ?? 0) === $prodId;
-
-        $productType = (string) ($p['product_type'] ?? 'account');
-        $requiresInfo = (int) ($p['requires_info'] ?? 0) === 1;
-
-        if ($qty === 1 && $customerInfo === null && !$hasActiveSessionForProduct) {
-            if ($productType !== 'link' && ($productType === 'account' || $requiresInfo)) {
-                $rules = $this->getQuantityRules($p);
-                if (!($rules['is_purchasable'] ?? false)) {
-                    $this->telegram->editOrSend($chatId, $messageId, "⚠️ Sản phẩm hiện không đủ điều kiện mua theo tồn kho/giới hạn hiện tại.\n\n" . $this->formatQuantityRuleHint($rules));
-                    return;
-                }
-
-                $cancelCallback = ((int) ($p['category_id'] ?? 0) > 0)
-                    ? ('cat_' . (int) $p['category_id'])
-                    : 'shop';
-                $this->setPurchaseSession($telegramId, [
-                    'prod_id' => $prodId,
-                    'qty' => 1,
-                    'step' => 'qty',
-                    'message_id' => $messageId,
-                ]);
-                $prompt = "🔢 <b>NHẬP SỐ LƯỢNG</b>\n\n"
-                    . $this->formatQuantityRuleHint($rules)
-                    . "\n\n━━━━━━━━━━━━━━\n👇 Vui lòng nhập số lượng bạn muốn mua:";
-                $this->telegram->editOrSend($chatId, $messageId, $prompt, TelegramService::buildInlineKeyboard([
-                    [['text' => '❌ Hủy bỏ', 'callback_data' => $cancelCallback]],
-                ]));
-                return;
-            }
-        }
-
-        $validation = $this->validateRequestedQuantity($p, max(1, $qty));
-        if (!$validation['ok']) {
-            $this->telegram->editOrSend($chatId, $messageId, (string) ($validation['message'] ?? '⚠️ Số lượng không hợp lệ.'));
-            return;
-        }
-
-        $giftcode = $session['giftcode'] ?? null;
-
-        $price = (float) $p['price_vnd'];
-        $subtotal = $price * $qty;
-        $discount = 0;
-        $total = $subtotal;
-        $giftError = null;
-
-        if ($giftcode) {
-            try {
-                $quote = $this->purchaseService->quoteForDisplay($prodId, [
-                    'quantity' => $qty,
-                    'giftcode' => $giftcode
-                ]);
-                if ($quote['success']) {
-                    $total = (float) ($quote['pricing']['total_price'] ?? $subtotal);
-                    $discount = (float) ($quote['pricing']['discount_amount'] ?? 0);
-                } else {
-                    $giftError = $quote['message'] ?? 'Mã giảm giá không hợp lệ.';
-                    $giftcode = null;
-                    if (isset($session['giftcode'])) {
-                        unset($session['giftcode']);
-                        $this->setPurchaseSession($telegramId, $this->attachPurchaseMessageId($session, $messageId));
-                    }
-                }
-            } catch (Throwable $e) {
-                $giftcode = null;
-            }
-        }
-
-        $balance = (float) ($user['money'] ?? 0);
-
-        $msg = "🛒 <b>XÁC NHẬN MUA HÀNG</b>\n\n";
-        if ($giftError) {
-            $msg .= "⚠️ <b>Lỗi mã giảm giá:</b> " . htmlspecialchars($giftError) . "\n\n";
-        }
-        $msg .= "📦 Sản phẩm: <b>" . htmlspecialchars($p['name']) . "</b>\n";
-        $msg .= "🔢 Số lượng: <b>{$qty}</b>\n";
-
-        if ($discount > 0) {
-            $msg .= "🏷️ Tạm tính: <s>" . number_format($subtotal) . "đ</s>\n";
-            $msg .= "🏷️ Giảm giá: -<b>" . number_format($discount) . "đ</b> (<i>{$giftcode}</i>)\n";
-        }
-
-        $msg .= "━━━━━━━━━━━━━━\n\n";
-        $msg .= "💎 Thành tiền: <b>" . number_format($total) . "đ</b>\n";
-        $msg .= "💰 Số dư ví: <b>" . number_format($balance) . "đ</b>\n";
-
-        if ($customerInfo !== null && trim($customerInfo) !== '') {
-            $msg .= "\n📝 Thông tin: <code>" . htmlspecialchars($customerInfo) . "</code>\n";
-        }
-
-        if ($balance < $total) {
-            $shortfall = (int) ceil($total - $balance);
-            $depositAmount = max(DepositService::MIN_AMOUNT, $shortfall);
-            $msg .= "\n\n⚠️ Số dư không đủ! Cần nạp thêm: <b>" . number_format($shortfall) . "đ</b>";
-            if ($depositAmount > $shortfall) {
-                $msg .= "\n(Mức nạp tối thiểu hiện tại: <b>" . number_format(DepositService::MIN_AMOUNT) . "đ</b>)";
-            }
-
-            $this->telegram->editOrSend($chatId, $messageId, $msg, TelegramService::buildInlineKeyboard([
-                [
-                    ['text' => '💳 Nạp thêm ' . number_format($shortfall) . 'đ', 'callback_data' => 'deposit_' . $depositAmount],
-                    ['text' => '❌ Hủy bỏ', 'callback_data' => 'prod_' . $prodId],
-                ]
-            ]));
-            return;
-        }
-
-        $msg .= "\n\n⚠️ Xác nhận thanh toán trừ tiền ví.";
-
-        $confirmAction = "do_buy_" . $prodId . "_" . $qty;
-
-        $this->setPurchaseSession($telegramId, [
-            'prod_id' => $prodId,
-            'qty' => $qty,
-            'info' => $customerInfo,
-            'giftcode' => $giftcode,
-            'step' => 'confirm',
-            'message_id' => $messageId,
-        ]);
-
-        $rows = [];
-        if (!$giftcode) {
-            $rows[] = [['text' => '🏷️ Nhập mã giảm giá', 'callback_data' => 'buy_gift_' . $prodId . '_' . $qty]];
-        }
-        $rows[] = [
-            ['text' => '❌ HỦY BỎ', 'callback_data' => 'prod_' . $prodId],
-            ['text' => '✅ XÁC NHẬN MUA', 'callback_data' => $confirmAction],
-        ];
-
-        $this->telegram->editOrSend($chatId, $messageId, $msg, TelegramService::buildInlineKeyboard($rows));
-    }
-
-    /**
-     * do_buy_{prodId}_{qty} - Thực hiện mua hàng
-     */
-    private function cbDoBuy(string $chatId, int $telegramId, int $prodId, int $qty, int $messageId = 0): void
-    {
-        $user = $this->resolveLinkedUser($chatId, $telegramId);
-        if (!$user) {
-            return;
-        }
-
-        $session = $this->getPurchaseSession($telegramId);
-        $messageId = $this->resolvePurchaseMessageId($messageId, $session ?? []);
-        if (!$session) {
-            $this->telegram->editOrSend($chatId, $messageId, $this->purchaseSessionTimeoutText() . "\nVui lòng chọn lại sản phẩm để tiếp tục.");
-            return;
-        }
-
-        $customerInput = ((int) ($session['prod_id'] ?? 0) === $prodId) ? ($session['info'] ?? null) : null;
-        $giftcode = ((int) ($session['prod_id'] ?? 0) === $prodId) ? ($session['giftcode'] ?? null) : null;
-
-        $this->clearPurchaseSession($telegramId);
-
-        $cooldownSec = TelegramConfig::buyCooldown();
-        $remaining = $this->getCooldownRemaining("buy_{$telegramId}", $cooldownSec);
-        if ($remaining > 0) {
-            $this->telegram->editOrSend($chatId, $messageId, "⏳ Bạn đang thao tác quá nhanh. Vui lòng chờ <b>{$remaining} giây</b> rồi thử lại.");
-            return;
-        }
-
-        $result = $this->purchaseService->purchaseWithWallet($prodId, $user, [
-            'quantity' => $qty,
-            'customer_input' => $customerInput,
-            'giftcode' => $giftcode,
-            'source' => 'telegram',
-            'source_channel' => SourceChannelHelper::BOTTELE,
-            'telegram_id' => $telegramId,
-        ]);
-
-        $product = $this->productModel->find($prodId);
-        $prodName = (string) ($product['name'] ?? ('Sản phẩm #' . $prodId));
-
-        if (!$result['success']) {
-            $this->writeLog("❌ Mua hàng thất bại: " . $prodName . " x " . $qty . " (" . ($result['message'] ?? 'Lỗi') . ")", 'WARN', 'INCOMING', 'PURCHASE');
-            $this->telegram->editOrSend($chatId, $messageId, "❌ <b>LỖI:</b> " . htmlspecialchars((string) ($result['message'] ?? 'Giao dịch không thành công.')), TelegramService::buildInlineKeyboard([
-                [['text' => '⬅️ Quay lại sản phẩm', 'callback_data' => 'prod_' . $prodId]],
-            ]));
-            return;
-        }
-
-        $totalPrice = (int) ($result['data']['total_price'] ?? 0);
-        $this->writeLog("🛒 SUCCESS: " . ($user['username'] ?? 'User') . " mua " . $prodName . " x " . $qty . " (" . number_format($totalPrice) . "đ)", 'INFO', 'INCOMING', 'PURCHASE');
-
-        $successMsg = "✅ <b>ĐÃ XÁC NHẬN GIAO DỊCH</b>\n\n";
-        $successMsg .= "📦 Sản phẩm: <b>" . htmlspecialchars($prodName) . "</b>\n";
-        $successMsg .= "🔢 Số lượng: <b>{$qty}</b>\n";
-        $successMsg .= "💎 Thành tiền: <b>" . number_format($totalPrice) . "đ</b>\n\n";
-        $successMsg .= "📩 Thông tin đơn hàng sẽ được gửi ngay bên dưới.";
-
-        $this->telegram->editOrSend($chatId, $messageId, $successMsg, TelegramService::buildInlineKeyboard([
-            [['text' => '🛍️ Mua tiếp', 'callback_data' => 'prod_' . $prodId]],
-            [$this->backHomeButton()],
-        ]));
-        // PurchaseService still sends fulfillment message via outbox.
-    }
-    // =========================================================
-    //  ADMIN Commands
-
-    /**
-     * /stats - Thống kê toàn hệ thống
-     */
-    private function cmdStats(string $chatId, int $telegramId): void
-    {
-        if (!TelegramConfig::isAdmin($telegramId)) {
-            $this->telegram->sendTo($chatId, "⛔ Bạn không có quyền quản trị.");
-            return;
-        }
-
-        $conn = $this->userModel->getConnection();
-        $today = $this->timeService
-            ? $this->timeService->formatDb($this->timeService->nowTs(), 'Y-m-d')
-            : date('Y-m-d');
-
-        $userCount = $this->userModel->count();
-        $tgCount = (int) $conn->query("SELECT COUNT(*) FROM `user_telegram_links`")->fetchColumn();
-        $newTgToday = (int) $conn->query("SELECT COUNT(*) FROM `user_telegram_links` WHERE DATE(`linked_at`)='{$today}'")->fetchColumn();
-
-        $stmt = $conn->prepare("SELECT COUNT(*) AS cnt, COALESCE(SUM(`price`),0) AS rev FROM `orders` WHERE DATE(`created_at`)=? AND `status`='completed'");
-        $stmt->execute([$today]);
-        $todayOrders = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        $depositPending = (int) $conn->query("SELECT COUNT(*) FROM `pending_deposits` WHERE `status`='pending'")->fetchColumn();
-
-        $outboxStats = (new TelegramOutbox())->getStats();
-
-        $lastCron = trim((string) get_setting('last_cron_run', ''));
-        $workerStatus = $lastCron === '' ? '❌ Chưa chạy' : "✅ {$lastCron}";
-
-        $msg = "📊 <b>THỐNG KÊ HỆ THỐNG</b> ({$today})\n\n";
-        $msg .= "👥 Tổng user web: <b>{$userCount}</b>\n";
-        $msg .= "🔗 Đã liên kết TG: <b>{$tgCount}</b> <i>(+{$newTgToday} hôm nay)</i>\n\n";
-        $msg .= "🛍 <b>Đơn hàng hôm nay:</b>\n";
-        $msg .= "   Số đơn: <b>" . $todayOrders['cnt'] . "</b>\n";
-        $msg .= "   Doanh thu: <b>" . number_format((float) $todayOrders['rev']) . "đ</b>\n\n";
-        $msg .= "💰 Nạp chờ duyệt: <b>{$depositPending}</b>\n\n";
-        $msg .= "📤 <b>Outbox:</b>\n";
-        $msg .= "   Chờ gửi: <b>{$outboxStats['pending']}</b>\n";
-        $msg .= "   Đã gửi:  <b>{$outboxStats['sent']}</b>\n";
-        $msg .= "   Lỗi:     <b>{$outboxStats['failed']}</b>\n\n";
-        $msg .= "⚙️ Worker: {$workerStatus}";
-
-        $this->telegram->sendTo($chatId, $msg);
-    }
-
-    /**
-     * /broadcast <nội dung> - Push thông báo tới tất cả user đã link (qua Outbox)
-     */
-    private function cmdBroadcast(string $chatId, int $telegramId, array $args): void
-    {
-        if (!TelegramConfig::isAdmin($telegramId)) {
-            $this->telegram->sendTo($chatId, "⛔ Bạn không có quyền quản trị.");
-            return;
-        }
-
-        $content = trim(implode(' ', $args));
-        if ($content === '') {
-            $this->telegram->sendTo(
-                $chatId,
-                "📢 <b>BROADCAST</b>\n\nCú pháp:\n<code>/broadcast &lt;nội dung&gt;</code>\n\nVí dụ:\n<code>/broadcast ⚡ Flash sale 50% trong 24h!</code>"
-            );
-            return;
-        }
-
-        $conn = $this->userModel->getConnection();
-        $links = $conn->query("SELECT `telegram_id` FROM `user_telegram_links`")->fetchAll(PDO::FETCH_COLUMN);
-
-        if (empty($links)) {
-            $this->telegram->sendTo($chatId, "⚠️ Chưa có user nào liên kết Telegram.");
-            return;
-        }
-
-        $outbox = new TelegramOutbox();
-        $msgText = "📢 <b>THÔNG BÁO HỆ THỐNG</b>\n\n" . $content;
-        $count = 0;
-
-        foreach ($links as $tid) {
-            $outbox->push((int) $tid, $msgText);
-            $count++;
-        }
-
-        $this->telegram->sendTo(
-            $chatId,
-            "✅ Đã xếp hàng <b>{$count}</b> tin vào Outbox.\nSẽ gửi trong ít phút tới."
-        );
-    }
-
-    /**
-     * /maintenance on|off - Bật/tắt bảo trì hệ thống
-     */
-    private function cmdMaintenance(string $chatId, int $telegramId, array $args): void
-    {
-        if (!TelegramConfig::isAdmin($telegramId)) {
-            $this->telegram->sendTo($chatId, "⛔ Bạn không có quyền quản trị.");
-            return;
-        }
-
-        $action = strtolower($args[0] ?? '');
-        if ($action !== 'on' && $action !== 'off') {
-            $status = TelegramConfig::isMaintenanceEnabled() ? "🔴 Đang BẬT" : "🟢 Đang TẮT";
-            $this->telegram->sendTo($chatId, "🛠 <b>BẢO TRÌ HỆ THỐNG</b>\nTrạng thái hiện tại: {$status}\n\nSử dụng:\n<code>/maintenance on</code> - Bật bảo trì toàn hệ thống\n<code>/maintenance off</code> - Tắt bảo trì toàn hệ thống");
-            return;
-        }
-
-        $svc = new MaintenanceService();
-        $db = $this->userModel->getConnection();
-
-        try {
-            if ($action === 'on') {
-                $svc->saveConfig(['maintenance_enabled' => '1']);
-                // Đồng bộ luôn vào cài đặt bảo trì riêng của Bot (nếu có cột)
-                $db->prepare("UPDATE `setting` SET `telegram_maintenance_enabled` = 1 ORDER BY `id` ASC LIMIT 1")->execute();
-                Config::clearSiteConfigCache();
-
-                $this->telegram->sendTo($chatId, "🔧 <b>Đã bật bảo trì TOÀN HỆ THỐNG!</b>\nWebsite và Bot hiện đã tạm dừng phục vụ.");
-            } else {
-                $svc->clearNow();
-                // Tắt luôn bảo trì Bot
-                $db->prepare("UPDATE `setting` SET `telegram_maintenance_enabled` = 0 ORDER BY `id` ASC LIMIT 1")->execute();
-                Config::clearSiteConfigCache();
-
-                $this->telegram->sendTo($chatId, "✅ <b>Đã tắt bảo trì TOÀN HỆ THỐNG!</b>\nWebsite và Bot đã hoạt động trở lại.");
-            }
-        } catch (Throwable $e) {
-            $this->telegram->sendTo($chatId, "❌ Lỗi: " . $e->getMessage());
-        }
-    }
-
-    /**
-     * /setbank <Ngân hàng>|<STK>|<Chủ TK> - Cập nhật thông tin ngân hàng nhanh
-     */
-    private function cmdSetBank(string $chatId, int $telegramId, array $args): void
-    {
-        if (!TelegramConfig::isAdmin($telegramId)) {
-            $this->telegram->sendTo($chatId, "⛔ Bạn không có quyền quản trị.");
-            return;
-        }
-
-        $payload = implode(' ', $args);
-        $parts = explode('|', $payload);
-
-        if (count($parts) < 3) {
-            $this->telegram->sendTo(
-                $chatId,
-                "🏦 <b>SETBANK</b>\n\nCú pháp:\n<code>/setbank Ngân hàng|Số TK|Chủ TK</code>\n\nVí dụ:\n<code>/setbank MB Bank|0123456789|NGUYEN THANH PHUC</code>"
-            );
-            return;
-        }
-
-        [$bankName, $bankAcc, $bankOwner] = array_map('trim', $parts);
-
-        $conn = $this->userModel->getConnection();
-        $stmt = $conn->prepare("UPDATE `setting` SET `bank_name`=?, `bank_account`=?, `bank_owner`=? ORDER BY `id` ASC LIMIT 1");
-        $stmt->execute([$bankName, $bankAcc, $bankOwner]);
-        Config::clearSiteConfigCache();
-
-        $this->telegram->sendTo(
-            $chatId,
-            "✅ <b>Đã cập nhật ngân hàng!</b>\n\n"
-            . "🏦 " . htmlspecialchars($bankName) . "\n"
-            . "💳 " . htmlspecialchars($bankAcc) . "\n"
-            . "👤 " . htmlspecialchars($bankOwner)
-        );
-    }
-
-    // =========================================================
-    //  Standalone: Shadow Account Management
-    // =========================================================
-
-    /**
-     * Resolve linked user - tự động tạo Shadow Account nếu chưa có
-     * Trả về null nếu tài khoản bị ban hoặc không thể khởi tạo
+     * Resolve linked user — tự động tạo Shadow Account nếu chưa có.
+     * Trả về null nếu tài khoản bị ban hoặc không thể khởi tạo.
      */
     private function resolveLinkedUser(string $chatId, int $telegramId): ?array
     {
@@ -1885,12 +793,11 @@ class TelegramBotService
     }
 
     /**
-     * Đảm bảo user Telegram có Web User record (Shadow Account)
+     * Đảm bảo user Telegram có Web User record (Shadow Account).
      * Username format: tg_{telegramId}
      */
     private function ensureShadowAccount(int $telegramId, ?string $username = null, ?string $firstName = null): void
     {
-        // Không tạo lại nếu đã có
         if ($this->linkModel->findByTelegramId($telegramId))
             return;
 
@@ -1918,8 +825,7 @@ class TelegramBotService
     }
 
     /**
-     * Cập nhật last_active khi user hoạt động
-     * Nếu chưa có link thì tạo Shadow Account
+     * Cập nhật last_active + tạo Shadow Account nếu chưa có.
      */
     private function upsertTelegramUser(array $from): void
     {
@@ -1933,13 +839,13 @@ class TelegramBotService
     }
 
     // =========================================================
-    //  Rate Limiting ??" File-based (persistent across requests)
+    //  Rate Limiting — File-based (persistent across requests)
     // =========================================================
 
     private function checkUserRateLimit(int $telegramId, array $update): array
     {
         $windowSec = TelegramConfig::RATE_LIMIT_WINDOW;
-        $maxPoints = max(10, TelegramConfig::rateLimit() * 2); // Soft limit: avoid being too harsh
+        $maxPoints = max(10, TelegramConfig::rateLimit() * 2);
         $actionInfo = $this->resolveRateAction($update);
         $weight = max(1, (int) ($actionInfo['weight'] ?? 1));
         $actionName = (string) ($actionInfo['name'] ?? 'request');
@@ -1955,7 +861,6 @@ class TelegramBotService
 
         $fp = @fopen($file, 'c+');
         if (!$fp) {
-            // Fail-open to avoid locking users out due to FS issues.
             return ['allowed' => true, 'retry_after' => 0, 'action' => $actionName];
         }
 
@@ -1991,9 +896,7 @@ class TelegramBotService
             if (($currentPoints + $weight) > $maxPoints) {
                 $allowed = false;
                 $needToFree = ($currentPoints + $weight) - $maxPoints;
-                usort($entries, static function (array $a, array $b): int {
-                    return ($a['ts'] ?? 0) <=> ($b['ts'] ?? 0);
-                });
+                usort($entries, static fn(array $a, array $b): int => ($a['ts'] ?? 0) <=> ($b['ts'] ?? 0));
 
                 $freed = 0;
                 foreach ($entries as $entry) {
@@ -2024,9 +927,7 @@ class TelegramBotService
         return ['allowed' => $allowed, 'retry_after' => $retryAfter, 'action' => $actionName];
     }
 
-    /**
-     * Cooldown check - Trả về true nếu ngoài cooldown (được phép)
-     */
+    /** Cooldown check — Trả về true nếu ngoài cooldown (được phép) */
     private function checkAndSetCooldown(string $key, int $seconds): bool
     {
         return $this->getCooldownRemaining($key, $seconds) === 0;
@@ -2057,25 +958,21 @@ class TelegramBotService
     private function isDuplicateOrOldUpdate(array $update): bool
     {
         $updateId = (int) ($update['update_id'] ?? 0);
-        if ($updateId <= 0) {
+        if ($updateId <= 0)
             return false;
-        }
 
         $dir = TelegramConfig::rateDir();
-        if (!is_dir($dir)) {
+        if (!is_dir($dir))
             @mkdir($dir, 0700, true);
-        }
 
         $file = $dir . DIRECTORY_SEPARATOR . 'tg_last_update_id.txt';
         $fp = @fopen($file, 'c+');
-        if (!$fp) {
-            return false; // fail-open
-        }
+        if (!$fp)
+            return false;
 
         try {
-            if (!@flock($fp, LOCK_EX)) {
+            if (!@flock($fp, LOCK_EX))
                 return false;
-            }
 
             rewind($fp);
             $raw = trim((string) stream_get_contents($fp));
@@ -2115,7 +1012,7 @@ class TelegramBotService
             }
 
             if ($telegramId > 0) {
-                if ($this->isPurchaseInputMode($telegramId) || $this->isDepositInputMode($telegramId)) {
+                if ($this->isPurchaseInputMode($telegramId) || $this->isDepositInputMode($telegramId) || $this->getBinanceSession($telegramId)) {
                     return ['name' => 'input_flow', 'weight' => 2];
                 }
             }
@@ -2128,44 +1025,35 @@ class TelegramBotService
 
     private function resolveCallbackRateAction(string $data): array
     {
-        if (preg_match('/^do_buy_\d+_\d+$/', $data)) {
+        if (preg_match('/^do_buy_\d+_\d+$/', $data))
             return ['name' => 'do_buy', 'weight' => 4];
-        }
-        if (preg_match('/^buy_gift_\d+_\d+$/', $data)) {
+        if (preg_match('/^buy_gift_\d+_\d+$/', $data))
             return ['name' => 'buy_gift', 'weight' => 3];
-        }
-        if (preg_match('/^buy_\d+_\d+$/', $data)) {
+        if (preg_match('/^buy_\d+_\d+$/', $data))
             return ['name' => 'buy', 'weight' => 3];
-        }
-        if (str_starts_with($data, 'prod_') || str_starts_with($data, 'cat_') || $data === 'shop') {
+        if (str_starts_with($data, 'prod_') || str_starts_with($data, 'cat_') || $data === 'shop')
             return ['name' => 'browse_shop', 'weight' => 1];
-        }
-        if (in_array($data, ['wallet', 'orders', 'deposit', 'deposit_menu'], true)) {
+        if ($data === 'binance_start' || str_starts_with($data, 'bin_amount_') || str_starts_with($data, 'bin_check_'))
+            return ['name' => 'binance_action', 'weight' => 2];
+        if (in_array($data, ['wallet', 'orders', 'deposit', 'deposit_menu'], true))
             return ['name' => 'account_action', 'weight' => 2];
-        }
-        if (in_array($data, ['menu', 'back', 'help', 'link', 'unlink'], true) || str_starts_with($data, 'do_unlink_')) {
+        if (in_array($data, ['menu', 'back', 'help', 'link', 'unlink'], true) || str_starts_with($data, 'do_unlink_'))
             return ['name' => 'menu_action', 'weight' => 1];
-        }
         return ['name' => 'callback', 'weight' => 1];
     }
 
     private function resolveCommandRateAction(string $command): array
     {
-        if (in_array($command, ['/broadcast', '/maintenance', '/setbank'], true)) {
+        if (in_array($command, ['/broadcast', '/maintenance', '/setbank'], true))
             return ['name' => ltrim($command, '/'), 'weight' => 5];
-        }
-        if (in_array($command, ['/deposit', '/orders', '/wallet'], true)) {
+        if (in_array($command, ['/deposit', '/binance', '/orders', '/wallet'], true))
             return ['name' => ltrim($command, '/'), 'weight' => 3];
-        }
-        if (in_array($command, ['/shop', '/stats'], true)) {
+        if (in_array($command, ['/shop', '/stats'], true))
             return ['name' => ltrim($command, '/'), 'weight' => 2];
-        }
         return ['name' => ltrim($command, '/'), 'weight' => 1];
     }
 
-    /**
-     * Sliding window rate limiter (file-based)
-     */
+    /** Sliding window rate limiter (file-based) */
     private function fileRateCheck(string $key, int $max, int $windowSec): bool
     {
         $dir = TelegramConfig::rateDir();
@@ -2191,6 +1079,10 @@ class TelegramBotService
         @file_put_contents($file, json_encode($timestamps), LOCK_EX);
         return true;
     }
+
+    // =========================================================
+    //  Logging
+    // =========================================================
 
     /**
      * Ghi log hoạt động Bot vào bảng telegram_logs (Terminal view).

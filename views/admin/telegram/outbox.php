@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * View: Telegram Bot — Outbox & Worker (Smart Refactor)
  * Route: GET /admin/telegram/outbox

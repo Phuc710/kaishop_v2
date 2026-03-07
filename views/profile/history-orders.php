@@ -14,6 +14,44 @@ $activePage = 'order-history';
 require __DIR__ . '/layout/header.php';
 ?>
 
+<style>
+    /* Làm bảng gọn lại, cột khít nhau */
+    .user-history-table {
+        width: auto !important;
+        /* Không bắt buộc full 100% nếu nội dung ngắn */
+        min-width: 100%;
+    }
+
+    .user-history-table th,
+    .user-history-table td {
+        padding: 10px 12px !important;
+        /* Giảm padding cho khít */
+        white-space: nowrap;
+    }
+
+    /* Cột sản phẩm cho phép giãn, các cột khác co lại tối đa */
+    .order-cell-product {
+        width: auto;
+        white-space: normal !important;
+        /* Tên SP có thể xuống dòng nếu dài */
+        min-width: 200px;
+    }
+
+    .order-cell-status,
+    .order-cell-qty,
+    .order-cell-payment,
+    .order-cell-time,
+    .order-cell-actions {
+        width: 1%;
+        /* Co lại sát text */
+    }
+
+    .user-order-status {
+        padding: 4px 10px !important;
+        font-size: 12px !important;
+    }
+</style>
+
 <div class="profile-card" id="order-history-page">
 
     <!-- ── Card Header ──────────────────────────────── -->
@@ -195,9 +233,7 @@ require __DIR__ . '/layout/header.php';
                             data: 'product_name',
                             className: 'order-cell-product',
                             render: function (data, type, row) {
-                                const code = row.order_code_short || row.order_code || '';
-                                return '<div class="fw-semibold text-dark">' + escapeHtml(data || '') + '</div>'
-                                    + (code ? '<div class="text-muted small mt-1"><i class="fas fa-hashtag me-1"></i>' + escapeHtml(code) + '</div>' : '');
+                                return '<div class="fw-semibold text-dark">' + escapeHtml(data || '') + '</div>';
                             }
                         },
                         // Cột: Tình trạng

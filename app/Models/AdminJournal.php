@@ -229,6 +229,19 @@ class AdminJournal extends Model
             $params['search_reason'] = $search;
             $params['search_trans'] = $search;
 
+            if ($this->hasColumn('history_nap_bank', 'stk')) {
+                $searchConditions[] = 'h.stk LIKE :search_stk';
+                $params['search_stk'] = $search;
+            }
+            if ($this->hasColumn('history_nap_bank', 'bank_name')) {
+                $searchConditions[] = 'h.bank_name LIKE :search_bank_name';
+                $params['search_bank_name'] = $search;
+            }
+            if ($this->hasColumn('history_nap_bank', 'bank_owner')) {
+                $searchConditions[] = 'h.bank_owner LIKE :search_bank_owner';
+                $params['search_bank_owner'] = $search;
+            }
+
             if (ctype_digit(trim((string) $filters['search'])) && $hasUsers) {
                 $searchConditions[] = 'u.id = :search_id';
                 $params['search_id'] = (int) $filters['search'];
@@ -251,6 +264,9 @@ class AdminJournal extends Model
                 h.type,
                 h.trans_id,
                 h.ctk AS reason,
+                " . ($this->hasColumn('history_nap_bank', 'stk') ? 'h.stk' : 'NULL AS stk') . ",
+                " . ($this->hasColumn('history_nap_bank', 'bank_name') ? 'h.bank_name' : 'NULL AS bank_name') . ",
+                " . ($this->hasColumn('history_nap_bank', 'bank_owner') ? 'h.bank_owner' : 'NULL AS bank_owner') . ",
                 h.thucnhan AS amount,
                 h.status,
                 {$sourceExpr} AS source_channel,
@@ -617,7 +633,10 @@ class AdminJournal extends Model
             ],
             'history_nap_bank' => [
                 "ALTER TABLE `history_nap_bank` ADD COLUMN `source_channel` TINYINT(1) NOT NULL DEFAULT 0 AFTER `status`",
+                "ALTER TABLE `history_nap_bank` ADD COLUMN `bank_name` VARCHAR(120) NULL AFTER `stk`",
+                "ALTER TABLE `history_nap_bank` ADD COLUMN `bank_owner` VARCHAR(150) NULL AFTER `bank_name`",
                 "ALTER TABLE `history_nap_bank` ADD KEY `idx_hnb_source_created` (`source_channel`, `created_at`)",
+                "ALTER TABLE `history_nap_bank` ADD KEY `idx_hnb_bank_name` (`bank_name`)",
             ],
             'lich_su_bien_dong_so_du' => [
                 "ALTER TABLE `lich_su_bien_dong_so_du` ADD COLUMN `source_channel` TINYINT(1) NOT NULL DEFAULT 0 AFTER `reason`",

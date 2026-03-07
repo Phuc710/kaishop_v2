@@ -7,6 +7,7 @@
 class UserTelegramLink extends Model
 {
     protected $table = 'user_telegram_links';
+    private ?bool $hasBinanceUidColumn = null;
 
     public function findByUserId(int $userId): ?array
     {
@@ -76,6 +77,52 @@ class UserTelegramLink extends Model
                 `last_active` = ? 
                 WHERE `id` = ?";
         return $this->db->prepare($sql)->execute([$username, $firstName, $now, $existing['id']]);
+    }
+
+    public function saveBinanceUidByUserId(int $userId, string $binanceUid): bool
+    {
+        if (!$this->hasBinanceUidColumn()) {
+            return false;
+        }
+        $uid = trim($binanceUid);
+        if ($uid === '' || !preg_match('/^\d{4,20}$/', $uid)) {
+            return false;
+        }
+
+        $row = $this->findByUserId($userId);
+        if (!$row) {
+            return false;
+        }
+
+        return $this->update((int) $row['id'], [
+            'binance_uid' => $uid,
+            'last_active' => TimeService::instance()->nowSql(),
+        ]);
+    }
+
+    public function getBinanceUidByUserId(int $userId): string
+    {
+        if (!$this->hasBinanceUidColumn()) {
+            return '';
+        }
+        $row = $this->findByUserId($userId);
+        return trim((string) ($row['binance_uid'] ?? ''));
+    }
+
+    private function hasBinanceUidColumn(): bool
+    {
+        if ($this->hasBinanceUidColumn !== null) {
+            return $this->hasBinanceUidColumn;
+        }
+
+        $stmt = $this->db->prepare("
+            SELECT COUNT(*)
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE() AND table_name = ? AND column_name = 'binance_uid'
+        ");
+        $stmt->execute([$this->table]);
+        $this->hasBinanceUidColumn = (int) $stmt->fetchColumn() > 0;
+        return $this->hasBinanceUidColumn;
     }
 
     public function getAdoptionTrend(int $days = 7): array

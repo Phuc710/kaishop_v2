@@ -111,16 +111,105 @@ class History extends Model
     }
 
     /**
-     * Build unified raw rows for one user from legacy tables.
+     * Build unified rows for one user.
+     * Priority: lich_su_bien_dong_so_du (LSBD) — has stored before/after balances.
+     * Fallback: legacy tables (lich_su_hoat_dong + history_nap_bank) for pre-LSBD data.
      *
      * @return array<int,array<string,mixed>>
      */
     private function getUnifiedRows(string $username): array
     {
+        // Try LSBD first (unified balance log with stored before/after)
+        if ($this->tableExists('lich_su_bien_dong_so_du')) {
+            $lsbdRows = $this->getLsbdRows($username);
+            if ($lsbdRows !== []) {
+                // LSBD is the authoritative source — skip legacy tables to avoid duplicates
+                return $lsbdRows;
+            }
+        }
+
+        // Fallback: legacy tables for users with no LSBD data (old accounts)
+        return $this->getLegacyRows($username);
+    }
+
+    /**
+     * Fetch rows from lich_su_bien_dong_so_du (authoritative source).
+     * These rows already have before_balance and after_balance stored accurately.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function getLsbdRows(string $username): array
+    {
+        $rows = [];
+        try {
+            $cols = ['id', 'before_balance', 'change_amount', 'after_balance', 'reason', 'time', 'created_at'];
+            if ($this->hasColumn('lich_su_bien_dong_so_du', 'source_channel')) {
+                $cols[] = 'source_channel';
+            }
+            $sql = 'SELECT ' . implode(', ', $cols) . ' FROM `lich_su_bien_dong_so_du` WHERE `username` = :username';
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute(['username' => $username]);
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $change = (int) ($row['change_amount'] ?? 0);
+                $ts = $this->parseEventTimestamp($row['created_at'] ?? null, $row['time'] ?? null);
+                $reason = trim((string) ($row['reason'] ?? ''));
+                $sourceChannel = (int) ($row['source_channel'] ?? 0);
+
+                // Derive readable reason text & source type
+                $lowerReason = mb_strtolower($reason, 'UTF-8');
+                if (strpos($lowerReason, 'nap tien') !== false || strpos($lowerReason, 'nạp tiền') !== false) {
+                    $source = 'deposit';
+                    $reasonText = $reason !== '' ? $reason : 'Nạp tiền';
+                } elseif (
+                    strpos($lowerReason, 'thanh toan') !== false || strpos($lowerReason, 'thanh toán') !== false
+                    || strpos($lowerReason, 'mua') !== false
+                ) {
+                    $source = 'activity';
+                    $reasonText = $reason !== '' ? $reason : 'Mua hàng';
+                } elseif (
+                    strpos($lowerReason, 'admin') !== false || strpos($lowerReason, 'hoan tien') !== false
+                    || strpos($lowerReason, 'hoàn tiền') !== false
+                ) {
+                    $source = 'admin';
+                    $reasonText = $reason !== '' ? $reason : 'Điều chỉnh';
+                } else {
+                    $source = $change >= 0 ? 'deposit' : 'activity';
+                    $reasonText = $reason !== '' ? $reason : ($change >= 0 ? 'Cộng tiền' : 'Trừ tiền');
+                }
+
+                $rows[] = [
+                    'source' => $source,
+                    'source_id' => (int) ($row['id'] ?? 0),
+                    'event_ts' => $ts,
+                    'event_time' => $ts > 0 ? date('Y-m-d H:i:s', $ts) : (string) ($row['created_at'] ?? ''),
+                    'raw_time' => (string) ($row['time'] ?? ''),
+                    'change_amount' => $change,
+                    'reason_text' => $reasonText,
+                    'source_channel' => $sourceChannel,
+                    // Stored balances — use these directly, skip in-memory calculation
+                    'has_stored_balances' => true,
+                    'before_balance' => (int) ($row['before_balance'] ?? 0),
+                    'after_balance' => (int) ($row['after_balance'] ?? 0),
+                ];
+            }
+        } catch (Throwable $e) {
+            // DB error — fall through to legacy
+        }
+        return $rows;
+    }
+
+    /**
+     * Fetch rows from legacy tables (backward-compat for pre-LSBD data).
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function getLegacyRows(string $username): array
+    {
         $rows = [];
 
         if ($this->tableExists('lich_su_hoat_dong')) {
-            $activitySql = "SELECT id, hoatdong, gia, time" . ($this->hasColumn('lich_su_hoat_dong', 'created_at') ? ', created_at' : '') . " FROM `lich_su_hoat_dong` WHERE `username` = :username";
+            $hasCa = $this->hasColumn('lich_su_hoat_dong', 'created_at');
+            $activitySql = 'SELECT id, hoatdong, gia, time' . ($hasCa ? ', created_at' : '') . ' FROM `lich_su_hoat_dong` WHERE `username` = :username';
             $stmt = $this->db->prepare($activitySql);
             $stmt->execute(['username' => $username]);
             foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
@@ -134,35 +223,20 @@ class History extends Model
                     'raw_time' => (string) ($row['time'] ?? ''),
                     'change_amount' => (int) ($row['gia'] ?? 0),
                     'reason_text' => $reason !== '' ? $reason : 'Sản phẩm',
+                    'has_stored_balances' => false,
                 ];
             }
         }
 
         if ($this->tableExists('history_nap_bank')) {
             $depositColumns = ['id', 'username'];
-            if ($this->hasColumn('history_nap_bank', 'ctk')) {
-                $depositColumns[] = 'ctk';
-            }
-            if ($this->hasColumn('history_nap_bank', 'thucnhan')) {
-                $depositColumns[] = 'thucnhan';
-            }
-            if ($this->hasColumn('history_nap_bank', 'status')) {
-                $depositColumns[] = 'status';
-            }
-            if ($this->hasColumn('history_nap_bank', 'type')) {
-                $depositColumns[] = 'type';
-            }
-            if ($this->hasColumn('history_nap_bank', 'trans_id')) {
-                $depositColumns[] = 'trans_id';
-            }
-            if ($this->hasColumn('history_nap_bank', 'time')) {
-                $depositColumns[] = 'time';
-            }
-            if ($this->hasColumn('history_nap_bank', 'created_at')) {
-                $depositColumns[] = 'created_at';
+            foreach (['ctk', 'thucnhan', 'status', 'type', 'trans_id', 'time', 'created_at'] as $col) {
+                if ($this->hasColumn('history_nap_bank', $col)) {
+                    $depositColumns[] = $col;
+                }
             }
 
-            $sql = "SELECT " . implode(', ', array_unique($depositColumns)) . " FROM `history_nap_bank` WHERE `username` = :username";
+            $sql = 'SELECT ' . implode(', ', array_unique($depositColumns)) . ' FROM `history_nap_bank` WHERE `username` = :username';
             $stmt = $this->db->prepare($sql);
             $stmt->execute(['username' => $username]);
             foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
@@ -177,20 +251,12 @@ class History extends Model
                 $type = trim((string) ($row['type'] ?? ''));
                 $transId = trim((string) ($row['trans_id'] ?? ''));
 
-                $reasonParts = [];
-                if ($change >= 0) {
-                    $reasonParts[] = 'Nạp tiền';
-                } else {
-                    $reasonParts[] = 'Điều chỉnh số dư';
-                }
+                $reasonParts = [$change >= 0 ? 'Nạp tiền' : 'Điều chỉnh số dư'];
                 if ($type !== '') {
                     $reasonParts[] = $type;
                 }
-                if ($ctk !== '') {
-                    $reasonParts[] = $ctk;
-                } elseif ($transId !== '') {
-                    $reasonParts[] = $transId;
-                }
+                $reasonParts[] = $ctk !== '' ? $ctk : ($transId !== '' ? $transId : '');
+                $reasonParts = array_filter($reasonParts);
 
                 $rows[] = [
                     'source' => 'deposit',
@@ -199,12 +265,8 @@ class History extends Model
                     'event_time' => $ts > 0 ? date('Y-m-d H:i:s', $ts) : (string) ($row['created_at'] ?? ''),
                     'raw_time' => (string) ($row['time'] ?? ''),
                     'change_amount' => $change,
-                    'reason_text' => implode(': ', array_filter([
-                        array_shift($reasonParts),
-                        trim(implode(' - ', $reasonParts))
-                    ], function ($v) {
-                        return $v !== '';
-                    })),
+                    'reason_text' => implode(': ', array_splice($reasonParts, 0, 1)) . (count($reasonParts) > 0 ? ': ' . implode(' - ', $reasonParts) : ''),
+                    'has_stored_balances' => false,
                 ];
             }
         }
@@ -444,18 +506,72 @@ class History extends Model
         }
         $value = mb_strtolower($value, 'UTF-8');
         $value = strtr($value, [
-            'à' => 'a', 'á' => 'a', 'ạ' => 'a', 'ả' => 'a', 'ã' => 'a',
-            'â' => 'a', 'ầ' => 'a', 'ấ' => 'a', 'ậ' => 'a', 'ẩ' => 'a', 'ẫ' => 'a',
-            'ă' => 'a', 'ằ' => 'a', 'ắ' => 'a', 'ặ' => 'a', 'ẳ' => 'a', 'ẵ' => 'a',
-            'è' => 'e', 'é' => 'e', 'ẹ' => 'e', 'ẻ' => 'e', 'ẽ' => 'e',
-            'ê' => 'e', 'ề' => 'e', 'ế' => 'e', 'ệ' => 'e', 'ể' => 'e', 'ễ' => 'e',
-            'ì' => 'i', 'í' => 'i', 'ị' => 'i', 'ỉ' => 'i', 'ĩ' => 'i',
-            'ò' => 'o', 'ó' => 'o', 'ọ' => 'o', 'ỏ' => 'o', 'õ' => 'o',
-            'ô' => 'o', 'ồ' => 'o', 'ố' => 'o', 'ộ' => 'o', 'ổ' => 'o', 'ỗ' => 'o',
-            'ơ' => 'o', 'ờ' => 'o', 'ớ' => 'o', 'ợ' => 'o', 'ở' => 'o', 'ỡ' => 'o',
-            'ù' => 'u', 'ú' => 'u', 'ụ' => 'u', 'ủ' => 'u', 'ũ' => 'u',
-            'ư' => 'u', 'ừ' => 'u', 'ứ' => 'u', 'ự' => 'u', 'ử' => 'u', 'ữ' => 'u',
-            'ỳ' => 'y', 'ý' => 'y', 'ỵ' => 'y', 'ỷ' => 'y', 'ỹ' => 'y',
+            'à' => 'a',
+            'á' => 'a',
+            'ạ' => 'a',
+            'ả' => 'a',
+            'ã' => 'a',
+            'â' => 'a',
+            'ầ' => 'a',
+            'ấ' => 'a',
+            'ậ' => 'a',
+            'ẩ' => 'a',
+            'ẫ' => 'a',
+            'ă' => 'a',
+            'ằ' => 'a',
+            'ắ' => 'a',
+            'ặ' => 'a',
+            'ẳ' => 'a',
+            'ẵ' => 'a',
+            'è' => 'e',
+            'é' => 'e',
+            'ẹ' => 'e',
+            'ẻ' => 'e',
+            'ẽ' => 'e',
+            'ê' => 'e',
+            'ề' => 'e',
+            'ế' => 'e',
+            'ệ' => 'e',
+            'ể' => 'e',
+            'ễ' => 'e',
+            'ì' => 'i',
+            'í' => 'i',
+            'ị' => 'i',
+            'ỉ' => 'i',
+            'ĩ' => 'i',
+            'ò' => 'o',
+            'ó' => 'o',
+            'ọ' => 'o',
+            'ỏ' => 'o',
+            'õ' => 'o',
+            'ô' => 'o',
+            'ồ' => 'o',
+            'ố' => 'o',
+            'ộ' => 'o',
+            'ổ' => 'o',
+            'ỗ' => 'o',
+            'ơ' => 'o',
+            'ờ' => 'o',
+            'ớ' => 'o',
+            'ợ' => 'o',
+            'ở' => 'o',
+            'ỡ' => 'o',
+            'ù' => 'u',
+            'ú' => 'u',
+            'ụ' => 'u',
+            'ủ' => 'u',
+            'ũ' => 'u',
+            'ư' => 'u',
+            'ừ' => 'u',
+            'ứ' => 'u',
+            'ự' => 'u',
+            'ử' => 'u',
+            'ữ' => 'u',
+            'ỳ' => 'y',
+            'ý' => 'y',
+            'ỵ' => 'y',
+            'ỷ' => 'y',
+            'ỹ' => 'y',
             'đ' => 'd',
         ]);
         $value = preg_replace('/[^\p{L}\p{N}\s\-\+]/u', ' ', $value) ?? $value;

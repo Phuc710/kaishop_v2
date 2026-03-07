@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 /**
  * Centralized navigation configuration (admin + public + user sidebar).

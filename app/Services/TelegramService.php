@@ -5,6 +5,8 @@
  */
 class TelegramService
 {
+    private const TELEGRAM_MESSAGE_CHAR_LIMIT = 3500;
+
     private string $botToken;
     private string $chatId;
     private int $timeoutSeconds;
@@ -38,25 +40,42 @@ class TelegramService
      */
     public function sendTo(string $chatId, string $message, array $options = []): bool
     {
-        $payload = [
-            'chat_id' => $chatId,
-            'text' => trim($message),
-            'parse_mode' => $options['parse_mode'] ?? 'HTML',
-            'disable_web_page_preview' => !empty($options['disable_web_page_preview']) ? 'true' : 'false',
-        ];
+        $chunks = $this->splitMessageIntoChunks($message, self::TELEGRAM_MESSAGE_CHAR_LIMIT);
+        if (empty($chunks)) {
+            return false;
+        }
+        $total = count($chunks);
 
-        if (!empty($options['reply_markup'])) {
-            $payload['reply_markup'] = is_string($options['reply_markup'])
-                ? $options['reply_markup']
-                : json_encode($options['reply_markup'], JSON_UNESCAPED_UNICODE);
+        foreach ($chunks as $index => $chunk) {
+            $payload = [
+                'chat_id' => $chatId,
+                'text' => $chunk,
+                'parse_mode' => $options['parse_mode'] ?? 'HTML',
+                'disable_web_page_preview' => !empty($options['disable_web_page_preview']) ? 'true' : 'false',
+            ];
+
+            if (!empty($options['reply_markup']) && $index === 0) {
+                $payload['reply_markup'] = is_string($options['reply_markup'])
+                    ? $options['reply_markup']
+                    : json_encode($options['reply_markup'], JSON_UNESCAPED_UNICODE);
+            }
+
+            if (!empty($options['disable_notification']) && $index === 0) {
+                $payload['disable_notification'] = 'true';
+            }
+
+            // Add a small continuation marker when the response spans multiple messages.
+            if ($total > 1 && $index > 0) {
+                $payload['text'] = "(tiep)\n" . $payload['text'];
+            }
+
+            $result = $this->apiCall('sendMessage', $payload);
+            if (empty($result['ok'])) {
+                return false;
+            }
         }
 
-        if (!empty($options['disable_notification'])) {
-            $payload['disable_notification'] = 'true';
-        }
-
-        $result = $this->apiCall('sendMessage', $payload);
-        return !empty($result['ok']);
+        return true;
     }
 
     /**
@@ -66,28 +85,46 @@ class TelegramService
      */
     public function sendToWithResult(string $chatId, string $message, array $options = []): int
     {
-        $payload = [
-            'chat_id' => $chatId,
-            'text' => trim($message),
-            'parse_mode' => $options['parse_mode'] ?? 'HTML',
-            'disable_web_page_preview' => !empty($options['disable_web_page_preview']) ? 'true' : 'false',
-        ];
+        $chunks = $this->splitMessageIntoChunks($message, self::TELEGRAM_MESSAGE_CHAR_LIMIT);
+        if (empty($chunks)) {
+            return 0;
+        }
+        $total = count($chunks);
+        $firstMessageId = 0;
 
-        if (!empty($options['reply_markup'])) {
-            $payload['reply_markup'] = is_string($options['reply_markup'])
-                ? $options['reply_markup']
-                : json_encode($options['reply_markup'], JSON_UNESCAPED_UNICODE);
+        foreach ($chunks as $index => $chunk) {
+            $payload = [
+                'chat_id' => $chatId,
+                'text' => $chunk,
+                'parse_mode' => $options['parse_mode'] ?? 'HTML',
+                'disable_web_page_preview' => !empty($options['disable_web_page_preview']) ? 'true' : 'false',
+            ];
+
+            if (!empty($options['reply_markup']) && $index === 0) {
+                $payload['reply_markup'] = is_string($options['reply_markup'])
+                    ? $options['reply_markup']
+                    : json_encode($options['reply_markup'], JSON_UNESCAPED_UNICODE);
+            }
+
+            if (!empty($options['disable_notification']) && $index === 0) {
+                $payload['disable_notification'] = 'true';
+            }
+
+            if ($total > 1 && $index > 0) {
+                $payload['text'] = "(tiep)\n" . $payload['text'];
+            }
+
+            $result = $this->apiCall('sendMessage', $payload);
+            if (empty($result['ok'])) {
+                return 0;
+            }
+
+            if ($index === 0 && isset($result['result']['message_id'])) {
+                $firstMessageId = (int) $result['result']['message_id'];
+            }
         }
 
-        if (!empty($options['disable_notification'])) {
-            $payload['disable_notification'] = 'true';
-        }
-
-        $result = $this->apiCall('sendMessage', $payload);
-        if (!empty($result['ok']) && isset($result['result']['message_id'])) {
-            return (int) $result['result']['message_id'];
-        }
-        return 0;
+        return $firstMessageId;
     }
 
     /**
@@ -319,11 +356,19 @@ class TelegramService
             return ['ok' => false, 'description' => 'Could not initialize cURL'];
         }
 
+        $timeout = $this->timeoutSeconds;
+        if ($method === 'getUpdates') {
+            $longPollTimeout = (int) ($params['timeout'] ?? 0);
+            if ($longPollTimeout > 0) {
+                $timeout = max($timeout, $longPollTimeout + 5);
+            }
+        }
+
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => http_build_query($params),
-            CURLOPT_TIMEOUT => $this->timeoutSeconds,
+            CURLOPT_TIMEOUT => $timeout,
             CURLOPT_CONNECTTIMEOUT => TelegramConfig::CURL_CONNECT_TIMEOUT,
             CURLOPT_SSL_VERIFYPEER => true,
         ]);
@@ -355,6 +400,127 @@ class TelegramService
     public static function buildInlineKeyboard(array $rows): array
     {
         return ['inline_keyboard' => $rows];
+    }
+
+    /**
+     * Split long messages to stay within Telegram sendMessage limits.
+     *
+     * @return string[]
+     */
+    private function splitMessageIntoChunks(string $message, int $limit): array
+    {
+        $message = trim($message);
+        if ($message === '') {
+            return [];
+        }
+
+        if ($this->textLength($message) <= $limit) {
+            return [$message];
+        }
+
+        $lines = preg_split('/\R/u', $message) ?: [$message];
+        $chunks = [];
+        $current = '';
+
+        foreach ($lines as $line) {
+            $line = rtrim((string) $line);
+            $candidate = ($current === '') ? $line : ($current . "\n" . $line);
+
+            if ($this->textLength($candidate) <= $limit) {
+                $current = $candidate;
+                continue;
+            }
+
+            if ($current !== '') {
+                $chunks[] = $current;
+                $current = '';
+            }
+
+            if ($this->textLength($line) <= $limit) {
+                $current = $line;
+                continue;
+            }
+
+            foreach ($this->splitOversizedLine($line, $limit) as $piece) {
+                $chunks[] = $piece;
+            }
+        }
+
+        if ($current !== '') {
+            $chunks[] = $current;
+        }
+
+        return $chunks ?: [$this->textSubstr($message, 0, $limit)];
+    }
+
+    /**
+     * @return string[]
+     */
+    private function splitOversizedLine(string $line, int $limit): array
+    {
+        $line = trim($line);
+        if ($line === '') {
+            return [];
+        }
+
+        $parts = [];
+        while ($this->textLength($line) > $limit) {
+            $slice = $this->textSubstr($line, 0, $limit);
+            $cutAt = $this->textLastSpacePos($slice);
+
+            if ($cutAt <= 0 || $cutAt < (int) ($limit * 0.5)) {
+                $cutAt = $limit;
+            }
+
+            $part = trim($this->textSubstr($line, 0, $cutAt));
+            if ($part === '') {
+                $part = trim($slice);
+                $cutAt = $this->textLength($slice);
+            }
+
+            if ($part !== '') {
+                $parts[] = $part;
+            }
+
+            $line = ltrim($this->textSubstr($line, $cutAt));
+        }
+
+        if ($line !== '') {
+            $parts[] = $line;
+        }
+
+        return $parts;
+    }
+
+    private function textLength(string $text): int
+    {
+        if (function_exists('mb_strlen')) {
+            return (int) mb_strlen($text, 'UTF-8');
+        }
+        return strlen($text);
+    }
+
+    private function textSubstr(string $text, int $start, ?int $length = null): string
+    {
+        if (function_exists('mb_substr')) {
+            return (string) mb_substr($text, $start, $length, 'UTF-8');
+        }
+        return (string) ($length === null ? substr($text, $start) : substr($text, $start, $length));
+    }
+
+    private function textLastSpacePos(string $text): int
+    {
+        if (function_exists('mb_strrpos')) {
+            $spacePos = mb_strrpos($text, ' ', 0, 'UTF-8');
+            $tabPos = mb_strrpos($text, "\t", 0, 'UTF-8');
+            $best = max($spacePos === false ? -1 : (int) $spacePos, $tabPos === false ? -1 : (int) $tabPos);
+            return $best;
+        }
+
+        $spacePos = strrpos($text, ' ');
+        $tabPos = strrpos($text, "\t");
+        $best = max($spacePos === false ? -1 : (int) $spacePos, $tabPos === false ? -1 : (int) $tabPos);
+        return $best;
     }
 
     /**

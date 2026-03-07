@@ -1,7 +1,23 @@
 <?php
 $qrLogoSetting = trim((string) ($chungapi['favicon'] ?? ''));
 $qrLogoSrc = UrlHelper::resolveIcon($qrLogoSetting, 'assets/images/kaishop_favicon.png');
+
+$isBankEnabled = ((int) ($chungapi['bank_pay_enabled'] ?? 1) === 1);
 ?>
+
+<?php if (!$isBankEnabled && !$activeDepositExists): ?>
+    <div class="maintenance-notice text-center py-5">
+        <div class="maintenance-icon mb-4">
+            <i class="fas fa-tools fa-4x text-muted"></i>
+        </div>
+        <h4 class="font-weight-bold text-dark">PHƯƠNG THỨC ĐANG BẢO TRÌ</h4>
+        <p class="text-muted">Kênh nạp ngân hàng hiện đang được bảo trì để nâng cấp hệ thống. Vui lòng quay lại sau hoặc sử
+            dụng phương thức khác.</p>
+        <a href="<?= url('balance/binance') ?>" class="btn btn-outline-primary mt-3">
+            <i class="fas fa-exchange-alt me-1"></i> Chuyển sang Binance Pay
+        </a>
+    </div>
+    <?php return; endif; ?>
 <div class="deposit-panel-step" data-deposit-step="amount" <?= $activeDepositExists ? 'hidden' : '' ?>>
     <div class="deposit-panel-title-row">
         <h6 class="deposit-panel-title">Chọn số tiền nạp</h6>
@@ -110,13 +126,16 @@ $qrLogoSrc = UrlHelper::resolveIcon($qrLogoSetting, 'assets/images/kaishop_favic
                 </div>
                 <div class="deposit-info-row">
                     <span class="deposit-info-label">Tình trạng</span>
-                    <span class="pd-chip info" data-tf-status><i class="fas fa-spinner fa-spin"></i> Đang xử
-                        lý</span>
+                    <span class="pd-chip info" data-tf-status><i class="fas fa-spinner fa-spin"></i> Đang xử lý</span>
                 </div>
                 <div class="deposit-info-row">
                     <span class="deposit-info-label">Số tiền</span>
-                    <span class="deposit-info-value is-amount"
-                        data-tf-amount><?= !empty($activeDepositPayload['amount']) ? number_format((int) $activeDepositPayload['amount'], 0, ',', '.') . 'đ' : '' ?></span>
+                    <div class="deposit-info-actions">
+                        <span class="deposit-info-value is-highlight"
+                            data-tf-amount><?= !empty($activeDepositPayload['amount']) ? number_format((int) $activeDepositPayload['amount'], 0, ',', '.') . 'đ' : '' ?></span>
+                        <button type="button" class="btn-copy" data-copy-target="amount"><i
+                                class="fas fa-copy"></i></button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -130,12 +149,13 @@ $qrLogoSrc = UrlHelper::resolveIcon($qrLogoSetting, 'assets/images/kaishop_favic
         </div>
     </div>
 
-    <div class="alert alert-warning deposit-warning mt-3 mb-0">
-        <i class="fas fa-exclamation-triangle me-1"></i>
-        Nhập đúng <strong>nội dung chuyển khoản</strong> để hệ thống tự động cộng tiền.
-    </div>
+    <?php if (!empty($chungapi['deposit_warning_bank'])): ?>
+        <div class="alert alert-warning deposit-warning mt-3 mb-0">
+            <?= $chungapi['deposit_warning_bank'] ?>
+        </div>
+    <?php endif; ?>
 
     <button type="button" class="btn btn-clear-custom w-100 mt-3" data-deposit-action="cancel">
-        <i class="fas fa-times me-1"></i> Huỷ giao dịch nạp tiền
+        <i class="fas fa-times me-1"></i> Hủy giao dịch nạp tiền
     </button>
 </div>

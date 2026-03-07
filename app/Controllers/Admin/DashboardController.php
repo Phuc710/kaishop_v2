@@ -58,6 +58,7 @@ class DashboardController extends Controller
         $recentDeposits = $this->fetchRecentDeposits($rangeMeta, 20);
 
         $lowStockProducts = $this->fetchLowStockProducts(10);
+        $topDepositors = $this->fetchTopDepositors($rangeMeta, 10);
         $topSpenders = $this->fetchTopSpenders($rangeMeta, 10);
 
         $this->view('admin/dashboard', [
@@ -77,6 +78,7 @@ class DashboardController extends Controller
             'recentOrders' => $recentOrders,
             'recentDeposits' => $recentDeposits,
             'lowStockProducts' => $lowStockProducts,
+            'topDepositors' => $topDepositors,
             'topSpenders' => $topSpenders,
         ]);
     }
@@ -904,6 +906,94 @@ class DashboardController extends Controller
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (Throwable $e) {
+            return [];
+        }
+    }
+
+    /**
+     * @param array<string,mixed> $rangeMeta
+     * @return array<int,array<string,mixed>>
+     */
+    private function fetchTopDepositors(array $rangeMeta, int $limit = 10): array
+    {
+        $limit = max(1, min(50, $limit));
+
+        try {
+            if (
+                $this->tableExists('history_nap_bank')
+                && $this->hasColumn('history_nap_bank', 'thucnhan')
+                && $this->hasColumn('history_nap_bank', 'username')
+            ) {
+                $params = [];
+                $whereSql = "WHERE " . $this->buildSuccessfulDepositCondition('h');
+                if ($this->hasColumn('history_nap_bank', 'created_at')) {
+                    $whereSql .= $this->buildRangeWhere('h.created_at', $rangeMeta, $params, 'tdp');
+                }
+
+                $sql = "
+                    SELECT
+                        TRIM(COALESCE(h.username, '')) AS username,
+                        COALESCE(SUM(h.thucnhan), 0) AS total_deposit,
+                        COUNT(*) AS deposit_count
+                    FROM history_nap_bank h
+                    {$whereSql}
+                    GROUP BY h.username
+                    HAVING TRIM(COALESCE(h.username, '')) <> ''
+                    ORDER BY total_deposit DESC, deposit_count DESC
+                    LIMIT " . (int) $limit;
+
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute($params);
+                $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+                foreach ($rows as &$row) {
+                    $row['username'] = (string) ($row['username'] ?? '');
+                    $row['total_deposit'] = (int) ($row['total_deposit'] ?? 0);
+                    $row['deposit_count'] = (int) ($row['deposit_count'] ?? 0);
+                }
+                unset($row);
+
+                return $rows;
+            }
+
+            // Fallback all-time from users.tong_nap when deposit history table is unavailable.
+            $rangeStart = trim((string) ($rangeMeta['start_sql'] ?? ''));
+            $rangeEnd = trim((string) ($rangeMeta['end_sql'] ?? ''));
+            $isAllRange = ($rangeStart === '' || $rangeEnd === '');
+            if (
+                $isAllRange
+                && $this->tableExists('users')
+                && $this->hasColumn('users', 'username')
+                && $this->hasColumn('users', 'tong_nap')
+            ) {
+                $whereParts = ["COALESCE(u.tong_nap, 0) > 0"];
+                if ($this->hasColumn('users', 'level')) {
+                    $whereParts[] = "u.level = 0";
+                }
+
+                $sql = "
+                    SELECT
+                        TRIM(COALESCE(u.username, '')) AS username,
+                        COALESCE(u.tong_nap, 0) AS total_deposit,
+                        0 AS deposit_count
+                    FROM users u
+                    WHERE " . implode(' AND ', $whereParts) . "
+                    ORDER BY total_deposit DESC
+                    LIMIT " . (int) $limit;
+
+                $rows = $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                foreach ($rows as &$row) {
+                    $row['username'] = (string) ($row['username'] ?? '');
+                    $row['total_deposit'] = (int) ($row['total_deposit'] ?? 0);
+                    $row['deposit_count'] = (int) ($row['deposit_count'] ?? 0);
+                }
+                unset($row);
+
+                return $rows;
+            }
+
+            return [];
         } catch (Throwable $e) {
             return [];
         }

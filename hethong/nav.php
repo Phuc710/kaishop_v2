@@ -492,20 +492,31 @@ foreach ($authNavPaths as $p) {
                             <button type="button" class="d-flex align-items-center header-widget" data-bs-toggle="dropdown"
                                 aria-expanded="false" style="padding: 4px 8px; justify-content: center;">
                                 <?php
-                                $userAvatar = trim((string) (($user['avatar_url'] ?? '') ?: ($user['avatar'] ?? '')));
+                                $userAvatar = trim((string) ($user['avatar_url'] ?? ''));
                                 if ($userAvatar === '') {
                                     $userAvatar = asset('assets/images/avt.png');
+                                }
+                                $userDisplayName = trim((string) ($user['full_name'] ?? ''));
+                                if ($userDisplayName === '') {
+                                    $userDisplayName = $username;
+                                } else {
+                                    // Use last name for short display
+                                    $userDisplayName = FormatHelper::getLastName($userDisplayName);
                                 }
                                 ?>
                                 <img src="<?= htmlspecialchars($userAvatar, ENT_QUOTES, 'UTF-8') ?>" decoding="async"
                                     class="rounded-circle w-40" style="margin-right: 8px;" alt="">
                                 <span style="display:flex; flex-direction:column; align-items:flex-start; line-height:1;">
                                     <span class="text-uppercase"
-                                        style="font-weight:bold; color:#333; font-size:13px; line-height:1;"><?= $username; ?></span>
+                                        style="font-weight:bold; color:#333; font-size:13px; line-height:1;"><?= htmlspecialchars($userDisplayName, ENT_QUOTES, 'UTF-8'); ?></span>
                                     <span
-                                        style="color:#ff6900; font-weight:800; font-size:13px; line-height:1; margin-top:2px;"><strong><?= tien($user['money']); ?>đ</strong></span>
+                                        style="color:#ff6900; font-weight:800; font-size:13px; line-height:1; margin-top:2px;">
+                                        <strong data-header-balance
+                                            data-price-vnd="<?= (int) $user['money']; ?>"><?= tien($user['money']); ?></strong>
+                                    </span>
                                 </span>
                             </button>
+
 
                             <?php $publicUserDropdownItems = NavConfig::publicUserDropdownItems(((int) ($user['level'] ?? 0)) === 9); ?>
                             <ul class="dashboard-profile dropdown-menu"

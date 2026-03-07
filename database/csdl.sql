@@ -200,6 +200,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `password` varchar(255) NOT NULL,
   `password_updated_at` datetime DEFAULT NULL,
   `email` varchar(190) NOT NULL,
+  `full_name` varchar(255) DEFAULT NULL,
   `avatar_url` varchar(500) DEFAULT NULL,
   `twofa_enabled` tinyint(1) NOT NULL DEFAULT 0,
   `level` tinyint(4) NOT NULL DEFAULT 0,
@@ -360,7 +361,15 @@ CREATE TABLE IF NOT EXISTS `setting` (
   `bank_name` varchar(100) DEFAULT 'MB Bank',
   `bank_account` varchar(100) DEFAULT NULL,
   `bank_owner` varchar(100) DEFAULT NULL,
+  `bank_pay_enabled` tinyint(1) NOT NULL DEFAULT 1,
   `sepay_api_key` varchar(255) DEFAULT NULL,
+  `binance_api_key` varchar(255) DEFAULT NULL,
+  `binance_api_secret` varchar(255) DEFAULT NULL,
+  `binance_uid` varchar(50) DEFAULT NULL,
+  `binance_rate_vnd` int(11) NOT NULL DEFAULT 25000,
+  `binance_pay_enabled` tinyint(1) NOT NULL DEFAULT 0,
+  `deposit_warning_bank` text DEFAULT NULL COMMENT 'HTML warning shown on bank deposit page',
+  `deposit_warning_binance` text DEFAULT NULL COMMENT 'HTML warning shown on Binance Pay deposit page',
   `telegram_bot_token` varchar(255) DEFAULT NULL,
   `telegram_chat_id` varchar(64) DEFAULT NULL,
   `telegram_webhook_secret` varchar(255) DEFAULT NULL,
@@ -395,7 +404,8 @@ INSERT IGNORE INTO `setting` (
   `id`, `ten_web`, `logo`, `logo_footer`, `banner`, `favicon`, `key_words`, `mo_ta`, `fb_admin`, `sdt_admin`, `tele_admin`, `tiktok_admin`, `youtube_admin`,
   `email_auto`, `pass_mail_auto`, `ten_nguoi_gui`,
   `email_cf`, `contact_page_title`, `contact_page_subtitle`, `contact_email_label`, `contact_phone_label`, `contact_support_note`, `policy_page_title`, `policy_page_subtitle`, `policy_content_html`, `policy_notice_text`, `terms_page_title`, `terms_page_subtitle`, `terms_content_html`, `terms_notice_text`, `apikey`, `thongbao`, `license`,
-  `bank_name`, `bank_account`, `bank_owner`, `sepay_api_key`, `telegram_bot_token`, `telegram_chat_id`, `telegram_webhook_secret`, `telegram_webhook_path`, `telegram_bot_user`, `telegram_last_update_id`,
+  `bank_name`, `bank_account`, `bank_owner`, `bank_pay_enabled`, `sepay_api_key`, `binance_api_key`, `binance_api_secret`, `binance_uid`, `binance_rate_vnd`, `binance_pay_enabled`, `deposit_warning_bank`, `deposit_warning_binance`,
+  `telegram_bot_token`, `telegram_chat_id`, `telegram_webhook_secret`, `telegram_webhook_path`, `telegram_bot_user`, `telegram_last_update_id`,
   `telegram_admin_ids`, `telegram_purchase_session_ttl`, `telegram_maintenance_enabled`, `telegram_maintenance_message`, `last_cron_run`,
   `bonus_1_amount`, `bonus_1_percent`, `bonus_2_amount`, `bonus_2_percent`, `bonus_3_amount`, `bonus_3_percent`,
   `maintenance_enabled`, `maintenance_start_at`, `maintenance_end_at`, `maintenance_notice_minutes`, `maintenance_message`
@@ -410,7 +420,8 @@ INSERT IGNORE INTO `setting` (
   <b>Phiên bản: v1.1</b><br>
   <span>Khi dùng dịch vụ chính hãng, bạn được hỗ trợ tốt hơn và nâng cấp tính năng với chi phí tối ưu.</span>
 </div>', '',
-  'MB Bank', '', '', '', '', '', '', 'bottelekaishop_default', 'KaiShopBot', 0,
+  'MB Bank', '', '', 1, '', '', '', '', 25000, 0, NULL, NULL,
+  '', '', '', 'bottelekaishop_default', 'KaiShopBot', 0,
   NULL, 900, 0, 'Hệ thống Bot đang bảo trì. Vui lòng quay lại sau ít phút.', NULL,
   100000, 10, 200000, 15, 500000, 20,
   0, NULL, NULL, 5, 'Hệ thống đang bảo trì để nâng cấp dịch vụ. Vui lòng quay lại sau ít phút.'
@@ -474,6 +485,9 @@ CREATE TABLE IF NOT EXISTS `pending_deposits` (
   `amount` bigint(20) NOT NULL,
   `bonus_percent` int(11) NOT NULL DEFAULT 0,
   `source_channel` tinyint(1) NOT NULL DEFAULT 0 COMMENT '0=Web, 1=BotTele',
+  `method` varchar(30) NOT NULL DEFAULT 'bank_sepay' COMMENT 'Deposit method: bank_sepay | binance',
+  `usdt_amount` decimal(18,8) DEFAULT NULL COMMENT 'USDT amount for Binance Pay matching',
+  `payer_uid` varchar(50) DEFAULT NULL COMMENT 'Expected Binance UID of sender',
   `status` enum('pending','completed','cancelled','expired') DEFAULT 'pending',
   `sepay_transaction_id` int(11) DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
@@ -483,8 +497,31 @@ CREATE TABLE IF NOT EXISTS `pending_deposits` (
   UNIQUE KEY `uniq_pd_sepay_transaction_id` (`sepay_transaction_id`),
   KEY `idx_pd_user` (`user_id`),
   KEY `idx_pd_status` (`status`),
+  KEY `idx_pd_method_status_created` (`method`,`status`,`created_at`),
   KEY `idx_pd_source_status_created` (`source_channel`,`status`,`created_at`),
   KEY `idx_pd_user_status_created` (`user_id`,`status`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `binance_transactions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `tx_id` varchar(100) NOT NULL COMMENT 'Binance transactionId (unique dedup)',
+  `username` varchar(100) NOT NULL,
+  `usdt_amount` decimal(18,8) NOT NULL DEFAULT 0,
+  `vnd_credit` bigint(20) NOT NULL DEFAULT 0 COMMENT 'VND credited to user (incl bonus)',
+  `bonus_vnd` bigint(20) NOT NULL DEFAULT 0,
+  `bonus_percent` int(11) NOT NULL DEFAULT 0,
+  `payer_uid` varchar(50) DEFAULT NULL COMMENT 'Binance UID of sender',
+  `receiver_uid` varchar(50) DEFAULT NULL COMMENT 'Binance UID of receiver',
+  `currency` varchar(20) DEFAULT 'USDT',
+  `transaction_time` bigint(20) DEFAULT NULL COMMENT 'Unix timestamp (seconds)',
+  `source_channel` tinyint(1) NOT NULL DEFAULT 0,
+  `deposit_id` int(11) DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_btx_tx_id` (`tx_id`),
+  KEY `idx_btx_username` (`username`),
+  KEY `idx_btx_created_at` (`created_at`),
+  KEY `idx_btx_payer_receiver_time` (`payer_uid`,`receiver_uid`,`transaction_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `history_nap_bank` (
@@ -492,9 +529,11 @@ CREATE TABLE IF NOT EXISTS `history_nap_bank` (
   `trans_id` varchar(150) DEFAULT NULL,
   `username` varchar(100) DEFAULT NULL,
   `type` varchar(50) DEFAULT 'Bank',
-  `ctk` text DEFAULT NULL COMMENT 'Nội dung chuyển khoản / lý do',
-  `stk` varchar(100) DEFAULT NULL COMMENT 'Số tài khoản nguồn',
-  `thucnhan` bigint(20) DEFAULT 0 COMMENT 'Số tiền thực nhận (có dấu +/-)',
+  `ctk` text DEFAULT NULL COMMENT 'Noi dung chuyen khoan / ly do',
+  `stk` varchar(100) DEFAULT NULL COMMENT 'So tai khoan nguon',
+  `bank_name` varchar(120) DEFAULT NULL COMMENT 'Ten ngan hang nguon',
+  `bank_owner` varchar(150) DEFAULT NULL COMMENT 'Chu tai khoan nguon',
+  `thucnhan` bigint(20) DEFAULT 0 COMMENT 'So tien thuc nhan (co dau +/-)',
   `status` varchar(50) DEFAULT 'pending',
   `source_channel` tinyint(1) NOT NULL DEFAULT 0 COMMENT '0=Web, 1=BotTele',
   `time` varchar(100) DEFAULT NULL,
@@ -504,6 +543,7 @@ CREATE TABLE IF NOT EXISTS `history_nap_bank` (
   KEY `idx_hnb_trans` (`trans_id`),
   KEY `idx_hnb_created_at` (`created_at`),
   KEY `idx_hnb_status_created` (`status`,`created_at`),
+  KEY `idx_hnb_bank_name` (`bank_name`),
   KEY `idx_hnb_source_created` (`source_channel`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -564,11 +604,13 @@ CREATE TABLE IF NOT EXISTS `user_telegram_links` (
   `telegram_id` BIGINT NOT NULL,
   `telegram_username` VARCHAR(64) NULL,
   `first_name` VARCHAR(255) NULL,
+  `binance_uid` VARCHAR(50) NULL,
   `linked_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `last_active` DATETIME NULL,
   UNIQUE KEY `uniq_user` (`user_id`),
   UNIQUE KEY `uniq_tg` (`telegram_id`),
   KEY `idx_tg` (`telegram_id`),
+  KEY `idx_tg_binance_uid` (`binance_uid`),
   KEY `idx_last_active` (`last_active`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -635,4 +677,3 @@ CREATE TABLE IF NOT EXISTS `telegram_logs` (
 
 SET FOREIGN_KEY_CHECKS = 1;
 COMMIT;
-

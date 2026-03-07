@@ -34,6 +34,8 @@ class SettingController extends Controller
                 'telegram_webhook_secret',
                 'pass_mail_auto',
                 'sepay_api_key',
+                'binance_api_key',
+                'binance_api_secret',
             ])
         ) {
             $this->redirect(url('admin/setting'));
@@ -103,12 +105,39 @@ class SettingController extends Controller
                     'bank_account',
                     'bank_owner',
                     'sepay_api_key',
+                    'deposit_warning_bank',
+                    'bank_pay_enabled',
+                ]);
+
+            case 'update_bonus':
+                return $this->updateSettings([
                     'bonus_1_amount',
                     'bonus_1_percent',
                     'bonus_2_amount',
                     'bonus_2_percent',
                     'bonus_3_amount',
                     'bonus_3_percent',
+                ]);
+
+            case 'update_status':
+                $key = $this->post('key');
+                $value = (int) $this->post('value');
+                $allowedKeys = ['bank_pay_enabled', 'binance_pay_enabled'];
+                if (!in_array($key, $allowedKeys)) {
+                    return $this->json(['status' => 'error', 'message' => 'Trường cập nhật không hợp lệ']);
+                }
+                // Inject value into $_POST so updateSettings() can find it
+                $_POST[$key] = (string) $value;
+                return $this->updateSettings([$key]);
+
+            case 'update_binance':
+                return $this->updateSettings([
+                    'binance_api_key',
+                    'binance_api_secret',
+                    'binance_uid',
+                    'binance_rate_vnd',
+                    'binance_pay_enabled',
+                    'deposit_warning_binance',
                 ]);
 
             case 'update_maintenance':
@@ -157,6 +186,16 @@ class SettingController extends Controller
         $sets = [];
         $action = $this->post('action', 'update_settings');
 
+        // Keys that must be encrypted before storing in DB
+        $encryptedKeys = [
+            'binance_api_key',
+            'binance_api_secret',
+            'sepay_api_key',
+            'telegram_bot_token',
+            'telegram_webhook_secret',
+            'pass_mail_auto',
+        ];
+
         // Handle File Uploads
         $uploadDir = 'assets/uploads/images/';
         if (!is_dir($uploadDir)) {
@@ -184,13 +223,21 @@ class SettingController extends Controller
 
             // Handle Text Input if no file or upload failed
             if (isset($_POST[$key])) {
-                $value = $connection->real_escape_string($_POST[$key]);
+                $rawValue = $_POST[$key];
+
+                // Encrypt sensitive keys before storing
+                if (in_array($key, $encryptedKeys, true) && class_exists('SecureCrypto') && $rawValue !== '') {
+                    $rawValue = SecureCrypto::encrypt($rawValue);
+                }
+
+                $value = $connection->real_escape_string($rawValue);
                 $sets[] = "`{$key}` = '{$value}'";
             }
         }
 
         if (empty($sets)) {
-            return $this->json(['status' => 'error', 'message' => 'Không có dữ liệu thay đổi']);
+            $receivedKeys = array_keys($_POST);
+            return $this->json(['status' => 'error', 'message' => 'Không có dữ liệu thay đổi. Keys nhận được: ' . implode(', ', $receivedKeys)]);
         }
 
         $sql = "UPDATE `setting` SET " . implode(', ', $sets) . " ORDER BY `id` ASC LIMIT 1";

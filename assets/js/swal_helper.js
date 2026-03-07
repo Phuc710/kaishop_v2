@@ -309,7 +309,19 @@ const SwalHelper = {
             '.ks-order-modal__btn.more{background:#ffffff;color:#0f172a;border:1.5px solid #e2e8f0;box-shadow:none;}',
             '.ks-order-modal-close{color:#94a3b8 !important;font-size:32px !important;padding:12px !important;right:8px !important;top:8px !important;transition:color .2s ease;}',
             '.ks-order-modal-close:hover{color:#475569 !important;}',
-            '@media (max-width:767.98px){.ks-order-modal-popup{padding:20px 16px !important;}.ks-order-modal__actions{grid-template-columns:1fr; gap:10px;}.ks-order-modal__title{font-size:22px;}.ks-order-modal__content{font-size:13.5px;max-height:160px;}.ks-order-modal__btn{height:46px;font-size:14px;}.ks-order-modal__meta{margin:16px 0; padding:16px;}}'
+            '@media (max-width:767.98px){'
+            + '.ks-order-modal-popup,.swal2-popup.ks-order-modal-popup{'
+            + 'width:95vw !important;max-width:95vw !important;min-width:0 !important;'
+            + 'padding:18px 14px 20px !important;border-radius:18px !important;}'
+            + '.ks-order-modal{padding:0;}'
+            + '.ks-order-modal__title{font-size:20px;}'
+            + '.ks-order-modal__content{font-size:13px;max-height:150px;}'
+            + '.ks-order-modal__content-label{font-size:13.5px;}'
+            + '.ks-order-modal__actions{flex-direction:column;gap:8px;margin-top:16px;}'
+            + '.ks-order-modal__btn{flex:unset;width:100% !important;min-width:unset !important;height:44px;font-size:14px;border-radius:12px;}'
+            + '.ks-order-modal__code{font-size:13px;padding:6px 12px;}'
+            + '.ks-order-modal__pending-note{font-size:13px;padding:10px 14px;}'
+            + '}'
         ].join('');
         document.head.appendChild(style);
         this._purchaseStyleInjected = true;
@@ -437,12 +449,6 @@ const SwalHelper = {
 
                 if (!isPending && typeof options.onCompletedOpen === 'function') {
                     options.onCompletedOpen({ payload: data, order: order, popup: popup });
-                }
-
-                if (window.KaiConfetti) {
-                    KaiConfetti.ensureReady().then(function () {
-                        KaiConfetti.fire();
-                    });
                 }
             }
         });

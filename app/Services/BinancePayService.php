@@ -1,0 +1,834 @@
+<?php
+
+/**
+ * BinancePayService
+ * Handles Binance Pay transaction polling, matching and crediting.
+ */
+class BinancePayService
+{
+    private const API_BASE = 'https://api.binance.com';
+    private const PAY_TX_ENDPOINT = '/sapi/v1/pay/transactions';
+    private const REQUEST_TIMEOUT = 8;
+    private const TX_TIME_SKEW_SECONDS = 120;
+    private const AMOUNT_SCALE = 8;
+    private const DEFAULT_PENDING_TTL_SECONDS = 300;
+
+    public const MIN_USDT = 1.0;
+    public const MAX_USDT = 10000.0;
+
+    private string $apiKey;
+    private string $apiSecret;
+    private string $binanceUid;
+    private int $exchangeRateVnd;
+    private bool $payEnabled;
+
+    private PDO $db;
+    private array $schemaCache = [];
+    protected ?TimeService $timeService = null;
+
+    public function __construct(array $config, PDO $db)
+    {
+        $this->apiKey = trim((string) ($config['binance_api_key'] ?? ''));
+        $this->apiSecret = trim((string) ($config['binance_api_secret'] ?? ''));
+        $this->binanceUid = trim((string) ($config['binance_uid'] ?? ''));
+        $this->exchangeRateVnd = max(1, (int) ($config['binance_rate_vnd'] ?? 25000));
+        $this->payEnabled = (int) ($config['binance_pay_enabled'] ?? 0) === 1;
+        $this->db = $db;
+        if (class_exists('TimeService')) {
+            $this->timeService = TimeService::instance();
+        }
+    }
+
+    public function isEnabled(): bool
+    {
+        return $this->payEnabled && $this->apiKey !== '' && $this->apiSecret !== '' && $this->binanceUid !== '';
+    }
+
+    public function getUid(): string
+    {
+        return $this->binanceUid;
+    }
+
+    public function getExchangeRate(): int
+    {
+        return $this->exchangeRateVnd;
+    }
+
+    public function vndToUsdt(int $vnd): float
+    {
+        if ($this->exchangeRateVnd <= 0) {
+            return 0.0;
+        }
+        return round($vnd / $this->exchangeRateVnd, 2);
+    }
+
+    public function usdtToVnd(float $usdt): int
+    {
+        return (int) floor($usdt * $this->exchangeRateVnd);
+    }
+
+    public function getTransferNote(string $depositCode): string
+    {
+        $safe = strtoupper((string) preg_replace('/[^a-zA-Z0-9]/', '', $depositCode));
+        $safe = trim($safe);
+        if ($safe === '') {
+            return 'KAI';
+        }
+        return substr($safe, 0, 32);
+    }
+
+    /**
+     * @return array<int,array<string,mixed>>
+     */
+    public function getRecentTransactions(int $startTime, int $endTime, int $limit = 100): array
+    {
+        if (!$this->isEnabled()) {
+            return [];
+        }
+
+        $params = [
+            'startTime' => max(0, $startTime),
+            'endTime' => max($startTime, $endTime),
+            'limit' => min(100, max(1, $limit)),
+            'timestamp' => $this->nowMs(),
+            'recvWindow' => 10000,
+        ];
+
+        $queryString = http_build_query($params);
+        $signature = hash_hmac('sha256', $queryString, $this->apiSecret);
+        $url = self::API_BASE . self::PAY_TX_ENDPOINT . '?' . $queryString . '&signature=' . $signature;
+
+        $ch = curl_init($url);
+        if ($ch === false) {
+            return [];
+        }
+
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => self::REQUEST_TIMEOUT,
+            CURLOPT_HTTPHEADER => [
+                'X-MBX-APIKEY: ' . $this->apiKey,
+                'Content-Type: application/json',
+            ],
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErr = curl_error($ch);
+        curl_close($ch);
+
+
+
+        if ($response === false || $httpCode !== 200) {
+            Logger::warning('BinancePay', 'api_error', 'Binance Pay API error', [
+                'http_code' => $httpCode,
+                'curl_err' => $curlErr,
+                'response' => is_string($response) ? substr($response, 0, 500) : null,
+            ]);
+            return [];
+        }
+
+        $data = json_decode((string) $response, true);
+        // Binance Pay API returns {"code":"000000","success":true,...} (NOT "status":"0")
+        $isApiSuccess = is_array($data) && (
+            (string) ($data['status'] ?? '') === '0'          // Some Binance endpoints
+            || (string) ($data['code'] ?? '') === '000000'    // Pay API: code=000000
+            || ($data['success'] ?? false) === true           // Pay API: success=true
+        );
+        if (!$isApiSuccess) {
+            Logger::warning('BinancePay', 'api_bad_status', 'Binance Pay API non-zero status', [
+                'response' => substr((string) $response, 0, 300),
+            ]);
+            return [];
+        }
+
+        $rows = (array) ($data['data'] ?? []);
+        return array_values(array_filter($rows, static fn($row) => is_array($row)));
+    }
+
+    /**
+     * @param array<string,mixed> $pendingDeposit
+     * @param array<int,array<string,mixed>>|null $preloadedTransactions
+     * @return array<string,mixed>|null
+     */
+    public function findMatchingTransaction(array $pendingDeposit, ?array $preloadedTransactions = null): ?array
+    {
+        if (!$this->isEnabled()) {
+            return null;
+        }
+
+        $expectedAmount = $this->normalizeAmount($pendingDeposit['usdt_amount'] ?? 0);
+        if ($expectedAmount === null || (float) $expectedAmount <= 0) {
+            return null;
+        }
+
+        $expectedPayerUid = $this->normalizeUid($pendingDeposit['payer_uid'] ?? '');
+        // Note: expectedPayerUid may be empty-checked later only when API provides a payer UID
+
+        $expectedReceiverUid = $this->normalizeUid($this->binanceUid);
+        if ($expectedReceiverUid === '') {
+            return null;
+        }
+
+        $expectedCurrency = strtoupper(trim((string) ($pendingDeposit['currency'] ?? 'USDT')));
+        if ($expectedCurrency === '') {
+            $expectedCurrency = 'USDT';
+        }
+
+        $createdTs = $this->toTimestamp($pendingDeposit['created_at'] ?? '') ?: ($this->nowTs() - self::DEFAULT_PENDING_TTL_SECONDS);
+        $ttlSeconds = $this->resolvePendingTtlSeconds();
+        $earliestTs = $createdTs - self::TX_TIME_SKEW_SECONDS;
+        $latestTs = $createdTs + $ttlSeconds + self::TX_TIME_SKEW_SECONDS;
+
+        $queryStartMs = max(0, $earliestTs * 1000);
+        $queryEndMs = max($queryStartMs, ($this->nowTs() + self::TX_TIME_SKEW_SECONDS) * 1000);
+
+        $transactions = $preloadedTransactions;
+        if (!is_array($transactions)) {
+            $transactions = $this->getRecentTransactions($queryStartMs, $queryEndMs, 100);
+        }
+
+        foreach ($transactions as $tx) {
+            if (!$this->isCandidatePaymentTransaction($tx)) {
+                continue;
+            }
+
+            $txId = $this->extractTransactionId($tx);
+            if ($txId === '' || $this->isTransactionProcessed($txId)) {
+                continue;
+            }
+
+            $txCurrency = strtoupper(trim((string) ($tx['currency'] ?? '')));
+            if ($txCurrency !== $expectedCurrency) {
+                continue;
+            }
+
+            // Payer UID: only enforce if the API returned a payer UID.
+            // Binance C2C transactions do NOT include payerInfo.binanceId on the receiver side.
+            $txPayerUid = $this->normalizeUid($this->extractPayerUid($tx));
+            if ($txPayerUid !== '' && $expectedPayerUid !== '') {
+                if (!hash_equals($expectedPayerUid, $txPayerUid)) {
+                    continue;
+                }
+            }
+
+            $txRecvUid = $this->normalizeUid($this->extractReceiverUid($tx));
+            if ($txRecvUid === '' || !hash_equals($expectedReceiverUid, $txRecvUid)) {
+                continue;
+            }
+
+            $txAmount = $this->normalizeAmount($tx['amount'] ?? 0);
+            if ($txAmount === null || $txAmount !== $expectedAmount) {
+                continue;
+            }
+
+            $txTs = $this->extractTxTimestamp($tx);
+            if ($txTs === null || $txTs < $earliestTs || $txTs > $latestTs) {
+                continue;
+            }
+
+            return $tx;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<string,mixed> $tx
+     * @param array<string,mixed> $pendingDeposit
+     * @param array<string,mixed> $user
+     * @return array{success:bool,message:string}
+     */
+    public function processTransaction(array $tx, array $pendingDeposit, array $user): array
+    {
+        $txId = $this->extractTransactionId($tx);
+        $usdtAmountRaw = $this->normalizeAmount($tx['amount'] ?? 0);
+        $payerUid = $this->normalizeUid($this->extractPayerUid($tx));
+        $receiverUid = $this->normalizeUid($this->extractReceiverUid($tx));
+        $currency = strtoupper(trim((string) ($tx['currency'] ?? '')));
+        $txTimestamp = $this->extractTxTimestamp($tx);
+        $depositId = (int) ($pendingDeposit['id'] ?? 0);
+        $userId = (int) ($user['id'] ?? 0);
+        $username = (string) ($user['username'] ?? '');
+        $sourceChannel = (int) ($pendingDeposit['source_channel'] ?? 0);
+        $expectedPayerUid = $this->normalizeUid($pendingDeposit['payer_uid'] ?? '');
+        $expectedAmountRaw = $this->normalizeAmount($pendingDeposit['usdt_amount'] ?? 0);
+
+        if (
+            $txId === ''
+            || $usdtAmountRaw === null
+            || $expectedAmountRaw === null
+            || $depositId <= 0
+            || $userId <= 0
+            || $username === ''
+        ) {
+            return ['success' => false, 'message' => 'Dữ liệu giao dịch không hợp lệ'];
+        }
+        if ($currency !== 'USDT') {
+            return ['success' => false, 'message' => 'Đơn vị tiền tệ không hợp lệ (yêu cầu USDT)'];
+        }
+        // Payer UID check: only enforce when API provides a payer UID.
+        // Binance C2C transactions do NOT include payerInfo.binanceId on the receiver side.
+        if ($payerUid !== '' && $expectedPayerUid !== '') {
+            if (!hash_equals($expectedPayerUid, $payerUid)) {
+                return ['success' => false, 'message' => 'UID người gửi không khớp với yêu cầu'];
+            }
+        }
+        if ($receiverUid === '' || !hash_equals($this->normalizeUid($this->binanceUid), $receiverUid)) {
+            return ['success' => false, 'message' => 'UID người nhận không khớp với hệ thống'];
+        }
+        if ($usdtAmountRaw !== $expectedAmountRaw) {
+            return ['success' => false, 'message' => 'Số tiền chuyển không khớp với yêu cầu'];
+        }
+        if ($txTimestamp === null) {
+            return ['success' => false, 'message' => 'Thiếu thông tin thời gian giao dịch'];
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            if ($this->isTransactionProcessed($txId, true)) {
+                $this->db->rollBack();
+                return ['success' => true, 'message' => 'Already processed'];
+            }
+
+            $lockStmt = $this->db->prepare("
+                SELECT `id`, `status`, `created_at`, `bonus_percent`, `source_channel`, `user_id`, `usdt_amount`, `payer_uid`
+                FROM `pending_deposits`
+                WHERE `id` = ?
+                LIMIT 1
+                FOR UPDATE
+            ");
+            $lockStmt->execute([$depositId]);
+            $locked = $lockStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+            if (!$locked || (string) ($locked['status'] ?? '') !== 'pending') {
+                $this->db->rollBack();
+                return ['success' => false, 'message' => 'Pending deposit is no longer active'];
+            }
+            if ((int) ($locked['user_id'] ?? 0) !== $userId) {
+                $this->db->rollBack();
+                return ['success' => false, 'message' => 'Pending deposit owner mismatch'];
+            }
+
+            $strictMatchError = '';
+            if (!$this->matchesPendingDepositStrict($tx, $locked, $strictMatchError)) {
+                $this->db->rollBack();
+                return ['success' => false, 'message' => $strictMatchError !== '' ? $strictMatchError : 'Transaction does not match pending deposit'];
+            }
+
+            $sourceChannel = (int) ($locked['source_channel'] ?? $sourceChannel);
+            $bonusPercent = (int) ($locked['bonus_percent'] ?? 0);
+            $usdtAmount = (float) $expectedAmountRaw;
+            $baseVnd = $this->usdtToVnd($usdtAmount);
+            $bonusVnd = (int) floor($baseVnd * max(0, $bonusPercent) / 100);
+            $totalCredit = $baseVnd + $bonusVnd;
+
+            $this->db->prepare("
+                UPDATE `users`
+                SET `money` = `money` + ?, `tong_nap` = `tong_nap` + ?
+                WHERE `id` = ?
+            ")->execute([$totalCredit, $baseVnd, $userId]);
+
+            $balStmt = $this->db->prepare("SELECT `money` FROM `users` WHERE `id` = ? LIMIT 1");
+            $balStmt->execute([$userId]);
+            $afterBalance = (int) ($balStmt->fetchColumn() ?? 0);
+            $beforeBalance = $afterBalance - $totalCredit;
+
+            $nowSql = $this->nowDbSql();
+            $nowTs = (string) $this->nowTs();
+
+            $txColumns = ['tx_id', 'username', 'usdt_amount', 'vnd_credit', 'bonus_vnd', 'bonus_percent', 'payer_uid', 'source_channel', 'deposit_id', 'created_at'];
+            $txValues = [$txId, $username, $usdtAmount, $totalCredit, $bonusVnd, $bonusPercent, ($payerUid !== '' ? $payerUid : null), $sourceChannel, $depositId, $nowSql];
+
+            if ($this->hasColumn('binance_transactions', 'receiver_uid')) {
+                $txColumns[] = 'receiver_uid';
+                $txValues[] = ($receiverUid !== '' ? $receiverUid : null);
+            }
+            if ($this->hasColumn('binance_transactions', 'currency')) {
+                $txColumns[] = 'currency';
+                $txValues[] = $currency !== '' ? $currency : 'USDT';
+            }
+            if ($this->hasColumn('binance_transactions', 'transaction_time')) {
+                $txColumns[] = 'transaction_time';
+                $txValues[] = $txTimestamp;
+            }
+
+            $this->db->prepare(
+                "INSERT INTO `binance_transactions` (`" . implode('`, `', $txColumns) . "`) VALUES (" .
+                implode(', ', array_fill(0, count($txColumns), '?')) . ")"
+            )->execute($txValues);
+
+            $historyColumns = ['trans_id', 'username', 'type', 'ctk', 'thucnhan', 'status', 'time', 'created_at'];
+            $historyValues = [
+                $txId,
+                $username,
+                'Binance',
+                'Binance Pay (USDT) | Payer UID: ' . ($payerUid !== '' ? $payerUid : 'unknown') . ' | Receiver UID: ' . ($receiverUid !== '' ? $receiverUid : 'unknown'),
+                $totalCredit,
+                'hoantat',
+                $nowTs,
+                $nowSql,
+            ];
+
+            if ($this->hasColumn('history_nap_bank', 'source_channel')) {
+                $historyColumns[] = 'source_channel';
+                $historyValues[] = $sourceChannel;
+            }
+            if ($this->hasColumn('history_nap_bank', 'bank_name')) {
+                $historyColumns[] = 'bank_name';
+                $historyValues[] = 'Binance Pay';
+            }
+            if ($this->hasColumn('history_nap_bank', 'bank_owner')) {
+                $historyColumns[] = 'bank_owner';
+                $historyValues[] = null;
+            }
+
+            $this->db->prepare(
+                "INSERT INTO `history_nap_bank` (`" . implode('`, `', $historyColumns) . "`) VALUES (" .
+                implode(', ', array_fill(0, count($historyColumns), '?')) . ")"
+            )->execute($historyValues);
+
+            if (class_exists('BalanceChangeService')) {
+                (new BalanceChangeService($this->db))->record(
+                    $userId,
+                    $username,
+                    $beforeBalance,
+                    $totalCredit,
+                    $afterBalance,
+                    'Nap tien Binance Pay: ' . rtrim(rtrim(number_format($usdtAmount, 8, '.', ''), '0'), '.') . ' USDT',
+                    $sourceChannel
+                );
+            }
+
+            $this->db->prepare("
+                UPDATE `pending_deposits`
+                SET `status` = 'completed', `completed_at` = ?
+                WHERE `id` = ? AND `status` = 'pending'
+            ")->execute([$nowSql, $depositId]);
+
+            $this->db->commit();
+
+            $this->notifyTelegramAsync(
+                $userId,
+                $username,
+                $usdtAmount,
+                $baseVnd,
+                $totalCredit,
+                $bonusVnd,
+                $txId
+            );
+
+            Logger::info('BinancePay', 'deposit_credited', "Nap Binance Pay thanh cong: {$username}", [
+                'tx_id' => $txId,
+                'usdt' => $usdtAmount,
+                'vnd' => $totalCredit,
+                'bonus_vnd' => $bonusVnd,
+                'payer_uid' => $payerUid,
+                'receiver_uid' => $receiverUid,
+                'currency' => $currency,
+                'transaction_time' => $txTimestamp,
+                'deposit_id' => $depositId,
+            ]);
+
+            return ['success' => true, 'message' => 'Credited ' . number_format($totalCredit, 0, ',', '.') . 'đ'];
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            Logger::warning('BinancePay', 'process_error', 'Loi xu ly Binance tx: ' . $e->getMessage(), [
+                'tx_id' => $txId,
+                'deposit_id' => $depositId,
+            ]);
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * @param array<string,mixed> $tx
+     */
+    private function isCandidatePaymentTransaction(array $tx): bool
+    {
+        $currency = strtoupper(trim((string) ($tx['currency'] ?? '')));
+        if ($currency !== 'USDT') {
+            return false;
+        }
+
+        $orderType = strtoupper(trim((string) ($tx['orderType'] ?? '')));
+        if ($orderType !== '' && !in_array($orderType, ['C2C', 'C2C_PAYMENT', 'PAY', 'PAID'], true)) {
+            return false;
+        }
+
+        $status = strtoupper(trim((string) ($tx['status'] ?? $tx['transactionStatus'] ?? '')));
+        if ($status !== '' && !in_array($status, ['SUCCESS', 'COMPLETED', 'PAID'], true)) {
+            return false;
+        }
+
+        $receiverUid = $this->normalizeUid($this->extractReceiverUid($tx));
+        $configuredUid = $this->normalizeUid($this->binanceUid);
+        if ($receiverUid === '' || $configuredUid === '') {
+            return false;
+        }
+        return hash_equals($configuredUid, $receiverUid);
+    }
+
+    /**
+     * @param array<string,mixed> $tx
+     */
+    private function extractTxTimestamp(array $tx): ?int
+    {
+        foreach (['transactionTime', 'orderCreateTime', 'createTime', 'updateTime'] as $field) {
+            if (!isset($tx[$field])) {
+                continue;
+            }
+            $raw = (string) $tx[$field];
+            if ($raw === '') {
+                continue;
+            }
+
+            if (ctype_digit($raw)) {
+                $num = (int) $raw;
+                if ($num > 9999999999) {
+                    $num = (int) floor($num / 1000);
+                }
+                if ($num > 0) {
+                    return $num;
+                }
+                continue;
+            }
+
+            $parsed = $this->toTimestamp($raw);
+            if ($parsed !== null) {
+                return $parsed;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * @param array<string,mixed> $tx
+     */
+    private function extractPayerUid(array $tx): string
+    {
+        $candidates = [
+            $tx['payerInfo']['binanceId'] ?? null,
+            $tx['payerInfo']['uid'] ?? null,
+            $tx['payer']['binanceId'] ?? null,
+            $tx['payerUid'] ?? null,
+            $tx['fromUid'] ?? null,
+            $tx['from']['binanceId'] ?? null,
+            $tx['from']['uid'] ?? null,
+        ];
+        foreach ($candidates as $raw) {
+            $uid = $this->normalizeUid($raw);
+            if ($uid !== '') {
+                return $uid;
+            }
+        }
+        return '';
+    }
+
+    /**
+     * @param array<string,mixed> $tx
+     */
+    private function extractReceiverUid(array $tx): string
+    {
+        $candidates = [
+            $tx['receiverInfo']['binanceId'] ?? null,
+            $tx['receiverInfo']['uid'] ?? null,
+            $tx['payeeInfo']['binanceId'] ?? null,
+            $tx['payeeInfo']['uid'] ?? null,
+            $tx['receiver']['binanceId'] ?? null,
+            $tx['receiverUid'] ?? null,
+            $tx['toUid'] ?? null,
+            $tx['to']['binanceId'] ?? null,
+            $tx['to']['uid'] ?? null,
+        ];
+        foreach ($candidates as $raw) {
+            $uid = $this->normalizeUid($raw);
+            if ($uid !== '') {
+                return $uid;
+            }
+        }
+        return '';
+    }
+
+    /**
+     * Binance responses may expose either transactionId or orderId depending on flow.
+     * Normalize to a stable ID for dedup and idempotency.
+     *
+     * @param array<string,mixed> $tx
+     */
+    private function extractTransactionId(array $tx): string
+    {
+        $candidates = [
+            $tx['transactionId'] ?? null,
+            $tx['orderId'] ?? null,
+            $tx['transactionNo'] ?? null,
+            $tx['bizId'] ?? null,
+            $tx['merchantTradeNo'] ?? null,
+        ];
+
+        foreach ($candidates as $raw) {
+            $id = trim((string) ($raw ?? ''));
+            if ($id === '') {
+                continue;
+            }
+            if (strlen($id) > 100) {
+                return 'h_' . substr(hash('sha256', $id), 0, 98);
+            }
+            return $id;
+        }
+
+        return '';
+    }
+
+    private function isTransactionProcessed(string $txId, bool $forUpdate = false): bool
+    {
+        $sql = "SELECT COUNT(*) FROM `binance_transactions` WHERE `tx_id` = ?" . ($forUpdate ? ' FOR UPDATE' : '');
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$txId]);
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
+    /**
+     * Retrieve transaction details for a completed deposit.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function getTransactionByDepositId(int $depositId): ?array
+    {
+        $stmt = $this->db->prepare("SELECT * FROM `binance_transactions` WHERE `deposit_id` = ? LIMIT 1");
+        $stmt->execute([$depositId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
+    private function notifyTelegramAsync(
+        int $userId,
+        string $username,
+        float $usdt,
+        int $baseVnd,
+        int $totalVnd,
+        int $bonusVnd,
+        string $txId
+    ): void {
+        if (!class_exists('TelegramOutbox')) {
+            return;
+        }
+
+        try {
+            $outbox = new TelegramOutbox();
+            $usdtText = rtrim(rtrim(number_format($usdt, 8, '.', ''), '0'), '.');
+
+            $adminChatId = $this->resolveAdminChatId();
+            if ($adminChatId !== 0) {
+                $adminMsg = "✅ <b>Binance Pay Deposit</b>\n"
+                    . "👤 User: <code>{$username}</code>\n"
+                    . "💰 USDT: <b>{$usdtText}</b>\n"
+                    . "💵 Base Exchange: <b>" . number_format($baseVnd, 0, ',', '.') . "đ</b>\n"
+                    . "🎁 Bonus: <b>" . number_format($bonusVnd, 0, ',', '.') . "đ</b>\n"
+                    . "🏦 Net Received: <b>" . number_format($totalVnd, 0, ',', '.') . "đ</b>\n"
+                    . "🔖 TX: <code>{$txId}</code>";
+                $outbox->enqueue($adminChatId, $adminMsg, 'HTML');
+            }
+
+            if (class_exists('UserTelegramLink')) {
+                $link = (new UserTelegramLink())->findByUserId($userId);
+                if ($link && (int) ($link['telegram_id'] ?? 0) > 0) {
+                    $telegramId = (int) $link['telegram_id'];
+                    $userMsg = "🎉 <b>DEPOSIT SUCCESSFUL</b>\n\n"
+                        . "💳 Method: <b>Binance Pay</b>\n"
+                        . "💰 Received: <b>{$usdtText} USDT</b>\n"
+                        . "💵 Credit Amount: <b>" . number_format($totalVnd, 0, ',', '.') . "đ</b>\n"
+                        . "🔖 Transaction ID: <code>{$txId}</code>";
+                    $outbox->enqueue($telegramId, $userMsg, 'HTML');
+                }
+            }
+        } catch (Throwable $e) {
+            // Non-blocking
+        }
+    }
+
+    private function resolveAdminChatId(): int
+    {
+        $raw = '';
+        if (function_exists('get_setting')) {
+            $raw = trim((string) get_setting('telegram_chat_id', ''));
+        }
+        if ($raw === '' && defined('TELEGRAM_CHAT_ID')) {
+            $raw = trim((string) TELEGRAM_CHAT_ID);
+        }
+        if ($raw === '' || !preg_match('/^-?\d+$/', $raw)) {
+            return 0;
+        }
+        return (int) $raw;
+    }
+
+    /**
+     * @param array<string,mixed> $tx
+     * @param array<string,mixed> $pendingDeposit
+     */
+    private function matchesPendingDepositStrict(array $tx, array $pendingDeposit, string &$error = ''): bool
+    {
+        $expectedPayerUid = $this->normalizeUid($pendingDeposit['payer_uid'] ?? '');
+        $expectedReceiverUid = $this->normalizeUid($this->binanceUid);
+        $expectedCurrency = strtoupper(trim((string) ($pendingDeposit['currency'] ?? 'USDT')));
+        if ($expectedCurrency === '') {
+            $expectedCurrency = 'USDT';
+        }
+        $expectedAmount = $this->normalizeAmount($pendingDeposit['usdt_amount'] ?? 0);
+
+        if ($expectedReceiverUid === '') {
+            $error = 'Missing merchant UID';
+            return false;
+        }
+        if ($expectedAmount === null || (float) $expectedAmount <= 0) {
+            $error = 'Invalid pending amount';
+            return false;
+        }
+
+        $txId = $this->extractTransactionId($tx);
+        if ($txId === '') {
+            $error = 'Missing transactionId';
+            return false;
+        }
+        if ($this->isTransactionProcessed($txId)) {
+            $error = 'Transaction already processed';
+            return false;
+        }
+
+        // Payer UID: only validate when API provides it (PAY orderType).
+        // C2C transactions from Binance do NOT expose payerInfo.binanceId on the receiver side.
+        $txPayerUid = $this->normalizeUid($this->extractPayerUid($tx));
+        if ($txPayerUid !== '' && $expectedPayerUid !== '') {
+            if (!hash_equals($expectedPayerUid, $txPayerUid)) {
+                $error = 'UID ng\u01b0\u1eddi g\u1eedi kh\u00f4ng kh\u1edbp v\u1edbi y\u00eau c\u1ea7u';
+                return false;
+            }
+        }
+
+        $txReceiverUid = $this->normalizeUid($this->extractReceiverUid($tx));
+        if ($txReceiverUid === '' || !hash_equals($expectedReceiverUid, $txReceiverUid)) {
+            $error = 'UID ng\u01b0\u1eddi nh\u1eadn kh\u00f4ng kh\u1edbp v\u1edbi h\u1ec7 th\u1ed1ng';
+            return false;
+        }
+
+        $txCurrency = strtoupper(trim((string) ($tx['currency'] ?? '')));
+        if ($txCurrency !== $expectedCurrency) {
+            $error = '\u0110\u01a1n v\u1ecb ti\u1ec1n t\u1ec7 kh\u00f4ng h\u1ee3p l\u1ec7 (y\u00eau c\u1ea7u USDT)';
+            return false;
+        }
+
+        $txAmount = $this->normalizeAmount($tx['amount'] ?? 0);
+        if ($txAmount === null || $txAmount !== $expectedAmount) {
+            $error = 'S\u1ed1 ti\u1ec1n chuy\u1ec3n kh\u00f4ng kh\u1edbp v\u1edbi y\u00eau c\u1ea7u';
+            return false;
+        }
+
+        $createdTs = $this->toTimestamp($pendingDeposit['created_at'] ?? '');
+        $txTs = $this->extractTxTimestamp($tx);
+        if ($createdTs === null || $txTs === null) {
+            $error = 'Thi\u1ebfu th\u00f4ng tin th\u1eddi gian giao d\u1ecbch';
+            return false;
+        }
+
+        $ttlSeconds = $this->resolvePendingTtlSeconds();
+        $earliestTs = $createdTs - self::TX_TIME_SKEW_SECONDS;
+        $latestTs = $createdTs + $ttlSeconds + self::TX_TIME_SKEW_SECONDS;
+        if ($txTs < $earliestTs || $txTs > $latestTs) {
+            $error = 'Th\u1eddi gian giao d\u1ecbch v\u01b0\u1ee3t ngo\u00e0i c\u1eeda s\u1ed5 cho ph\u00e9p';
+            return false;
+        }
+
+        return true;
+    }
+
+    private function normalizeUid($raw): string
+    {
+        $uid = trim((string) ($raw ?? ''));
+        if ($uid === '') {
+            return '';
+        }
+        $uid = preg_replace('/\s+/', '', $uid);
+        return (string) $uid;
+    }
+
+    private function normalizeAmount($raw): ?string
+    {
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+        $number = is_string($raw) ? str_replace(',', '', trim($raw)) : (string) $raw;
+        if ($number === '' || !is_numeric($number)) {
+            return null;
+        }
+        return number_format((float) $number, self::AMOUNT_SCALE, '.', '');
+    }
+
+    private function resolvePendingTtlSeconds(): int
+    {
+        if (class_exists('PendingDeposit')) {
+            try {
+                $ttl = (new PendingDeposit())->getPendingTtlSeconds();
+                if (is_int($ttl) && $ttl > 0) {
+                    return $ttl;
+                }
+            } catch (Throwable $e) {
+                // Ignore and fallback to default
+            }
+        }
+        return self::DEFAULT_PENDING_TTL_SECONDS;
+    }
+
+    private function nowTs(): int
+    {
+        return $this->timeService ? $this->timeService->nowTs() : time();
+    }
+
+    private function nowMs(): int
+    {
+        return $this->nowTs() * 1000;
+    }
+
+    private function nowDbSql(): string
+    {
+        if ($this->timeService) {
+            return $this->timeService->nowSql($this->timeService->getDbTimezone());
+        }
+        return date('Y-m-d H:i:s');
+    }
+
+    private function toTimestamp($value): ?int
+    {
+        if ($this->timeService) {
+            return $this->timeService->toTimestamp($value);
+        }
+
+        if (is_int($value)) {
+            return $value > 0 ? $value : null;
+        }
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return null;
+        }
+        $ts = strtotime($raw);
+        return $ts !== false ? $ts : null;
+    }
+
+    private function hasColumn(string $table, string $column): bool
+    {
+        $key = $table . '.' . $column;
+        if (isset($this->schemaCache[$key])) {
+            return $this->schemaCache[$key];
+        }
+
+        $stmt = $this->db->prepare("
+            SELECT COUNT(*) FROM information_schema.columns
+            WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?
+        ");
+        $stmt->execute([$table, $column]);
+        $this->schemaCache[$key] = (int) $stmt->fetchColumn() > 0;
+        return $this->schemaCache[$key];
+    }
+}

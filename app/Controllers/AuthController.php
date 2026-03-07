@@ -518,6 +518,7 @@ class AuthController extends Controller
 
         $email = strtolower(trim((string) $googleUser['email']));
         $displayName = trim((string) ($googleUser['displayName'] ?? ''));
+        $photoUrl = trim((string) ($googleUser['photoUrl'] ?? ''));
         $fingerprintHash = trim($this->post('fingerprint', ''));
         $fpComponents = $this->post('fp_components', '');
 
@@ -540,6 +541,8 @@ class AuthController extends Controller
                 'password' => $this->authSecurity->hashPassword(bin2hex(random_bytes(16))),
                 'password_updated_at' => class_exists('TimeService') ? TimeService::instance()->nowSql() : date('Y-m-d H:i:s'),
                 'email' => $email,
+                'full_name' => $displayName,
+                'avatar_url' => $photoUrl,
                 'level' => ($this->userModel->count() == 0) ? '9' : '0',
                 'tong_nap' => '0',
                 'money' => '0',
@@ -568,6 +571,19 @@ class AuthController extends Controller
                 'username' => $user['username'],
                 'email' => $email
             ]);
+        } else {
+            // Update existing user profile if needed
+            $updateData = [];
+            if (empty($user['full_name']) && $displayName !== '') {
+                $updateData['full_name'] = $displayName;
+            }
+            if ($photoUrl !== '' && (empty($user['avatar_url']) || strpos($user['avatar_url'], 'googleusercontent.com') !== false)) {
+                $updateData['avatar_url'] = $photoUrl;
+            }
+            if (!empty($updateData)) {
+                $this->userModel->update($user['id'], $updateData);
+                $user = array_merge($user, $updateData);
+            }
         }
 
         $device = $this->authSecurity->getDeviceContext($fingerprintHash);

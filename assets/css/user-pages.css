@@ -1575,7 +1575,7 @@ body.auth-layout .header-primary {
 
     .auth-page-col {
         width: 100%;
-        padding-top: 5px !important;
+        padding-top: 20px !important;
         padding-left: 12px !important;
         padding-right: 12px !important;
     }

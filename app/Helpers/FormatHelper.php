@@ -20,7 +20,7 @@ class FormatHelper
         if ($val === 0)
             return '<span class="font-weight-bold text-dark">0đ</span>';
 
-        $formatted = number_format(abs($val), 0, '.', ',') . 'đ';
+        $formatted = number_format(abs($val), 0, ',', '.') . 'đ';
         if ($val > 0) {
             return '<span class="font-weight-bold" style="color: #23d71c;">+' . $formatted . '</span>';
         }
@@ -36,7 +36,7 @@ class FormatHelper
         if ($amount === null || $amount === '')
             return '--';
         $val = (int) preg_replace('/[^0-9-]/', '', (string) $amount);
-        $formatted = number_format(abs($val), 0, '.', ',') . 'đ';
+        $formatted = number_format(abs($val), 0, ',', '.') . 'đ';
         $prefix = $val < 0 ? '-' : '';
         return '<span class="font-weight-bold" style="color: #1200ff;">' . $prefix . $formatted . '</span>';
     }
@@ -50,7 +50,7 @@ class FormatHelper
         if ($amount === null || $amount === '')
             return '--';
         $val = (int) preg_replace('/[^0-9-]/', '', (string) $amount);
-        $formatted = number_format(abs($val), 0, '.', ',') . 'đ';
+        $formatted = number_format(abs($val), 0, ',', '.') . 'đ';
         $prefix = $val < 0 ? '-' : '';
         return '<span class="font-weight-bold text-dark">' . $prefix . $formatted . '</span>';
     }
@@ -235,5 +235,17 @@ class FormatHelper
         $str = preg_replace('/[^a-z0-9-\s]/', '', $str);
         $str = preg_replace('/([\s-]+)/', '-', $str);
         return trim($str, '-');
+    }
+
+    /**
+     * Lấy tên cuối (Tên chính) từ tên đầy đủ
+     */
+    public static function getLastName(string $fullName): string
+    {
+        $fullName = trim($fullName);
+        if ($fullName === '')
+            return '';
+        $parts = explode(' ', $fullName);
+        return (string) end($parts);
     }
 }

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * View: Thêm sản phẩm
  * Route: GET /admin/products/add

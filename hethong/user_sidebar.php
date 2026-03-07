@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * User Sidebar Component (Shared)
  * Dùng chung cho toàn bộ trang user.

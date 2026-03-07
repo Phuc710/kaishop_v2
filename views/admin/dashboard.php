@@ -20,6 +20,7 @@ require_once __DIR__ . '/layout/breadcrumb.php';
         white-space: nowrap;
     }
     .card.border-warning { border-top: 3px solid #ffc107 !important; }
+    .card.border-success { border-top: 3px solid #16a34a !important; }
     .card.border-primary { border-top: 3px solid #3b82f6 !important; }
     .fw-bold { font-weight: 700 !important; }
 </style>
@@ -36,6 +37,7 @@ $chartData = is_array($chartData ?? null) ? $chartData : [];
 $topProducts = is_array($topProducts ?? null) ? $topProducts : [];
 $recentOrders = is_array($recentOrders ?? null) ? $recentOrders : [];
 $recentDeposits = is_array($recentDeposits ?? null) ? $recentDeposits : [];
+$topDepositors = is_array($topDepositors ?? null) ? $topDepositors : [];
 
 $rangeOptions = [
     'all' => 'Tất cả',
@@ -315,6 +317,50 @@ foreach ($channelBreakdown as $row) {
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <tr><td colspan="3" class="text-center text-muted py-3">Chưa có dữ liệu chi tiêu.</td></tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-xl-12">
+                <div class="card custom-card border-success">
+                    <div class="card-header border-0 pb-2">
+                        <h3 class="card-title mb-0 text-success fw-bold"><i class="ion ion-cash"></i> Top nạp</h3>
+                    </div>
+                    <div class="card-body pt-2">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th class="text-center">Lần nạp</th>
+                                        <th class="text-right">Tổng nạp</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (!empty($topDepositors)): ?>
+                                        <?php foreach ($topDepositors as $idx => $depositor): ?>
+                                            <tr>
+                                                <td>
+                                                    <span class="text-muted">#<?= $idx + 1 ?></span>
+                                                    <strong><?= htmlspecialchars((string) ($depositor['username'] ?? '')) ?></strong>
+                                                </td>
+                                                <td class="text-center">
+                                                    <?php
+                                                    $depositCount = (int) ($depositor['deposit_count'] ?? 0);
+                                                    echo $depositCount > 0 ? $fmtInt($depositCount) : '--';
+                                                    ?>
+                                                </td>
+                                                <td class="text-right text-success fw-bold"><?= $fmtMoney($depositor['total_deposit'] ?? 0) ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <tr><td colspan="3" class="text-center text-muted py-3">Chưa có dữ liệu nạp.</td></tr>
                                     <?php endif; ?>
                                 </tbody>
                             </table>

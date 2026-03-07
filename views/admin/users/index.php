@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * View: Danh sách thành viên
  * Route: GET /admin/users

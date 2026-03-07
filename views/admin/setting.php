@@ -397,10 +397,28 @@ require_once __DIR__ . '/layout/breadcrumb.php';
             <div class="col-lg-6">
                 <form id="form-bank" method="post" action="<?= url('admin/setting/update') ?>">
                     <div class="card custom-card">
-                        <div class="card-header border-0">
-                            <h3 class="card-title text-uppercase font-weight-bold">
+                        <div class="card-header border-0 d-flex justify-content-between align-items-center">
+                            <h3 class="card-title text-uppercase font-weight-bold mb-0">
                                 NGÂN HÀNG & KHUYẾN MÃI
                             </h3>
+                            <div class="status-toggle ml-auto">
+                                <input type="hidden" name="bank_pay_enabled" id="bank_pay_enabled_val"
+                                    value="<?= (int) ($chungapi['bank_pay_enabled'] ?? 1) ?>">
+                                <?php if ((int) ($chungapi['bank_pay_enabled'] ?? 1) === 1): ?>
+                                    <button type="button"
+                                        class="btn btn-sm btn-success font-weight-bold px-3 btn-status-toggle"
+                                        data-key="bank_pay_enabled" data-target="#bank_pay_enabled_val">
+                                        <i class="fas fa-check-circle mr-1"></i> HOẠT ĐỘNG
+                                    </button>
+                                <?php else: ?>
+                                    <button type="button"
+                                        class="btn btn-sm btn-danger font-weight-bold px-3 btn-status-toggle"
+                                        data-key="bank_pay_enabled" data-target="#bank_pay_enabled_val">
+                                        <i class="fas fa-tools mr-1"></i> BẢO TRÌ
+                                    </button>
+                                <?php endif; ?>
+                            </div>
+
                         </div>
                         <div class="card-body pt-0">
                             <div class="form-group border-bottom pb-3 mb-3">
@@ -451,16 +469,39 @@ require_once __DIR__ . '/layout/breadcrumb.php';
                                     </div>
                                 </div>
                                 <div class="col-md-12">
-                                    <div class="form-group border-bottom pb-3">
+                                    <div class="form-group">
                                         <label class="font-weight-bold small text-uppercase">SePay API Key</label>
                                         <input type="password" name="sepay_api_key" class="form-control"
                                             value="<?= htmlspecialchars($chungapi['sepay_api_key'] ?? '') ?>">
                                     </div>
                                 </div>
+                                <div class="col-md-12">
+                                    <div class="form-group mb-0">
+                                        <label class="font-weight-bold small text-uppercase">Ghi chú nạp tiền
+                                            (Bank)</label>
+                                        <textarea name="deposit_warning_bank" class="form-control" rows="3"
+                                            placeholder="Cảnh báo hiển thị khi người dùng nạp tiền qua ngân hàng..."><?= htmlspecialchars($chungapi['deposit_warning_bank'] ?? '') ?></textarea>
+                                    </div>
+                                </div>
                             </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-0 text-right">
+                            <button type="submit" class="btn btn-primary shadow-sm px-4 font-weight-bold"
+                                style="border-radius: 8px;">
+                                <i class="fas fa-save mr-1"></i> LƯU NGÂN HÀNG
+                            </button>
+                        </div>
+                    </div>
+                </form>
 
-                            <h6 class="mt-3 font-weight-bold text-primary"><i class="fas fa-gift mr-1"></i> CÁC MỐC
-                                KHUYẾN MÃI NẠP</h6>
+                <form id="form-bonus" method="post" action="<?= url('admin/setting/update') ?>">
+                    <div class="card custom-card mt-3">
+                        <div class="card-header border-0">
+                            <h3 class="card-title text-uppercase font-weight-bold">
+                                <i class="fas fa-gift mr-1"></i> CÁC MỐC KHUYẾN MÃI NẠP
+                            </h3>
+                        </div>
+                        <div class="card-body pt-0">
                             <div class="row">
                                 <?php for ($i = 1; $i <= 3; $i++): ?>
                                     <div class="col-6">
@@ -488,7 +529,80 @@ require_once __DIR__ . '/layout/breadcrumb.php';
                         <div class="card-footer bg-transparent border-0 text-right">
                             <button type="submit" class="btn btn-primary shadow-sm px-4 font-weight-bold"
                                 style="border-radius: 8px;">
-                                <i class="fas fa-save mr-1"></i> LƯU NGÂN HÀNG
+                                <i class="fas fa-save mr-1"></i> LƯU KHUYẾN MÃI
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <form id="form-binance" method="post" action="<?= url('admin/setting/update') ?>">
+                    <div class="card custom-card mt-3">
+                        <div class="card-header border-0 d-flex justify-content-between align-items-center">
+                            <h3 class="card-title text-uppercase font-weight-bold mb-0">
+                                BINANCE PAY (USDT)
+                            </h3>
+                            <div class="status-toggle ml-auto">
+                                <input type="hidden" name="binance_pay_enabled" id="binance_pay_enabled_val"
+                                    value="<?= (int) ($chungapi['binance_pay_enabled'] ?? 0) ?>">
+                                <?php if ((int) ($chungapi['binance_pay_enabled'] ?? 0) === 1): ?>
+                                    <button type="button"
+                                        class="btn btn-sm btn-success font-weight-bold px-3 btn-status-toggle"
+                                        data-key="binance_pay_enabled" data-target="#binance_pay_enabled_val">
+                                        <i class="fas fa-check-circle mr-1"></i> HOẠT ĐỘNG
+                                    </button>
+                                <?php else: ?>
+                                    <button type="button"
+                                        class="btn btn-sm btn-danger font-weight-bold px-3 btn-status-toggle"
+                                        data-key="binance_pay_enabled" data-target="#binance_pay_enabled_val">
+                                        <i class="fas fa-tools mr-1"></i> BẢO TRÌ
+                                    </button>
+                                <?php endif; ?>
+                            </div>
+
+                        </div>
+                        <div class="card-body pt-0">
+
+                            <div class="form-group">
+                                <label class="font-weight-bold small text-uppercase">Binance UID nhận tiền</label>
+                                <input type="text" name="binance_uid" class="form-control"
+                                    value="<?= htmlspecialchars((string) ($chungapi['binance_uid'] ?? '')) ?>"
+                                    placeholder="Nhập UID Binance Funding nhận USDT">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="font-weight-bold small text-uppercase">Ghi chú nạp tiền (Binance)</label>
+                                <textarea name="deposit_warning_binance" class="form-control" rows="3"
+                                    placeholder="Cảnh báo hiển thị khi người dùng nạp tiền qua Binance..."><?= htmlspecialchars((string) ($chungapi['deposit_warning_binance'] ?? '')) ?></textarea>
+                                <small class="text-muted">Sử dụng <code>{amount}</code> và <code>{uid}</code> để hiển
+                                    thị động số tiền và UID.</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="font-weight-bold small text-uppercase">Tỷ giá quy đổi (1 USDT = ?
+                                    VND)</label>
+                                <input type="number" min="1" step="1" name="binance_rate_vnd" class="form-control"
+                                    value="<?= htmlspecialchars((string) ($chungapi['binance_rate_vnd'] ?? '25000')) ?>"
+                                    placeholder="25000">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="font-weight-bold small text-uppercase">Binance API Key</label>
+                                <input type="password" name="binance_api_key" class="form-control"
+                                    value="<?= htmlspecialchars((string) ($chungapi['binance_api_key'] ?? '')) ?>"
+                                    autocomplete="off" placeholder="API Key (chỉ quyền đọc giao dịch Pay)">
+                            </div>
+
+                            <div class="form-group mb-0">
+                                <label class="font-weight-bold small text-uppercase">Binance API Secret</label>
+                                <input type="password" name="binance_api_secret" class="form-control"
+                                    value="<?= htmlspecialchars((string) ($chungapi['binance_api_secret'] ?? '')) ?>"
+                                    autocomplete="off" placeholder="API Secret">
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-0 text-right">
+                            <button type="submit" class="btn btn-primary shadow-sm px-4 font-weight-bold"
+                                style="border-radius: 8px;">
+                                <i class="fas fa-save mr-1"></i> LƯU BINANCE
                             </button>
                         </div>
                     </div>
@@ -588,7 +702,7 @@ require_once __DIR__ . '/layout/breadcrumb.php';
                             </button>
                             <button type="submit" class="btn btn-primary shadow-sm px-4 font-weight-bold"
                                 style="border-radius: 8px;">
-                                <i class="fas fa-save mr-1"></i> Lưu lịch
+                                <i class="fas fa-save mr-1"></i> LƯU LỊCH
                             </button>
                         </div>
                     </div>
@@ -654,41 +768,71 @@ require_once __DIR__ . '/layout/breadcrumb.php';
         handleFormSubmit('form-notification', 'update_notification');
 
         handleFormSubmit('form-bank', 'update_bank');
+        handleFormSubmit('form-bonus', 'update_bonus');
+        handleFormSubmit('form-binance', 'update_binance');
         handleFormSubmit('form-maintenance', 'update_maintenance', () => setTimeout(() => location.reload(), 700));
-    });
 
-    function previewUrl(url, imgId, placeholderId) {
-        const img = document.getElementById(imgId);
-        const placeholder = document.getElementById(placeholderId);
-        if (url) {
-            img.src = url;
-            img.classList.remove('d-none');
-            placeholder.classList.add('d-none');
-        } else {
-            img.classList.add('d-none');
-            placeholder.classList.remove('d-none');
-        }
-    }
+        // Status Button Toggle Handler with AJAX Auto-save
+        $('.btn-status-toggle').on('click', function () {
+            const btn = $(this);
+            const key = btn.data('key');
+            const target = $(btn.data('target'));
+            const isCurrentlyActive = target.val() == '1';
+            const newValue = isCurrentlyActive ? '0' : '1';
 
-    function previewFile(input, imgId, placeholderId, textInputId) {
-        const img = document.getElementById(imgId);
-        const placeholder = document.getElementById(placeholderId);
-        const textInput = document.getElementById(textInputId);
+            // Show loading state
+            const originalHtml = btn.html();
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Đang lưu...');
 
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                img.src = e.target.result;
-                img.classList.remove('d-none');
-                placeholder.classList.add('d-none');
-                textInput.value = ''; // Clear text input when file is selected
-            };
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
+            $.ajax({
+                url: '<?= url('admin/setting/update') ?>',
+                type: 'POST',
+                data: {
+                    action: 'update_status',
+                    key: key,
+                    value: newValue,
+                    csrf_token: '<?= csrf_token() ?>'
+                },
+                dataType: 'json',
+                success: function (res) {
+                    if (res.status === 'success') {
+                        target.val(newValue);
+                        if (newValue == '1') {
+                            btn.removeClass('btn-danger').addClass('btn-success')
+                                .html('<i class="fas fa-check-circle mr-1"></i> HOẠT ĐỘNG');
+                        } else {
+                            btn.removeClass('btn-success').addClass('btn-danger')
+                                .html('<i class="fas fa-tools mr-1"></i> BẢO TRÌ');
+                        }
 
-    $(document).ready(function () {
+                        // Swal Toast Top-Right
+                        const Toast = Swal.mixin({
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true
+                        });
+                        Toast.fire({
+                            icon: 'success',
+                            title: 'Cập nhật trạng thái thành công'
+                        });
+                    } else {
+                        Swal.fire('Lỗi', res.message || 'Không thể cập nhật trạng thái', 'error');
+                        btn.html(originalHtml);
+                    }
+                },
+                error: function () {
+                    Swal.fire('Lỗi', 'Lỗi kết nối server', 'error');
+                    btn.html(originalHtml);
+                },
+                complete: function () {
+                    btn.prop('disabled', false);
+                }
+            });
+        });
 
+        // Moved from separate block to ensure MAINTENANCE_STATUS_URL is visible
         (function initMaintenanceStatusRealtime() {
             const $badge = $('#maintenanceStatusBadge');
             const $statusText = $('#maintenanceStatusText');
@@ -859,6 +1003,37 @@ require_once __DIR__ . '/layout/breadcrumb.php';
             }, 'json');
         });
     });
+
+
+    function previewUrl(url, imgId, placeholderId) {
+        const img = document.getElementById(imgId);
+        const placeholder = document.getElementById(placeholderId);
+        if (url) {
+            img.src = url;
+            img.classList.remove('d-none');
+            placeholder.classList.add('d-none');
+        } else {
+            img.classList.add('d-none');
+            placeholder.classList.remove('d-none');
+        }
+    }
+
+    function previewFile(input, imgId, placeholderId, textInputId) {
+        const img = document.getElementById(imgId);
+        const placeholder = document.getElementById(placeholderId);
+        const textInput = document.getElementById(textInputId);
+
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                img.src = e.target.result;
+                img.classList.remove('d-none');
+                placeholder.classList.add('d-none');
+                if (textInput) textInput.value = '';
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
 
     function copyWebhook() {
         var copyText = document.getElementById("sepay_webhook_url");

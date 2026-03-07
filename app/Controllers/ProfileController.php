@@ -3,11 +3,6 @@
 /**
  * Profile Controller
  * Handles user profile operations + embedded deposit panel
-<?php
-
-/**
- * Profile Controller
- * Handles user profile operations + embedded deposit panel
  */
 class ProfileController extends Controller
 {
@@ -82,6 +77,7 @@ class ProfileController extends Controller
 
         $user = $this->authService->getCurrentUser();
         $newEmail = trim((string) $this->post('email', ''));
+        $fullName = trim((string) $this->post('full_name', ''));
         $twofaFieldProvided = array_key_exists('twofa_enabled', $_POST);
         $twofaEnabled = $twofaFieldProvided
             ? in_array((string) $this->post('twofa_enabled', '0'), ['1', 'true', 'on'], true)
@@ -104,6 +100,7 @@ class ProfileController extends Controller
 
         $success = $this->userModel->update($user['id'], [
             'email' => $newEmail,
+            'full_name' => $fullName,
             'twofa_enabled' => $twofaEnabled ? 1 : 0,
         ]);
 

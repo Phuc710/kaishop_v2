@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 global $chungapi;
 /**
  * KAISHOP Admin Navigation - Single Source UI

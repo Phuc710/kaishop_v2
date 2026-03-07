@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 /**
  * Admin Journal Controller
@@ -245,9 +245,11 @@ class JournalController extends Controller
                 ['key' => 'source', 'label' => 'Nguồn', 'align' => 'center'],
                 ['key' => 'trans_id', 'label' => 'Mã GD', 'align' => 'center'],
                 ['key' => 'method', 'label' => 'Phương Thức', 'align' => 'center'],
+                ['key' => 'bank_name', 'label' => 'Ngân Hàng', 'align' => 'center'],
+                ['key' => 'stk', 'label' => 'STK', 'align' => 'center'],
+                ['key' => 'bank_owner', 'label' => 'Chủ Tài Khoản', 'align' => 'center'],
                 ['key' => 'amount', 'label' => 'Thực Nhận', 'align' => 'center'],
                 ['key' => 'reason', 'label' => 'Nội dung CK', 'align' => 'center'],
-                ['key' => 'status', 'label' => 'Trạng Thái', 'align' => 'center'],
             ],
             'rows' => $this->mapDepositRows($rawRows),
             'query' => $query,
@@ -436,15 +438,10 @@ class JournalController extends Controller
         foreach ($rows as $row) {
             $username = $this->formatUsername($row['username'] ?? '');
 
-            $status = trim((string) ($row['status'] ?? 'pending'));
-            $statusLabel = '<span class="badge bg-warning text-dark">Chờ Xử Lý</span>';
-            if ($status === 'hoantat' || $status === 'success') {
-                $statusLabel = '<span class="badge bg-success">Hoàn Tất</span>';
-            } elseif ($status === 'thatbai' || $status === 'error' || $status === 'cancel') {
-                $statusLabel = '<span class="badge bg-danger">Thất Bại</span>';
-            }
-
             $method = trim((string) ($row['type'] ?? 'Unknown'));
+            $bankName = trim((string) ($row['bank_name'] ?? ''));
+            $stk = trim((string) ($row['stk'] ?? ''));
+            $bankOwner = trim((string) ($row['bank_owner'] ?? ''));
 
             // Override formatted amount for deposit to force positive display
             $amountVal = (int) ($row['amount'] ?? 0);
@@ -458,9 +455,11 @@ class JournalController extends Controller
                 'source' => $this->formatSourceCell($row['source_channel'] ?? null),
                 'trans_id' => '<span class="font-weight-500 text-monospace">' . htmlspecialchars($row['trans_id'] ?? '--') . '</span>',
                 'method' => '<span class="badge bg-light text-dark border">' . htmlspecialchars($method) . '</span>',
+                'bank_name' => $bankName !== '' ? htmlspecialchars($bankName) : '--',
+                'stk' => $stk !== '' ? '<span class="text-monospace">' . htmlspecialchars($stk) . '</span>' : '--',
+                'bank_owner' => $bankOwner !== '' ? htmlspecialchars($bankOwner) : '--',
                 'amount' => FormatHelper::balanceChange($amountVal),
                 'reason' => htmlspecialchars(trim((string) ($row['reason'] ?? '--'))),
-                'status' => $statusLabel,
             ];
         }
 

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $depositPanel = $depositPanel ?? [];
 $methods = is_array($depositPanel['methods'] ?? null) ? $depositPanel['methods'] : [];
 $activeMethod = (string) ($depositPanel['active_method'] ?? 'bank_sepay');
@@ -23,13 +23,9 @@ foreach ($methods as $method) {
 }
 
 $activeMethodRoute = (string) ($depositRouteMethod ?? ($routeMethodMap[$activeMethod] ?? 'bank'));
-$isBankMethod = $activeMethod === 'bank_sepay';
-$activeDepositExists = $isBankMethod && !empty($activeDepositPayload['deposit_code']);
-// Icons for deposit methods (for methods not using custom images)
-$methodIconMap = [
-];
+$activeDepositExists = !empty($activeDepositPayload['deposit_code']);
 
-// Image icons for deposit methods
+$methodIconMap = [];
 $methodImageMap = [
     'bank_sepay' => [
         'src' => (string) asset('assets/images/bank.png'),
@@ -81,17 +77,6 @@ if (!is_file($balanceMethodPartialPath)) {
             <div class="user-card-subtitle">Chọn phương thức nạp tiền phù hợp.</div>
         </div>
         <div class="profile-card-header-actions">
-            <span class="user-card-badge user-card-badge--top-right">
-                <?php if ($activeMethodImageSrc !== ''): ?>
-                    <img src="<?= htmlspecialchars($activeMethodImageSrc, ENT_QUOTES, 'UTF-8') ?>"
-                        alt="<?= htmlspecialchars($activeMethodImageAlt, ENT_QUOTES, 'UTF-8') ?>"
-                        class="user-card-badge__icon me-1 <?= $activeMethod === 'binance' ? 'is-binance-img' : '' ?>">
-                <?php elseif ($activeMethodIconClass !== ''): ?>
-                    <i class="<?= htmlspecialchars($activeMethodIconClass, ENT_QUOTES, 'UTF-8') ?> <?= $activeMethod === 'binance' ? 'is-binance' : '' ?> me-1"
-                        aria-hidden="true"></i>
-                <?php endif; ?>
-                <?= htmlspecialchars($activeMethodLabel, ENT_QUOTES, 'UTF-8') ?>
-            </span>
         </div>
     </div>
 
@@ -103,6 +88,7 @@ if (!is_file($balanceMethodPartialPath)) {
                     $code = (string) ($method['code'] ?? '');
                     $enabled = !empty($method['enabled']);
                     $isActive = $code === $activeMethod;
+                    $isInteractiveDisabled = !$enabled && !$isActive;
                     $methodImage = (array) ($methodImageMap[$code] ?? []);
                     $methodImageSrc = trim((string) ($methodImage['src'] ?? ''));
                     $methodImageAlt = trim((string) ($methodImage['alt'] ?? (string) ($method['label'] ?? $code)));
@@ -112,9 +98,10 @@ if (!is_file($balanceMethodPartialPath)) {
                     }
                     ?>
                     <button type="button"
-                        class="deposit-method-pill <?= $isActive ? 'is-active' : '' ?> <?= !$enabled ? 'is-disabled' : '' ?>"
+                        class="deposit-method-pill <?= $isActive ? 'is-active' : '' ?> <?= $isInteractiveDisabled ? 'is-disabled' : '' ?>"
                         data-method-code="<?= htmlspecialchars($code, ENT_QUOTES, 'UTF-8') ?>"
-                        data-method-enabled="<?= $enabled ? '1' : '0' ?>" aria-disabled="<?= $enabled ? 'false' : 'true' ?>">
+                        data-method-enabled="<?= $enabled ? '1' : '0' ?>"
+                        aria-disabled="<?= $isInteractiveDisabled ? 'true' : 'false' ?>">
                         <span class="deposit-method-pill__badge" aria-hidden="true">
                             <?php if ($methodImageSrc !== ''): ?>
                                 <img src="<?= htmlspecialchars($methodImageSrc, ENT_QUOTES, 'UTF-8') ?>"
@@ -143,9 +130,13 @@ if (!is_file($balanceMethodPartialPath)) {
             'baseUrl' => rtrim((string) url(''), '/'),
             'csrfToken' => function_exists('csrf_token') ? (string) csrf_token() : '',
             'serverNowTs' => TimeService::instance()->nowTs(),
-            'storageKey' => 'ks_balance_bank_' . md5((string) ($username ?? 'guest')),
+            'storageKey' => 'ks_balance_' . $activeMethod . '_' . md5((string) ($username ?? 'guest')),
             'endpoints' => [
                 'create' => (string) url('deposit/create'),
+                'createByMethod' => [
+                    'bank_sepay' => (string) url('deposit/create'),
+                    'binance' => (string) url('deposit/create-binance'),
+                ],
                 'cancel' => (string) url('deposit/cancel'),
                 'statusBase' => (string) url('deposit/status'),
                 'statusWaitBase' => (string) url('deposit/status-wait'),
@@ -160,6 +151,9 @@ if (!is_file($balanceMethodPartialPath)) {
                 'shortName' => (string) ($depositPanel['bankShortName'] ?? $bankName),
                 'account' => $bankAccount,
                 'owner' => $bankOwner,
+            ],
+            'binance' => [
+                'rateVnd' => (int) ($depositPanel['binanceRateVnd'] ?? 25000),
             ],
             'activeDeposit' => $activeDepositExists ? $activeDepositPayload : null,
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)

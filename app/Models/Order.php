@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 /**
  * Order Model (single-product purchase records).

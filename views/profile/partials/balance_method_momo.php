@@ -1,4 +1,4 @@
-﻿<div class="deposit-method-coming-soon">
+<div class="deposit-method-coming-soon">
     <div class="deposit-method-coming-soon__icon">
         <i class="fas fa-mobile-alt"></i>
     </div>

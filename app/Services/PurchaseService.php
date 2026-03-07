@@ -251,19 +251,31 @@ class PurchaseService
                 $this->completeOrderDelivery($orderId, null, $deliveredPlain);
             }
 
+            $nowTs = (string) ($this->timeService ? $this->timeService->nowTs() : time());
+            $nowSql = $this->timeService
+                ? $this->timeService->nowSql($this->timeService->getDbTimezone())
+                : date('Y-m-d H:i:s');
+
+            // Write to activity table — created_at is explicit (not relying on MySQL DEFAULT)
+            // to ensure timezone consistency with the rest of the system (via TimeService::nowSql).
             $activityStmt = $this->db->prepare("
-                INSERT INTO `lich_su_hoat_dong` (`username`, `hoatdong`, `gia`, `time`)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO `lich_su_hoat_dong` (`username`, `hoatdong`, `gia`, `time`, `created_at`)
+                VALUES (?, ?, ?, ?, ?)
             ");
             $activityStmt->execute([
                 $username,
                 'Mua san pham: ' . (string) ($product['name'] ?? ('#' . $productId))
                 . ($giftcodeMeta ? (' | Ma giam gia: ' . $giftcodeInput) : ''),
                 -$totalPrice,
-                (string) ($this->timeService ? $this->timeService->nowTs() : time()),
+                $nowTs,
+                $nowSql,
             ]);
 
             $this->db->commit();
+
+            $orderedAtDisplay = $this->timeService
+                ? $this->timeService->formatDisplay($orderCreatedAtSql, 'H:i:s d/m/Y')
+                : date('H:i:s d/m/Y', strtotime($orderCreatedAtSql) ?: time());
 
             $orderShortCode = $this->makeShortOrderDisplayCode($orderCode);
             $orderData = [
@@ -271,34 +283,15 @@ class PurchaseService
                 'order_code' => $orderCode,
                 'order_code_short' => $orderShortCode,
                 'product_name' => (string) ($product['name'] ?? ''),
-                'price' => $totalPrice,
+                'price' => $price,
+                'quantity' => $requestedQty,
+                'total_price' => $totalPrice,
                 'username' => $username,
                 'customer_input' => $customerInput,
-                'quantity' => $requestedQty,
-            ];
-
-            $orderedAtDisplay = $this->timeService
-                ? $this->timeService->formatDisplay($orderCreatedAtSql, 'H:i:s d/m/Y')
-                : date('H:i:s d/m/Y', strtotime($orderCreatedAtSql) ?: time());
-
-            $this->sendOrderSuccessMailNonBlocking($user, $product, [
-                'order_code' => $orderCode,
-                'order_code_short' => $orderShortCode,
-                'product_name' => (string) ($product['name'] ?? ('Product #' . $productId)),
-                'product_type' => $productType,
-                'requires_info' => $requiresInfo ? 1 : 0,
-                'delivery_mode' => (string) ($product['delivery_mode'] ?? ''),
-                'quantity' => $requestedQty,
-                'unit_price' => $price,
-                'total_price' => $totalPrice,
-                'status' => $requiresInfo ? 'pending' : 'completed',
+                'delivery_content' => $deliveredPlain,
+                'source_label' => SourceChannelHelper::label($sourceChannel),
                 'ordered_at' => $orderedAtDisplay,
-                'created_at' => $orderCreatedAtSql,
-                'customer_input' => $customerInput,
-                'delivery_content' => $requiresInfo ? '' : $deliveredPlain,
-                'source_link' => (string) ($product['source_link'] ?? ''),
-                'info_instructions' => (string) ($product['info_instructions'] ?? ''),
-            ], $sourceChannel);
+            ];
 
             // Enqueue Telegram notification
             try {

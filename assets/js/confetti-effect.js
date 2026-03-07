@@ -22,9 +22,12 @@
     function fire(options) {
         if (typeof confetti !== 'function') return;
 
-        const count = 150;
+        const count = 200;
+        const isMobile = window.innerWidth <= 768;
+        const originY = isMobile ? 0.85 : 0.75;
+
         const defaults = {
-            origin: { y: 0.7 },
+            origin: { y: originY },
             spread: 70,
             ticks: 200,
             gravity: 1.2,
@@ -37,14 +40,14 @@
             ...defaults,
             particleCount: count,
             angle: 60,
-            origin: { x: 0, y: 0.7 }
+            origin: { x: 0, y: originY }
         });
 
         confetti({
             ...defaults,
             particleCount: count,
             angle: 120,
-            origin: { x: 1, y: 0.7 }
+            origin: { x: 1, y: originY }
         });
     }
 

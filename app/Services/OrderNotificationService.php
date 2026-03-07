@@ -81,12 +81,12 @@ class OrderNotificationService
         $username = $order['username'] ?? 'Khách';
         $price = (int) ($order['price'] ?? 0);
         $qty = max(1, (int) ($order['quantity'] ?? 1));
-        $total = $price * $qty;
-        $createdAt = $order['created_at'] ?? date('Y-m-d H:i:s');
-        $source = SourceChannelHelper::label(SourceChannelHelper::fromOrderRow($order));
+        $total = (int) ($order['total_price'] ?? ($price * $qty));
+        $createdAt = $order['ordered_at'] ?? date('H:i:s d/m/Y');
+        $source = $order['source_label'] ?? 'Web';
+        $delivery = trim((string) ($order['delivery_content'] ?? ''));
 
-        $msg = "💰 <b>CÓ ĐƠN HÀNG MỚI (AUTO)</b>\n\n";
-        $msg .= "🔢 ID đơn: <code>#{$orderId}</code>\n";
+        $msg = "💰 <b>CÓ ĐƠN HÀNG MỚI</b>\n\n";
         $msg .= "🎫 Mã đơn: <code>{$orderCode}</code>\n";
         $msg .= "👤 Khách hàng: <b>{$username}</b>\n";
         $msg .= "📦 Sản phẩm: <b>{$productName}</b>\n";
@@ -95,6 +95,13 @@ class OrderNotificationService
         $msg .= "💳 Tổng tiền: <b>" . number_format($total) . "đ</b>\n";
         $msg .= "🌐 Nguồn: <b>{$source}</b>\n";
         $msg .= "🕐 Thời gian: <code>{$createdAt}</code>\n";
+
+        if ($delivery !== '') {
+            $msg .= "━━━━━━━━━━━━━━\n";
+            $msg .= "📦 <b>NỘI DUNG BÀN GIAO:</b>\n";
+            $msg .= "<code>" . htmlspecialchars($delivery) . "</code>\n";
+        }
+
         $msg .= "━━━━━━━━━━━━━━\n";
         $msg .= "✅ Hệ thống đã tự động giao hàng.";
 

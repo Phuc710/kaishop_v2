@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $userPageTitle = 'Đổi mật khẩu';
 $userPageAssetFlags = [
     'interactive_bundle' => false,

@@ -32,6 +32,16 @@ class SepayWebhookController extends Controller
         $expectedKey = trim((string) ($chungapi['sepay_api_key'] ?? ''));
         $authHeader = trim((string) ($_SERVER['HTTP_AUTHORIZATION'] ?? ''));
 
+        // Fallback for Apache (some XAMPP versions/configs strip Authorization)
+        if ($authHeader === '' && function_exists('apache_request_headers')) {
+            $apacheHeaders = apache_request_headers();
+            if (!empty($apacheHeaders['Authorization'])) {
+                $authHeader = trim((string) $apacheHeaders['Authorization']);
+            } elseif (!empty($apacheHeaders['authorization'])) {
+                $authHeader = trim((string) $apacheHeaders['authorization']);
+            }
+        }
+
         if ($expectedKey === '') {
             // API key not configured — reject all requests to prevent abuse
             Logger::danger('Billing', 'webhook_no_api_key', 'SePay webhook called but sepay_api_key is not configured', [
@@ -50,6 +60,7 @@ class SepayWebhookController extends Controller
         if (!hash_equals($expectedKey, $providedKey)) {
             Logger::danger('Billing', 'webhook_invalid_key', 'SePay webhook: invalid API key', [
                 'ip' => $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0',
+                'provided' => $providedKey,
             ]);
             http_response_code(401);
             return $this->json(['success' => false, 'message' => 'Invalid API key']);
@@ -71,6 +82,32 @@ class SepayWebhookController extends Controller
         $content = trim((string) ($data['content'] ?? ''));
         $gateway = trim((string) ($data['gateway'] ?? ''));
         $accountNumber = trim((string) ($data['accountNumber'] ?? ''));
+        $bankNameSource = trim((string) ($data['bankName'] ?? $data['bank_name'] ?? $gateway));
+        $bankOwnerSource = '';
+        foreach ([
+            'accountName',
+            'account_name',
+            'ownerName',
+            'owner_name',
+            'counterAccountName',
+            'counter_account_name',
+            'senderName',
+            'sender_name',
+            'payerName',
+            'payer_name',
+        ] as $ownerKey) {
+            $ownerVal = trim((string) ($data[$ownerKey] ?? ''));
+            if ($ownerVal !== '') {
+                $bankOwnerSource = $ownerVal;
+                break;
+            }
+        }
+        if ($bankNameSource !== '') {
+            $bankNameSource = function_exists('mb_substr') ? mb_substr($bankNameSource, 0, 120) : substr($bankNameSource, 0, 120);
+        }
+        if ($bankOwnerSource !== '') {
+            $bankOwnerSource = function_exists('mb_substr') ? mb_substr($bankOwnerSource, 0, 150) : substr($bankOwnerSource, 0, 150);
+        }
         $referenceCode = trim((string) ($data['referenceCode'] ?? ''));
         $transactionDate = trim((string) ($data['transactionDate'] ?? ''));
 
@@ -203,12 +240,23 @@ class SepayWebhookController extends Controller
 
         // 11. Record in history_nap_bank (PDO prepared statements)
         $now = class_exists('TimeService') ? TimeService::instance()->nowTs() : time();
+        $nowSql = class_exists('TimeService')
+            ? TimeService::instance()->nowSql(TimeService::instance()->getDbTimezone())
+            : date('Y-m-d H:i:s');
 
-        $historyColumns = ['trans_id', 'username', 'type', 'ctk', 'stk', 'thucnhan', 'status', 'time'];
-        $historyValues = [$referenceCode, $username, $gateway, $content, $accountNumber, $totalCredit, 'hoantat', $now];
+        $historyColumns = ['trans_id', 'username', 'type', 'ctk', 'stk', 'thucnhan', 'status', 'time', 'created_at'];
+        $historyValues = [$referenceCode, $username, $gateway, $content, $accountNumber, $totalCredit, 'hoantat', $now, $nowSql];
         if ($this->hasColumn('history_nap_bank', 'source_channel')) {
             $historyColumns[] = 'source_channel';
             $historyValues[] = $sourceChannel;
+        }
+        if ($this->hasColumn('history_nap_bank', 'bank_name')) {
+            $historyColumns[] = 'bank_name';
+            $historyValues[] = ($bankNameSource !== '' ? $bankNameSource : null);
+        }
+        if ($this->hasColumn('history_nap_bank', 'bank_owner')) {
+            $historyColumns[] = 'bank_owner';
+            $historyValues[] = ($bankOwnerSource !== '' ? $bankOwnerSource : null);
         }
         $historyMarks = implode(', ', array_fill(0, count($historyColumns), '?'));
         $stmt = $db->prepare("
@@ -243,6 +291,8 @@ class SepayWebhookController extends Controller
             'bonus_amount' => $bonusAmount,
             'total_credit' => $totalCredit,
             'gateway' => $gateway,
+            'bank_name' => $bankNameSource,
+            'bank_owner' => $bankOwnerSource,
             'username' => $username,
             'source_channel' => $sourceChannel,
         ]);
@@ -361,7 +411,34 @@ class SepayWebhookController extends Controller
             // ignore if key exists or ALTER is restricted
         }
 
+        try {
+            if (!$this->hasColumn('history_nap_bank', 'bank_name')) {
+                Database::getInstance()->getConnection()
+                    ->exec("ALTER TABLE `history_nap_bank` ADD COLUMN `bank_name` VARCHAR(120) NULL AFTER `stk`");
+            }
+        } catch (Throwable $e) {
+            // ignore if ALTER is restricted
+        }
+
+        try {
+            if (!$this->hasColumn('history_nap_bank', 'bank_owner')) {
+                Database::getInstance()->getConnection()
+                    ->exec("ALTER TABLE `history_nap_bank` ADD COLUMN `bank_owner` VARCHAR(150) NULL AFTER `bank_name`");
+            }
+        } catch (Throwable $e) {
+            // ignore if ALTER is restricted
+        }
+
+        try {
+            Database::getInstance()->getConnection()
+                ->exec("ALTER TABLE `history_nap_bank` ADD KEY `idx_hnb_bank_name` (`bank_name`)");
+        } catch (Throwable $e) {
+            // ignore if key exists or ALTER is restricted
+        }
+
         unset($this->schemaCache['history_nap_bank.source_channel']);
+        unset($this->schemaCache['history_nap_bank.bank_name']);
+        unset($this->schemaCache['history_nap_bank.bank_owner']);
     }
 
 }

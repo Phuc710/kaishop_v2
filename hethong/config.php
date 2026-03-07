@@ -33,6 +33,16 @@ if (!class_exists('Config')) {
     {
         private static ?array $siteConfigCache = null;
 
+        // Keys stored encrypted in DB — will be auto-decrypted on read
+        private const ENCRYPTED_KEYS = [
+            'binance_api_key',
+            'binance_api_secret',
+            'sepay_api_key',
+            'telegram_bot_token',
+            'telegram_webhook_secret',
+            'pass_mail_auto',
+        ];
+
         public static function getSiteConfig(bool $forceRefresh = false): array
         {
             global $connection;
@@ -97,6 +107,16 @@ if (!class_exists('Config')) {
                         }
                     }
                 }
+
+                // Auto-decrypt sensitive fields
+                if (class_exists('SecureCrypto')) {
+                    foreach (self::ENCRYPTED_KEYS as $eKey) {
+                        if (isset($finalConfig[$eKey]) && $finalConfig[$eKey] !== '') {
+                            $finalConfig[$eKey] = SecureCrypto::decrypt((string) $finalConfig[$eKey]);
+                        }
+                    }
+                }
+
                 self::$siteConfigCache = $finalConfig;
             } catch (Throwable $e) {
                 self::$siteConfigCache = $defaults;
@@ -122,7 +142,7 @@ if (!function_exists('check_string')) {
 if (!function_exists('format_cash')) {
     function format_cash($number): string
     {
-        return number_format((float) $number, 0, ',', '.');
+        return number_format((float) $number, 0, ',', '.') . 'đ';
     }
 }
 

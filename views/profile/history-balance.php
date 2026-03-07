@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $userPageTitle = 'Biến động số dư';
 $userPageAssetFlags = [
     'datatables' => true,
@@ -101,9 +101,12 @@ require __DIR__ . '/layout/header.php';
             return String(row.time || '--');
         }
 
-        function fmtMoneyVnd(value) {
-            const n = Number(value || 0);
-            return new Intl.NumberFormat('vi-VN').format(Math.abs(n)) + 'đ';
+        function fmtMoney(value) {
+            const n = Math.abs(Number(value || 0));
+            if (window.KAI_CURRENCY && typeof window.KAI_CURRENCY.isUsd === 'function' && window.KAI_CURRENCY.isUsd()) {
+                return window.KAI_CURRENCY.formatUsd(n);
+            }
+            return new Intl.NumberFormat('vi-VN').format(n) + '₫';
         }
 
         function debounce(fn, wait) {
@@ -116,27 +119,41 @@ require __DIR__ . '/layout/header.php';
             };
         }
 
-        function renderBalanceMoney(value, kind) {
+        function renderBalanceMoney(value, kind, row) {
             const n = Number(value || 0);
             if (!Number.isFinite(n)) return '--';
 
-            if (kind === 'change') {
-                if (n > 0) {
-                    return '<span class="user-money-change user-money-change--plus">+' + fmtMoneyVnd(n) + '</span>';
+            // Special handling for Binance deposits: Show USDT if possible
+            let isBinanceDeposit = false;
+            let usdtText = '';
+            if (kind === 'change' && row && row.reason) {
+                if (row.reason.includes('Binance Pay')) {
+                    isBinanceDeposit = true;
+                    // Try to extract USDT amount: "Nap tien Binance Pay: 1.23 USDT"
+                    const match = row.reason.match(/:\s*([\d.]+)\s*USDT/i);
+                    if (match) {
+                        usdtText = '+$' + parseFloat(match[1]).toFixed(2);
+                    }
                 }
-                if (n < 0) {
-                    return '<span class="user-money-change user-money-change--minus">-' + fmtMoneyVnd(n) + '</span>';
-                }
-                return '<span class="user-money-before">0đ</span>';
             }
 
-            if (kind === 'after') {
-                const sign = n < 0 ? '-' : '';
-                return '<span class="user-money-after">' + sign + fmtMoneyVnd(n) + '</span>';
+            if (kind === 'change') {
+                if (n > 0) {
+                    if (isBinanceDeposit && usdtText) {
+                        // For Binance deposits, we don't use data-price-vnd so it doesn't get toggled back to VND
+                        return '<span class="user-money-change user-money-change--plus">' + usdtText + '</span>';
+                    }
+                    return '<span class="user-money-change user-money-change--plus" data-price-vnd="' + n + '">+' + fmtMoney(n) + '</span>';
+                }
+                if (n < 0) {
+                    return '<span class="user-money-change user-money-change--minus" data-price-vnd="' + n + '">-' + fmtMoney(Math.abs(n)) + '</span>';
+                }
+                return '<span class="user-money-before">0₫</span>';
             }
 
             const sign = n < 0 ? '-' : '';
-            return '<span class="user-money-before">' + sign + fmtMoneyVnd(n) + '</span>';
+            const className = kind === 'after' ? 'user-money-after' : 'user-money-before';
+            return '<span class="' + className + '" data-price-vnd="' + n + '">' + sign + fmtMoney(n) + '</span>';
         }
 
         let datePicker = {
@@ -165,17 +182,17 @@ require __DIR__ . '/layout/header.php';
                 {
                     data: null,
                     className: 'text-center text-nowrap',
-                    render: function (row) { return renderBalanceMoney(row.before_amount, 'before'); }
+                    render: function (row) { return renderBalanceMoney(row.before_amount, 'before', row); }
                 },
                 {
                     data: null,
                     className: 'text-center text-nowrap',
-                    render: function (row) { return renderBalanceMoney(row.change_amount, 'change'); }
+                    render: function (row) { return renderBalanceMoney(row.change_amount, 'change', row); }
                 },
                 {
                     data: null,
                     className: 'text-center text-nowrap',
-                    render: function (row) { return renderBalanceMoney(row.after_amount, 'after'); }
+                    render: function (row) { return renderBalanceMoney(row.after_amount, 'after', row); }
                 },
                 { data: 'reason', className: 'text-start text-wrap' }
             ],
@@ -183,6 +200,11 @@ require __DIR__ . '/layout/header.php';
             ordering: false,
             pageLength: 10,
             dom: 't<"d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3"<"text-muted small"i><"d-flex align-items-center gap-3"p>>',
+            drawCallback: function () {
+                if (window.KAI_CURRENCY && typeof window.KAI_CURRENCY.refresh === 'function') {
+                    window.KAI_CURRENCY.refresh();
+                }
+            },
             language: {
                 info: "Hiển thị _START_ - _END_ trong tổng số _TOTAL_ biến động",
                 infoEmpty: "Chưa có biến động nào",
