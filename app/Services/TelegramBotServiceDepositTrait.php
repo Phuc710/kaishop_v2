@@ -296,7 +296,7 @@ trait TelegramBotServiceDepositTrait
 
         return TelegramService::buildInlineKeyboard([
             $quickButtons,
-            [['text' => '❌ Hủy', 'callback_data' => 'back_home']],
+            [['text' => '⬅️ Quay lại', 'callback_data' => 'deposit_menu']],
         ]);
     }
 

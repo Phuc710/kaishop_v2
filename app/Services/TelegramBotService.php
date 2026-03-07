@@ -477,7 +477,7 @@ class TelegramBotService
         } else {
             $rows[] = [['text' => '💳 Thanh toán ngay', 'callback_data' => 'deposit_menu']];
         }
-        $rows[] = [$this->backHomeButton()];
+        $rows[] = [['text' => '❌ Hủy giao dịch', 'callback_data' => 'deposit_menu']];
         return TelegramService::buildInlineKeyboard($rows);
     }
 
@@ -734,8 +734,8 @@ class TelegramBotService
 
         $msg = "🌟 <b>TRỢ GIÚP — DANH SÁCH LỆNH</b>\n\n";
         $msg .= "🛍 /shop    — Cửa hàng\n";
-        $msg .= "💰 /wallet  — Ví của tôi (hoặc /balance)\n";
-        $msg .= "💳 /deposit — Nạp tiền ngân hàng (VND)\n";
+        $msg .= "💰 /balance — Ví của tôi\n";
+        $msg .= "💳 /bank    — Nạp tiền ngân hàng (VND)\n";
         $msg .= "🟡 /binance — Nạp tiền Binance Pay (USD)\n";
         $msg .= "📦 /orders  — Lịch sử đơn hàng\n";
         $msg .= "📋 /menu    — Mở menu nhanh\n";
