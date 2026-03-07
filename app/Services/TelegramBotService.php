@@ -733,7 +733,7 @@ class TelegramBotService
         $isAdmin = TelegramConfig::isAdmin($telegramId);
 
         $msg = "✨ <b>TRỢ GIÚP — DANH SÁCH LỆNH</b>\n\n";
-        $msg .= "🛍 /shop    — Cửa hàng\n";
+        $msg .= "🛍️ /shop    — Cửa hàng\n";
         $msg .= "💰 /balance — Ví của tôi\n";
         $msg .= "💳 /bank    — Nạp tiền ngân hàng (VND)\n";
         $msg .= "🟡 /binance — Nạp tiền Binance Pay (USD)\n";
@@ -746,7 +746,7 @@ class TelegramBotService
             $msg .= "\n👑 <b>LỆNH ADMIN:</b>\n";
             $msg .= "📊 /stats                   — Thống kê\n";
             $msg .= "📢 /broadcast &lt;nội_dung&gt; — Gửi thông báo\n";
-            $msg .= "🛠 /maintenance on|off       — Bảo trì\n";
+            $msg .= "🚧 /maintenance on|off       — Bảo trì\n";
             $msg .= "🏦 /setbank &lt;bank|stk|chủ&gt; — Đổi ngân hàng\n";
         }
 
