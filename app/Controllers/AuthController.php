@@ -74,7 +74,16 @@ class AuthController extends Controller
         $fpComponents = (string) $this->post('fp_components', '');
 
         if (($limit = $this->authSecurity->checkRateLimit('login', $username)) !== null) {
-            return $this->json(['success' => false, 'message' => $limit['message']], 429);
+            $retryAfterSeconds = max(0, (int) ($limit['retry_after_seconds'] ?? 0));
+            return $this->json([
+                'success' => false,
+                'message' => (string) ($limit['message'] ?? 'Bạn đã thử quá số lần cho phép.'),
+                'retry_after_seconds' => $retryAfterSeconds,
+                'lockout_until' => $retryAfterSeconds > 0 ? time() + $retryAfterSeconds : null,
+                'window_minutes' => (int) ($limit['window_minutes'] ?? 5),
+                'max_attempts' => (int) ($limit['limit'] ?? 5),
+                'attempts_left' => (int) ($limit['attempts_left'] ?? 0),
+            ], 429);
         }
 
         if (($turnstileError = $this->requireTurnstileToken()) !== null) {
@@ -149,17 +158,42 @@ class AuthController extends Controller
         $status = $this->authSecurity->getFailedAttemptStatus('login', $username);
         $attemptsLeft = (int) ($status['attempts_left'] ?? 0);
         $maxAttempts = (int) ($status['limit'] ?? 5);
-        $windowMinutes = (int) ($status['window_minutes'] ?? 10);
+        $windowMinutes = (int) ($status['window_minutes'] ?? 5);
+        $retryAfterSeconds = max(0, (int) ($status['retry_after_seconds'] ?? 0));
 
         if ($attemptsLeft <= 0) {
             $limit = $this->authSecurity->checkRateLimit('login', $username);
-            $message = (string) ($limit['message'] ?? ('Tài khoản này đã bị khoá tạm thời ' . $windowMinutes . ' phút do nhập sai quá ' . $maxAttempts . ' lần.'));
+            if (is_array($limit)) {
+                $retryAfterSeconds = max(0, (int) ($limit['retry_after_seconds'] ?? $retryAfterSeconds));
+                $windowMinutes = (int) ($limit['window_minutes'] ?? $windowMinutes);
+                $maxAttempts = (int) ($limit['limit'] ?? $maxAttempts);
+            }
+            if (!is_array($limit) && $retryAfterSeconds <= 0) {
+                $latestStatus = $this->authSecurity->getFailedAttemptStatus('login', $username);
+                $attemptsLeft = max(0, (int) ($latestStatus['attempts_left'] ?? 0));
+                $maxAttempts = (int) ($latestStatus['limit'] ?? $maxAttempts);
+                $windowMinutes = (int) ($latestStatus['window_minutes'] ?? $windowMinutes);
+
+                return $this->json([
+                    'success' => false,
+                    'message' => "Thông tin đăng nhập không chính xác.\nBạn còn " . $attemptsLeft . '/' . $maxAttempts . ' lần thử',
+                    'attempts_left' => $attemptsLeft,
+                    'max_attempts' => $maxAttempts,
+                    'window_minutes' => $windowMinutes,
+                    'retry_after_seconds' => 0,
+                    'lockout_until' => null,
+                ], 401);
+            }
+
+            $message = (string) ($limit['message'] ?? ('Tài khoản này đã bị khóa tạm thời ' . $windowMinutes . ' phút do nhập sai quá ' . $maxAttempts . ' lần.'));
             return $this->json([
                 'success' => false,
                 'message' => $message,
                 'attempts_left' => 0,
                 'max_attempts' => $maxAttempts,
-                'window_minutes' => $windowMinutes
+                'window_minutes' => $windowMinutes,
+                'retry_after_seconds' => $retryAfterSeconds,
+                'lockout_until' => $retryAfterSeconds > 0 ? time() + $retryAfterSeconds : null,
             ], 429);
         }
 
@@ -168,7 +202,9 @@ class AuthController extends Controller
             'message' => "Thông tin đăng nhập không chính xác.\nBạn còn " . $attemptsLeft . '/' . $maxAttempts . ' lần thử',
             'attempts_left' => $attemptsLeft,
             'max_attempts' => $maxAttempts,
-            'window_minutes' => $windowMinutes
+            'window_minutes' => $windowMinutes,
+            'retry_after_seconds' => 0,
+            'lockout_until' => null,
         ], 401);
     }
 

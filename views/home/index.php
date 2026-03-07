@@ -73,12 +73,13 @@
 
         .home-search-input {
             width: 100%;
-            padding: 10px 15px 10px 40px;
+            padding: 11px 15px 11px 45px;
             border-radius: 50px !important;
-            border: 1px solid #eee;
-            background: #f8f9fa;
-            transition: all 0.3s ease;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             font-size: 0.95rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
         }
 
         .home-search-input:focus {
@@ -90,7 +91,7 @@
 
         .home-search-icon {
             position: absolute;
-            left: 15px;
+            left: 18px;
             top: 50%;
             transform: translateY(-50%);
             color: #adb5bd;
@@ -362,10 +363,12 @@
                                                 </div>
                                                 <div class="ds-price-row">
                                                     <div class="ds-price" data-price-vnd="<?= (int) $product['price_vnd'] ?>">
-                                                        <?= number_format($product['price_vnd']) ?>đ</div>
+                                                        <?= number_format($product['price_vnd']) ?>đ
+                                                    </div>
                                                     <?php if ($discount > 0): ?>
                                                         <div class="ds-old-price" data-price-vnd="<?= (int) $product['old_price'] ?>">
-                                                            <?= number_format($product['old_price']) ?>đ</div>
+                                                            <?= number_format($product['old_price']) ?>đ
+                                                        </div>
                                                         <div class="ds-discount">-<?= $discount ?>%</div>
                                                     <?php endif; ?>
                                                 </div>

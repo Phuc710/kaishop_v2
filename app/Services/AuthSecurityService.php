@@ -27,7 +27,7 @@ class AuthSecurityService
     private const IP_BURST_LIMIT = 10;
     private const IP_BURST_WINDOW_MINUTES = 15;
     private const LOGIN_FAIL_LIMIT = 5;
-    private const LOGIN_FAIL_WINDOW_MINUTES = 10;
+    private const LOGIN_FAIL_WINDOW_MINUTES = 5;
     private const DEFAULT_FAIL_LIMIT = 5;
     private const DEFAULT_FAIL_WINDOW_MINUTES = 15;
 
@@ -97,21 +97,47 @@ class AuthSecurityService
         $stmt->execute([$action, $ip, $nowSql]);
         $ipCount = (int) $stmt->fetchColumn();
         if ($ipCount >= self::IP_BURST_LIMIT) {
-            return ['blocked' => true, 'message' => 'Bạn thao tác quá nhanh. Vui lòng thử lại sau 15 phút.'];
+            return [
+                'blocked' => true,
+                'reason' => 'ip_burst',
+                'message' => 'Bạn thao tác quá nhanh. Vui lòng thử lại sau 15 phút.',
+                'retry_after_seconds' => $this->calculateIpBurstRetryAfterSeconds($action, $ip, $nowSql, $ipWindowMinutes, $ipCount, self::IP_BURST_LIMIT),
+                'window_minutes' => $ipWindowMinutes,
+                'limit' => (int) self::IP_BURST_LIMIT,
+            ];
         }
 
         if ($usernameOrEmail !== '') {
+            $normalized = mb_substr(trim($usernameOrEmail), 0, 190);
             $policy = $this->getFailPolicy($action);
             $failWindowMinutes = (int) ($policy['window_minutes'] ?? self::DEFAULT_FAIL_WINDOW_MINUTES);
-            $stmt = $this->db->prepare("SELECT COUNT(*) c FROM auth_login_attempts WHERE action = ? AND username_or_email = ? AND ip_address = ? AND success = 0 AND created_at >= (? - INTERVAL {$failWindowMinutes} MINUTE)");
-            $stmt->execute([$action, mb_substr($usernameOrEmail, 0, 190), $ip, $nowSql]);
-            $failCount = (int) $stmt->fetchColumn();
+            $failCount = $this->getFailedAttemptCount($action, $normalized, $ip, $nowSql, $failWindowMinutes);
             if ($failCount >= $policy['limit']) {
+                $retryAfterSeconds = $this->calculateFailedAttemptRetryAfterSeconds(
+                    $action,
+                    $normalized,
+                    $ip,
+                    $nowSql,
+                    $failWindowMinutes,
+                    $failCount,
+                    (int) $policy['limit']
+                );
+
                 // Send email warning on first lockout trigger
                 if ($action === 'login') {
                     $this->sendLockoutWarningEmail($usernameOrEmail, $ip, $failCount, (int) $policy['window_minutes']);
                 }
-                return ['blocked' => true, 'message' => 'Tài khoản này đã bị khoá tạm thời ' . (int) $policy['window_minutes'] . ' phút do nhập sai quá ' . (int) $policy['limit'] . ' lần.'];
+
+                return [
+                    'blocked' => true,
+                    'reason' => 'failed_attempts',
+                    'message' => 'Tài khoản này đã bị khóa tạm thời ' . (int) $policy['window_minutes'] . ' phút do nhập sai quá ' . (int) $policy['limit'] . ' lần.',
+                    'retry_after_seconds' => $retryAfterSeconds,
+                    'window_minutes' => (int) $policy['window_minutes'],
+                    'limit' => (int) $policy['limit'],
+                    'failed_attempts' => $failCount,
+                    'attempts_left' => 0,
+                ];
             }
         }
 
@@ -121,28 +147,34 @@ class AuthSecurityService
     public function getFailedAttemptStatus(string $action, string $usernameOrEmail): array
     {
         $policy = $this->getFailPolicy($action);
+        $limit = (int) ($policy['limit'] ?? self::DEFAULT_FAIL_LIMIT);
         $normalized = mb_substr(trim($usernameOrEmail), 0, 190);
         if ($normalized === '') {
             return [
                 'failed_attempts' => 0,
-                'attempts_left' => $policy['limit'],
-                'limit' => $policy['limit'],
-                'window_minutes' => $policy['window_minutes'],
+                'attempts_left' => $limit,
+                'limit' => $limit,
+                'window_minutes' => (int) ($policy['window_minutes'] ?? self::DEFAULT_FAIL_WINDOW_MINUTES),
+                'blocked' => false,
+                'retry_after_seconds' => 0,
             ];
         }
 
         $ip = $this->clientIp();
         $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
         $failWindowMinutes = (int) ($policy['window_minutes'] ?? self::DEFAULT_FAIL_WINDOW_MINUTES);
-        $stmt = $this->db->prepare("SELECT COUNT(*) c FROM auth_login_attempts WHERE action = ? AND username_or_email = ? AND ip_address = ? AND success = 0 AND created_at >= (? - INTERVAL {$failWindowMinutes} MINUTE)");
-        $stmt->execute([$action, $normalized, $ip, $nowSql]);
-        $failCount = (int) $stmt->fetchColumn();
+        $failCount = $this->getFailedAttemptCount($action, $normalized, $ip, $nowSql, $failWindowMinutes);
+        $retryAfterSeconds = $failCount >= $limit
+            ? $this->calculateFailedAttemptRetryAfterSeconds($action, $normalized, $ip, $nowSql, $failWindowMinutes, $failCount, $limit)
+            : 0;
 
         return [
             'failed_attempts' => $failCount,
-            'attempts_left' => max(0, (int) $policy['limit'] - $failCount),
-            'limit' => $policy['limit'],
-            'window_minutes' => $policy['window_minutes'],
+            'attempts_left' => max(0, $limit - $failCount),
+            'limit' => $limit,
+            'window_minutes' => $failWindowMinutes,
+            'blocked' => $retryAfterSeconds > 0,
+            'retry_after_seconds' => $retryAfterSeconds,
         ];
     }
 
@@ -159,6 +191,76 @@ class AuthSecurityService
             'limit' => self::DEFAULT_FAIL_LIMIT,
             'window_minutes' => self::DEFAULT_FAIL_WINDOW_MINUTES,
         ];
+    }
+
+    private function getFailedAttemptCount(string $action, string $normalizedUsername, string $ip, string $nowSql, int $windowMinutes): int
+    {
+        $stmt = $this->db->prepare(
+            "SELECT COUNT(*) c
+             FROM auth_login_attempts
+             WHERE action = ?
+               AND username_or_email = ?
+               AND ip_address = ?
+               AND success = 0
+               AND created_at >= (? - INTERVAL {$windowMinutes} MINUTE)"
+        );
+        $stmt->execute([$action, $normalizedUsername, $ip, $nowSql]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    private function calculateFailedAttemptRetryAfterSeconds(
+        string $action,
+        string $normalizedUsername,
+        string $ip,
+        string $nowSql,
+        int $windowMinutes,
+        int $failCount,
+        int $limit
+    ): int {
+        if ($failCount < $limit) {
+            return 0;
+        }
+
+        $offset = max(0, $failCount - $limit);
+        $stmt = $this->db->prepare(
+            "SELECT GREATEST(0, TIMESTAMPDIFF(SECOND, ?, DATE_ADD(created_at, INTERVAL {$windowMinutes} MINUTE))) AS retry_after_seconds
+             FROM auth_login_attempts
+             WHERE action = ?
+               AND username_or_email = ?
+               AND ip_address = ?
+               AND success = 0
+               AND created_at >= (? - INTERVAL {$windowMinutes} MINUTE)
+             ORDER BY created_at ASC
+             LIMIT 1 OFFSET {$offset}"
+        );
+        $stmt->execute([$nowSql, $action, $normalizedUsername, $ip, $nowSql]);
+        return max(0, (int) $stmt->fetchColumn());
+    }
+
+    private function calculateIpBurstRetryAfterSeconds(
+        string $action,
+        string $ip,
+        string $nowSql,
+        int $windowMinutes,
+        int $ipCount,
+        int $limit
+    ): int {
+        if ($ipCount < $limit) {
+            return 0;
+        }
+
+        $offset = max(0, $ipCount - $limit);
+        $stmt = $this->db->prepare(
+            "SELECT GREATEST(0, TIMESTAMPDIFF(SECOND, ?, DATE_ADD(created_at, INTERVAL {$windowMinutes} MINUTE))) AS retry_after_seconds
+             FROM auth_login_attempts
+             WHERE action = ?
+               AND ip_address = ?
+               AND created_at >= (? - INTERVAL {$windowMinutes} MINUTE)
+             ORDER BY created_at ASC
+             LIMIT 1 OFFSET {$offset}"
+        );
+        $stmt->execute([$nowSql, $action, $ip, $nowSql]);
+        return max(0, (int) $stmt->fetchColumn());
     }
 
     /**

@@ -58,7 +58,7 @@ $GLOBALS['pageAssets'] = [
     <?php require __DIR__ . '/../../hethong/nav.php'; ?>
 
     <main class="auth-page">
-        <section class="bg-offWhite auth-page-section">
+        <section class="auth-page-section">
             <div class="container auth-page-container">
                 <div class="row auth-page-row">
                     <div class="auth-page-col">

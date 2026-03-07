@@ -128,17 +128,18 @@ foreach ($authNavPaths as $p) {
     }
 
     .header-primary {
-        box-shadow: rgba(0, 0, 0, 0.15) 0px 5px 15px 0px;
+        /* box-shadow: rgba(0, 0, 0, 0.15) 0px 5px 15px 0px; */
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         z-index: 2000;
         background: #fff;
+        border-bottom: 1px solid #f1f1f1;
     }
 
     main {
-        padding-top: 40px;
+        padding-top: 80px;
     }
 
     .nav-divider {

@@ -34,17 +34,18 @@ trait TelegramBotServiceDepositTrait
         }
 
         $bankLabel = $bankEnabled ? '🏦 Ngân hàng (VND)' : '🏦 Ngân hàng 🔴 Bảo trì';
-        $binanceLabel = $binanceEnabled ? '🟡 Binance Pay (USDT)' : '🟡 Binance Pay 🔴 Bảo trì';
+        $binanceLabel = $binanceEnabled ? '🟡 Binance Pay (USD)' : '🟡 Binance Pay (Bảo trì)';
 
         $msg = "💳 <b>CHỌN PHƯƠNG THỨC NẠP TIỀN</b>\n\n";
         $msg .= "1️⃣ <b>Ngân hàng (VND)</b> — Chuyển khoản nội địa qua SePay.\n";
         $msg .= "2️⃣ <b>Binance Pay (USDT)</b> — Nạp qua tài khoản Binance Funding.\n\n";
 
-        if (!$bankEnabled) {
-            $msg .= "🔴 <i>Ngân hàng đang bảo trì, tạm thời chưa nhận nạp.</i>\n";
-        }
-        if (!$binanceEnabled) {
-            $msg .= "🔴 <i>Binance Pay đang bảo trì, tạm thời chưa nhận nạp.</i>\n";
+        if (!$bankEnabled && !$binanceEnabled) {
+            $msg .= "🔴 Tất cả kênh nạp tiền đang bảo trì.\n";
+        } elseif (!$binanceEnabled) {
+            $msg .= "🔴 Binance Pay hiện đang bảo trì, tạm thời chưa nhận nạp.\n";
+        } elseif (!$bankEnabled) {
+            $msg .= "🔴 Ngân hàng hiện đang bảo trì, tạm thời chưa nhận nạp.\n";
         }
 
         $msg .= "\n👇 Vui lòng chọn phương thức phù hợp:";
@@ -54,7 +55,7 @@ trait TelegramBotServiceDepositTrait
                 ['text' => $bankLabel, 'callback_data' => 'deposit_bank'],
                 ['text' => $binanceLabel, 'callback_data' => 'binance_start'],
             ],
-            [$this->backHomeButton()],
+            [['text' => '⬅️ Quay lại', 'callback_data' => 'back_home']],
         ];
 
         $markup = TelegramService::buildInlineKeyboard($rows);
@@ -97,6 +98,14 @@ trait TelegramBotServiceDepositTrait
             $this->telegram->sendTo(
                 $chatId,
                 "⚠️ Số tiền nạp tối thiểu <b>" . number_format(DepositService::MIN_AMOUNT) . "đ</b>.\n\nVí dụ: <code>/deposit 50000</code>"
+            );
+            return;
+        }
+
+        if ($amount > DepositService::MAX_AMOUNT) {
+            $this->telegram->sendTo(
+                $chatId,
+                "⚠️ Số tiền nạp tối đa <b>" . number_format(DepositService::MAX_AMOUNT) . "đ</b>."
             );
             return;
         }
@@ -245,21 +254,49 @@ trait TelegramBotServiceDepositTrait
     }
 
     /**
+     * Build quick-deposit keyboard — đồng bộ amounts với cấu hình DB.
+     *
      * @return array<string,mixed>
      */
     private function buildDepositQuickMarkup(): array
     {
-        $quickButtons = [
-            ['text' => '20K', 'callback_data' => 'deposit_20000'],
-            ['text' => '50K', 'callback_data' => 'deposit_50000'],
-            ['text' => '100K', 'callback_data' => 'deposit_100000'],
-            ['text' => '500K', 'callback_data' => 'deposit_500000'],
-        ];
+        // Lấy bonus tiers từ DB để đồng bộ các nút nhanh
+        $siteConfig = Config::getSiteConfig();
+        $bonusTiers = $this->depositService->getBonusTiers($siteConfig);
+
+        // Lọc lấy 4 mức tiêu biểu (giữ giá trị dưới 1 triệu, lấy tối đa 4 cái)
+        $amounts = [];
+        foreach ($bonusTiers as $tier) {
+            $a = (int) ($tier['amount'] ?? 0);
+            if ($a >= DepositService::MIN_AMOUNT && $a <= 1000000) {
+                $amounts[] = $a;
+            }
+        }
+        // Fallback nếu DB không có tiers
+        if (empty($amounts)) {
+            $amounts = [20000, 50000, 100000, 500000];
+        }
+        // Đảm bảo đủ 4 nút, bổ sung mặc định nếu thiếu
+        $defaults = [20000, 50000, 100000, 500000];
+        $amounts = array_unique(array_merge($amounts, $defaults));
+        sort($amounts);
+        $amounts = array_slice($amounts, 0, 4);
+
+        $quickButtons = [];
+        foreach ($amounts as $a) {
+            if ($a >= 1000000) {
+                $label = number_format($a / 1000000, 0) . 'M';
+            } elseif ($a >= 1000) {
+                $label = number_format($a / 1000, 0) . 'K';
+            } else {
+                $label = (string) $a;
+            }
+            $quickButtons[] = ['text' => $label, 'callback_data' => 'deposit_' . $a];
+        }
 
         return TelegramService::buildInlineKeyboard([
             $quickButtons,
-            [['text' => '🟡 USDT Binance', 'callback_data' => 'binance_start']],
-            [$this->backHomeButton()],
+            [['text' => '❌ Hủy', 'callback_data' => 'back_home']],
         ]);
     }
 
@@ -351,18 +388,9 @@ trait TelegramBotServiceDepositTrait
                 return true;
             }
 
-            $user = $this->resolveLinkedUser($chatId, $telegramId);
-            if (!$user) {
-                return true;
-            }
-
-            if (!$this->linkModel->saveBinanceUidByUserId((int) ($user['id'] ?? 0), (string) $uid)) {
-                $this->telegram->sendTo($chatId, '❌ Không thể lưu UID Binance. Vui lòng thử lại.');
-                return true;
-            }
-
+            // Lưu vào session, KHOONG lưu DB — đồng bộ web flow
             $this->setBinanceSession($telegramId, ['step' => 'await_amount', 'uid' => (string) $uid], 300);
-            $this->telegram->sendTo($chatId, '✅ Đã lưu UID: <code>' . htmlspecialchars((string) $uid, ENT_QUOTES, 'UTF-8') . "</code>\n\nBây giờ hãy nhập số USDT cần nạp (ví dụ: <code>10</code>).", [
+            $this->telegram->sendTo($chatId, '✅ UID: <code>' . htmlspecialchars((string) $uid, ENT_QUOTES, 'UTF-8') . "</code>\n\nBây giờ hãy nhập số USDT cần nạp (ví dụ: <code>10</code>).", [
                 'reply_markup' => $this->buildBinanceAmountKeyboard(),
             ]);
             return true;
@@ -378,8 +406,10 @@ trait TelegramBotServiceDepositTrait
                 return true;
             }
 
+            // Lấy UID từ session và truyền qua args[1] — không lưu DB
+            $uid = (string) ($session['uid'] ?? '');
             $this->clearBinanceSession($telegramId);
-            $this->cmdBinance($chatId, $telegramId, [(string) $amount]);
+            $this->cmdBinance($chatId, $telegramId, [(string) $amount, $uid]);
             return true;
         }
 
@@ -412,35 +442,43 @@ trait TelegramBotServiceDepositTrait
             return;
         }
 
-        $uidArg = trim((string) ($args[1] ?? ''));
-        $storedUid = $this->linkModel->getBinanceUidByUserId((int) ($user['id'] ?? 0));
-        if ($uidArg !== '' && preg_match('/^\d{4,20}$/', $uidArg)) {
-            if ($this->linkModel->saveBinanceUidByUserId((int) ($user['id'] ?? 0), $uidArg)) {
-                $storedUid = $uidArg;
-            }
-        }
+        // $args[0] = số USDT, $args[1] = payer UID từ session (không lưu DB)
+        $amountRaw = preg_replace('/[^0-9.]/', '', (string) ($args[0] ?? '0'));
+        $usdAmount = (float) $amountRaw;
+        $payerUid = trim((string) ($args[1] ?? ''));
 
-        if ($storedUid === '') {
+        $rate = max(1, (int) ($siteConfig['binance_rate_vnd'] ?? 25000));
+        $minUsdt = round(DepositService::MIN_AMOUNT / $rate, 2);
+
+        // Bước 1: Hỏi UID nếu chưa có (mỗi lần giao dịch đều hỏi — đồng bộ web)
+        if ($payerUid === '' || !preg_match('/^\d{4,20}$/', $payerUid)) {
             $this->setBinanceSession($telegramId, ['step' => 'await_uid'], 300);
-            $this->telegram->sendTo($chatId, "🟡 <b>BINANCE PAY</b>\n\nVui lòng nhập <b>UID Binance</b> của bạn để bắt đầu.\nVí dụ: <code>12345678</code>");
+            $this->telegram->sendTo(
+                $chatId,
+                "🟡 <b>BINANCE PAY</b>\n\n" .
+                "Vui lòng nhập <b>Binance UID</b> của bạn.\n" .
+                "<i>UID chỉ dùng cho giao dịch này, không bị lưu lại.</i>\n\n" .
+                "Ví dụ: <code>12345678</code>"
+            );
             return;
         }
 
-        $amountRaw = preg_replace('/[^0-9.]/', '', (string) ($args[0] ?? '0'));
-        $usdAmount = (float) $amountRaw;
+        // Bước 2: Hỏi số tiền nếu chưa có
         if ($usdAmount <= 0) {
-            $this->setBinanceSession($telegramId, ['step' => 'await_amount', 'uid' => $storedUid], 300);
-            $this->telegram->sendTo($chatId, '💵 Nhập số USDT cần nạp (tối thiểu <b>$1</b>).', [
+            $this->setBinanceSession($telegramId, ['step' => 'await_amount', 'uid' => $payerUid], 300);
+            $minLabel = number_format($minUsdt, 2) . ' USDT';
+            $this->telegram->sendTo($chatId, "💵 Nhập số USDT cần nạp (tối thiểu <b>{$minLabel}</b>).", [
                 'reply_markup' => $this->buildBinanceAmountKeyboard(),
             ]);
             return;
         }
 
+        // Bước 3: Tạo giao dịch — không lưu UID vào DB, đồng bộ web
         $this->clearBinanceSession($telegramId);
         $result = $this->depositService->createBinanceDeposit(
             $user,
             $usdAmount,
-            $storedUid,
+            $payerUid,
             $siteConfig,
             SourceChannelHelper::BOTTELE
         );
@@ -459,7 +497,7 @@ trait TelegramBotServiceDepositTrait
 
         $msg = "🟡 <b>BINANCE PAY — THÔNG TIN THANH TOÁN</b>\n\n";
         $msg .= "📋 Mã giao dịch: <code>" . htmlspecialchars($depositCode, ENT_QUOTES, 'UTF-8') . "</code>\n";
-        $msg .= "👤 UID của bạn: <code>" . htmlspecialchars($storedUid, ENT_QUOTES, 'UTF-8') . "</code>\n";
+        $msg .= "👤 UID của bạn: <code>" . htmlspecialchars($payerUid, ENT_QUOTES, 'UTF-8') . "</code>\n";
         $msg .= "📬 UID nhận tiền: <code>" . htmlspecialchars($receiverUid, ENT_QUOTES, 'UTF-8') . "</code>\n";
         $msg .= "💵 Số cần gửi: <b>" . number_format($usdtAmount, 2, '.', '') . " USDT</b>\n";
         if ($noteText !== '') {
@@ -558,17 +596,31 @@ trait TelegramBotServiceDepositTrait
     }
 
     /**
+     * Build Binance amount keyboard — các nút USDT đồng bộ tỷ giá từ siteConfig.
+     *
      * @return array<string,mixed>
      */
     private function buildBinanceAmountKeyboard(): array
     {
+        $siteConfig = Config::getSiteConfig();
+        $rate = max(1, (int) ($siteConfig['binance_rate_vnd'] ?? 25000));
+        $minUsdt = max(1.0, round(DepositService::MIN_AMOUNT / $rate, 0));
+
+        // Quick amounts (USDT), bắt đầu từ min
+        $quickAmounts = [5, 10, 20, 50];
+        // Loại bỏ mức thấp hơn min
+        $quickAmounts = array_values(array_filter($quickAmounts, fn($v) => $v >= $minUsdt));
+        if (empty($quickAmounts)) {
+            $quickAmounts = [max(1, (int) $minUsdt), 10, 20, 50];
+        }
+
+        $buttons = [];
+        foreach ($quickAmounts as $usdt) {
+            $buttons[] = ['text' => '$' . $usdt, 'callback_data' => 'bin_amount_' . $usdt];
+        }
+
         return TelegramService::buildInlineKeyboard([
-            [
-                ['text' => '$5', 'callback_data' => 'bin_amount_5'],
-                ['text' => '$10', 'callback_data' => 'bin_amount_10'],
-                ['text' => '$20', 'callback_data' => 'bin_amount_20'],
-                ['text' => '$50', 'callback_data' => 'bin_amount_50'],
-            ],
+            $buttons,
             [
                 ['text' => '💳 Menu nạp tiền', 'callback_data' => 'deposit_menu'],
                 $this->backHomeButton(),

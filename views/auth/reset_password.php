@@ -28,46 +28,46 @@ $GLOBALS['pageAssets'] = ['interactive_bundle' => false];
     <?php require __DIR__ . '/../../hethong/nav.php'; ?>
 
     <main>
-        <section class="bg-offWhite">
+        <section class="bg-offWhite" style="min-height: 80vh; display: flex; align-items: center; padding: 40px 0;">
             <div class="container">
-                <div class="rounded-3">
-                    <div class="row">
-                        <div class="col-lg-6 p-3 p-lg-5 m-auto">
-                            <div class="login-userset">
-                                <div class="login-card auth-card-white">
-                                    <div class="login-heading">
-                                        <h3>Đặt lại mật khẩu</h3>
-                                        <p>Nhập mật khẩu mới cho tài khoản của bạn</p>
-                                    </div>
-
-                                    <input type="hidden" id="otpcode"
-                                        value="<?= htmlspecialchars($otpcode ?? '', ENT_QUOTES, 'UTF-8') ?>">
-
-                                    <div class="form-wrap form-focus pass-group">
-                                        <span class="form-icon"><i class="toggle-password feather-eye-off"></i></span>
-                                        <input type="password" id="password" class="pass-input form-control floating"
-                                            autocomplete="new-password">
-                                        <label class="focus-label">Mật khẩu mới</label>
-                                    </div>
-
-                                    <div class="form-wrap form-focus pass-group">
-                                        <span class="form-icon"><i class="toggle-password feather-eye-off"></i></span>
-                                        <input type="password" id="repassword" class="pass-input form-control floating"
-                                            autocomplete="new-password">
-                                        <label class="focus-label">Nhập lại mật khẩu mới</label>
-                                    </div>
-
-                                    <button type="button" onclick="resetPassword()" class="btn btn-primary w-100">
-                                        <span id="btnText" class="indicator-label">Cập nhật mật khẩu</span>
-                                        <span id="btnLoading" class="indicator-progress" style="display:none;">
-                                            <i class="fa fa-spinner fa-spin"></i> Đang xử lý...
-                                        </span>
-                                    </button>
+                <div class="row">
+                    <div class="col-lg-6 p-3 p-lg-5 m-auto">
+                        <div class="login-userset">
+                            <div class="login-card auth-card-white"
+                                style="box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid #f1f1f1; border-radius: 12px; height: auto;">
+                                <div class="login-heading">
+                                    <h3>Đặt lại mật khẩu</h3>
+                                    <p>Nhập mật khẩu mới cho tài khoản của bạn</p>
                                 </div>
+
+                                <input type="hidden" id="otpcode"
+                                    value="<?= htmlspecialchars($otpcode ?? '', ENT_QUOTES, 'UTF-8') ?>">
+
+                                <div class="form-wrap form-focus pass-group">
+                                    <span class="form-icon"><i class="toggle-password feather-eye-off"></i></span>
+                                    <input type="password" id="password" class="pass-input form-control floating"
+                                        autocomplete="new-password">
+                                    <label class="focus-label">Mật khẩu mới</label>
+                                </div>
+
+                                <div class="form-wrap form-focus pass-group">
+                                    <span class="form-icon"><i class="toggle-password feather-eye-off"></i></span>
+                                    <input type="password" id="repassword" class="pass-input form-control floating"
+                                        autocomplete="new-password">
+                                    <label class="focus-label">Nhập lại mật khẩu mới</label>
+                                </div>
+
+                                <button type="button" onclick="resetPassword()" class="btn btn-primary w-100">
+                                    <span id="btnText" class="indicator-label">Cập nhật mật khẩu</span>
+                                    <span id="btnLoading" class="indicator-progress" style="display:none;">
+                                        <i class="fa fa-spinner fa-spin"></i> Đang xử lý...
+                                    </span>
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
             </div>
         </section>
     </main>

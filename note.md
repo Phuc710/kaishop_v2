@@ -26,13 +26,6 @@ Invoke-WebRequest -Uri $webhookUrl -Method Post -Headers $headers -Body $payload
 
 
 
-# Cú pháp: php sim_binance_pay.php [username] [payer_uid] [amount_usdt]
-php sim_binance_pay.php admin 11111111111111 4.00
-
-
-
-
-
 php /home/kaishopi/domains/kaishop.id.vn/public_html/public/telegram/cron.php >> /dev/null 2>&1
 
 

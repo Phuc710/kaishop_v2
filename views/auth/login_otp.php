@@ -48,8 +48,8 @@ $GLOBALS['pageAssets'] = [
 <body>
     <?php require __DIR__ . '/../../hethong/nav.php'; ?>
 
-    <main>
-        <section class="py-5 bg-offWhite">
+    <main class="auth-page">
+        <section class="auth-page-section">
             <div class="container">
                 <div class="rounded-3">
                     <div class="row">

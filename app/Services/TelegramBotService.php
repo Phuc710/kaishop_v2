@@ -69,12 +69,13 @@ class TelegramBotService
     public function initializeBot(): array
     {
         $commands = [
-            ['command' => 'start', 'description' => 'Mở bot + menu chính'],
+            ['command' => 'start', 'description' => 'Mở bot'],
             ['command' => 'menu', 'description' => 'Mở menu nhanh'],
             ['command' => 'shop', 'description' => 'Duyệt danh mục sản phẩm'],
             ['command' => 'wallet', 'description' => 'Xem số dư ví'],
+            ['command' => 'balance', 'description' => 'Xem số dư ví'],
             ['command' => 'deposit', 'description' => 'Nạp tiền qua ngân hàng'],
-            ['command' => 'binance', 'description' => 'Nạp tiền qua Binance Pay'],
+            ['command' => 'binance', 'description' => 'Nạp tiền qua Binance Pay (USD)'],
             ['command' => 'orders', 'description' => 'Lịch sử đơn hàng gần nhất'],
             ['command' => 'link', 'description' => 'Liên kết Telegram với tài khoản Web'],
             ['command' => 'unlink', 'description' => 'Hủy liên kết tài khoản'],
@@ -195,7 +196,8 @@ class TelegramBotService
             '/start' => $this->cmdStart($chatId, $telegramId, $fromName),
             '/menu' => $this->cmdMenu($chatId, $telegramId),
             '/shop' => $this->cmdShop($chatId),
-            '/wallet' => $this->cmdWallet($chatId, $telegramId),
+            '/wallet',
+            '/balance' => $this->cmdWallet($chatId, $telegramId),
             '/deposit' => $this->cmdDeposit($chatId, $telegramId, $args),
             '/binance' => $this->cmdBinance($chatId, $telegramId, $args),
             '/orders' => $this->cmdOrders($chatId, $telegramId),
@@ -732,9 +734,9 @@ class TelegramBotService
 
         $msg = "🌟 <b>TRỢ GIÚP — DANH SÁCH LỆNH</b>\n\n";
         $msg .= "🛍 /shop    — Cửa hàng\n";
-        $msg .= "💰 /wallet  — Ví của tôi\n";
-        $msg .= "💳 /deposit — Nạp tiền ngân hàng\n";
-        $msg .= "🟡 /binance — Nạp tiền Binance Pay\n";
+        $msg .= "💰 /wallet  — Ví của tôi (hoặc /balance)\n";
+        $msg .= "💳 /deposit — Nạp tiền ngân hàng (VND)\n";
+        $msg .= "🟡 /binance — Nạp tiền Binance Pay (USD)\n";
         $msg .= "📦 /orders  — Lịch sử đơn hàng\n";
         $msg .= "📋 /menu    — Mở menu nhanh\n";
         $msg .= "🔗 /link    — Liên kết Web\n";

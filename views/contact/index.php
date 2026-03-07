@@ -113,7 +113,7 @@ if (!defined('BASE_URL')) {
         }
 
         .contact-bottom {
-            background: #fff;
+            background: #f3f4f6;
         }
     </style>
 
@@ -152,7 +152,7 @@ if (!defined('BASE_URL')) {
 
     <main>
         <section class="contact-section py-4">
-            <div class="contact-bottom bg-white">
+            <div class="contact-bottom">
                 <div class="container">
                     <div class="row justify-content-center mb-5">
                         <div class="col-lg-9 text-center">

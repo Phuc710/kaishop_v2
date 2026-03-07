@@ -236,7 +236,7 @@ body.auth-layout .swal2-toast-custom-margin {
 }
 
 body.auth-layout .header-primary {
-    z-index: 1400 !important;
+    z-index: 2000 !important;
 }
 
 /* ── USER PAGE LABELS ────────────────────────────────── */
