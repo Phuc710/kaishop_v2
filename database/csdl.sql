@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS `products` (
   `slug` varchar(255) DEFAULT NULL COMMENT 'URL slug (auto-gen từ tên)',
   `product_type` enum('account','link') NOT NULL DEFAULT 'account' COMMENT 'account = bán tk từ kho, link = bán link download',
   `price_vnd` bigint(20) NOT NULL DEFAULT 0 COMMENT 'Giá bán (VNĐ)',
+  `old_price` bigint(20) NOT NULL DEFAULT 0 COMMENT 'Giá gốc báo ảo (VNĐ)',
   `source_link` text DEFAULT NULL COMMENT 'Link download (Mega/GDrive...) - chỉ dùng khi product_type=link',
   `manual_stock` int(11) NOT NULL DEFAULT 0 COMMENT 'Stock số lượng cho sản phẩm yêu cầu info',
   `min_purchase_qty` int(11) NOT NULL DEFAULT 1 COMMENT 'So luong mua toi thieu',

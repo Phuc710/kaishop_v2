@@ -54,11 +54,33 @@ class AuthController extends Controller
             $this->redirect(BASE_URL . '/login');
         }
 
+        $challengeRow = $this->findOtpChallenge($challengeId, 'login_2fa');
+        if (!$challengeRow) {
+            $this->redirect(BASE_URL . '/login');
+        }
+
+        if (!empty($challengeRow['consumed_at']) || !empty($challengeRow['verified_at'])) {
+            $this->redirect(BASE_URL . '/login');
+        }
+
+        $otpEmail = trim((string) ($challengeRow['email'] ?? ''));
+        if ($otpEmail === '') {
+            $user = $this->userModel->findById((int) ($challengeRow['user_id'] ?? 0));
+            $otpEmail = trim((string) ($user['email'] ?? ''));
+        }
+
+        $secondsLeft = max(0, strtotime((string) ($challengeRow['expires_at'] ?? '')) - time());
+        $expiresMinutes = max(1, (int) ceil($secondsLeft / 60));
+
         $siteConfig = Config::getSiteConfig();
         $this->view('auth/login_otp', [
             'chungapi' => $siteConfig,
             'siteConfig' => $siteConfig,
             'challengeId' => $challengeId,
+            'otpEmail' => $otpEmail,
+            'otpEmailMasked' => $this->maskEmailAddress($otpEmail),
+            'otpExpiresMinutes' => $expiresMinutes,
+            'otpExpiresSeconds' => $secondsLeft,
         ]);
     }
 
@@ -487,6 +509,71 @@ class AuthController extends Controller
     }
 
     /**
+     * Resend OTP for login 2FA challenge
+     */
+    public function resendLoginOtp()
+    {
+        $challengeId = trim((string) $this->post('challenge_id', ''));
+        if ($challengeId === '') {
+            return $this->json(['success' => false, 'message' => 'Thiếu phiên xác minh OTP.'], 400);
+        }
+
+        $challengeRow = $this->findOtpChallenge($challengeId, 'login_2fa');
+        if (!$challengeRow) {
+            return $this->json(['success' => false, 'message' => 'Phiên OTP không hợp lệ. Vui lòng đăng nhập lại.'], 400);
+        }
+
+        if (!empty($challengeRow['consumed_at']) || !empty($challengeRow['verified_at'])) {
+            return $this->json(['success' => false, 'message' => 'Mã OTP này đã được sử dụng. Vui lòng đăng nhập lại.'], 400);
+        }
+
+        $createdTs = strtotime((string) ($challengeRow['created_at'] ?? ''));
+        if ($createdTs > 0) {
+            $cooldownLeft = max(0, 30 - (time() - $createdTs));
+            if ($cooldownLeft > 0) {
+                return $this->json([
+                    'success' => false,
+                    'message' => 'Vui lòng chờ trước khi gửi lại OTP.',
+                    'cooldown_seconds' => $cooldownLeft,
+                ], 429);
+            }
+        }
+
+        $user = $this->userModel->findById((int) ($challengeRow['user_id'] ?? 0));
+        if (!$user || empty($user['email'])) {
+            return $this->json(['success' => false, 'message' => 'Không tìm thấy tài khoản để gửi OTP.'], 404);
+        }
+
+        $meta = [];
+        $metadataRaw = (string) ($challengeRow['metadata_json'] ?? '');
+        if ($metadataRaw !== '') {
+            $decodedMeta = json_decode($metadataRaw, true);
+            if (is_array($decodedMeta)) {
+                $meta = $decodedMeta;
+            }
+        }
+
+        $fingerprintHash = trim((string) ($meta['fingerprint'] ?? ''));
+        $device = $this->authSecurity->getDeviceContext($fingerprintHash);
+        $newChallenge = $this->authSecurity->createOtpChallenge($user, 'login_2fa', $device, $meta);
+
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->prepare('UPDATE auth_otp_codes SET consumed_at = NOW() WHERE id = ? AND consumed_at IS NULL');
+        $stmt->execute([(int) $challengeRow['id']]);
+
+        $expiresIn = max(60, (int) ($newChallenge['expires_in'] ?? 300));
+        return $this->json([
+            'success' => true,
+            'message' => 'Đã gửi lại mã OTP mới.',
+            'challenge_id' => (string) ($newChallenge['challenge_id'] ?? ''),
+            'expires_in' => $expiresIn,
+            'expires_minutes' => max(1, (int) ceil($expiresIn / 60)),
+            'email' => (string) ($user['email'] ?? ''),
+            'email_masked' => $this->maskEmailAddress((string) ($user['email'] ?? '')),
+        ]);
+    }
+
+    /**
      * Optional separate endpoint for forgot-password 2FA OTP verify (reuses processForgotPassword flow)
      */
     public function verifyForgotPasswordOtp()
@@ -760,6 +847,38 @@ class AuthController extends Controller
         } catch (Exception $e) {
             // Ignore fingerprint logging errors
         }
+    }
+
+    private function findOtpChallenge(string $challengeId, string $purpose): ?array
+    {
+        if ($challengeId === '' || $purpose === '') {
+            return null;
+        }
+
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->prepare('SELECT * FROM auth_otp_codes WHERE challenge_id = ? AND purpose = ? LIMIT 1');
+        $stmt->execute([$challengeId, $purpose]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return is_array($row) ? $row : null;
+    }
+
+    private function maskEmailAddress(string $email): string
+    {
+        $email = trim($email);
+        if ($email === '' || strpos($email, '@') === false) {
+            return $email;
+        }
+
+        [$local, $domain] = explode('@', $email, 2);
+        $localLen = strlen($local);
+        if ($localLen <= 2) {
+            $maskedLocal = substr($local, 0, 1) . str_repeat('*', max(1, $localLen - 1));
+        } else {
+            $maskedLocal = substr($local, 0, 2) . str_repeat('*', max(2, $localLen - 2));
+        }
+
+        return $maskedLocal . '@' . $domain;
     }
 
     private function generateUniqueUsernameFromSeed(string $seed): string

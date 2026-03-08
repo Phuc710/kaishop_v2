@@ -100,7 +100,7 @@ class AuthSecurityService
             return [
                 'blocked' => true,
                 'reason' => 'ip_burst',
-                'message' => 'Bạn thao tác quá nhanh. Vui lòng thử lại sau 15 phút.',
+                'message' => 'Bạn thao tác quá nhanh. Vui lòng thử lại sau 5 phút.',
                 'retry_after_seconds' => $this->calculateIpBurstRetryAfterSeconds($action, $ip, $nowSql, $ipWindowMinutes, $ipCount, self::IP_BURST_LIMIT),
                 'window_minutes' => $ipWindowMinutes,
                 'limit' => (int) self::IP_BURST_LIMIT,
@@ -931,11 +931,11 @@ class AuthSecurityService
 
     /**
      * Clear all auth state for a banned user.
-     * Does NOT redirect — that is handled by SecurityMiddleware or the caller.
+     * Does NOT redirect â€” that is handled by SecurityMiddleware or the caller.
      */
     private function kickBannedUser(array $user): void
     {
-        $banReason = (string) ($user['ban_reason'] ?? 'Tài khoản/thiết bị bị khoá');
+        $banReason = (string) ($user['ban_reason'] ?? 'TÃ i khoáº£n/thiáº¿t bá»‹ bá»‹ khoÃ¡');
         $_SESSION['banned_reason'] = $banReason;
         $_SESSION['banned_meta'] = [
             'reason' => $banReason,
@@ -957,7 +957,7 @@ class AuthSecurityService
         unset($_SESSION['session'], $_SESSION['username']);
         $this->clearAuthCookies();
 
-        Logger::danger('Auth', 'banned_session_blocked', 'Phiên đăng nhập bị chặn do ban', [
+        Logger::danger('Auth', 'banned_session_blocked', 'PhiÃªn Ä‘Äƒng nháº­p bá»‹ cháº·n do ban', [
             'user_id' => (int) ($user['id'] ?? 0),
             'username' => (string) ($user['username'] ?? ''),
             'ip' => $this->clientIp(),

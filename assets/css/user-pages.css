@@ -1381,6 +1381,165 @@ body.auth-layout .header-primary {
     cursor: not-allowed;
 }
 
+/* OTP inbox style (mail verification look) */
+.otp-mail-page .login-userset {
+    max-width: 620px;
+}
+
+.otp-mail-page .otp-mail-card {
+    text-align: center;
+    padding: 34px 30px 30px;
+}
+
+.otp-mail-icon-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.otp-mail-icon {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #ff6b00;
+    font-size: 56px;
+    line-height: 1;
+}
+
+.otp-mail-icon__check {
+    position: absolute;
+    right: -2px;
+    bottom: 2px;
+    font-size: 20px;
+    background: #fff;
+    border-radius: 99px;
+    padding: 3px;
+}
+
+.otp-mail-heading h3 {
+    font-size: 44px;
+    font-weight: 700;
+    letter-spacing: 0;
+    margin-bottom: 8px;
+}
+
+.otp-mail-heading p {
+    margin: 0;
+    color: #4b5563;
+}
+
+.otp-mail-heading .otp-mail-address {
+    margin-top: 6px;
+    color: #111827;
+    font-weight: 700;
+    word-break: break-word;
+}
+
+.otp-mail-input-wrap {
+    margin: 24px 0 18px;
+}
+
+.otp-mail-input {
+    text-align: center;
+    font-size: 42px;
+    font-weight: 700;
+    letter-spacing: 0.42em;
+    border-radius: 14px;
+    min-height: 84px;
+    border: 1px solid #d1d5db;
+    color: #6b7280;
+    background: #fff;
+}
+
+.otp-mail-input::placeholder {
+    color: #9ca3af;
+    font-size: 42px;
+    letter-spacing: 0.42em;
+    font-weight: 500;
+}
+
+.otp-mail-input:focus {
+    border-color: #ff6b00;
+    box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14);
+}
+
+.otp-mail-verify-btn {
+    margin-top: 2px;
+    min-height: 56px !important;
+    border-radius: 12px !important;
+    font-size: 31px;
+    font-weight: 700;
+    background: #8f8f8f;
+    border-color: #8f8f8f;
+}
+
+.otp-mail-verify-btn:not(:disabled) {
+    background: #ff6b00;
+    border-color: #ff6b00;
+}
+
+.otp-mail-verify-btn:disabled {
+    opacity: 1;
+}
+
+.otp-mail-expire-note {
+    margin: 26px 0 10px;
+    color: #64748b;
+    font-size: 25px;
+}
+
+.otp-mail-resend-note {
+    margin: 0;
+    color: #64748b;
+    font-size: 35px;
+}
+
+.otp-mail-resend-note .auth-link-btn {
+    font-size: inherit;
+}
+
+.otp-mail-resend-countdown {
+    color: #94a3b8;
+    font-size: 17px;
+    margin-left: 6px;
+}
+
+@media (max-width: 767px) {
+    .otp-mail-page .otp-mail-card {
+        padding: 28px 18px 24px;
+    }
+
+    .otp-mail-heading h3 {
+        font-size: 36px;
+    }
+
+    .otp-mail-input {
+        font-size: 32px;
+        letter-spacing: 0.28em;
+        min-height: 74px;
+    }
+
+    .otp-mail-input::placeholder {
+        font-size: 32px;
+        letter-spacing: 0.28em;
+    }
+
+    .otp-mail-verify-btn {
+        font-size: 24px;
+        min-height: 52px !important;
+    }
+
+    .otp-mail-expire-note {
+        font-size: 18px;
+    }
+
+    .otp-mail-resend-note {
+        font-size: 28px;
+        line-height: 1.15;
+    }
+}
+
 /* ==========================================================================
    AUTH + COLLAPSED NAV RESPONSIVE (single source of truth)
    Applies to all collapsed states of `navbar-expand-xl` => <1200px

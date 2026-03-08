@@ -13,6 +13,7 @@ class Product extends Model
         'slug',
         'product_type',
         'price_vnd',
+        'old_price',
         'source_link',
         'manual_stock',
         'min_purchase_qty',

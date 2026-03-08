@@ -293,6 +293,7 @@ class AdminProductController extends Controller
         $name = trim((string) $this->post('name', ''));
         $productType = $this->post('product_type', 'account') === 'link' ? 'link' : 'account';
         $priceVnd = max(0, (int) $this->post('price_vnd', 0));
+        $oldPrice = max(0, (int) $this->post('old_price', 0));
         $sourceLink = trim((string) $this->post('source_link', ''));
         $manualStock = max(0, (int) $this->post('manual_stock', 0));
         $requiresInfo = in_array((string) $this->post('requires_info', '0'), ['1', 'true', 'on'], true) ? 1 : 0;
@@ -351,6 +352,7 @@ class AdminProductController extends Controller
             'slug' => $slug,
             'product_type' => $productType,
             'price_vnd' => $priceVnd,
+            'old_price' => $oldPrice,
             'source_link' => $productType === 'link' && $sourceLink !== '' ? $sourceLink : null,
             'manual_stock' => ($productType === 'account' && $requiresInfo === 1) ? $manualStock : 0,
             'requires_info' => $productType === 'account' ? $requiresInfo : 0,

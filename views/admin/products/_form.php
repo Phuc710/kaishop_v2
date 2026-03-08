@@ -165,8 +165,30 @@ $galleryArr = $product['gallery_arr'] ?? [];
                     <label class="font-weight-bold form-label-req">Giá bán (VNĐ)</label>
                     <div class="input-group">
                         <input type="number" class="form-control text-success font-weight-bold" name="price_vnd"
-                            value="<?= (int) ($product['price_vnd'] ?? 0) ?>" placeholder="0" min="0" required>
+                            id="price_vnd" value="<?= (int) ($product['price_vnd'] ?? 0) ?>" placeholder="0" min="0"
+                            required>
                         <div class="input-group-append"><span class="input-group-text">đ</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Giá Gốc ảo (VNĐ)</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control text-muted" name="old_price" id="old_price"
+                            value="<?= (int) ($product['old_price'] ?? 0) ?>" placeholder="0" min="0">
+                        <div class="input-group-append"><span class="input-group-text">đ</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold text-danger">Giảm (%)</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control text-danger font-weight-bold" id="discount_percent"
+                            value="" placeholder="VD: 10" min="0" max="100">
+                        <div class="input-group-append"><span
+                                class="input-group-text bg-danger text-white border-danger">%</span></div>
                     </div>
                 </div>
             </div>
@@ -177,9 +199,9 @@ $galleryArr = $product['gallery_arr'] ?? [];
                         value="<?= (int) ($product['display_order'] ?? 0) ?>" min="0">
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <div class="form-group mb-3">
-                    <label class="font-weight-bold">Trạng thái hiển thị</label>
+                    <label class="font-weight-bold">Trạng thái</label>
                     <select class="form-control font-weight-bold" name="status">
                         <option value="ON" <?= ($product['status'] ?? 'ON') === 'ON' ? 'selected' : '' ?>>HIỂN THỊ
                         </option>
@@ -187,7 +209,7 @@ $galleryArr = $product['gallery_arr'] ?? [];
                     </select>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="form-group mb-3">
                     <label class="font-weight-bold">Danh mục</label>
                     <select class="form-control" name="category_id" id="category_id" required>
@@ -452,6 +474,9 @@ $galleryArr = $product['gallery_arr'] ?? [];
             $('#description').summernote({ height: 300 });
         }
 
+        // Smart Pricing Logic
+        bindSmartPricing();
+
         bindThumbPreview();
         bindSlugAutoGen();
         bindCategorySlugPrefix();
@@ -485,6 +510,39 @@ $galleryArr = $product['gallery_arr'] ?? [];
                 return false;
             }
         });
+    }
+
+    function bindSmartPricing() {
+        const $priceVnd = $('#price_vnd');
+        const $oldPrice = $('#old_price');
+        const $discountPercent = $('#discount_percent');
+
+        function calculateDiscount() {
+            let price = parseInt($priceVnd.val()) || 0;
+            let oldPrice = parseInt($oldPrice.val()) || 0;
+            if (oldPrice > 0 && price <= oldPrice) {
+                let discount = Math.round(((oldPrice - price) / oldPrice) * 100);
+                $discountPercent.val(discount);
+            } else {
+                $discountPercent.val('');
+            }
+        }
+
+        function calculatePriceFromDiscount() {
+            let oldPrice = parseInt($oldPrice.val()) || 0;
+            let discount = parseInt($discountPercent.val()) || 0;
+            if (oldPrice > 0 && discount > 0 && discount <= 100) {
+                let currentPrice = Math.round(oldPrice * (1 - (discount / 100)));
+                $priceVnd.val(currentPrice);
+            }
+        }
+
+        $priceVnd.on('input', calculateDiscount);
+        $oldPrice.on('input', calculateDiscount);
+        $discountPercent.on('input', calculatePriceFromDiscount);
+
+        // Initial setup
+        calculateDiscount();
     }
 
     function handleStockFile(input) {

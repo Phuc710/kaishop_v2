@@ -311,6 +311,25 @@ if ($rawDescHtml !== '') {
             font-size: 22px;
         }
 
+        .pd-old-price {
+            color: #a0aebc;
+            text-decoration: line-through;
+            font-size: 16px;
+            font-weight: 500;
+            margin-left: 8px;
+        }
+
+        .pd-discount-badge {
+            background-color: #dc3545;
+            color: white;
+            font-size: 13px;
+            font-weight: bold;
+            padding: 3px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
         .pd-stock {
             color: #078631ff;
             font-weight: 700;
@@ -649,8 +668,22 @@ if ($rawDescHtml !== '') {
                         <div class="pd-meta-line">
                             <div>
                                 <div class="pd-note">Giá bán</div>
-                                <div class="pd-price" id="pdUnitPriceText"
-                                    data-price-vnd="<?= $priceVnd ?>"><?= number_format($priceVnd) ?>đ</div>
+                                <div class="d-flex align-items-center">
+                                    <div class="pd-price" id="pdUnitPriceText"
+                                        data-price-vnd="<?= $priceVnd ?>"><?= number_format($priceVnd) ?>đ</div>
+                                    
+                                    <?php 
+                                    $oldPrice = isset($product['old_price']) ? (int) $product['old_price'] : 0;
+                                    $discount = 0;
+                                    if ($oldPrice > $priceVnd) {
+                                        $discount = round((($oldPrice - $priceVnd) / $oldPrice) * 100);
+                                    }
+                                    if ($discount > 0): 
+                                    ?>
+                                        <div class="pd-old-price"><?= number_format($oldPrice) ?>đ</div>
+                                        <div class="pd-discount-badge">-<?= $discount ?>%</div>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                             <?php if ($deliveryMode !== 'source_link'): ?>
                                 <div class="pd-stock">

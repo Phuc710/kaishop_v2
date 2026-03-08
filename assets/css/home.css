@@ -1,5 +1,4 @@
 /* =====================================================
-   DivineShop Product Cards — divineshop.css
    Scoped under .ds-product-container & .ds-card
    để tránh bị override bởi styles.css / style.css
    ===================================================== */
@@ -178,6 +177,7 @@
 .ds-stock-row {
     font-size: 12.5px;
     color: #4b4b4b;
+    margin-top: auto;
     margin-bottom: 10px;
     display: flex;
     align-items: center;
@@ -202,7 +202,6 @@
 
 /* ── Price Row ────────────────────────────────────── */
 .ds-price-row {
-    margin-top: auto;
     display: flex;
     align-items: center;
     flex-wrap: wrap;

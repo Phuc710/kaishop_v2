@@ -308,8 +308,10 @@
                                         $isOutOfStock = $isStockManaged && $availableCount <= 0;
                                         $is_offline = $product['status'] !== 'ON' || $isOutOfStock;
                                         $discount = 0;
-                                        if ($product['old_price'] > $product['price']) {
-                                            $discount = round((($product['old_price'] - $product['price']) / $product['old_price']) * 100);
+                                        $oldPriceHome = isset($product['old_price']) ? (int) $product['old_price'] : 0;
+                                        $priceVndHome = isset($product['price_vnd']) ? (int) $product['price_vnd'] : 0;
+                                        if ($oldPriceHome > $priceVndHome) {
+                                            $discount = round((($oldPriceHome - $priceVndHome) / $oldPriceHome) * 100);
                                         }
 
                                         // Visual Tags

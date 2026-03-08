@@ -183,8 +183,18 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                         <td class="text-center align-middle text-muted small">
                                             <?= htmlspecialchars($p['category_name'] ?? '—') ?>
                                         </td>
-                                        <td class="text-center align-middle font-weight-bold text-success">
-                                            <?= number_format((int) $p['price_vnd']) ?>đ
+                                        <td class="text-center align-middle">
+                                            <div class="font-weight-bold text-success">
+                                                <?= number_format((int) $p['price_vnd']) ?>đ
+                                            </div>
+                                            <?php if (!empty($p['old_price']) && $p['old_price'] > $p['price_vnd']): ?>
+                                                <div class="small text-muted" style="text-decoration: line-through;">
+                                                    <?= number_format((int) $p['old_price']) ?>đ
+                                                </div>
+                                                <div class="badge badge-danger">
+                                                    -<?= round((($p['old_price'] - $p['price_vnd']) / $p['old_price']) * 100) ?>%
+                                                </div>
+                                            <?php endif; ?>
                                         </td>
                                         <td class="text-center align-middle">
                                             <?php if ($isSourceProduct || !empty($st['unlimited'])): ?>
