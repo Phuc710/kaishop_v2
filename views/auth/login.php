@@ -48,7 +48,7 @@ $GLOBALS['pageAssets'] = [
 <html lang="vi">
 
 <head>
-    <base href="<?= rtrim(BASE_URL, '/') ?>/ " />
+    <base href="<?= rtrim(BASE_URL, '/') ?>/" />
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>
     <title><?= htmlspecialchars($seoTitle, ENT_QUOTES, 'UTF-8') ?></title>
     <script src="<?= BASE_URL ?>/assets/js/fingerprint.js"></script>

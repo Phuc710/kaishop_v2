@@ -297,19 +297,34 @@ class AuthController extends Controller
 
         if ($userId) {
             $fingerprintHash = trim($this->post('fingerprint', ''));
+            $registrationRedirect = BASE_URL . '/';
+            $registrationMessage = 'Đăng ký thành công.';
             $newUser = $this->userModel->findById((int) $userId);
             if ($newUser) {
-                $this->completeAuthenticatedSession($newUser, $fingerprintHash, $this->post('fp_components', ''), false);
+                $sessionBootstrapped = $this->tryCompleteAuthenticatedSession(
+                    $newUser,
+                    $fingerprintHash,
+                    (string) $this->post('fp_components', ''),
+                    false,
+                    'register'
+                );
+                if (!$sessionBootstrapped) {
+                    $registrationRedirect = BASE_URL . '/login';
+                    $registrationMessage = 'Đăng ký thành công. Vui lòng đăng nhập để tiếp tục.';
+                }
 
                 // Gửi email chào mừng
                 try {
                     if (!class_exists('MailService')) {
                         require_once __DIR__ . '/../Services/MailService.php';
                     }
-                    (new MailService())->sendWelcomeRegister($newUser);
+                    $this->sendWelcomeRegisterEmail($newUser);
                 } catch (Throwable $e) {
                     // Non-blocking — không chặn đăng ký nếu mail lỗi
                 }
+            } else {
+                $registrationRedirect = BASE_URL . '/login';
+                $registrationMessage = 'Đăng ký thành công. Vui lòng đăng nhập để tiếp tục.';
             }
 
             Logger::info('Auth', 'register_success', 'Đăng ký tài khoản thành công', [
@@ -318,7 +333,11 @@ class AuthController extends Controller
                 'fingerprint' => $fingerprintHash ?: 'none'
             ]);
 
-            return $this->json(['success' => true, 'message' => 'Đăng ký thành công.']);
+            return $this->json([
+                'success' => true,
+                'message' => $registrationMessage,
+                'redirect' => $registrationRedirect,
+            ]);
         }
 
         return $this->json(['success' => false, 'message' => 'Có lỗi xảy ra, vui lòng thử lại.'], 500);
@@ -681,14 +700,7 @@ class AuthController extends Controller
             }
 
             // Gửi email chào mừng Google
-            try {
-                if (!class_exists('MailService')) {
-                    require_once __DIR__ . '/../Services/MailService.php';
-                }
-                (new MailService())->sendWelcomeRegister($user);
-            } catch (Throwable $e) {
-                // Non-blocking
-            }
+            $this->sendWelcomeRegisterEmail($user);
 
             Logger::info('Auth', 'register_google_success', 'Đăng ký bằng Google thành công', [
                 'username' => $user['username'],
@@ -726,7 +738,12 @@ class AuthController extends Controller
             ]);
         }
 
-        $this->completeAuthenticatedSession($user, $fingerprintHash, $fpComponents, $rememberMe);
+        if (!$this->tryCompleteAuthenticatedSession($user, $fingerprintHash, $fpComponents, $rememberMe, 'google_login')) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Không thể khởi tạo phiên đăng nhập. Vui lòng thử lại.'
+            ], 500);
+        }
 
         Logger::info('Auth', 'login_google_success', 'Đăng nhập bằng Google thành công', [
             'username' => $user['username'],
@@ -846,6 +863,34 @@ class AuthController extends Controller
             );
         } catch (Exception $e) {
             // Ignore fingerprint logging errors
+        }
+    }
+
+    private function tryCompleteAuthenticatedSession(array $user, string $fingerprintHash = '', string $fpComponents = '', bool $rememberMe = false, string $context = 'auth'): bool
+    {
+        try {
+            $this->completeAuthenticatedSession($user, $fingerprintHash, $fpComponents, $rememberMe);
+            return true;
+        } catch (Throwable $e) {
+            Logger::warning('Auth', 'session_bootstrap_failed', 'Khởi tạo phiên đăng nhập thất bại', [
+                'context' => $context,
+                'user_id' => (int) ($user['id'] ?? 0),
+                'username' => (string) ($user['username'] ?? ''),
+                'message' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
+
+    private function sendWelcomeRegisterEmail(array $user): void
+    {
+        try {
+            if (!class_exists('MailService')) {
+                require_once __DIR__ . '/../Services/MailService.php';
+            }
+            (new MailService())->sendWelcomeRegister($user);
+        } catch (Throwable $e) {
+            // Non-blocking
         }
     }
 

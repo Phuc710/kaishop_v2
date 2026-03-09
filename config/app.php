@@ -8,6 +8,8 @@
 require_once dirname(__DIR__) . '/app/Helpers/EnvHelper.php';
 EnvHelper::load(dirname(__DIR__) . '/.env');
 
+$appBasePath = dirname(__DIR__);
+
 if (!defined('APP_DIR')) {
     // ─── Smart APP_DIR Detection ──────────────────────────────────────────────
     // Priority 1: Use .env value if explicitly set (not empty)
@@ -35,6 +37,19 @@ if (session_status() === PHP_SESSION_NONE) {
     $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
         || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443);
 
+    $configuredSessionPath = trim((string) ini_get('session.save_path'));
+    $normalizedSessionPath = preg_replace('/^\d+;/', '', $configuredSessionPath) ?? $configuredSessionPath;
+    $normalizedSessionPath = trim((string) $normalizedSessionPath);
+    if ($normalizedSessionPath === '' || !is_dir($normalizedSessionPath) || !is_writable($normalizedSessionPath)) {
+        $fallbackSessionPath = $appBasePath . '/storage/sessions';
+        if (!is_dir($fallbackSessionPath)) {
+            @mkdir($fallbackSessionPath, 0755, true);
+        }
+        if (is_dir($fallbackSessionPath) && is_writable($fallbackSessionPath)) {
+            session_save_path($fallbackSessionPath);
+        }
+    }
+
     if (PHP_VERSION_ID >= 70300) {
         session_set_cookie_params([
             'lifetime' => 0,
@@ -55,7 +70,9 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // Base URL configuration
-define('BASE_PATH', dirname(__DIR__));
+if (!defined('BASE_PATH')) {
+    define('BASE_PATH', $appBasePath);
+}
 
 if (PHP_SAPI === 'cli') {
     $baseUrl = (string) EnvHelper::get('BASE_URL', 'http://localhost');
