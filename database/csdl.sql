@@ -676,57 +676,5 @@ CREATE TABLE IF NOT EXISTS `telegram_logs` (
   KEY `idx_tl_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-
--- ─── Auth Sessions: Token-based login sessions ────────────────────────────────
-CREATE TABLE IF NOT EXISTS `auth_sessions` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `session_selector` varchar(64) NOT NULL COMMENT 'Public selector for cookie lookup',
-  `access_token_hash` varchar(64) NOT NULL COMMENT 'SHA-256 of access token',
-  `refresh_token_hash` varchar(128) NOT NULL COMMENT 'SHA-256 of refresh token',
-  `legacy_session_token` varchar(128) DEFAULT NULL COMMENT 'Backward compat session token',
-  `access_expires_at` datetime NOT NULL,
-  `refresh_expires_at` datetime NOT NULL,
-  `ip_address` varchar(45) DEFAULT NULL,
-  `user_agent` text DEFAULT NULL,
-  `device_fingerprint` varchar(128) DEFAULT NULL,
-  `device_hash` varchar(64) DEFAULT NULL,
-  `device_os` varchar(100) DEFAULT NULL,
-  `device_browser` varchar(100) DEFAULT NULL,
-  `device_type` varchar(50) DEFAULT NULL,
-  `remember_me` tinyint(1) NOT NULL DEFAULT 0,
-  `status` enum('active','revoked','expired') NOT NULL DEFAULT 'active',
-  `last_rotated_at` datetime DEFAULT NULL,
-  `revoked_at` datetime DEFAULT NULL,
-  `revoke_reason` varchar(100) DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uniq_as_selector` (`session_selector`),
-  KEY `idx_as_user_status` (`user_id`, `status`),
-  KEY `idx_as_access_exp` (`access_expires_at`),
-  KEY `idx_as_refresh_exp` (`refresh_expires_at`),
-  KEY `idx_as_device_hash` (`device_hash`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- ─── User Trusted Devices ──────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS `user_trusted_devices` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `device_hash` varchar(64) NOT NULL,
-  `ip_address` varchar(45) DEFAULT NULL,
-  `user_agent` text DEFAULT NULL,
-  `os` varchar(100) DEFAULT NULL,
-  `browser` varchar(100) DEFAULT NULL,
-  `device_type` varchar(50) DEFAULT NULL,
-  `trusted_until` datetime NOT NULL,
-  `last_seen_at` datetime DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uniq_utd_user_device` (`user_id`, `device_hash`),
-  KEY `idx_utd_user_trusted` (`user_id`, `trusted_until`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
 SET FOREIGN_KEY_CHECKS = 1;
 COMMIT;
