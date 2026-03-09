@@ -293,7 +293,19 @@ class Order extends Model
             }
 
             if ($status !== 'completed') {
+                $quantity = max(1, (int) ($order['quantity'] ?? 1));
+                $totalPrice = (int) ($order['price'] ?? 0);
+                $unitPrice = (int) floor($totalPrice / $quantity);
+
                 $this->sendFulfilledOrderMailNonBlocking($order, $nowSql, $deliveryContent);
+                $this->notifyAdminOrderCompleted(array_merge($order, [
+                    'status' => 'completed',
+                    'price' => $unitPrice,
+                    'fulfilled_by' => $adminUsername,
+                    'fulfilled_at' => $nowSql,
+                    'delivery_content' => $deliveryContent,
+                    'total_price' => $totalPrice,
+                ]));
             }
 
             return [
@@ -410,6 +422,18 @@ class Order extends Model
             if ($started && $this->db->inTransaction()) {
                 $this->db->commit();
             }
+
+            $quantity = max(1, (int) ($order['quantity'] ?? 1));
+            $totalPrice = (int) ($order['price'] ?? 0);
+            $unitPrice = (int) floor($totalPrice / $quantity);
+            $this->notifyAdminOrderCancelled(array_merge($order, [
+                'status' => 'cancelled',
+                'price' => $unitPrice,
+                'fulfilled_by' => $adminUsername,
+                'fulfilled_at' => $nowSql,
+                'cancel_reason' => $reason,
+                'total_price' => $totalPrice,
+            ]));
 
             return ['success' => true, 'message' => 'Da huy don pending va hoan tien cho user.'];
         } catch (Throwable $e) {
@@ -557,6 +581,38 @@ class Order extends Model
                 'source_link' => (string) ($product['source_link'] ?? ''),
                 'info_instructions' => (string) ($product['info_instructions'] ?? ''),
             ], is_array($product) ? $product : []);
+        } catch (Throwable $e) {
+            // Non-blocking
+        }
+    }
+
+    /**
+     * @param array<string,mixed> $order
+     */
+    private function notifyAdminOrderCompleted(array $order): void
+    {
+        if (!class_exists('OrderNotificationService')) {
+            return;
+        }
+
+        try {
+            (new OrderNotificationService())->notifyAdminCompletedOrder($order);
+        } catch (Throwable $e) {
+            // Non-blocking
+        }
+    }
+
+    /**
+     * @param array<string,mixed> $order
+     */
+    private function notifyAdminOrderCancelled(array $order): void
+    {
+        if (!class_exists('OrderNotificationService')) {
+            return;
+        }
+
+        try {
+            (new OrderNotificationService())->notifyAdminCancelledOrder($order);
         } catch (Throwable $e) {
             // Non-blocking
         }

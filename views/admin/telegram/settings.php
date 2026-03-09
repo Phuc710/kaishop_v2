@@ -365,7 +365,10 @@ $tgCssVersion = (string) @filemtime(dirname(__DIR__, 3) . '/assets/css/telegram_
                 <div class="card custom-card shadow-sm border-0">
                     <div
                         class="card-header bg-white d-flex justify-content-between align-items-center py-3 tg-channels-header">
-                        <h3 class="card-title font-weight-bold">Kênh nhận đơn tự động</h3>
+                        <div>
+                            <h3 class="card-title font-weight-bold mb-1">Kênh nhận đơn tự động</h3>
+                            <div class="small text-muted">Nhận tất cả thông báo đơn hàng: tạo đơn, hoàn tất và hủy đơn.</div>
+                        </div>
                         <button class="btn btn-sm btn-success px-4 tg-add-channel-btn" data-toggle="modal"
                             data-target="#modalAddChannel"><i class="fas fa-plus mr-1"></i> THÊM KÊNH</button>
                     </div>
