@@ -299,12 +299,23 @@ class TelegramBotService
             return;
         }
         if ($data === 'binance_start') {
-            $this->cmdBinance($chatId, $telegramId, [], $messageId);
+            $this->startBinanceInputMode($chatId, $telegramId, $messageId);
             $this->telegram->answerCallbackQuery($callbackId);
             return;
         }
         if (preg_match('/^bin_amount_([0-9]+(?:\.[0-9]{1,2})?)$/', $data, $m)) {
-            $this->cmdBinance($chatId, $telegramId, [(string) $m[1]], $messageId);
+            $amount = (float) $m[1];
+            // Sau khi chọn số tiền, hỏi UID
+            $this->setBinanceSession($telegramId, [
+                'step' => 'await_uid',
+                'amount' => $amount,
+                'message_id' => $messageId
+            ], 300);
+
+            $msg = "💵 Số tiền: <b>$" . number_format($amount, 2) . " USDT</b>\n\n" .
+                "👉 Bây giờ hãy nhập <b>Binance UID</b> của bạn để hệ thống tự động cộng tiền.";
+
+            $this->telegram->editOrSend($chatId, $messageId, $msg);
             $this->telegram->answerCallbackQuery($callbackId);
             return;
         }

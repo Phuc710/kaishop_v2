@@ -423,6 +423,30 @@ trait TelegramBotServiceDepositTrait
 
         $step = (string) ($session['step'] ?? '');
 
+        // Step 1: Nhập số tiền USDT
+        if ($step === 'await_amount') {
+            $amountRaw = preg_replace('/[^0-9.]/', '', $text);
+            $amount = (float) $amountRaw;
+            if ($amount <= 0) {
+                $this->telegram->sendTo($chatId, '⚠️ Số tiền không hợp lệ. Vui lòng nhập số USDT cần nạp (ví dụ: <code>10</code>).', [
+                    'reply_markup' => $this->buildBinanceAmountKeyboard(),
+                ]);
+                return true;
+            }
+
+            // Chuyển sang bước hỏi UID
+            $this->setBinanceSession($telegramId, [
+                'step' => 'await_uid',
+                'amount' => $amount,
+                'message_id' => (int) ($session['message_id'] ?? 0)
+            ], 300);
+
+            $this->telegram->sendTo($chatId, '💵 Số tiền: <b>$' . number_format($amount, 2) . ' USDT</b>' . "\n\n" .
+                "👉 Bây giờ hãy nhập <b>Binance UID</b> của bạn để hệ thống tự động cộng tiền.");
+            return true;
+        }
+
+        // Step 2: Nhập UID
         if ($step === 'await_uid') {
             $uid = preg_replace('/\D/', '', $text);
             if (!preg_match('/^\d{4,20}$/', (string) $uid)) {
@@ -430,33 +454,47 @@ trait TelegramBotServiceDepositTrait
                 return true;
             }
 
-            // Lưu vào session, KHOONG lưu DB — đồng bộ web flow
-            $this->setBinanceSession($telegramId, ['step' => 'await_amount', 'uid' => (string) $uid], 300);
-            $this->telegram->sendTo($chatId, '✅ UID: <code>' . htmlspecialchars((string) $uid, ENT_QUOTES, 'UTF-8') . "</code>\n\nBây giờ hãy nhập số USDT cần nạp (ví dụ: <code>10</code>).", [
-                'reply_markup' => $this->buildBinanceAmountKeyboard(),
-            ]);
-            return true;
-        }
-
-        if ($step === 'await_amount') {
-            $amountRaw = preg_replace('/[^0-9.]/', '', $text);
-            $amount = (float) $amountRaw;
-            if ($amount <= 0) {
-                $this->telegram->sendTo($chatId, '⚠️ Số tiền không hợp lệ. Ví dụ: <code>10</code> (USDT).', [
-                    'reply_markup' => $this->buildBinanceAmountKeyboard(),
-                ]);
-                return true;
-            }
-
-            // Lấy UID từ session và truyền qua args[1] — không lưu DB
-            $uid = (string) ($session['uid'] ?? '');
+            $amount = (float) ($session['amount'] ?? 0);
             $messageId = (int) ($session['message_id'] ?? 0);
+
             $this->clearBinanceSession($telegramId);
-            $this->cmdBinance($chatId, $telegramId, [(string) $amount, $uid], $messageId);
+            $this->cmdBinance($chatId, $telegramId, [(string) $amount, (string) $uid], $messageId);
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * Bắt đầu luồng nạp Binance: Bước 1 - Hỏi số tiền
+     */
+    protected function startBinanceInputMode(string $chatId, int $telegramId, int $messageId = 0): void
+    {
+        $this->setBinanceSession($telegramId, [
+            'step' => 'await_amount',
+            'message_id' => $messageId
+        ], 300);
+
+        $msg = "🟡 <b>NẠP QUA BINANCE PAY (USDT)</b>\n\n";
+        $msg .= "📌 Tỷ giá: Tự động cập nhật theo thị trường.\n";
+        $msg .= "👇 Vui lòng chọn nhanh hoặc nhập số USDT bạn muốn nạp:";
+
+        $markup = $this->buildBinanceAmountKeyboard();
+
+        // Gửi QR động từ admin setting
+        $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
+        if (empty($domain)) {
+            $domain = 'kaishop.id.vn';
+        }
+        $qrPath = get_setting('binance_qr_image', 'assets/images/qr_binane.jpg');
+        $photoUrl = "https://{$domain}/{$qrPath}";
+
+        if ($messageId > 0) {
+            $this->telegram->deleteMessage($chatId, $messageId);
+        }
+        if (!$this->telegram->sendPhotoTo($chatId, $photoUrl, $msg, ['reply_markup' => $markup])) {
+            $this->telegram->sendTo($chatId, $msg, ['reply_markup' => $markup]);
+        }
     }
 
     private function cmdBinance(string $chatId, int $telegramId, array $args, int $messageId = 0): void
@@ -494,44 +532,37 @@ trait TelegramBotServiceDepositTrait
         $usdAmount = (float) $amountRaw;
         $payerUid = trim((string) ($args[1] ?? ''));
 
-        $rate = max(1, (int) ($siteConfig['binance_rate_vnd'] ?? 25000));
-        $minUsdt = round(DepositService::MIN_AMOUNT / $rate, 2);
-
-        $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
-        if (empty($domain))
-            $domain = 'kaishop.id.vn';
-        $qrPath = get_setting('binance_qr_image', 'assets/images/qr_binane.jpg');
-        $photoUrl = "https://{$domain}/{$qrPath}";
-        // Bước 1: Hỏi UID nếu chưa có (mỗi lần giao dịch đều hỏi — đồng bộ web)
-        if ($payerUid === '' || !preg_match('/^\d{4,20}$/', $payerUid)) {
-            $this->setBinanceSession($telegramId, ['step' => 'await_uid', 'message_id' => $messageId], 300);
-            $msg = "🟡 <b>BINANCE PAY — NHẬP UID</b>\n\n" .
-                "Vui lòng nhập <b>Binance UID</b> của bạn.\n\n" .
-                "Ví dụ: <code>12345678</code>";
-
-            if ($messageId > 0) {
-                $this->telegram->deleteMessage($chatId, $messageId);
-            }
-            $this->telegram->sendPhotoTo($chatId, $photoUrl, $msg);
+        // Bước 1: Hỏi số tiền nếu chưa có
+        if ($usdAmount <= 0) {
+            $this->startBinanceInputMode($chatId, $telegramId, $messageId);
             return;
         }
 
-        // Bước 2: Hỏi số tiền nếu chưa có
-        if ($usdAmount <= 0) {
-            $this->setBinanceSession($telegramId, ['step' => 'await_amount', 'uid' => $payerUid, 'message_id' => $messageId], 300);
-            $minLabel = number_format($minUsdt, 2) . ' USDT';
-            $msg = "💵 Nhập số USDT cần nạp (tối thiểu <b>{$minLabel}</b>).";
-            $markup = $this->buildBinanceAmountKeyboard();
+        // Bước 2: Hỏi UID nếu chưa có — gửi kèm ảnh QR từ admin setting
+        if ($payerUid === '' || !preg_match('/^\d{4,20}$/', $payerUid)) {
+            $this->setBinanceSession($telegramId, [
+                'step' => 'await_uid',
+                'amount' => $usdAmount,
+                'message_id' => $messageId
+            ], 300);
+
+            $msg = "💵 Số tiền: <b>$" . number_format($usdAmount, 2) . " USDT</b>\n\n" .
+                "👉 Vui lòng nhập <b>Binance UID</b> của bạn để tiếp tục.\n" .
+                "<i>Scan QR để tìm UID hoặc vào Binance App → Profile → Copy UID</i>";
+
+            $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
+            if (empty($domain)) {
+                $domain = 'kaishop.id.vn';
+            }
+            $qrPath = get_setting('binance_qr_image', 'assets/images/qr_binane.jpg');
+            $photoUrl = "https://{$domain}/{$qrPath}";
 
             if ($messageId > 0) {
                 $this->telegram->deleteMessage($chatId, $messageId);
             }
-            $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
-            if (empty($domain))
-                $domain = 'kaishop.id.vn';
-            $qrPath = get_setting('binance_qr_image', 'assets/images/qr_binane.jpg');
-            $photoUrl = "https://{$domain}/{$qrPath}";
-            $this->telegram->sendPhotoTo($chatId, $photoUrl, $msg, ['reply_markup' => $markup]);
+            if (!$this->telegram->sendPhotoTo($chatId, $photoUrl, $msg)) {
+                $this->telegram->sendTo($chatId, $msg);
+            }
             return;
         }
 
@@ -558,20 +589,17 @@ trait TelegramBotServiceDepositTrait
         $depositCode = (string) ($d['deposit_code'] ?? '');
         $usdtAmount = (float) ($d['usdt_amount'] ?? 0);
         $receiverUid = (string) ($d['binance_uid'] ?? '');
-        $noteText = trim((string) ($d['note_text'] ?? ''));
         $expiresAt = trim((string) ($d['expires_at'] ?? ''));
 
         $msg = "🟡 <b>BINANCE PAY — THÔNG TIN THANH TOÁN</b>\n\n";
         $msg .= "📋 Mã giao dịch: <code>" . htmlspecialchars($depositCode, ENT_QUOTES, 'UTF-8') . "</code>\n";
-        $msg .= "👤 UID của bạn: <code>" . htmlspecialchars($payerUid, ENT_QUOTES, 'UTF-8') . "</code>\n";
-        $msg .= "📬 UID nhận tiền: <code>" . htmlspecialchars($receiverUid, ENT_QUOTES, 'UTF-8') . "</code>\n";
-        $msg .= "💵 Số cần gửi: <b>" . number_format($usdtAmount, 2, '.', '') . " USDT</b>\n";
-        if ($noteText !== '') {
-            $msg .= "📝 Ghi chú: <code>" . htmlspecialchars($noteText, ENT_QUOTES, 'UTF-8') . "</code>\n";
-        }
+        $msg .= "👤 UID: <code>" . htmlspecialchars($payerUid, ENT_QUOTES, 'UTF-8') . "</code>\n";
+        $msg .= "💵 Send EXACTLY: <b>$" . number_format($usdtAmount, 2, '.', '') . " USDT</b>\n";
+        $msg .= "📬 Pay to Binance ID:: <code>" . htmlspecialchars($receiverUid, ENT_QUOTES, 'UTF-8') . "</code>\n";
         if ($expiresAt !== '') {
             $msg .= "⏰ Hết hạn: <b>" . htmlspecialchars($expiresAt, ENT_QUOTES, 'UTF-8') . "</b>\n";
         }
+        $msg .= "━━━━━━━━━━━━━━\n";
         $msg .= "\n✅ Sau khi chuyển tiền, nhấn <b>Kiểm tra thanh toán</b> bên dưới.";
 
         $markup = TelegramService::buildInlineKeyboard([
@@ -583,16 +611,14 @@ trait TelegramBotServiceDepositTrait
         ]);
 
         $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
-        if (empty($domain))
+        if (empty($domain)) {
             $domain = 'kaishop.id.vn';
+        }
         $qrPath = get_setting('binance_qr_image', 'assets/images/qr_binane.jpg');
         $photoUrl = "https://{$domain}/{$qrPath}";
-        if ($messageId > 0) {
-            $this->telegram->editOrSend($chatId, $messageId, $msg, $markup);
-        } else {
-            if (!$this->telegram->sendPhotoTo($chatId, $photoUrl, $msg, ['reply_markup' => $markup])) {
-                $this->telegram->sendTo($chatId, $msg, ['reply_markup' => $markup]);
-            }
+
+        if (!$this->telegram->sendPhotoTo($chatId, $photoUrl, $msg, ['reply_markup' => $markup])) {
+            $this->telegram->sendTo($chatId, $msg, ['reply_markup' => $markup]);
         }
     }
 
@@ -721,13 +747,8 @@ trait TelegramBotServiceDepositTrait
         $rate = max(1, (int) ($siteConfig['binance_rate_vnd'] ?? 25000));
         $minUsdt = max(1.0, round(DepositService::MIN_AMOUNT / $rate, 0));
 
-        // Quick amounts (USDT), bắt đầu từ min
-        $quickAmounts = [5, 10, 20, 50];
-        // Loại bỏ mức thấp hơn min
-        $quickAmounts = array_values(array_filter($quickAmounts, fn($v) => $v >= $minUsdt));
-        if (empty($quickAmounts)) {
-            $quickAmounts = [max(1, (int) $minUsdt), 10, 20, 50];
-        }
+        // Quick amounts (USDT) - Sync with web tiers
+        $quickAmounts = [1, 4, 8, 20];
 
         $buttons = [];
         foreach ($quickAmounts as $usdt) {
