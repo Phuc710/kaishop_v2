@@ -128,6 +128,14 @@ final class TelegramConfig
     }
 
     /**
+     * Main Channel ID (cho các thông báo ALERT/Kênh chính)
+     */
+    public static function mainChannelId(): string
+    {
+        return (string) get_setting('telegram_main_channel_id', '');
+    }
+
+    /**
      * Tất cả Admin IDs (bao gồm primary + telegram_admin_ids)
      * @return int[]
      */

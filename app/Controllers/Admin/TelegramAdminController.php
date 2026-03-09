@@ -99,6 +99,7 @@ class TelegramAdminController extends Controller
             'telegram_webhook_secret',
             'telegram_webhook_path',
             'telegram_admin_ids',
+            'telegram_main_channel_id',
             'telegram_maintenance_enabled',
             'telegram_maintenance_message',
         ];
@@ -115,6 +116,11 @@ class TelegramAdminController extends Controller
             $db,
             'telegram_maintenance_enabled',
             "TINYINT(1) NOT NULL DEFAULT 0 AFTER `telegram_order_cooldown`"
+        );
+        $this->ensureSettingColumn(
+            $db,
+            'telegram_main_channel_id',
+            "VARCHAR(120) NULL AFTER `telegram_chat_id`"
         );
         $this->ensureSettingColumn(
             $db,
@@ -444,7 +450,12 @@ class TelegramAdminController extends Controller
     {
         $this->requireAdmin();
 
-        $chatId = trim((string) $this->post('chat_id', (string) TelegramConfig::primaryAdminId()));
+        $defaultChatId = TelegramConfig::mainChannelId();
+        if ($defaultChatId === '') {
+            $defaultChatId = TelegramConfig::primaryAdminId();
+        }
+
+        $chatId = trim((string) $this->post('chat_id', $defaultChatId));
         $message = trim((string) $this->post('message', ''));
 
         if ($chatId === '') {

@@ -19,6 +19,7 @@ $webhookApiOk = !empty($webhookInfo['ok']);
 
 $currentToken = $siteConfig['telegram_bot_token'] ?? '';
 $currentChatId = $siteConfig['telegram_chat_id'] ?? '';
+$currentMainChannelId = $siteConfig['telegram_main_channel_id'] ?? '';
 $currentSecret = $siteConfig['telegram_webhook_secret'] ?? '';
 $currentPath = $siteConfig['telegram_webhook_path'] ?? 'bottelekaishop_default';
 $botMaintenanceOn = ((int) ($siteConfig['telegram_maintenance_enabled'] ?? 0) === 1);
@@ -430,7 +431,7 @@ $tgCssVersion = (string) @filemtime(dirname(__DIR__, 3) . '/assets/css/telegram_
                                 Channel</label>
                             <div class="d-flex align-items-center tg-main-channel-inline" style="gap:10px;">
                                 <input type="text" id="mainChannelChatId" class="form-control bg-light border-0"
-                                    value="<?= htmlspecialchars($currentChatId) ?>"
+                                    value="<?= htmlspecialchars($currentMainChannelId) ?>"
                                     placeholder="-100123456789 hoặc @channel">
                                 <button type="button" class="btn btn-primary px-4 font-weight-bold"
                                     id="btnSaveMainChannel">LƯU</button>
@@ -783,7 +784,7 @@ $tgCssVersion = (string) @filemtime(dirname(__DIR__, 3) . '/assets/css/telegram_
                     setLoading(btnSaveMainChannel, true);
                     try {
                         activateTab('tab-main-channel', true);
-                        const res = await postRequest('<?= url('admin/telegram/settings/update') ?>', { telegram_chat_id: chatId });
+                        const res = await postRequest('<?= url('admin/telegram/settings/update') ?>', { telegram_main_channel_id: chatId });
                         SwalHelper.toast(res.message || (res.success ? 'Đã lưu Main Channel' : 'Lưu Main Channel thất bại'), res.success ? 'success' : 'error');
                     } catch (err) {
                         SwalHelper.toast('Lỗi lưu Main Channel', 'error');
