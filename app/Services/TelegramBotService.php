@@ -338,7 +338,7 @@ class TelegramBotService
             return;
         }
 
-        if (preg_match('/^cancel_dep_([A-Za-z0-9_-]{3,64})$/', $data, $m)) {
+        if (preg_match('/^cancel_dep_confirm_([A-Za-z0-9_-]{3,64})$/', $data, $m)) {
             $code = $m[1];
             $user = $this->resolveLinkedUser($chatId, $telegramId);
             if ($user) {
@@ -348,10 +348,30 @@ class TelegramBotService
                     $depositModel->cancelByUser((int) $deposit['id'], (int) $user['id']);
                 }
             }
-            // Sau khi hủy (hoặc nếu đã hủy rồi), xóa QR và về menu nạp
             $this->telegram->deleteMessage($chatId, $messageId);
             $this->showDepositMethodMenu($chatId, $telegramId);
             $this->telegram->answerCallbackQuery($callbackId, "Đã hủy giao dịch.");
+            return;
+        }
+
+        if (preg_match('/^cancel_dep_abort_([A-Za-z0-9_-]{3,64})$/', $data, $m)) {
+            $this->telegram->deleteMessage($chatId, $messageId);
+            $this->telegram->answerCallbackQuery($callbackId, "Đã giữ lại giao dịch.");
+            return;
+        }
+
+        if (preg_match('/^cancel_dep_([A-Za-z0-9_-]{3,64})$/', $data, $m)) {
+            $code = $m[1];
+            $confirmMarkup = TelegramService::buildInlineKeyboard([
+                [
+                    ['text' => 'Confirm', 'callback_data' => 'cancel_dep_confirm_' . $code],
+                    ['text' => 'Cancel', 'callback_data' => 'cancel_dep_abort_' . $code],
+                ],
+            ]);
+            $this->telegram->sendTo($chatId, "Bạn chắc chắn muốn hủy giao dịch Binance này?", [
+                'reply_markup' => $confirmMarkup,
+            ]);
+            $this->telegram->answerCallbackQuery($callbackId, "Chọn Confirm hoặc Cancel.");
             return;
         }
 

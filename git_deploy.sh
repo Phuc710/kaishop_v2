@@ -3,38 +3,55 @@
 # ==============================================================================
 #  GIT AUTO-DEPLOY SCRIPT (CRON JOB)
 # ==============================================================================
-# Purpose: This script is intended to be run by a Cron Job to automatically
-# keep your project updated with the latest code from GitHub.
+# Purpose:
+# Keep production synced with origin/main without getting blocked by runtime
+# cache files generated on the server.
 #
 # Usage:
-# Add this to your Cron Job (every 1-5 minutes):
 # /bin/bash /home/kaishopi/domains/kaishop.id.vn/public_html/git_deploy.sh
 # ==============================================================================
 
-# Project directory (Update this path if it's different on your server)
+set -u
+
 PROJECT_DIR="/home/kaishopi/domains/kaishop.id.vn/public_html"
 LOG_FILE="${PROJECT_DIR}/storage/logs/cron_deploy.log"
 BRANCH="main"
+GIT_BIN="/usr/bin/git"
 
-# Ensure log directory exists
-mkdir -p "$(dirname "$LOG_FILE")"
+mkdir -p "${PROJECT_DIR}/storage/logs" "${PROJECT_DIR}/storage/cache"
 
-# Execute pull
-{
-    echo "------------------------------------------------------------"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting Git Pull..."
-    
-    cd "$PROJECT_DIR" || { echo "ERROR: Could not change directory to $PROJECT_DIR"; exit 1; }
-    
-    # Run git pull
-    # We use --ff-only to ensure we don't accidentally create merge commits on server
-    /usr/bin/git pull origin "$BRANCH" --ff-only 2>&1
-    
-    EXIT_CODE=$?
-    
-    if [ $EXIT_CODE -eq 0 ]; then
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Success: Code updated."
-    else
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Error: Git pull failed with exit code $EXIT_CODE."
-    fi
-} >> "$LOG_FILE" 2>&1
+exec >> "$LOG_FILE" 2>&1
+
+echo "------------------------------------------------------------"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting deploy..."
+
+cd "$PROJECT_DIR" || {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: Could not change directory to $PROJECT_DIR"
+    exit 1
+}
+
+if ! "$GIT_BIN" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $PROJECT_DIR is not a git repository"
+    exit 1
+fi
+
+# Runtime cache files can be modified by the app on production. Reset and clean
+# them first so deploy never gets blocked by local cache changes.
+"$GIT_BIN" restore --source=HEAD --staged --worktree -- storage/cache >/dev/null 2>&1 || true
+find storage/cache -type f ! -name '.gitignore' -delete >/dev/null 2>&1 || true
+
+if ! "$GIT_BIN" fetch --prune origin "$BRANCH"; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: git fetch failed"
+    exit 1
+fi
+
+# Production should mirror origin/main exactly. This avoids merge conflicts from
+# local runtime changes and keeps cron deploy deterministic.
+if ! "$GIT_BIN" reset --hard "origin/$BRANCH"; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: git reset --hard origin/$BRANCH failed"
+    exit 1
+fi
+
+find storage/cache -type f ! -name '.gitignore' -delete >/dev/null 2>&1 || true
+
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Success: Production synced to origin/$BRANCH"

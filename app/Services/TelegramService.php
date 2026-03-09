@@ -130,7 +130,7 @@ class TelegramService
     /**
      * Send photo by URL or file_id to a specific chat.
      */
-    public function sendPhotoTo(string $chatId, string $photo, ?string $caption = null, array $options = []): bool
+    public function sendPhotoTo(string $chatId, $photo, ?string $caption = null, array $options = []): bool
     {
         $payload = [
             'chat_id' => $chatId,
@@ -364,10 +364,12 @@ class TelegramService
             }
         }
 
+        $postFields = $this->payloadContainsBinary($params) ? $params : http_build_query($params);
+
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => http_build_query($params),
+            CURLOPT_POSTFIELDS => $postFields,
             CURLOPT_TIMEOUT => $timeout,
             CURLOPT_CONNECTTIMEOUT => TelegramConfig::CURL_CONNECT_TIMEOUT,
             CURLOPT_SSL_VERIFYPEER => true,
@@ -400,6 +402,17 @@ class TelegramService
     public static function buildInlineKeyboard(array $rows): array
     {
         return ['inline_keyboard' => $rows];
+    }
+
+    private function payloadContainsBinary(array $params): bool
+    {
+        foreach ($params as $value) {
+            if ($value instanceof CURLFile) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

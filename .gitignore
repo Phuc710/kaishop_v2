@@ -8,6 +8,8 @@
 # Ignore log files
 *.log
 storage/logs/
+storage/cache/*
+!storage/cache/.gitignore
 
 # Keep example files
 !config.example.php

@@ -28,6 +28,15 @@ $quickButtons = [
 <?php
 $binanceQrSetting = get_setting('binance_qr_image', 'assets/images/qr_binane.jpg');
 $binanceQrUrl = asset($binanceQrSetting);
+$binanceTimeService = class_exists('TimeService') ? TimeService::instance() : null;
+$binanceReceiverUid = (string) ($activeDepositPayload['binance_uid'] ?? ($chungapi['binance_uid'] ?? ''));
+$binancePayerUid = (string) ($activeDepositPayload['payer_uid'] ?? '');
+$binanceDepositCode = (string) ($activeDepositPayload['deposit_code'] ?? '');
+$binanceUsdtAmount = number_format((float) ($activeDepositPayload['usdt_amount'] ?? 0), 2, '.', '');
+$binanceExpiresAtTs = (int) ($activeDepositPayload['expires_at_ts'] ?? 0);
+$binanceExpiresAtDisplay = $binanceExpiresAtTs > 0
+    ? ($binanceTimeService ? $binanceTimeService->formatDisplay($binanceExpiresAtTs, 'Y-m-d H:i:s', 'UTC') : date('Y-m-d H:i:s', $binanceExpiresAtTs))
+    : '';
 ?>
 <div class="deposit-panel-step" data-deposit-step="amount" <?= $activeDepositExists ? 'hidden' : '' ?>>
     <div class="deposit-panel-title-row">
@@ -96,63 +105,61 @@ $binanceQrUrl = asset($binanceQrSetting);
 
 <div class="deposit-panel-step" data-deposit-step="transfer" <?= $activeDepositExists ? '' : 'hidden' ?>>
     <div class="deposit-panel-title-row deposit-panel-title-row--center">
-        <h6 class="deposit-panel-title">Payment Details</h6>
+        <h6 class="deposit-panel-title">Thông tin thanh toán Binance Pay</h6>
     </div>
 
     <div class="row align-items-start g-3 mt-2">
         <div class="col-lg-5">
             <div class="deposit-qr-card h-100 mb-0">
+                <div class="text-center fw-bold mb-2">QR</div>
                 <div class="deposit-qr-box text-center">
-                    <img src="<?= $binanceQrUrl ?>" alt="Binance QR UID" class="img-fluid rounded shadow-sm"
-                        style="max-width: 220px; border: 1px solid #eee;">
+                    <img src="<?= htmlspecialchars($binanceQrUrl, ENT_QUOTES, 'UTF-8') ?>" alt="Binance QR UID"
+                        class="img-fluid rounded shadow-sm" style="max-width: 220px; border: 1px solid #eee;">
                 </div>
-                <a href="<?= $binanceQrUrl ?>" download="binance_qr.jpg" class="btn btn-search-custom w-100 mt-3">
-                    <i class="fas fa-download me-1"></i> Download QR
-                </a>
             </div>
         </div>
         <div class="col-lg-7">
             <div class="deposit-info-list mt-0">
                 <div class="deposit-info-row">
-                    <span class="deposit-info-label">Binance Pay</span>
-                    <span class="deposit-info-value">Binance Funding</span>
+                    <span class="deposit-info-label">BINANCE PAY</span>
+                    <span class="deposit-info-value">THÔNG TIN THANH TOÁN</span>
                 </div>
                 <div class="deposit-info-row">
-                    <span class="deposit-info-label">ID nhận tiền</span>
+                    <span class="deposit-info-label">Pay to Binance ID</span>
                     <div class="deposit-info-actions">
-                        <span class="deposit-info-value"
-                            data-tf-binance-uid><?= htmlspecialchars((string) ($activeDepositPayload['binance_uid'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                        <strong class="deposit-info-value is-highlight"
+                            data-tf-binance-uid><?= htmlspecialchars($binanceReceiverUid, ENT_QUOTES, 'UTF-8') ?></strong>
                         <button type="button" class="btn-copy" data-copy-target="uid"><i
                                 class="fas fa-copy"></i></button>
                     </div>
                 </div>
                 <div class="deposit-info-row">
-                    <span class="deposit-info-label">UID nạp tiền</span>
-                    <span class="deposit-info-value"
-                        data-tf-payer-uid><?= htmlspecialchars((string) ($activeDepositPayload['payer_uid'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                    <span class="deposit-info-label">Mã giao dịch</span>
+                    <div class="deposit-info-actions">
+                        <span class="deposit-info-value is-uppercase"
+                            data-tf-code><?= htmlspecialchars($binanceDepositCode, ENT_QUOTES, 'UTF-8') ?></span>
+                        <button type="button" class="btn-copy" data-copy-target="code"><i
+                                class="fas fa-copy"></i></button>
+                    </div>
                 </div>
                 <div class="deposit-info-row">
-                    <span class="deposit-info-label">Số tiền</span>
+                    <span class="deposit-info-label">UID</span>
+                    <span class="deposit-info-value"
+                        data-tf-payer-uid><?= htmlspecialchars($binancePayerUid, ENT_QUOTES, 'UTF-8') ?></span>
+                </div>
+                <div class="deposit-info-row">
+                    <span class="deposit-info-label">Send EXACTLY</span>
                     <div class="deposit-info-actions">
                         <span class="deposit-info-value is-highlight"
-                            data-tf-usdt><?= htmlspecialchars((string) ($activeDepositPayload['usdt_amount'] ?? '0.00'), ENT_QUOTES, 'UTF-8') ?>
-                            USDT</span>
+                            data-tf-usdt>$<?= htmlspecialchars($binanceUsdtAmount, ENT_QUOTES, 'UTF-8') ?> USDT</span>
                         <button type="button" class="btn-copy" data-copy-target="usdt"><i
                                 class="fas fa-copy"></i></button>
                     </div>
                 </div>
                 <div class="deposit-info-row">
-                    <span class="deposit-info-label">Tình trạng</span>
-                    <span class="pd-chip info" data-tf-status><i class="fas fa-spinner fa-spin"></i> Đang xử lý</span>
-                </div>
-                <div class="deposit-info-row">
-                    <span class="deposit-info-label">Mã nạp</span>
-                    <div class="deposit-info-actions">
-                        <span class="deposit-info-value"
-                            data-tf-code><?= htmlspecialchars((string) ($activeDepositPayload['deposit_code'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
-                        <button type="button" class="btn-copy" data-copy-target="content"><i
-                                class="fas fa-copy"></i></button>
-                    </div>
+                    <span class="deposit-info-label">Hết hạn</span>
+                    <span class="deposit-info-value"
+                        data-tf-expires><?= htmlspecialchars($binanceExpiresAtDisplay, ENT_QUOTES, 'UTF-8') ?></span>
                 </div>
             </div>
         </div>
@@ -178,9 +185,23 @@ $binanceQrUrl = asset($binanceQrSetting);
         <div class="alert alert-warning deposit-warning mt-3 mb-0">
             <?= $binanceWarning ?>
         </div>
+    <?php else: ?>
+        <div class="alert alert-warning deposit-warning mt-3 mb-0">
+            Lưu ý: nhập chính xác <strong>UID Binance của bạn</strong> và chuyển đúng
+            <strong><?= htmlspecialchars($binanceUsdtAmount, ENT_QUOTES, 'UTF-8') ?> USDT</strong> thì hệ thống mới auto match được.
+        </div>
     <?php endif; ?>
 
-    <button type="button" class="btn btn-clear-custom w-100 mt-3" data-deposit-action="cancel">
-        <i class="fas fa-times me-1"></i> Hủy giao dịch nạp tiền
-    </button>
+    <div class="row g-2 mt-3">
+        <div class="col-md-6">
+            <button type="button" class="btn btn-search-custom w-100" data-deposit-action="check">
+                <i class="fas fa-search me-1"></i> Kiểm tra thanh toán
+            </button>
+        </div>
+        <div class="col-md-6">
+            <button type="button" class="btn btn-clear-custom w-100" data-deposit-action="cancel">
+                <i class="fas fa-times me-1"></i> Hủy giao dịch
+            </button>
+        </div>
+    </div>
 </div>
