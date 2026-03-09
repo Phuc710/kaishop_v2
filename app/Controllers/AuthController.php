@@ -640,11 +640,30 @@ class AuthController extends Controller
 
         $email = strtolower(trim((string) $googleUser['email']));
 
-        // Priority 1: User data from Client-side (Firebase User Object)
-        // Priority 2: User data from Firebase Admin SDK (Identity Toolkit)
-        $displayName = trim((string) $this->post('display_name', ''));
+        // Prefer explicit Google claims when available.
+        $googleName = $this->normalizeDisplayName((string) $this->post('google_name', ''));
+        if ($googleName === '') {
+            $googleName = $this->normalizeDisplayName((string) ($googleUser['name'] ?? ''));
+        }
+
+        $familyName = $this->normalizeDisplayName((string) $this->post('google_family_name', ''));
+        if ($familyName === '') {
+            $familyName = $this->normalizeDisplayName((string) ($googleUser['family_name'] ?? ''));
+        }
+
+        // Priority 1: explicit Google full name
+        // Priority 2: client-side Firebase displayName
+        // Priority 3: Identity Toolkit displayName
+        // Priority 4: family_name
+        $displayName = $googleName;
+        if ($displayName === '') {
+            $displayName = trim((string) $this->post('display_name', ''));
+        }
         if ($displayName === '') {
             $displayName = $this->normalizeDisplayName((string) ($googleUser['displayName'] ?? ''));
+        }
+        if ($displayName === '') {
+            $displayName = $familyName;
         }
 
         $photoUrl = trim((string) $this->post('photo_url', ''));
@@ -660,7 +679,7 @@ class AuthController extends Controller
         if (!$user) {
             $isNewGoogleUser = true;
             global $ip_address;
-            $baseSeed = $displayName !== '' ? $this->extractLastName($displayName) : strstr($email, '@', true);
+            $baseSeed = $familyName !== '' ? $familyName : ($displayName !== '' ? $this->extractLastName($displayName) : strstr($email, '@', true));
             $username = $this->generateUniqueUsernameFromSeed((string) $baseSeed);
             $randomId = $this->generateUniqueUserId();
             $apiKey = md5(bin2hex(random_bytes(16)));

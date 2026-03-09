@@ -190,7 +190,7 @@ $GLOBALS['pageAssets'] = [
                 SwalHelper.error(text);
             }
 
-            async function submitFirebaseGoogleToken(idToken, displayName = '', photoURL = '') {
+            async function submitFirebaseGoogleToken(idToken, displayName = '', photoURL = '', googleName = '', googleFamilyName = '') {
                 const { fpHash, fpComponents, deviceId } = await (
                     window.collectFingerprintData
                         ? window.collectFingerprintData()
@@ -201,6 +201,8 @@ $GLOBALS['pageAssets'] = [
                 params.set('id_token', idToken);
                 if (displayName) params.set('display_name', displayName);
                 if (photoURL) params.set('photo_url', photoURL);
+                if (googleName) params.set('google_name', googleName);
+                if (googleFamilyName) params.set('google_family_name', googleFamilyName);
 
                 if (fpHash) params.set('fingerprint', fpHash);
                 if (fpComponents) params.set('fp_components', fpComponents);
@@ -232,7 +234,15 @@ $GLOBALS['pageAssets'] = [
                 try {
                     const result = await signInWithPopup(auth, provider);
                     const idToken = await result.user.getIdToken(true);
-                    await submitFirebaseGoogleToken(idToken, result.user.displayName, result.user.photoURL);
+                    const tokenResult = await result.user.getIdTokenResult();
+                    const claims = tokenResult && tokenResult.claims ? tokenResult.claims : {};
+                    await submitFirebaseGoogleToken(
+                        idToken,
+                        result.user.displayName,
+                        result.user.photoURL,
+                        claims.name || '',
+                        claims.family_name || ''
+                    );
                 } catch (e) {
                     if (e?.code !== 'auth/popup-closed-by-user') showGoogleAuthError(e);
                 } finally {
