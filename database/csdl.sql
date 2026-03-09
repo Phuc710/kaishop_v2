@@ -675,6 +675,6 @@ CREATE TABLE IF NOT EXISTS `telegram_logs` (
   KEY `idx_tl_type_created` (`type`, `created_at`),
   KEY `idx_tl_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
+ALTER TABLE setting ADD COLUMN binance_qr_image VARCHAR(255) DEFAULT NULL AFTER binance_rate_vnd
 SET FOREIGN_KEY_CHECKS = 1;
 COMMIT;

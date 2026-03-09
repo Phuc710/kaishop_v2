@@ -500,7 +500,8 @@ trait TelegramBotServiceDepositTrait
         $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
         if (empty($domain))
             $domain = 'kaishop.id.vn';
-        $photoUrl = "https://{$domain}/assets/images/qr_binane.jpg";
+        $qrPath = get_setting('binance_qr_image', 'assets/images/qr_binane.jpg');
+        $photoUrl = "https://{$domain}/{$qrPath}";
         // Bước 1: Hỏi UID nếu chưa có (mỗi lần giao dịch đều hỏi — đồng bộ web)
         if ($payerUid === '' || !preg_match('/^\d{4,20}$/', $payerUid)) {
             $this->setBinanceSession($telegramId, ['step' => 'await_uid', 'message_id' => $messageId], 300);
@@ -528,7 +529,8 @@ trait TelegramBotServiceDepositTrait
             $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
             if (empty($domain))
                 $domain = 'kaishop.id.vn';
-            $photoUrl = "https://{$domain}/assets/images/qr_binane.jpg";
+            $qrPath = get_setting('binance_qr_image', 'assets/images/qr_binane.jpg');
+            $photoUrl = "https://{$domain}/{$qrPath}";
             $this->telegram->sendPhotoTo($chatId, $photoUrl, $msg, ['reply_markup' => $markup]);
             return;
         }
@@ -583,7 +585,8 @@ trait TelegramBotServiceDepositTrait
         $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
         if (empty($domain))
             $domain = 'kaishop.id.vn';
-        $photoUrl = "https://{$domain}/assets/images/qr_binane.jpg";
+        $qrPath = get_setting('binance_qr_image', 'assets/images/qr_binane.jpg');
+        $photoUrl = "https://{$domain}/{$qrPath}";
         if ($messageId > 0) {
             $this->telegram->editOrSend($chatId, $messageId, $msg, $markup);
         } else {
@@ -641,7 +644,8 @@ trait TelegramBotServiceDepositTrait
             $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
             if (empty($domain))
                 $domain = 'kaishop.id.vn';
-            $photoUrl = "https://{$domain}/assets/images/qr_binane.jpg";
+            $qrPath = get_setting('binance_qr_image', 'assets/images/qr_binane.jpg');
+            $photoUrl = "https://{$domain}/{$qrPath}";
             $this->telegram->sendPhotoTo($chatId, $photoUrl, $msgSuccess);
             return;
         }
@@ -675,7 +679,8 @@ trait TelegramBotServiceDepositTrait
             $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
             if (empty($domain))
                 $domain = 'kaishop.id.vn';
-            $photoUrl = "https://{$domain}/assets/images/qr_binane.jpg";
+            $qrPath = get_setting('binance_qr_image', 'assets/images/qr_binane.jpg');
+            $photoUrl = "https://{$domain}/{$qrPath}";
             $this->telegram->sendPhotoTo($chatId, $photoUrl, $msg);
             return;
         }

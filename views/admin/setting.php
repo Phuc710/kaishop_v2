@@ -563,6 +563,28 @@ require_once __DIR__ . '/layout/breadcrumb.php';
                         <div class="card-body pt-0">
 
                             <div class="form-group">
+                                <label class="font-weight-bold small text-uppercase">ẢNH QR BINANCE Pay</label>
+                                <div class="image-preview-container"
+                                    onclick="document.getElementById('file_binance_qr').click()">
+                                    <?php $binance_qr = $chungapi['binance_qr_image'] ?? ''; ?>
+                                    <img src="<?= htmlspecialchars(url($binance_qr)) ?>" id="preview_binance_qr"
+                                        class="<?= empty($binance_qr) ? 'd-none' : '' ?>">
+                                    <div class="upload-placeholder <?= !empty($binance_qr) ? 'd-none' : '' ?>"
+                                        id="placeholder_binance_qr">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <span class="small">Click để tải ảnh QR</span>
+                                    </div>
+                                </div>
+                                <input type="file" id="file_binance_qr" name="binance_qr_image" class="d-none"
+                                    accept="image/*"
+                                    onchange="previewFile(this, 'preview_binance_qr', 'placeholder_binance_qr', 'input_binance_qr')">
+                                <input type="text" class="form-control form-control-sm" id="input_binance_qr"
+                                    name="binance_qr_image" placeholder="Hoặc nhập URL https://..."
+                                    value="<?= htmlspecialchars((string) ($binance_qr)); ?>"
+                                    oninput="previewUrl(this.value, 'preview_binance_qr', 'placeholder_binance_qr')">
+                            </div>
+
+                            <div class="form-group">
                                 <label class="font-weight-bold small text-uppercase">Binance UID nhận tiền</label>
                                 <input type="text" name="binance_uid" class="form-control"
                                     value="<?= htmlspecialchars((string) ($chungapi['binance_uid'] ?? '')) ?>"

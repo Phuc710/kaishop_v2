@@ -138,6 +138,7 @@ class SettingController extends Controller
                     'binance_rate_vnd',
                     'binance_pay_enabled',
                     'deposit_warning_binance',
+                    'binance_qr_image',
                 ]);
 
             case 'update_maintenance':
