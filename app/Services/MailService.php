@@ -154,7 +154,7 @@ class MailService
         }
 
         $body = $this->buildLayout($subject, $headline, $content);
-        return $this->send($email, $username, $subject, $body);
+        return $this->send($email, $recipientName, $subject, $body);
     }
 
     public function buildLayout(string $subject, string $headline, string $content): string
