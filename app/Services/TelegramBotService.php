@@ -436,7 +436,7 @@ class TelegramBotService
 
             $msg = "👋 Xin chào <b>" . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') . "</b>!\n";
             $msg .= "Chào mừng bạn đến với <b>" . htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') . "</b> 🤖.\n";
-            $msg .= "Website: 🔗 <a href=\"https://{$domain}\">TRUY CẬP WEBSITE</a>\n\n";
+            $msg .= "Official Website: 🔗 <a href=\"https://{$domain}\">Here</a>\n\n";
             $msg .= "👤 Tài khoản: <b>" . htmlspecialchars($username, ENT_QUOTES, 'UTF-8') . "</b>\n";
             $msg .= "💵 Số dư: <b>{$money}</b>\n\n";
             $msg .= "━━━━━━━━━━━━━━\n";
