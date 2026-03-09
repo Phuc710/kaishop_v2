@@ -480,14 +480,12 @@ trait TelegramBotServiceDepositTrait
         $msg .= "👇 Vui lòng chọn nhanh hoặc nhập số USDT bạn muốn nạp:";
 
         $markup = $this->buildBinanceAmountKeyboard();
+        if ($messageId > 0) {
+            $this->telegram->editOrSend($chatId, $messageId, $msg, $markup);
+            return;
+        }
 
-        $this->sendTelegramMediaOrText(
-            $chatId,
-            $messageId,
-            (string) get_setting('binance_qr_image', 'assets/images/qr_binane.jpg'),
-            $msg,
-            $markup
-        );
+        $this->telegram->sendTo($chatId, $msg, ['reply_markup' => $markup]);
     }
 
     private function cmdBinance(string $chatId, int $telegramId, array $args, int $messageId = 0): void

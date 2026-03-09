@@ -74,6 +74,7 @@ class TelegramBotService
             ['command' => 'shop', 'description' => 'Duyệt danh mục sản phẩm'],
             ['command' => 'wallet', 'description' => 'Xem số dư ví'],
             ['command' => 'balance', 'description' => 'Xem số dư ví'],
+            ['command' => 'bank', 'description' => 'Nạp tiền qua ngân hàng (VND)'],
             ['command' => 'deposit', 'description' => 'Nạp tiền qua ngân hàng'],
             ['command' => 'binance', 'description' => 'Nạp tiền qua Binance Pay (USD)'],
             ['command' => 'orders', 'description' => 'Lịch sử 5 đơn hàng gần nhất'],
@@ -196,7 +197,8 @@ class TelegramBotService
             '/shop' => $this->cmdShop($chatId),
             '/wallet',
             '/balance' => $this->cmdWallet($chatId, $telegramId),
-            '/deposit' => $this->cmdDeposit($chatId, $telegramId, $args),
+            '/deposit',
+            '/bank' => $this->cmdDeposit($chatId, $telegramId, $args),
             '/binance' => $this->cmdBinance($chatId, $telegramId, $args),
             '/orders' => $this->cmdOrders($chatId, $telegramId),
             '/link' => $this->cmdLink($chatId, $telegramId, $args, $message['from']),
@@ -294,13 +296,13 @@ class TelegramBotService
             return;
         }
         if ($data === 'deposit_bank') {
-            $this->startDepositInputMode($chatId, $telegramId, $messageId);
             $this->telegram->answerCallbackQuery($callbackId);
+            $this->startDepositInputMode($chatId, $telegramId, $messageId);
             return;
         }
         if ($data === 'binance_start') {
-            $this->startBinanceInputMode($chatId, $telegramId, $messageId);
             $this->telegram->answerCallbackQuery($callbackId);
+            $this->startBinanceInputMode($chatId, $telegramId, $messageId);
             return;
         }
         if (preg_match('/^bin_amount_([0-9]+(?:\.[0-9]{1,2})?)$/', $data, $m)) {
@@ -526,10 +528,13 @@ class TelegramBotService
         $categories = $this->categoryModel->getActive();
         if (empty($categories)) {
             $emptyMsg = "🛍️ Hiện hệ thống chưa có danh mục sản phẩm nào.";
+            $emptyMarkup = TelegramService::buildInlineKeyboard([
+                [['text' => '⬅️ Quay lại menu chính', 'callback_data' => 'back_home']],
+            ]);
             if ($messageId > 0) {
-                $this->telegram->editOrSend($chatId, $messageId, $emptyMsg);
+                $this->telegram->editOrSend($chatId, $messageId, $emptyMsg, $emptyMarkup);
             } else {
-                $this->telegram->sendTo($chatId, $emptyMsg);
+                $this->telegram->sendTo($chatId, $emptyMsg, ['reply_markup' => $emptyMarkup]);
             }
             return;
         }
@@ -1087,7 +1092,7 @@ class TelegramBotService
     {
         if (in_array($command, ['/broadcast', '/maintenance', '/setbank'], true))
             return ['name' => ltrim($command, '/'), 'weight' => 5];
-        if (in_array($command, ['/deposit', '/binance', '/orders', '/wallet'], true))
+        if (in_array($command, ['/deposit', '/bank', '/binance', '/orders', '/wallet'], true))
             return ['name' => ltrim($command, '/'), 'weight' => 3];
         if (in_array($command, ['/shop', '/stats'], true))
             return ['name' => ltrim($command, '/'), 'weight' => 2];
