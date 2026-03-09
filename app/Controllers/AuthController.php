@@ -640,8 +640,18 @@ class AuthController extends Controller
         }
 
         $email = strtolower(trim((string) $googleUser['email']));
-        $displayName = $this->normalizeDisplayName((string) ($googleUser['displayName'] ?? ''));
-        $photoUrl = trim((string) ($googleUser['photoUrl'] ?? ''));
+
+        // Priority 1: User data from Client-side (Firebase User Object)
+        // Priority 2: User data from Firebase Admin SDK (Identity Toolkit)
+        $displayName = trim((string) $this->post('display_name', ''));
+        if ($displayName === '') {
+            $displayName = $this->normalizeDisplayName((string) ($googleUser['displayName'] ?? ''));
+        }
+
+        $photoUrl = trim((string) $this->post('photo_url', ''));
+        if ($photoUrl === '') {
+            $photoUrl = trim((string) ($googleUser['photoUrl'] ?? ''));
+        }
         $fingerprintHash = trim($this->post('fingerprint', ''));
         $fpComponents = $this->post('fp_components', '');
 

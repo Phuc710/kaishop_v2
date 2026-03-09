@@ -185,7 +185,7 @@ $GLOBALS['pageAssets'] = [
                 SwalHelper.error(text);
             }
 
-            async function submitFirebaseGoogleToken(idToken) {
+            async function submitFirebaseGoogleToken(idToken, displayName = '', photoURL = '') {
                 const { fpHash, fpComponents, deviceId } = await (
                     window.collectFingerprintData
                         ? window.collectFingerprintData()
@@ -194,6 +194,9 @@ $GLOBALS['pageAssets'] = [
 
                 const params = new URLSearchParams();
                 params.set('id_token', idToken);
+                if (displayName) params.set('display_name', displayName);
+                if (photoURL) params.set('photo_url', photoURL);
+
                 if (fpHash) {
                     params.set('fingerprint', fpHash);
                     params.set('fp_components', fpComponents);
@@ -226,7 +229,7 @@ $GLOBALS['pageAssets'] = [
                 try {
                     const result = await signInWithPopup(auth, provider);
                     const idToken = await result.user.getIdToken(true);
-                    await submitFirebaseGoogleToken(idToken);
+                    await submitFirebaseGoogleToken(idToken, result.user.displayName, result.user.photoURL);
                 } catch (e) {
                     if (e?.code !== 'auth/popup-closed-by-user') showGoogleAuthError(e);
                 } finally {
