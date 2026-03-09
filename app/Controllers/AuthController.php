@@ -297,35 +297,16 @@ class AuthController extends Controller
 
         if ($userId) {
             $fingerprintHash = trim($this->post('fingerprint', ''));
-            $registrationRedirect = BASE_URL . '/';
-            $registrationMessage = 'Đăng ký thành công.';
             $newUser = $this->userModel->findById((int) $userId);
-            if ($newUser) {
-                $sessionBootstrapped = $this->tryCompleteAuthenticatedSession(
-                    $newUser,
-                    $fingerprintHash,
-                    (string) $this->post('fp_components', ''),
-                    false,
-                    'register'
-                );
-                if (!$sessionBootstrapped) {
-                    $registrationRedirect = BASE_URL . '/login';
-                    $registrationMessage = 'Đăng ký thành công. Vui lòng đăng nhập để tiếp tục.';
-                }
-
-                // Gửi email chào mừng
-                try {
-                    if (!class_exists('MailService')) {
-                        require_once __DIR__ . '/../Services/MailService.php';
-                    }
-                    $this->sendWelcomeRegisterEmail($newUser);
-                } catch (Throwable $e) {
-                    // Non-blocking — không chặn đăng ký nếu mail lỗi
-                }
-            } else {
-                $registrationRedirect = BASE_URL . '/login';
-                $registrationMessage = 'Đăng ký thành công. Vui lòng đăng nhập để tiếp tục.';
+            if (!$newUser) {
+                return $this->json(['success' => false, 'message' => 'Không thể khởi tạo tài khoản vừa đăng ký.'], 500);
             }
+
+            if (!$this->tryCompleteAuthenticatedSession($newUser, $fingerprintHash, (string) $this->post('fp_components', ''), false, 'register')) {
+                return $this->json(['success' => false, 'message' => 'Không thể đăng nhập ngay sau khi đăng ký. Vui lòng thử lại.'], 500);
+            }
+
+            $this->sendWelcomeRegisterEmail($newUser);
 
             Logger::info('Auth', 'register_success', 'Đăng ký tài khoản thành công', [
                 'username' => $username,
@@ -335,8 +316,8 @@ class AuthController extends Controller
 
             return $this->json([
                 'success' => true,
-                'message' => $registrationMessage,
-                'redirect' => $registrationRedirect,
+                'message' => 'Đăng ký thành công.',
+                'redirect' => BASE_URL . '/',
             ]);
         }
 
@@ -659,7 +640,7 @@ class AuthController extends Controller
         }
 
         $email = strtolower(trim((string) $googleUser['email']));
-        $displayName = trim((string) ($googleUser['displayName'] ?? ''));
+        $displayName = $this->normalizeDisplayName((string) ($googleUser['displayName'] ?? ''));
         $photoUrl = trim((string) ($googleUser['photoUrl'] ?? ''));
         $fingerprintHash = trim($this->post('fingerprint', ''));
         $fpComponents = $this->post('fp_components', '');
@@ -670,7 +651,7 @@ class AuthController extends Controller
         if (!$user) {
             $isNewGoogleUser = true;
             global $ip_address;
-            $baseSeed = $displayName !== '' ? $displayName : strstr($email, '@', true);
+            $baseSeed = $displayName !== '' ? $this->extractLastName($displayName) : strstr($email, '@', true);
             $username = $this->generateUniqueUsernameFromSeed((string) $baseSeed);
             $randomId = $this->generateUniqueUserId();
             $apiKey = md5(bin2hex(random_bytes(16)));
@@ -709,7 +690,7 @@ class AuthController extends Controller
         } else {
             // Update existing user profile if needed
             $updateData = [];
-            if (empty($user['full_name']) && $displayName !== '') {
+            if ($displayName !== '' && trim((string) ($user['full_name'] ?? '')) !== $displayName) {
                 $updateData['full_name'] = $displayName;
             }
             if ($photoUrl !== '' && (empty($user['avatar_url']) || strpos($user['avatar_url'], 'googleusercontent.com') !== false)) {
@@ -928,6 +909,10 @@ class AuthController extends Controller
 
     private function generateUniqueUsernameFromSeed(string $seed): string
     {
+        $seed = trim($seed);
+        if (function_exists('xoadau')) {
+            $seed = xoadau($seed);
+        }
         $seed = strtolower($seed);
         $seed = preg_replace('/[^a-z0-9]+/i', '', $seed);
         if ($seed === null || $seed === '') {
@@ -954,6 +939,24 @@ class AuthController extends Controller
         }
 
         return $candidate;
+    }
+
+    private function normalizeDisplayName(string $name): string
+    {
+        $name = preg_replace('/\s+/u', ' ', trim($name)) ?? trim($name);
+        return $name;
+    }
+
+    private function extractLastName(string $fullName): string
+    {
+        $fullName = $this->normalizeDisplayName($fullName);
+        if ($fullName === '') {
+            return '';
+        }
+
+        $parts = preg_split('/\s+/u', $fullName) ?: [];
+        $lastName = end($parts);
+        return is_string($lastName) ? $lastName : $fullName;
     }
 
     private function postJson(string $url, array $payload): array

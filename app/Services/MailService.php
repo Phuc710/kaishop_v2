@@ -42,7 +42,7 @@ class MailService
             return false;
         }
 
-        $username = trim((string) ($user['username'] ?? ''));
+        $username = $this->resolveRecipientName($user);
         $subject = '[🎉 Welcome] Tài khoản của bạn đã sẵn sàng!';
         $body = $this->buildLayout(
             $subject,
@@ -56,7 +56,7 @@ class MailService
     public function sendPasswordReset(array $user, string $otpcode): bool
     {
         $email = trim((string) ($user['email'] ?? ''));
-        $username = trim((string) ($user['username'] ?? ''));
+        $recipientName = $this->resolveRecipientName($user);
         $otpcode = trim($otpcode);
 
         if ($email === '' || $otpcode === '') {
@@ -68,10 +68,10 @@ class MailService
         $body = $this->buildLayout(
             $subject,
             'Yêu cầu đặt lại mật khẩu',
-            $this->tplPasswordReset($username, $resetUrl)
+            $this->tplPasswordReset($recipientName, $resetUrl)
         );
 
-        return $this->send($email, $username, $subject, $body);
+        return $this->send($email, $recipientName, $subject, $body);
     }
 
     public function sendOtp(
@@ -115,7 +115,7 @@ class MailService
             return false;
         }
 
-        $username = trim((string) ($user['username'] ?? ''));
+        $recipientName = $this->resolveRecipientName($user);
         $quantity = max(1, (int) ($order['quantity'] ?? 1));
         $totalPrice = (int) ($order['total_price'] ?? $order['price'] ?? 0);
         $unitPrice = (int) ($order['unit_price'] ?? ($quantity > 0 ? (int) floor($totalPrice / $quantity) : $totalPrice));
@@ -127,7 +127,7 @@ class MailService
         $deliveryMode = $this->resolveDeliveryMode($order, $product);
 
         $baseData = [
-            'username' => $username,
+            'username' => $recipientName,
             'order_code' => $orderCode,
             'ordered_at' => $orderedAt,
             'status' => $statusLabel,
@@ -566,5 +566,28 @@ HTML;
     private function e(string $value): string
     {
         return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+    }
+
+    private function resolveRecipientName(array $user): string
+    {
+        $fullName = trim((string) ($user['full_name'] ?? ''));
+        if ($fullName !== '') {
+            return $fullName;
+        }
+
+        $username = trim((string) ($user['username'] ?? ''));
+        if ($username !== '') {
+            return $username;
+        }
+
+        $email = trim((string) ($user['email'] ?? ''));
+        if ($email !== '' && strpos($email, '@') !== false) {
+            $localPart = strstr($email, '@', true);
+            if (is_string($localPart) && $localPart !== '') {
+                return $localPart;
+            }
+        }
+
+        return $email;
     }
 }

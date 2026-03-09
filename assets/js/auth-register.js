@@ -69,7 +69,7 @@
 
             const { data } = await fetchFormJson(cfg.registerUrl, params);
             if (data.success) {
-                SwalHelper.successOkRedirect(data.message || 'Đăng ký thành công.', cfg.homeUrl);
+                SwalHelper.successOkRedirect(data.message || 'Đăng ký thành công.', data.redirect || cfg.homeUrl);
                 return;
             }
             resetTurnstileWidget();
