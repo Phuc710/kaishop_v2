@@ -62,10 +62,8 @@
             params.set('email', email);
             params.set('password', password);
             if (turnstileToken) params.set('turnstile_token', turnstileToken);
-            if (fpHash) {
-                params.set('fingerprint', fpHash);
-                params.set('fp_components', fpComponents);
-            }
+            if (fpHash) params.set('fingerprint', fpHash);
+            if (fpComponents) params.set('fp_components', fpComponents);
 
             const { data } = await fetchFormJson(cfg.registerUrl, params);
             if (data.success) {

@@ -562,10 +562,7 @@ class AntiFloodService
 
     private function clientIp(): string
     {
-        if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
-            return (string) $_SERVER['HTTP_CF_CONNECTING_IP'];
-        }
-        return (string) ($_SERVER['HTTP_CLIENT_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+        return ClientIpHelper::detect($_SERVER);
     }
 
     private function userAgent(): string

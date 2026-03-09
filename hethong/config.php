@@ -173,7 +173,7 @@ if (!function_exists('get_setting')) {
 if (!function_exists('myip')) {
     function myip(): string
     {
-        return (string) ($_SERVER['HTTP_CLIENT_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+        return class_exists('ClientIpHelper') ? ClientIpHelper::detect($_SERVER) : (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     }
 }
 

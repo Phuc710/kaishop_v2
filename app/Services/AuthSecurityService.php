@@ -809,8 +809,10 @@ class AuthSecurityService
     private function setCookie(string $name, string $value, int $expiresAt, bool $httpOnly): void
     {
         $isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
-        $path = (string) EnvHelper::get('APP_DIR', '');
-        $cookiePath = $path !== '' ? rtrim($path, '/') . '/' : '/';
+        $path = trim((string) EnvHelper::get('APP_DIR', ''));
+        $cookiePath = $path === '' || $path === '/'
+            ? '/'
+            : '/' . trim($path, '/') . '/';
 
         setcookie($name, $value, [
             'expires' => $expiresAt,
@@ -829,7 +831,7 @@ class AuthSecurityService
 
     private function clientIp(): string
     {
-        return (string) ($_SERVER['HTTP_CLIENT_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+        return ClientIpHelper::detect($_SERVER);
     }
 
     private function userAgent(): string

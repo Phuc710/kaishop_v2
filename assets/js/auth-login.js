@@ -236,10 +236,8 @@
             params.set('password', password);
             params.set('remember', getRememberMeValue());
             if (turnstileToken) params.set('turnstile_token', turnstileToken);
-            if (fpHash) {
-                params.set('fingerprint', fpHash);
-                params.set('fp_components', fpComponents);
-            }
+            if (fpHash) params.set('fingerprint', fpHash);
+            if (fpComponents) params.set('fp_components', fpComponents);
 
             const { response, data } = await fetchFormJson(cfg.loginUrl, params);
             if (data.success) {

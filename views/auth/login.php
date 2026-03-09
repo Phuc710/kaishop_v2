@@ -205,7 +205,12 @@ $GLOBALS['pageAssets'] = [
 
             function showGoogleAuthError(e) {
                 const code = e?.code || '';
-                const msg = e?.message || '';
+                const msg = (e?.message || '').trim();
+                const backendMessage = msg;
+                if (backendMessage && code === '') {
+                    SwalHelper.error(backendMessage);
+                    return;
+                }
                 let text = 'Đăng nhập Google thất bại.';
 
                 if (code === 'auth/unauthorized-domain') text = 'Domain chưa được phép trong Firebase. Thêm vào Authorized domains.';
@@ -229,10 +234,8 @@ $GLOBALS['pageAssets'] = [
                 if (photoURL) params.set('photo_url', photoURL);
 
                 params.set('remember', typeof getRememberMeValue === 'function' ? getRememberMeValue() : '0');
-                if (fpHash) {
-                    params.set('fingerprint', fpHash);
-                    params.set('fp_components', fpComponents);
-                }
+                if (fpHash) params.set('fingerprint', fpHash);
+                if (fpComponents) params.set('fp_components', fpComponents);
                 if (deviceId) params.set('device_id', deviceId);
 
                 // Include Turnstile token if available (required on production)

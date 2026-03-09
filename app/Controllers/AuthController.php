@@ -863,6 +863,7 @@ class AuthController extends Controller
             $this->completeAuthenticatedSession($user, $fingerprintHash, $fpComponents, $rememberMe);
             return true;
         } catch (Throwable $e) {
+            error_log('[Auth] session bootstrap failed: context=' . $context . ' user_id=' . (int) ($user['id'] ?? 0) . ' username=' . (string) ($user['username'] ?? '') . ' message=' . $e->getMessage());
             Logger::warning('Auth', 'session_bootstrap_failed', 'Khởi tạo phiên đăng nhập thất bại', [
                 'context' => $context,
                 'user_id' => (int) ($user['id'] ?? 0),

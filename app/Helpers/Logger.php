@@ -60,10 +60,7 @@ class Logger
             }
 
             // Client Info
-            $ipAddress = $_SERVER['HTTP_CLIENT_IP']
-                ?? $_SERVER['HTTP_X_FORWARDED_FOR']
-                ?? $_SERVER['REMOTE_ADDR']
-                ?? '0.0.0.0';
+            $ipAddress = ClientIpHelper::detect($_SERVER);
             $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
             $sourceChannel = SourceChannelHelper::fromSystemLogContext($module, $action, $payload, $_SERVER);
 
