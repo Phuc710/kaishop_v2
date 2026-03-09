@@ -93,6 +93,9 @@ class AccountEcosystemService
                 'auth_sessions' => $this->moveByUserId('auth_sessions', $sourceUserId, $primaryUserId),
                 'auth_otp_codes' => $this->moveByUserId('auth_otp_codes', $sourceUserId, $primaryUserId),
                 'user_fingerprints' => $this->moveByUserAndUsername('user_fingerprints', $sourceUserId, $primaryUserId, $sourceUsername, $primaryUsername),
+                'user_trusted_devices' => $this->moveByUserId('user_trusted_devices', $sourceUserId, $primaryUserId),
+                'binance_transactions' => $this->moveByUsername('binance_transactions', $sourceUsername, $primaryUsername),
+                'product_stock' => $this->moveByColumn('product_stock', 'buyer_id', $sourceUserId, $primaryUserId),
                 'ban_history_user' => $this->moveByColumn('ban_history', 'target_user_id', $sourceUserId, $primaryUserId),
                 'ban_history_username' => $this->moveByColumn('ban_history', 'target_username', $sourceUsername, $primaryUsername),
             ];

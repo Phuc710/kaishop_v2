@@ -95,6 +95,13 @@ $quickButtons = [
     </div>
 
     <div class="deposit-info-list">
+        <div class="deposit-info-row justify-content-center border-bottom-0 pb-0">
+            <div class="text-center">
+                <div class="mb-2" style="font-weight: 600; color: #5e6278; font-size: 0.85rem;">SCAN QR TO GET UID</div>
+                <img src="<?= asset('assets/images/qr_binane.jpg') ?>" alt="Binance QR UID"
+                    class="img-fluid rounded shadow-sm mb-3" style="max-width: 180px; border: 1px solid #eee;">
+            </div>
+        </div>
         <div class="deposit-info-row">
             <span class="deposit-info-label">Recipient Binance ID</span>
             <div class="deposit-info-actions">

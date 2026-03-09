@@ -422,6 +422,10 @@ class TelegramBotService
         $inlineRows = $this->buildMainInlineRows($telegramId, (string) ($user['username'] ?? ''));
         $markup = TelegramService::buildInlineKeyboard($inlineRows);
 
+        $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
+        if (empty($domain))
+            $domain = 'kaishop.id.vn';
+
         if ($withGreeting) {
             $username = trim((string) ($user['username'] ?? ''));
             $displayName = trim($name) !== '' ? trim($name) : $username;
@@ -431,14 +435,14 @@ class TelegramBotService
             $money = number_format((int) ($user['money'] ?? 0)) . "đ";
 
             $msg = "👋 Xin chào <b>" . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') . "</b>!\n";
-            $msg .= "Chào mừng bạn đến với <b>" . htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') . "</b> 🤖.\n\n";
+            $msg .= "Chào mừng bạn đến với <b>" . htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') . "</b> 🤖.\n";
+            $msg .= "Website: 🔗 <a href=\"https://{$domain}\">TRUY CẬP WEBSITE</a>\n\n";
             $msg .= "👤 Tài khoản: <b>" . htmlspecialchars($username, ENT_QUOTES, 'UTF-8') . "</b>\n";
             $msg .= "💵 Số dư: <b>{$money}</b>\n\n";
             $msg .= "━━━━━━━━━━━━━━\n";
             $msg .= "👇 Chọn chức năng bên dưới để bắt đầu\n\n";
-            $msg .= "🔗 <a href=\"https://kaishop.id.vn\">TRUY CẬP WEBSITE</a>";
         } else {
-            $msg = "👇 <b>Chọn chức năng bên dưới để bắt đầu:</b>\n\n🔗 <a href=\"https://kaishop.id.vn\">TRUY CẬP WEBSITE</a>";
+            $msg = "👇 <b>Chọn chức năng bên dưới để bắt đầu:</b>\n\n";
         }
 
         if ($messageId > 0) {
@@ -648,8 +652,8 @@ class TelegramBotService
 
             $this->telegram->sendTo(
                 $chatId,
-                "🔗 <b>LIÊN KẾT TÀI KHỎN WEB</b>\n\n"
-                . "1️⃣ Đăng nhập web (<a href=\"https://kaishop.id.vn\">kaishop.id.vn</a>) › Hồ sơ › Liên kết Telegram.\n"
+                "🔗 <b>LIÊN KẾT TÀI KHOẢN WEB</b>\n\n"
+                . "1️⃣ Đăng nhập 🔗 <a href=\"https://{$domain}\">TRUY CẬP WEBSITE</a> › Hồ sơ › Liên kết Telegram.\n"
                 . "2️⃣ Lấy mã OTP và gửi lệnh: <code>/link 123456</code>.\n\n"
                 . "Sau khi liên kết, tài khoản Web và Telegram sẽ đồng bộ ví!",
                 ['reply_markup' => TelegramService::buildInlineKeyboard([[$this->backHomeButton()]])]

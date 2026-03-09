@@ -497,14 +497,17 @@ trait TelegramBotServiceDepositTrait
         $rate = max(1, (int) ($siteConfig['binance_rate_vnd'] ?? 25000));
         $minUsdt = round(DepositService::MIN_AMOUNT / $rate, 2);
 
-        $photoUrl = "https://i.imghippo.com/files/rDvk8689sKI.png";
+        $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
+        if (empty($domain))
+            $domain = 'kaishop.id.vn';
+        $photoUrl = "https://{$domain}/assets/images/qr_binane.jpg";
         // Bước 1: Hỏi UID nếu chưa có (mỗi lần giao dịch đều hỏi — đồng bộ web)
         if ($payerUid === '' || !preg_match('/^\d{4,20}$/', $payerUid)) {
             $this->setBinanceSession($telegramId, ['step' => 'await_uid', 'message_id' => $messageId], 300);
             $msg = "🟡 <b>BINANCE PAY — NHẬP UID</b>\n\n" .
                 "Vui lòng nhập <b>Binance UID</b> của bạn.\n\n" .
                 "Ví dụ: <code>12345678</code>";
-            
+
             if ($messageId > 0) {
                 $this->telegram->deleteMessage($chatId, $messageId);
             }
@@ -518,10 +521,14 @@ trait TelegramBotServiceDepositTrait
             $minLabel = number_format($minUsdt, 2) . ' USDT';
             $msg = "💵 Nhập số USDT cần nạp (tối thiểu <b>{$minLabel}</b>).";
             $markup = $this->buildBinanceAmountKeyboard();
-            
+
             if ($messageId > 0) {
                 $this->telegram->deleteMessage($chatId, $messageId);
             }
+            $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
+            if (empty($domain))
+                $domain = 'kaishop.id.vn';
+            $photoUrl = "https://{$domain}/assets/images/qr_binane.jpg";
             $this->telegram->sendPhotoTo($chatId, $photoUrl, $msg, ['reply_markup' => $markup]);
             return;
         }
@@ -573,7 +580,10 @@ trait TelegramBotServiceDepositTrait
             [$this->backHomeButton()],
         ]);
 
-        $photoUrl = "https://i.imghippo.com/files/rDvk8689sKI.png";
+        $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
+        if (empty($domain))
+            $domain = 'kaishop.id.vn';
+        $photoUrl = "https://{$domain}/assets/images/qr_binane.jpg";
         if ($messageId > 0) {
             $this->telegram->editOrSend($chatId, $messageId, $msg, $markup);
         } else {
@@ -628,7 +638,10 @@ trait TelegramBotServiceDepositTrait
             if ($messageId > 0) {
                 $this->telegram->deleteMessage($chatId, $messageId);
             }
-            $photoUrl = "https://i.imghippo.com/files/rDvk8689sKI.png";
+            $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
+            if (empty($domain))
+                $domain = 'kaishop.id.vn';
+            $photoUrl = "https://{$domain}/assets/images/qr_binane.jpg";
             $this->telegram->sendPhotoTo($chatId, $photoUrl, $msgSuccess);
             return;
         }
@@ -657,8 +670,12 @@ trait TelegramBotServiceDepositTrait
         if (!empty($result['success'])) {
             $freshUser = $this->userModel->findById((int) ($user['id'] ?? 0));
             $msg = $this->buildBinanceSuccessMessage($freshUser ?? $user, $siteConfig);
-            if ($messageId > 0) $this->telegram->deleteMessage($chatId, $messageId);
-            $photoUrl = "https://i.imghippo.com/files/rDvk8689sKI.png";
+            if ($messageId > 0)
+                $this->telegram->deleteMessage($chatId, $messageId);
+            $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
+            if (empty($domain))
+                $domain = 'kaishop.id.vn';
+            $photoUrl = "https://{$domain}/assets/images/qr_binane.jpg";
             $this->telegram->sendPhotoTo($chatId, $photoUrl, $msg);
             return;
         }
