@@ -2,7 +2,7 @@
     function formatVnd(n) {
         var num = Number(n || 0);
         if (!Number.isFinite(num)) num = 0;
-        return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '₫';
+        return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + 'đ';
     }
 
     function escapeHtml(value) {

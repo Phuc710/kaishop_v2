@@ -106,7 +106,7 @@ require __DIR__ . '/layout/header.php';
             if (window.KAI_CURRENCY && typeof window.KAI_CURRENCY.isUsd === 'function' && window.KAI_CURRENCY.isUsd()) {
                 return window.KAI_CURRENCY.formatUsd(n);
             }
-            return new Intl.NumberFormat('vi-VN').format(n) + '₫';
+            return new Intl.NumberFormat('vi-VN').format(n) + 'đ';
         }
 
         function debounce(fn, wait) {
@@ -148,7 +148,7 @@ require __DIR__ . '/layout/header.php';
                 if (n < 0) {
                     return '<span class="user-money-change user-money-change--minus" data-price-vnd="' + n + '">-' + fmtMoney(Math.abs(n)) + '</span>';
                 }
-                return '<span class="user-money-before">0₫</span>';
+                return '<span class="user-money-before">0đ</span>';
             }
 
             const sign = n < 0 ? '-' : '';

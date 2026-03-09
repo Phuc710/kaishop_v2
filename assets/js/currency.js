@@ -10,7 +10,7 @@
 
     function formatVnd(n) {
         var num = Math.round(Number(n || 0));
-        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '₫';
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + 'đ';
     }
 
     function formatUsd(n) {
