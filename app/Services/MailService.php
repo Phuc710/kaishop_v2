@@ -16,6 +16,7 @@ class MailService
     private int $smtpPort;
     private string $smtpUser;
     private string $smtpPass;
+    private int $smtpTimeout;
     private string $fromEmail;
     private string $fromName;
     private string $siteUrl;
@@ -29,6 +30,7 @@ class MailService
         $this->smtpPort = (int) $cfg['smtp_port'];
         $this->smtpUser = $cfg['smtp_user'];
         $this->smtpPass = $cfg['smtp_pass'];
+        $this->smtpTimeout = (int) $cfg['smtp_timeout'];
         $this->fromEmail = $cfg['from_email'];
         $this->fromName = $cfg['from_name'];
         $this->siteUrl = $cfg['site_url'];
@@ -439,7 +441,7 @@ HTML;
             $mail->Username = $this->smtpUser;
             $mail->Password = $this->smtpPass;
             $mail->SMTPSecure = $this->smtpPort === 465 ? 'ssl' : 'tls';
-            $mail->Timeout = 20;
+            $mail->Timeout = $this->smtpTimeout > 0 ? $this->smtpTimeout : 8;
             $mail->CharSet = 'UTF-8';
             $mail->setFrom($this->fromEmail, $this->fromName);
             $mail->addAddress($toEmail, $toName !== '' ? $toName : $toEmail);
@@ -463,6 +465,7 @@ HTML;
      *   smtp_port:int,
      *   smtp_user:string,
      *   smtp_pass:string,
+     *   smtp_timeout:int,
      *   from_email:string,
      *   from_name:string,
      *   site_url:string,
@@ -475,6 +478,7 @@ HTML;
         $port = class_exists('EnvHelper') ? (int) EnvHelper::get('SMTP_PORT', 587) : 587;
         $user = class_exists('EnvHelper') ? (string) EnvHelper::get('SMTP_USER', '') : '';
         $pass = class_exists('EnvHelper') ? (string) EnvHelper::get('SMTP_PASS', '') : '';
+        $timeout = class_exists('EnvHelper') ? (int) EnvHelper::get('SMTP_TIMEOUT', 8) : 8;
         $fromMail = class_exists('EnvHelper') ? (string) EnvHelper::get('EMAIL_FROM', $user) : $user;
         $fromName = class_exists('EnvHelper') ? (string) EnvHelper::get('EMAIL_FROM_NAME', 'KaiShop') : 'KaiShop';
 
@@ -495,6 +499,9 @@ HTML;
         if ($port <= 0) {
             $port = 587;
         }
+        if ($timeout <= 0) {
+            $timeout = 8;
+        }
 
         $siteName = function_exists('get_setting') ? (string) get_setting('ten_web', 'KaiShop') : 'KaiShop';
         $siteUrl = '';
@@ -512,6 +519,7 @@ HTML;
             'smtp_port' => $port,
             'smtp_user' => $user,
             'smtp_pass' => $pass,
+            'smtp_timeout' => $timeout,
             'from_email' => $fromMail !== '' ? $fromMail : $user,
             'from_name' => $fromName !== '' ? $fromName : $siteName,
             'site_url' => $siteUrl,

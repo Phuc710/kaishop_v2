@@ -306,7 +306,6 @@ class AuthController extends Controller
                 return $this->json(['success' => false, 'message' => 'Không thể đăng nhập ngay sau khi đăng ký. Vui lòng thử lại.'], 500);
             }
 
-            $this->sendWelcomeRegisterEmail($newUser);
 
             Logger::info('Auth', 'register_success', 'Đăng ký tài khoản thành công', [
                 'username' => $username,
@@ -689,9 +688,6 @@ class AuthController extends Controller
             if (!$user) {
                 return $this->json(['success' => false, 'message' => 'Không thể tạo tài khoản từ Google.'], 500);
             }
-
-            // Gửi email chào mừng Google
-            $this->sendWelcomeRegisterEmail($user);
 
             Logger::info('Auth', 'register_google_success', 'Đăng ký bằng Google thành công', [
                 'username' => $user['username'],
