@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard mục tiêu kiếm tiền</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Inter, Arial, sans-serif;
+      background: #f1f5f9;
+      color: #0f172a;
+      padding: 24px;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .title-small { color: #7c3aed; font-size: 14px; font-weight: 700; }
+    h1 { font-size: 36px; margin-top: 6px; }
+    .muted { color: #64748b; line-height: 1.6; }
+    .actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn {
+      border: none;
+      border-radius: 16px;
+      padding: 14px 18px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-primary { background: #7c3aed; color: #fff; }
+    .btn-secondary { background: #fff; color: #334155; border: 1px solid #e2e8f0; }
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+    }
+    .stat-value {
+      font-size: 30px;
+      font-weight: 800;
+      margin: 10px 0 6px;
+    }
+    .sub { color: #64748b; font-size: 14px; }
+    .progress-wrap { margin-top: 22px; }
+    .progress-bar {
+      height: 14px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    .progress-fill {
+      width: 42%;
+      height: 100%;
+      background: linear-gradient(90deg, #7c3aed, #a78bfa);
+      border-radius: 999px;
+    }
+    .row-between {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .deadline {
+      background: #f8fafc;
+      border-radius: 18px;
+      padding: 16px;
+      min-width: 180px;
+    }
+    .label { font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: .08em; }
+    .goal-boxes {
+      margin-top: 16px;
+      display: grid;
+      gap: 12px;
+    }
+    .goal-box {
+      background: #f8fafc;
+      border-radius: 18px;
+      padding: 16px;
+    }
+    .filters {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .filter {
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      font-weight: 600;
+      color: #475569;
+    }
+    .filter.active {
+      background: #ede9fe;
+      color: #6d28d9;
+      border-color: #c4b5fd;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 18px;
+    }
+    th, td {
+      text-align: left;
+      padding: 14px 12px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+    th {
+      font-size: 13px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .badge {
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .auto { background: #dbeafe; color: #1d4ed8; }
+    .manual { background: #dcfce7; color: #15803d; }
+    .extra { background: #f3e8ff; color: #7e22ce; }
+    .amount { font-weight: 800; color: #0f172a; }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-top: 18px;
+    }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid #dbe2ea;
+      border-radius: 16px;
+      padding: 14px 16px;
+      font-size: 15px;
+      outline: none;
+      background: #fff;
+    }
+    textarea { min-height: 120px; resize: vertical; }
+    .full { grid-column: 1 / -1; }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .summary-item {
+      background: #f8fafc;
+      border-radius: 18px;
+      padding: 18px;
+    }
+    @media (max-width: 1100px) {
+      .grid-4, .summary-grid { grid-template-columns: repeat(2, 1fr); }
+      .grid-3 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 700px) {
+      body { padding: 14px; }
+      h1 { font-size: 28px; }
+      .grid-4, .summary-grid, .form-grid { grid-template-columns: 1fr; }
+      .card { padding: 18px; }
+      th:nth-child(5), td:nth-child(5) { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="card">
+      <div class="topbar">
+        <div>
+          <div class="title-small">Dashboard mục tiêu kiếm tiền</div>
+          <h1>Chạm mốc 300.000.000đ trước tuổi 21</h1>
+          <p class="muted" style="margin-top: 10px; max-width: 900px;">
+            Gom toàn bộ tiền nạp vào hệ thống + tiền thêm thủ công + các khoản thu khác. Mỗi dòng tiền có note, thời gian chuẩn, tag, và xem được theo Today, Tuần, Tháng, Quý, Tất cả.
+          </p>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary">+ Thêm dòng tiền</button>
+          <button class="btn btn-secondary">+ Sửa target</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid-4">
+      <div class="card">
+        <div class="title-small">Tổng tiền hệ thống</div>
+        <div class="stat-value">86.500.000đ</div>
+        <div class="sub">Auto cộng từ web, bot, hệ thống chính</div>
+      </div>
+      <div class="card">
+        <div class="title-small">Tiền thêm thủ công</div>
+        <div class="stat-value">32.000.000đ</div>
+        <div class="sub">Khoản tự nhập có note riêng</div>
+      </div>
+      <div class="card">
+        <div class="title-small">Tổng tiền hiện tại</div>
+        <div class="stat-value">128.500.000đ</div>
+        <div class="sub">Đã ghi nhận 24 dòng tiền vào</div>
+      </div>
+      <div class="card">
+        <div class="title-small">Còn thiếu</div>
+        <div class="stat-value">171.500.000đ</div>
+        <div class="sub">Cần để chạm 300 triệu</div>
+      </div>
+    </section>
+
+    <section class="grid-3">
+      <div class="card">
+        <div class="row-between">
+          <div>
+            <div class="title-small">Target chính</div>
+            <h2 style="font-size: 30px; margin-top: 8px;">Mục tiêu tuổi 21</h2>
+            <p class="muted" style="margin-top: 10px;">
+              Đạt 300 triệu trước tuổi 21 bằng tổng dòng tiền từ hệ thống, tiền thêm vào, freelance, và các nguồn khác.
+            </p>
+          </div>
+          <div class="deadline">
+            <div class="label">Deadline</div>
+            <div style="font-weight: 800; font-size: 18px; margin-top: 6px;">31/12/2026</div>
+          </div>
+        </div>
+
+        <div class="progress-wrap">
+          <div class="row-between">
+            <div style="font-weight: 700; color: #475569;">Tiến độ hiện tại</div>
+            <div style="font-weight: 800; font-size: 18px;">42%</div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill"></div>
+          </div>
+          <div class="row-between" style="margin-top: 12px; color: #64748b;">
+            <div>Hiện có: <strong style="color:#0f172a;">128.500.000đ</strong></div>
+            <div>Mục tiêu: <strong style="color:#0f172a;">300.000.000đ</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="title-small">Note target</div>
+        <div class="goal-boxes">
+          <div class="goal-box">
+            <div class="label">Cột mốc</div>
+            <div style="font-weight: 800; font-size: 18px; margin-top: 8px;">Tuổi 21 đạt 300 triệu</div>
+          </div>
+          <div class="goal-box">
+            <div class="label">Note</div>
+            <div style="margin-top: 8px; color:#334155; line-height:1.6;">
+              Ưu tiên cộng tất cả khoản tiền vào có thật. Mỗi khoản phải có ngày giờ, nguồn tiền, note chi tiết để nhìn ra tiến độ chuẩn.
+            </div>
+          </div>
+          <div class="goal-box">
+            <div class="label">Nhắc nhở</div>
+            <div style="margin-top: 8px; color:#334155; line-height:1.6;">
+              Cuối mỗi ngày kiểm tra total, cuối tuần xem lại tốc độ tăng để biết có đang đi đúng target hay không.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="row-between">
+        <div>
+          <div class="title-small">Bộ lọc dòng tiền</div>
+          <h2 style="font-size: 28px; margin-top: 8px;">Xem theo thời gian</h2>
+        </div>
+        <div class="filters">
+          <button class="filter active">Today</button>
+          <button class="filter">Tuần</button>
+          <button class="filter">Tháng</button>
+          <button class="filter">Quý</button>
+          <button class="filter">Tất cả</button>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Nguồn</th>
+            <th>Tên khoản vào</th>
+            <th>Số tiền</th>
+            <th>Thời gian</th>
+            <th>Note</th>
+            <th>Tag</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Hệ thống</td>
+            <td>Doanh thu web</td>
+            <td class="amount">12.500.000đ</td>
+            <td>09/03/2026 08:30</td>
+            <td>Chốt đơn trong ngày, tự đồng bộ từ hệ thống.</td>
+            <td><span class="badge auto">AUTO</span></td>
+          </tr>
+          <tr>
+            <td>Thêm tay</td>
+            <td>Bổ sung vốn cá nhân</td>
+            <td class="amount">5.000.000đ</td>
+            <td>09/03/2026 10:15</td>
+            <td>Tiền tiết kiệm cá nhân thêm vào để đẩy target.</td>
+            <td><span class="badge manual">MANUAL</span></td>
+          </tr>
+          <tr>
+            <td>Thu khác</td>
+            <td>Freelance ngoài</td>
+            <td class="amount">3.500.000đ</td>
+            <td>08/03/2026 21:40</td>
+            <td>Thiết kế landing page cho khách quen.</td>
+            <td><span class="badge extra">EXTRA</span></td>
+          </tr>
+          <tr>
+            <td>Hệ thống</td>
+            <td>Doanh thu Telegram Bot</td>
+            <td class="amount">2.400.000đ</td>
+            <td>08/03/2026 14:20</td>
+            <td>Đơn tự động từ bot.</td>
+            <td><span class="badge auto">AUTO</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <div class="title-small">Nhập thêm dòng tiền</div>
+      <h2 style="font-size: 28px; margin-top: 8px;">Form thêm tiền vào có note + time chuẩn</h2>
+      <div class="form-grid">
+        <div>
+          <label class="label">Nguồn tiền</label>
+          <select>
+            <option>Hệ thống</option>
+            <option>Thêm tay</option>
+            <option>Thu khác</option>
+          </select>
+        </div>
+        <div>
+          <label class="label">Tên khoản vào</label>
+          <input type="text" placeholder="Ví dụ: Doanh thu web / Tiền thêm cá nhân" />
+        </div>
+        <div>
+          <label class="label">Số tiền</label>
+          <input type="number" placeholder="Nhập số tiền" />
+        </div>
+        <div>
+          <label class="label">Thời gian</label>
+          <input type="datetime-local" />
+        </div>
+        <div class="full">
+          <label class="label">Note</label>
+          <textarea placeholder="Ghi rõ tiền từ đâu, mục đích, bối cảnh, hay bất kỳ ghi chú nào để sau này nhìn lại dễ hiểu..."></textarea>
+        </div>
+        <div>
+          <label class="label">Tag</label>
+          <select>
+            <option>AUTO</option>
+            <option>MANUAL</option>
+            <option>EXTRA</option>
+          </select>
+        </div>
+        <div style="display:flex; align-items:end;">
+          <button class="btn btn-primary" style="width:100%;">Lưu dòng tiền</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="summary-grid">
+      <div class="card summary-item">
+        <div class="title-small">Today</div>
+        <div class="stat-value">17.500.000đ</div>
+        <div class="sub">2 khoản từ hệ thống, 1 khoản thêm tay</div>
+      </div>
+      <div class="card summary-item">
+        <div class="title-small">Tuần này</div>
+        <div class="stat-value">41.200.000đ</div>
+        <div class="sub">Đà tăng tốt, cần giữ nhịp đều</div>
+      </div>
+      <div class="card summary-item">
+        <div class="title-small">Quý này</div>
+        <div class="stat-value">96.000.000đ</div>
+        <div class="sub">Đang bám target khá ổn</div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

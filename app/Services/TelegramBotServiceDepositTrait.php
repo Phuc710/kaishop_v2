@@ -74,7 +74,7 @@ trait TelegramBotServiceDepositTrait
     /**
      * /deposit <số_tiền> — Tạo mã chuyển khoản ngân hàng (TTL 5 phút)
      */
-    private function cmdDeposit(string $chatId, int $telegramId, array $args): void
+    private function cmdDeposit(string $chatId, int $telegramId, array $args, int $messageId = 0): void
     {
         $user = $this->resolveLinkedUser($chatId, $telegramId);
         if (!$user) {
@@ -114,7 +114,12 @@ trait TelegramBotServiceDepositTrait
 
         if (!$result['success']) {
             $this->writeLog("❌ Nạp tiền thất bại: " . ($result['message'] ?? 'Lỗi không xác định'), 'WARN', 'OUTGOING', 'DEPOSIT', ['user_id' => $user['id'], 'amount' => $amount]);
-            $this->telegram->sendTo($chatId, "❌ " . htmlspecialchars((string) ($result['message'] ?? 'Không bắt đầu được phiên nạp tiền.')));
+            $msg = "❌ " . htmlspecialchars((string) ($result['message'] ?? 'Không bắt đầu được phiên nạp tiền.'));
+            $markup = TelegramService::buildInlineKeyboard([
+                [['text' => '💳 Menu nạp tiền', 'callback_data' => 'deposit_menu']],
+                [$this->backHomeButton()],
+            ]);
+            $this->telegram->editOrSend($chatId, $messageId, $msg, $markup);
             return;
         }
 
@@ -124,8 +129,14 @@ trait TelegramBotServiceDepositTrait
         $ttlSeconds = max(60, (int) ($d['ttl_seconds'] ?? 300));
 
         $message = $this->buildDepositInstructionMessage($d, $ttlSeconds);
-        $depositKeyboard = $this->buildPayNowBackKeyboard($qrUrl);
+        $depositCode = (string) ($d['deposit_code'] ?? '');
+        $depositKeyboard = $this->buildPayNowBackKeyboard($qrUrl, $depositCode);
         $photoSent = false;
+
+        // Nếu nạp từ callback (menu), xóa menu cũ cho sạch chat
+        if ($messageId > 0) {
+            $this->telegram->deleteMessage($chatId, $messageId);
+        }
 
         if ($qrUrl !== '' && str_starts_with($qrUrl, 'http')) {
             $telegramQrUrl = $this->toTelegramQrUrl($qrUrl);
@@ -205,8 +216,10 @@ trait TelegramBotServiceDepositTrait
             : strtolower(trim($text));
 
         if (in_array($normalized, ['hủy', 'huy', 'thoát', 'thoat', 'cancel', 'quay lại', 'quay lai'], true)) {
+            $session = $this->getDepositInputSession($telegramId);
+            $messageId = (int) ($session['message_id'] ?? 0);
             $this->clearDepositInputMode($telegramId);
-            $this->telegram->sendTo($chatId, "✅ Đã hủy thao tác nạp tiền.");
+            $this->showDepositMethodMenu($chatId, $telegramId, $messageId);
             return true;
         }
 
@@ -236,7 +249,7 @@ trait TelegramBotServiceDepositTrait
      */
     private function startDepositInputMode(string $chatId, int $telegramId, int $messageId = 0): void
     {
-        $this->setDepositInputMode($telegramId);
+        $this->setDepositInputMode($telegramId, 300, $messageId);
 
         $minFormatted = number_format(DepositService::MIN_AMOUNT);
 
@@ -310,7 +323,7 @@ trait TelegramBotServiceDepositTrait
         return $this->depositInputDir() . DIRECTORY_SEPARATOR . $telegramId . '.json';
     }
 
-    private function setDepositInputMode(int $telegramId, int $ttl = 300): void
+    private function setDepositInputMode(int $telegramId, int $ttl = 300, int $messageId = 0): void
     {
         $dir = $this->depositInputDir();
         if (!is_dir($dir)) {
@@ -321,9 +334,37 @@ trait TelegramBotServiceDepositTrait
         $payload = [
             'created_at' => $now,
             'expires_at' => $now + max(60, $ttl),
+            'message_id' => $messageId,
         ];
 
         @file_put_contents($this->depositInputFile($telegramId), json_encode($payload), LOCK_EX);
+    }
+
+    /**
+     * @return array<string,mixed>|null
+     */
+    private function getDepositInputSession(int $telegramId): ?array
+    {
+        $file = $this->depositInputFile($telegramId);
+        if (!is_file($file)) {
+            return null;
+        }
+
+        $raw = @file_get_contents($file);
+        $data = $raw ? json_decode($raw, true) : null;
+        if (!is_array($data)) {
+            @unlink($file);
+            return null;
+        }
+
+        $now = $this->timeService ? $this->timeService->nowTs() : time();
+        $expiresAt = (int) ($data['expires_at'] ?? 0);
+        if ($expiresAt <= 0 || $expiresAt < $now) {
+            @unlink($file);
+            return null;
+        }
+
+        return $data;
     }
 
     private function clearDepositInputMode(int $telegramId): void
@@ -374,8 +415,9 @@ trait TelegramBotServiceDepositTrait
             : strtolower(trim($text));
 
         if (in_array($normalized, ['hủy', 'huy', 'cancel', 'thoát', 'thoat', 'quay lại', 'quay lai'], true)) {
+            $messageId = (int) ($session['message_id'] ?? 0);
             $this->clearBinanceSession($telegramId);
-            $this->telegram->sendTo($chatId, '✅ Đã hủy phiên nạp Binance.');
+            $this->showDepositMethodMenu($chatId, $telegramId, $messageId);
             return true;
         }
 
@@ -408,15 +450,16 @@ trait TelegramBotServiceDepositTrait
 
             // Lấy UID từ session và truyền qua args[1] — không lưu DB
             $uid = (string) ($session['uid'] ?? '');
+            $messageId = (int) ($session['message_id'] ?? 0);
             $this->clearBinanceSession($telegramId);
-            $this->cmdBinance($chatId, $telegramId, [(string) $amount, $uid]);
+            $this->cmdBinance($chatId, $telegramId, [(string) $amount, $uid], $messageId);
             return true;
         }
 
         return false;
     }
 
-    private function cmdBinance(string $chatId, int $telegramId, array $args): void
+    private function cmdBinance(string $chatId, int $telegramId, array $args, int $messageId = 0): void
     {
         $user = $this->resolveLinkedUser($chatId, $telegramId);
         if (!$user) {
@@ -427,18 +470,22 @@ trait TelegramBotServiceDepositTrait
 
         // Kiểm tra admin có bật Binance không
         if ((int) ($siteConfig['binance_pay_enabled'] ?? 0) !== 1) {
-            $this->telegram->sendTo($chatId, "🔴 <b>Binance Pay đang bảo trì.</b>\nVui lòng quay lại sau hoặc sử dụng Ngân hàng.", [
-                'reply_markup' => TelegramService::buildInlineKeyboard([
-                    [['text' => '🏦 Thử Ngân hàng', 'callback_data' => 'deposit_bank']],
-                    [$this->backHomeButton()],
-                ]),
+            $msg = "🔴 <b>Binance Pay đang bảo trì.</b>\nVui lòng quay lại sau hoặc sử dụng Ngân hàng.";
+            $markup = TelegramService::buildInlineKeyboard([
+                [['text' => '🏦 Thử Ngân hàng', 'callback_data' => 'deposit_bank']],
+                [$this->backHomeButton()],
             ]);
+            $this->telegram->editOrSend($chatId, $messageId, $msg, $markup);
             return;
         }
 
         $binanceService = $this->depositService->makeBinanceService($siteConfig);
         if (!$binanceService || !$binanceService->isEnabled()) {
-            $this->telegram->sendTo($chatId, '🔴 Binance Pay chưa sẵn sàng. Vui lòng liên hệ admin.');
+            $markup = TelegramService::buildInlineKeyboard([
+                [['text' => '💳 Menu nạp tiền', 'callback_data' => 'deposit_menu']],
+                [$this->backHomeButton()],
+            ]);
+            $this->telegram->editOrSend($chatId, $messageId, '🔴 Binance Pay chưa sẵn sàng. Vui lòng liên hệ admin.', $markup);
             return;
         }
 
@@ -450,26 +497,32 @@ trait TelegramBotServiceDepositTrait
         $rate = max(1, (int) ($siteConfig['binance_rate_vnd'] ?? 25000));
         $minUsdt = round(DepositService::MIN_AMOUNT / $rate, 2);
 
+        $photoUrl = "https://i.imghippo.com/files/rDvk8689sKI.png";
         // Bước 1: Hỏi UID nếu chưa có (mỗi lần giao dịch đều hỏi — đồng bộ web)
         if ($payerUid === '' || !preg_match('/^\d{4,20}$/', $payerUid)) {
-            $this->setBinanceSession($telegramId, ['step' => 'await_uid'], 300);
-            $this->telegram->sendTo(
-                $chatId,
-                "🟡 <b>BINANCE PAY</b>\n\n" .
-                "Vui lòng nhập <b>Binance UID</b> của bạn.\n" .
-                "<i>UID chỉ dùng cho giao dịch này, không bị lưu lại.</i>\n\n" .
-                "Ví dụ: <code>12345678</code>"
-            );
+            $this->setBinanceSession($telegramId, ['step' => 'await_uid', 'message_id' => $messageId], 300);
+            $msg = "🟡 <b>BINANCE PAY — NHẬP UID</b>\n\n" .
+                "Vui lòng nhập <b>Binance UID</b> của bạn.\n\n" .
+                "Ví dụ: <code>12345678</code>";
+            
+            if ($messageId > 0) {
+                $this->telegram->deleteMessage($chatId, $messageId);
+            }
+            $this->telegram->sendPhotoTo($chatId, $photoUrl, $msg);
             return;
         }
 
         // Bước 2: Hỏi số tiền nếu chưa có
         if ($usdAmount <= 0) {
-            $this->setBinanceSession($telegramId, ['step' => 'await_amount', 'uid' => $payerUid], 300);
+            $this->setBinanceSession($telegramId, ['step' => 'await_amount', 'uid' => $payerUid, 'message_id' => $messageId], 300);
             $minLabel = number_format($minUsdt, 2) . ' USDT';
-            $this->telegram->sendTo($chatId, "💵 Nhập số USDT cần nạp (tối thiểu <b>{$minLabel}</b>).", [
-                'reply_markup' => $this->buildBinanceAmountKeyboard(),
-            ]);
+            $msg = "💵 Nhập số USDT cần nạp (tối thiểu <b>{$minLabel}</b>).";
+            $markup = $this->buildBinanceAmountKeyboard();
+            
+            if ($messageId > 0) {
+                $this->telegram->deleteMessage($chatId, $messageId);
+            }
+            $this->telegram->sendPhotoTo($chatId, $photoUrl, $msg, ['reply_markup' => $markup]);
             return;
         }
 
@@ -484,7 +537,11 @@ trait TelegramBotServiceDepositTrait
         );
 
         if (empty($result['success'])) {
-            $this->telegram->sendTo($chatId, '❌ Không thể tạo phiên Binance: ' . htmlspecialchars((string) ($result['message'] ?? 'Lỗi không xác định'), ENT_QUOTES, 'UTF-8'));
+            $markup = TelegramService::buildInlineKeyboard([
+                [['text' => '💳 Menu nạp tiền', 'callback_data' => 'deposit_menu']],
+                [$this->backHomeButton()],
+            ]);
+            $this->telegram->editOrSend($chatId, $messageId, '❌ Không thể tạo phiên Binance: ' . htmlspecialchars((string) ($result['message'] ?? 'Lỗi không xác định'), ENT_QUOTES, 'UTF-8'), $markup);
             return;
         }
 
@@ -508,15 +565,22 @@ trait TelegramBotServiceDepositTrait
         }
         $msg .= "\n✅ Sau khi chuyển tiền, nhấn <b>Kiểm tra thanh toán</b> bên dưới.";
 
-        $keyboard = TelegramService::buildInlineKeyboard([
+        $markup = TelegramService::buildInlineKeyboard([
             [
                 ['text' => '🔍 Kiểm tra thanh toán', 'callback_data' => 'bin_check_' . $depositCode],
-                ['text' => '💳 Menu nạp tiền', 'callback_data' => 'deposit_menu'],
+                ['text' => '❌ Hủy giao dịch', 'callback_data' => 'cancel_dep_' . $depositCode],
             ],
             [$this->backHomeButton()],
         ]);
 
-        $this->telegram->sendTo($chatId, $msg, ['reply_markup' => $keyboard]);
+        $photoUrl = "https://i.imghippo.com/files/rDvk8689sKI.png";
+        if ($messageId > 0) {
+            $this->telegram->editOrSend($chatId, $messageId, $msg, $markup);
+        } else {
+            if (!$this->telegram->sendPhotoTo($chatId, $photoUrl, $msg, ['reply_markup' => $markup])) {
+                $this->telegram->sendTo($chatId, $msg, ['reply_markup' => $markup]);
+            }
+        }
     }
 
     private function cbBinanceCheck(string $chatId, int $telegramId, string $depositCode, int $messageId = 0): void
@@ -529,32 +593,53 @@ trait TelegramBotServiceDepositTrait
         $depositModel = new PendingDeposit();
         $deposit = $depositModel->findByCode($depositCode);
         if (!$deposit || (int) ($deposit['user_id'] ?? 0) !== (int) ($user['id'] ?? 0)) {
-            $this->telegram->editOrSend($chatId, $messageId, '❌ Không tìm thấy phiên nạp Binance.');
+            $markup = TelegramService::buildInlineKeyboard([
+                [['text' => '💳 Menu nạp tiền', 'callback_data' => 'deposit_menu']],
+                [$this->backHomeButton()],
+            ]);
+            $this->telegram->editOrSend($chatId, $messageId, '❌ Không tìm thấy phiên nạp Binance.', $markup);
             return;
         }
 
         $method = strtolower(trim((string) ($deposit['method'] ?? '')));
         if ($method !== DepositService::METHOD_BINANCE) {
-            $this->telegram->editOrSend($chatId, $messageId, '⚠️ Phiên này không phải Binance Pay.');
+            $markup = TelegramService::buildInlineKeyboard([
+                [['text' => '💳 Menu nạp tiền', 'callback_data' => 'deposit_menu']],
+                [$this->backHomeButton()],
+            ]);
+            $this->telegram->editOrSend($chatId, $messageId, '⚠️ Phiên này không phải Binance Pay.', $markup);
             return;
         }
 
         if ($depositModel->isLogicallyExpired($deposit)) {
             $depositModel->markExpired();
-            $this->telegram->editOrSend($chatId, $messageId, '⏰ Phiên nạp đã hết hạn. Vui lòng tạo phiên mới bằng lệnh /binance.');
+            $markup = TelegramService::buildInlineKeyboard([
+                [['text' => '💳 Menu nạp tiền', 'callback_data' => 'deposit_menu']],
+                [$this->backHomeButton()],
+            ]);
+            $this->telegram->editOrSend($chatId, $messageId, '⏰ Phiên nạp đã hết hạn. Vui lòng tạo phiên mới.', $markup);
             return;
         }
 
         $siteConfig = Config::getSiteConfig();
 
         if (strtolower((string) ($deposit['status'] ?? '')) === 'completed') {
-            $this->telegram->editOrSend($chatId, $messageId, $this->buildBinanceSuccessMessage($user, $siteConfig));
+            $msgSuccess = $this->buildBinanceSuccessMessage($user, $siteConfig);
+            if ($messageId > 0) {
+                $this->telegram->deleteMessage($chatId, $messageId);
+            }
+            $photoUrl = "https://i.imghippo.com/files/rDvk8689sKI.png";
+            $this->telegram->sendPhotoTo($chatId, $photoUrl, $msgSuccess);
             return;
         }
 
         $binanceService = $this->depositService->makeBinanceService($siteConfig);
         if (!$binanceService || !$binanceService->isEnabled()) {
-            $this->telegram->editOrSend($chatId, $messageId, '🔴 Binance Pay đang tạm dừng. Vui lòng thử lại sau.');
+            $markup = TelegramService::buildInlineKeyboard([
+                [['text' => '💳 Menu nạp tiền', 'callback_data' => 'deposit_menu']],
+                [$this->backHomeButton()],
+            ]);
+            $this->telegram->editOrSend($chatId, $messageId, '🔴 Binance Pay đang tạm dừng. Vui lòng thử lại sau.', $markup);
             return;
         }
 
@@ -571,11 +656,18 @@ trait TelegramBotServiceDepositTrait
         $result = $binanceService->processTransaction($tx, $deposit, $user);
         if (!empty($result['success'])) {
             $freshUser = $this->userModel->findById((int) ($user['id'] ?? 0));
-            $this->telegram->editOrSend($chatId, $messageId, $this->buildBinanceSuccessMessage($freshUser ?? $user, $siteConfig));
+            $msg = $this->buildBinanceSuccessMessage($freshUser ?? $user, $siteConfig);
+            if ($messageId > 0) $this->telegram->deleteMessage($chatId, $messageId);
+            $photoUrl = "https://i.imghippo.com/files/rDvk8689sKI.png";
+            $this->telegram->sendPhotoTo($chatId, $photoUrl, $msg);
             return;
         }
 
-        $this->telegram->editOrSend($chatId, $messageId, '❌ Chưa xác minh được giao dịch: ' . htmlspecialchars((string) ($result['message'] ?? 'Lỗi không xác định'), ENT_QUOTES, 'UTF-8'));
+        $markup = TelegramService::buildInlineKeyboard([
+            [['text' => '💳 Menu nạp tiền', 'callback_data' => 'deposit_menu']],
+            [$this->backHomeButton()],
+        ]);
+        $this->telegram->editOrSend($chatId, $messageId, '❌ Chưa xác minh được giao dịch: ' . htmlspecialchars((string) ($result['message'] ?? 'Lỗi không xác định'), ENT_QUOTES, 'UTF-8'), $markup);
     }
 
     /**
@@ -591,7 +683,8 @@ trait TelegramBotServiceDepositTrait
         $balanceUsd = number_format($balanceVnd / $rate, 2, '.', ',');
         $balanceVndFmt = number_format($balanceVnd, 0, ',', '.');
 
-        return "✅ <b>ĐÃ NHẬN THANH TOÁN BINANCE!</b>\n\n"
+        return "🟡 <b>BINANCE PAY — THANH TOÁN THÀNH CÔNG</b>\n\n"
+            . "✅ Đã nhận tiền vào tài khoản!\n"
             . "💰 Số dư hiện tại: <b>\${$balanceUsd}</b> (~{$balanceVndFmt} VND)";
     }
 

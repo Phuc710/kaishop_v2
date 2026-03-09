@@ -450,12 +450,6 @@ class DepositController extends Controller
 
         $this->depositModel->cancelByUser((int) $deposit['id'], (int) $user['id']);
 
-        Logger::info('Billing', 'deposit_cancelled', "User {$user['username']} hủy giao dịch nạp tiền", [
-            'deposit_code' => $depositCode,
-            'method' => $this->normalizeDepositMethod((string) ($deposit['method'] ?? '')),
-            'source_channel' => SourceChannelHelper::normalize($deposit['source_channel'] ?? SourceChannelHelper::WEB),
-        ]);
-
         return $this->json(['success' => true, 'message' => 'Đã hủy giao dịch']);
     }
 }

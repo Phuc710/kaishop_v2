@@ -76,9 +76,7 @@ class TelegramBotService
             ['command' => 'balance', 'description' => 'Xem số dư ví'],
             ['command' => 'deposit', 'description' => 'Nạp tiền qua ngân hàng'],
             ['command' => 'binance', 'description' => 'Nạp tiền qua Binance Pay (USD)'],
-            ['command' => 'orders', 'description' => 'Lịch sử đơn hàng gần nhất'],
-            ['command' => 'link', 'description' => 'Liên kết Telegram với tài khoản Web'],
-            ['command' => 'unlink', 'description' => 'Hủy liên kết tài khoản'],
+            ['command' => 'orders', 'description' => 'Lịch sử 5 đơn hàng gần nhất'],
             ['command' => 'help', 'description' => 'Danh sách lệnh trợ giúp'],
         ];
 
@@ -301,12 +299,12 @@ class TelegramBotService
             return;
         }
         if ($data === 'binance_start') {
-            $this->cmdBinance($chatId, $telegramId, []);
+            $this->cmdBinance($chatId, $telegramId, [], $messageId);
             $this->telegram->answerCallbackQuery($callbackId);
             return;
         }
         if (preg_match('/^bin_amount_([0-9]+(?:\.[0-9]{1,2})?)$/', $data, $m)) {
-            $this->cmdBinance($chatId, $telegramId, [(string) $m[1]]);
+            $this->cmdBinance($chatId, $telegramId, [(string) $m[1]], $messageId);
             $this->telegram->answerCallbackQuery($callbackId);
             return;
         }
@@ -319,9 +317,28 @@ class TelegramBotService
             $amount = (int) $m[1];
             if ($amount >= DepositService::MIN_AMOUNT) {
                 $this->clearDepositInputMode($telegramId);
-                $this->cmdDeposit($chatId, $telegramId, [(string) $amount]);
+                $this->cmdDeposit($chatId, $telegramId, [(string) $amount], $messageId);
+                $this->telegram->answerCallbackQuery($callbackId);
+            } else {
+                $this->telegram->answerCallbackQuery($callbackId, "Số tiền tối thiểu là " . number_format(DepositService::MIN_AMOUNT) . "đ", true);
             }
-            $this->telegram->answerCallbackQuery($callbackId);
+            return;
+        }
+
+        if (preg_match('/^cancel_dep_([A-Za-z0-9_-]{3,64})$/', $data, $m)) {
+            $code = $m[1];
+            $user = $this->resolveLinkedUser($chatId, $telegramId);
+            if ($user) {
+                $depositModel = new PendingDeposit();
+                $deposit = $depositModel->findByCode($code);
+                if ($deposit && (int) $deposit['user_id'] === (int) $user['id'] && $deposit['status'] === 'pending') {
+                    $depositModel->cancelByUser((int) $deposit['id'], (int) $user['id']);
+                }
+            }
+            // Sau khi hủy (hoặc nếu đã hủy rồi), xóa QR và về menu nạp
+            $this->telegram->deleteMessage($chatId, $messageId);
+            $this->showDepositMethodMenu($chatId, $telegramId);
+            $this->telegram->answerCallbackQuery($callbackId, "Đã hủy giao dịch.");
             return;
         }
 
@@ -418,9 +435,10 @@ class TelegramBotService
             $msg .= "👤 Tài khoản: <b>" . htmlspecialchars($username, ENT_QUOTES, 'UTF-8') . "</b>\n";
             $msg .= "💵 Số dư: <b>{$money}</b>\n\n";
             $msg .= "━━━━━━━━━━━━━━\n";
-            $msg .= "👇 Chọn chức năng bên dưới để bắt đầu";
+            $msg .= "👇 Chọn chức năng bên dưới để bắt đầu\n\n";
+            $msg .= "🔗 <a href=\"https://kaishop.id.vn\">TRUY CẬP WEBSITE</a>";
         } else {
-            $msg = "👇 <b>Chọn chức năng bên dưới để bắt đầu:</b>";
+            $msg = "👇 <b>Chọn chức năng bên dưới để bắt đầu:</b>\n\n🔗 <a href=\"https://kaishop.id.vn\">TRUY CẬP WEBSITE</a>";
         }
 
         if ($messageId > 0) {
@@ -468,7 +486,7 @@ class TelegramBotService
     }
 
     /** @return array<string,mixed> */
-    private function buildPayNowBackKeyboard(string $payUrl = ''): array
+    private function buildPayNowBackKeyboard(string $payUrl = '', string $depositCode = ''): array
     {
         $rows = [];
         $url = trim($payUrl);
@@ -477,7 +495,13 @@ class TelegramBotService
         } else {
             $rows[] = [['text' => '💳 Thanh toán ngay', 'callback_data' => 'deposit_menu']];
         }
-        $rows[] = [['text' => '❌ Hủy giao dịch', 'callback_data' => 'deposit_menu']];
+
+        if ($depositCode !== '') {
+            $rows[] = [['text' => '❌ Hủy giao dịch', 'callback_data' => 'cancel_dep_' . $depositCode]];
+        } else {
+            $rows[] = [['text' => '❌ Hủy giao dịch', 'callback_data' => 'deposit_menu']];
+        }
+
         return TelegramService::buildInlineKeyboard($rows);
     }
 
@@ -624,8 +648,8 @@ class TelegramBotService
 
             $this->telegram->sendTo(
                 $chatId,
-                "🔗 <b>LIÊN KẾT TÀI KHOẢN WEB</b>\n\n"
-                . "1️⃣ Đăng nhập web (<code>{$domain}</code>) › Hồ sơ › Liên kết Telegram.\n"
+                "🔗 <b>LIÊN KẾT TÀI KHỎN WEB</b>\n\n"
+                . "1️⃣ Đăng nhập web (<a href=\"https://kaishop.id.vn\">kaishop.id.vn</a>) › Hồ sơ › Liên kết Telegram.\n"
                 . "2️⃣ Lấy mã OTP và gửi lệnh: <code>/link 123456</code>.\n\n"
                 . "Sau khi liên kết, tài khoản Web và Telegram sẽ đồng bộ ví!",
                 ['reply_markup' => TelegramService::buildInlineKeyboard([[$this->backHomeButton()]])]
@@ -1098,8 +1122,32 @@ class TelegramBotService
         $data = null
     ): void {
         try {
+            // 1. Log to internal terminal (telegram_logs)
             $logModel = new TelegramLog();
             $logModel->log($message, $level, $type, $category, $data);
+
+            // 2. Log to system journal (system_logs) for admin visibility
+            if (class_exists('Logger')) {
+                $payload = is_array($data) ? $data : ['raw_data' => $data];
+                $payload['bot_category'] = $category;
+                $payload['bot_type'] = $type;
+
+                // Sync severity levels
+                switch (strtoupper($level)) {
+                    case 'WARN':
+                    case 'WARNING':
+                        Logger::warning('TelegramBot', $category, $message, $payload);
+                        break;
+                    case 'ERROR':
+                    case 'DANGER':
+                    case 'CRITICAL':
+                        Logger::danger('TelegramBot', $category, $message, $payload);
+                        break;
+                    default:
+                        Logger::info('TelegramBot', $category, $message, $payload);
+                        break;
+                }
+            }
         } catch (Throwable $e) {
             error_log('[TelegramBotService] writeLog failed: ' . $e->getMessage());
         }

@@ -467,10 +467,18 @@ class TelegramAdminController extends Controller
             return;
         }
 
-        $ok = (bool) $this->telegram->sendTo($chatId, $message);
+        $response = $this->telegram->apiCall('sendMessage', [
+            'chat_id' => $chatId,
+            'text' => $message,
+            'parse_mode' => 'HTML'
+        ]);
+
+        $ok = !empty($response['ok']);
+        $errorDescription = $response['description'] ?? 'Lỗi không xác định';
+
         $this->json([
             'success' => $ok,
-            'message' => $ok ? 'Đã gửi ALERT vào Main Channel' : 'Gửi ALERT thất bại, hãy kiểm tra token/chat id',
+            'message' => $ok ? 'Đã gửi ALERT vào Main Channel' : 'Gửi ALERT thất bại: ' . $errorDescription,
         ]);
     }
 
