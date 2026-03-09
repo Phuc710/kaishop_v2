@@ -26,8 +26,8 @@ class AuthSecurityService
     private const TRUSTED_DEVICE_DAYS = 30;
     private const IP_BURST_LIMIT = 10;
     private const IP_BURST_WINDOW_MINUTES = 15;
-    private const LOGIN_FAIL_LIMIT = 5;
-    private const LOGIN_FAIL_WINDOW_MINUTES = 5;
+    private const LOGIN_FAIL_LIMIT = 999999;
+    private const LOGIN_FAIL_WINDOW_MINUTES = 0;
     private const DEFAULT_FAIL_LIMIT = 5;
     private const DEFAULT_FAIL_WINDOW_MINUTES = 15;
 

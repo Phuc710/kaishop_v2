@@ -15,6 +15,8 @@ $routes = [
     ['GET', '/dieu-khoan', 'TermsController@index'],
     ['GET', '/lien-he', 'ContactController@index'],
     ['GET', '/lienhe', 'ContactController@index'],
+    ['GET', '/robots.txt', 'SeoController@robots'],
+    ['GET', '/sitemap.xml', 'SeoController@sitemap'],
     ['GET', '/bao-tri', 'MaintenanceController@index'],
     ['GET', '/api/system/maintenance-status', 'Api\\MaintenanceStatusController@show'],
 

@@ -198,7 +198,7 @@ class AuthController extends Controller
 
                 return $this->json([
                     'success' => false,
-                    'message' => "Thông tin đăng nhập không chính xác.\nBạn còn " . $attemptsLeft . '/' . $maxAttempts . ' lần thử',
+                    'message' => "Thông tin đăng nhập không chính xác.",
                     'attempts_left' => $attemptsLeft,
                     'max_attempts' => $maxAttempts,
                     'window_minutes' => $windowMinutes,
@@ -221,7 +221,7 @@ class AuthController extends Controller
 
         return $this->json([
             'success' => false,
-            'message' => "Thông tin đăng nhập không chính xác.\nBạn còn " . $attemptsLeft . '/' . $maxAttempts . ' lần thử',
+            'message' => "Thông tin đăng nhập không chính xác.",
             'attempts_left' => $attemptsLeft,
             'max_attempts' => $maxAttempts,
             'window_minutes' => $windowMinutes,

@@ -3,9 +3,9 @@
 
 <head>
     <?php
-    $seoTitle = "KaiShop - Dịch vụ MMO, Source Code FREE, Nạp tiền tự động 24/7 Giá Rẻ";
-    $seoDescription = "KaiShop chuyên cung cấp dịch vụ MMO, mua bán Source Code FREE và nạp tiền tự động 24/7 uy tín. Hệ thống giao dịch nhanh chóng, bảo mật và giá cạnh tranh nhất.";
-    $seoKeywords = "mmo, source code free, nạp tiền tự động, nạp tiền 24/7, mua acc game, dịch vụ game giá rẻ, kaishop";
+    $seoTitle = "KaiShop - Nạp tiền Auto 24/7, Dịch vụ MMO & Source Code Uy Tín";
+    $seoDescription = "KaiShop chuyên cung cấp dịch vụ MMO, mua bán Source Code FREE và hệ thống nạp tiền tự động 24/7 siêu tốc qua Ngân hàng, MoMo, Binance. Giao dịch an toàn, bảo mật và uy tín hàng đầu.";
+    $seoKeywords = "nạp tiền 24/7, nạp tiền tự động, dịch vụ mmo, mua source code, kaishop, nạp tiền giá rẻ, nạp tiền game";
 
     $GLOBALS['pageAssets'] = array_merge($GLOBALS['pageAssets'] ?? [], [
         'vendor_quill' => false,
@@ -127,7 +127,7 @@
     <main>
         <div class="container py-4 home-main-content">
             <!-- Visually Hidden H1 for SEO -->
-            <h1 class="visually-hidden">KaiShop - Dịch vụ MMO, Source Code FREE, Nạp tiền tự động 24/7 Giá Rẻ</h1>
+            <h1 class="visually-hidden">KaiShop - Hệ thống Nạp tiền Tự động 24/7, Dịch vụ MMO & Source Code</h1>
 
             <!-- Premium Hero Banner -->
             <?php if (!empty($chungapi['home_hero_html'])): ?>
@@ -388,6 +388,47 @@
                     </div>
                 <?php endif; ?>
             </div>
+            <!-- SEO Section: Nạp tiền 24/7 -->
+            <section class="seo-feature-section mt-5 py-4 px-3 rounded-4 bg-white shadow-sm border-start border-primary border-4">
+                <div class="row align-items-center">
+                    <div class="col-md-7">
+                        <h2 class="fw-bold mb-3 text-dark">Dịch vụ Nạp tiền 24/7 Siêu Tốc & Tự Động</h2>
+                        <p class="text-muted mb-4" style="line-height: 1.6;">
+                            Hệ thống nạp tiền tại <strong>KaiShop</strong> hoạt động hoàn toàn tự động 24/7, giúp bạn chủ động giao dịch bất kể ngày đêm. Chúng tôi hỗ trợ đa dạng phương thức thanh toán an toàn và nhanh chóng nhất hiện nay.
+                        </p>
+                        <div class="row g-3">
+                            <div class="col-6 col-md-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary-subtle p-2 rounded-circle me-3"><i class="fas fa-bolt text-primary"></i></div>
+                                    <span class="fw-medium">Xử lý 30s</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-success-subtle p-2 rounded-circle me-3"><i class="fas fa-shield-alt text-success"></i></div>
+                                    <span class="fw-medium">An toàn 100%</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-info-subtle p-2 rounded-circle me-3"><i class="fas fa-headset text-info"></i></div>
+                                    <span class="fw-medium">Hỗ trợ 24/7</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-5 mt-4 mt-md-0 d-none d-md-block text-center">
+                        <div class="p-3 bg-light rounded-4">
+                            <div class="d-flex justify-content-center gap-3 mb-3">
+                                <img src="<?= asset('assets/images/bank.png') ?>" alt="Nạp tiền qua Ngân hàng" style="height: 40px; border-radius: 8px;">
+                                <img src="<?= asset('assets/images/momo.webp') ?>" alt="Nạp tiền Momo" style="height: 40px; border-radius: 8px;">
+                                <img src="<?= asset('assets/images/Binance_icon.svg') ?>" alt="Nạp tiền Binance" style="height: 40px; border-radius: 8px;">
+                            </div>
+                            <p class="small text-secondary mb-0">Hỗ trợ ngân hàng Việt Nam & Ví điện tử phổ biến</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     </main>
 

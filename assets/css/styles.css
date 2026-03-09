@@ -7885,19 +7885,6 @@ html.menu-opened body {
     position: relative;
 }
 
-.navbar-nav>li>a.nav-link.active::before,
-.navbar-nav>li>a.active::before {
-    content: "";
-    width: 10px;
-    height: 10px;
-    background: #ff6900;
-    position: absolute;
-    border-top-left-radius: 30px;
-    left: 50%;
-    top: 12px;
-    transform: translatex(-50%);
-}
-
 .footer {
     background: #040404;
     padding: 40px 0 0;
