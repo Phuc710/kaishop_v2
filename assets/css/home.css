@@ -575,10 +575,10 @@
     }
 
     .hero-links-row {
-        flex-wrap: nowrap !important;
-        gap: 0.5rem !important;
-        font-size: 0.8rem !important;
-        justify-content: space-between;
+        flex-wrap: wrap !important;
+        gap: 0.75rem !important;
+        font-size: 0.85rem !important;
+        justify-content: flex-start;
     }
 
     .hero-link-item {
