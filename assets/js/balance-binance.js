@@ -70,6 +70,15 @@
         }
     }
 
+    function escapeHtml(text) {
+        return String(text == null ? '' : text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     function confirmAction(options) {
         if (!window.Swal) {
             return Promise.resolve(window.confirm(options.text || 'Are you sure?'));
@@ -165,6 +174,8 @@
             tfBinanceUid: root.querySelector('[data-tf-binance-uid]'),
             tfPayerUid: root.querySelector('[data-tf-payer-uid]'),
             tfUsdt: root.querySelector('[data-tf-usdt]'),
+            tfCode: root.querySelector('[data-tf-code]'),
+            tfExpires: root.querySelector('[data-tf-expires]'),
             tfStatus: root.querySelector('[data-tf-status]'),
             countdown: root.querySelector('[data-deposit-countdown]'),
             countdownFill: root.querySelector('[data-deposit-countdown-fill]'),
@@ -176,6 +187,7 @@
             payerUid: String((activeDeposit && activeDeposit.payer_uid) || (this.elements.payerUidInput && this.elements.payerUidInput.value) || '').trim(),
             bonusPercent: 0,
             activeCode: activeDeposit && activeDeposit.deposit_code ? String(activeDeposit.deposit_code) : '',
+            activeUsdtAmount: activeDeposit && activeDeposit.usdt_amount ? Number(activeDeposit.usdt_amount) : 0,
             activeCreatedAtTs: activeDeposit && activeDeposit.created_at_ts ? Number(activeDeposit.created_at_ts) : 0,
             activeExpiresAtTs: activeDeposit && activeDeposit.expires_at_ts ? Number(activeDeposit.expires_at_ts) : 0,
             currentCountdownTotal: Math.max(1, Number((activeDeposit && activeDeposit.ttl_seconds) || this.ttlSeconds || 300)),
@@ -304,15 +316,54 @@
 
         if (this.elements.tfBinanceUid) this.elements.tfBinanceUid.textContent = String(data.binance_uid || '');
         if (this.elements.tfPayerUid) this.elements.tfPayerUid.textContent = String(data.payer_uid || this.state.payerUid || '');
+        if (this.elements.tfCode) this.elements.tfCode.textContent = String(data.deposit_code || this.state.activeCode || '');
 
         if (this.elements.tfUsdt) {
             var usdt = Number(data.usdt_amount || 0);
-            this.elements.tfUsdt.textContent = usdt > 0 ? (usdt.toFixed(2) + ' USDT') : '';
+            this.state.activeUsdtAmount = usdt;
+            this.elements.tfUsdt.textContent = usdt > 0 ? ('$' + usdt.toFixed(2) + ' USDT') : '';
         }
 
         if (this.elements.tfStatus) {
             this.elements.tfStatus.textContent = resolveStatusText(data.status);
         }
+
+        if (this.elements.tfExpires) {
+            this.elements.tfExpires.textContent = String(data.expires_at || '');
+        }
+    };
+
+    BinanceDepositPage.prototype.showExpiredDepositMessage = function () {
+        var depositCode = String(this.state.activeCode || '').trim();
+        var usdtAmount = Number(this.state.activeUsdtAmount || 0);
+        var html = ''
+            + '<div style="text-align:left;line-height:1.7">'
+            + '<div><strong>⏰ YÊU CẦU NẠP BINANCE PAY ĐÃ HẾT HẠN</strong></div>'
+            + '<br>'
+            + '<div>📋 Mã nạp: <code>' + escapeHtml(depositCode) + '</code></div>'
+            + '<br>'
+            + '<div>💰 USDT yêu cầu: <strong>' + escapeHtml(usdtAmount.toFixed(2)) + ' USDT</strong></div>'
+            + '<br>'
+            + '<div>Lệnh đã quá 5 phút và tự động hủy.</div>'
+            + '<div>Nếu đã chuyển tiền, vui lòng liên hệ hỗ trợ kèm TXID</div>'
+            + '</div>';
+
+        if (window.Swal) {
+            return Swal.fire({
+                icon: 'warning',
+                html: html,
+                confirmButtonText: 'Đã hiểu'
+            });
+        }
+
+        alert(
+            '⏰ YÊU CẦU NẠP BINANCE PAY ĐÃ HẾT HẠN\n\n'
+            + '📋 Mã nạp: ' + depositCode + '\n\n'
+            + '💰 USDT yêu cầu: ' + usdtAmount.toFixed(2) + ' USDT\n\n'
+            + 'Lệnh đã quá 5 phút và tự động hủy.\n'
+            + 'Nếu đã chuyển tiền, vui lòng liên hệ hỗ trợ kèm TXID'
+        );
+        return Promise.resolve();
     };
 
     BinanceDepositPage.prototype.resolveCreateEndpoint = function () {
@@ -381,7 +432,7 @@
                 self.stopCountdown();
                 self.stopPolling();
                 self.clearActiveDepositSnapshot();
-                alertInfo('Please create a new one.', 'Session Expired').then(function () {
+                self.showExpiredDepositMessage().then(function () {
                     window.location.reload();
                 });
             }
@@ -425,7 +476,7 @@
         if (res.status === 'expired') {
             this.stopAll();
             this.clearActiveDepositSnapshot();
-            alertInfo('Please create a new one.', 'Session Expired').then(function () {
+            this.showExpiredDepositMessage().then(function () {
                 window.location.reload();
             });
             return true;
@@ -708,7 +759,8 @@
                 var target = button.getAttribute('data-copy-target');
                 var text = '';
                 if (target === 'uid' && self.elements.tfBinanceUid) text = self.elements.tfBinanceUid.textContent.trim();
-                if (target === 'usdt' && self.elements.tfUsdt) text = self.elements.tfUsdt.textContent.replace(/\s*USDT$/i, '').trim();
+                if (target === 'usdt' && self.elements.tfUsdt) text = self.elements.tfUsdt.textContent.replace(/^\$/, '').replace(/\s*USDT$/i, '').trim();
+                if (target === 'code' && self.elements.tfCode) text = self.elements.tfCode.textContent.trim();
                 copyText(text);
             });
         });

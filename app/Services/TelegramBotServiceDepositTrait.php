@@ -33,8 +33,8 @@ trait TelegramBotServiceDepositTrait
             }
         }
 
-        $bankLabel = $bankEnabled ? '🏦 Ngân hàng (VND)' : '🏦 Ngân hàng 🔴 Bảo trì';
-        $binanceLabel = $binanceEnabled ? '🟡 Binance Pay (USD)' : '🟡 Binance Pay (Bảo trì)';
+        $bankLabel = $bankEnabled ? '🏦 Ngân hàng (VND)' : '🏦 Ngân hàng (Bảo trì)';
+        $binanceLabel = $binanceEnabled ? '💳 Binance Pay (USD)' : '💳 Binance Pay (Bảo trì)';
 
         $msg = "💳 <b>CHỌN PHƯƠNG THỨC NẠP TIỀN</b>\n\n";
         $msg .= "1️⃣ <b>Ngân hàng (VND)</b> — Chuyển khoản nội địa qua SePay.\n";
@@ -86,7 +86,7 @@ trait TelegramBotServiceDepositTrait
         if ((int) ($siteConfig['bank_pay_enabled'] ?? 1) !== 1) {
             $this->telegram->sendTo($chatId, "🔴 <b>Kênh nạp ngân hàng đang bảo trì.</b>\nVui lòng quay lại sau hoặc sử dụng Binance Pay.", [
                 'reply_markup' => TelegramService::buildInlineKeyboard([
-                    [['text' => '🟡 Thử Binance Pay', 'callback_data' => 'binance_start']],
+                    [['text' => '💳 Thử Binance Pay', 'callback_data' => 'binance_start']],
                     [$this->backHomeButton()],
                 ]),
             ]);
@@ -480,21 +480,12 @@ trait TelegramBotServiceDepositTrait
         $msg .= "👇 Vui lòng chọn nhanh hoặc nhập số USDT bạn muốn nạp:";
 
         $markup = $this->buildBinanceAmountKeyboard();
-
-        // Gửi QR động từ admin setting
-        $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
-        if (empty($domain)) {
-            $domain = 'kaishop.id.vn';
-        }
-        $qrPath = get_setting('binance_qr_image', 'assets/images/qr_binane.jpg');
-        $photoUrl = "https://{$domain}/{$qrPath}";
-
         if ($messageId > 0) {
-            $this->telegram->deleteMessage($chatId, $messageId);
+            $this->telegram->editOrSend($chatId, $messageId, $msg, $markup);
+            return;
         }
-        if (!$this->telegram->sendPhotoTo($chatId, $photoUrl, $msg, ['reply_markup' => $markup])) {
-            $this->telegram->sendTo($chatId, $msg, ['reply_markup' => $markup]);
-        }
+
+        $this->telegram->sendTo($chatId, $msg, ['reply_markup' => $markup]);
     }
 
     private function cmdBinance(string $chatId, int $telegramId, array $args, int $messageId = 0): void
@@ -550,19 +541,12 @@ trait TelegramBotServiceDepositTrait
                 "👉 Vui lòng nhập <b>Binance UID</b> của bạn để tiếp tục.\n" .
                 "<i>Scan QR để tìm UID hoặc vào Binance App → Profile → Copy UID</i>";
 
-            $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
-            if (empty($domain)) {
-                $domain = 'kaishop.id.vn';
-            }
-            $qrPath = get_setting('binance_qr_image', 'assets/images/qr_binane.jpg');
-            $photoUrl = "https://{$domain}/{$qrPath}";
-
-            if ($messageId > 0) {
-                $this->telegram->deleteMessage($chatId, $messageId);
-            }
-            if (!$this->telegram->sendPhotoTo($chatId, $photoUrl, $msg)) {
-                $this->telegram->sendTo($chatId, $msg);
-            }
+            $this->sendTelegramMediaOrText(
+                $chatId,
+                $messageId,
+                (string) get_setting('binance_qr_image', 'assets/images/qr_binane.jpg'),
+                $msg
+            );
             return;
         }
 
@@ -592,34 +576,40 @@ trait TelegramBotServiceDepositTrait
         $expiresAt = trim((string) ($d['expires_at'] ?? ''));
 
         $msg = "🟡 <b>BINANCE PAY — THÔNG TIN THANH TOÁN</b>\n\n";
+        $msg .= "📬 Pay to Binance ID: <b>" . htmlspecialchars($receiverUid, ENT_QUOTES, 'UTF-8') . "</b>\n\n";
         $msg .= "📋 Mã giao dịch: <code>" . htmlspecialchars($depositCode, ENT_QUOTES, 'UTF-8') . "</code>\n";
         $msg .= "👤 UID: <code>" . htmlspecialchars($payerUid, ENT_QUOTES, 'UTF-8') . "</code>\n";
         $msg .= "💵 Send EXACTLY: <b>$" . number_format($usdtAmount, 2, '.', '') . " USDT</b>\n";
-        $msg .= "📬 Pay to Binance ID:: <code>" . htmlspecialchars($receiverUid, ENT_QUOTES, 'UTF-8') . "</code>\n";
         if ($expiresAt !== '') {
             $msg .= "⏰ Hết hạn: <b>" . htmlspecialchars($expiresAt, ENT_QUOTES, 'UTF-8') . "</b>\n";
         }
         $msg .= "━━━━━━━━━━━━━━\n";
-        $msg .= "\n✅ Sau khi chuyển tiền, nhấn <b>Kiểm tra thanh toán</b> bên dưới.";
+        $telegramBinanceWarning = trim((string) ($siteConfig['deposit_warning_binance'] ?? ''));
+        if ($telegramBinanceWarning !== '') {
+            $telegramBinanceWarning = str_replace(
+                ['{amount}', '{uid}'],
+                ['<b>' . number_format($usdtAmount, 2, '.', '') . ' USDT</b>', '<b>' . htmlspecialchars($receiverUid, ENT_QUOTES, 'UTF-8') . '</b>'],
+                $telegramBinanceWarning
+            );
+            $msg .= "\n⚠️ " . $telegramBinanceWarning;
+        } else {
+            $msg .= "\n⚠️ Lưu ý: nhập chính xác <b>UID Binance của bạn</b> và chuyển đúng <b>$" . number_format($usdtAmount, 2, '.', '') . " USDT</b> thì hệ thống mới auto match được.";
+        }
 
         $markup = TelegramService::buildInlineKeyboard([
             [
                 ['text' => '🔍 Kiểm tra thanh toán', 'callback_data' => 'bin_check_' . $depositCode],
                 ['text' => '❌ Hủy giao dịch', 'callback_data' => 'cancel_dep_' . $depositCode],
             ],
-            [$this->backHomeButton()],
         ]);
 
-        $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
-        if (empty($domain)) {
-            $domain = 'kaishop.id.vn';
-        }
-        $qrPath = get_setting('binance_qr_image', 'assets/images/qr_binane.jpg');
-        $photoUrl = "https://{$domain}/{$qrPath}";
-
-        if (!$this->telegram->sendPhotoTo($chatId, $photoUrl, $msg, ['reply_markup' => $markup])) {
-            $this->telegram->sendTo($chatId, $msg, ['reply_markup' => $markup]);
-        }
+        $this->sendTelegramMediaOrText(
+            $chatId,
+            0,
+            (string) get_setting('binance_qr_image', 'assets/images/qr_binane.jpg'),
+            $msg,
+            $markup
+        );
     }
 
     private function cbBinanceCheck(string $chatId, int $telegramId, string $depositCode, int $messageId = 0): void
@@ -656,7 +646,7 @@ trait TelegramBotServiceDepositTrait
                 [['text' => '💳 Menu nạp tiền', 'callback_data' => 'deposit_menu']],
                 [$this->backHomeButton()],
             ]);
-            $this->telegram->editOrSend($chatId, $messageId, '⏰ Phiên nạp đã hết hạn. Vui lòng tạo phiên mới.', $markup);
+            $this->telegram->editOrSend($chatId, $messageId, $this->buildBinanceExpiredMessage($deposit), $markup);
             return;
         }
 
@@ -667,12 +657,12 @@ trait TelegramBotServiceDepositTrait
             if ($messageId > 0) {
                 $this->telegram->deleteMessage($chatId, $messageId);
             }
-            $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
-            if (empty($domain))
-                $domain = 'kaishop.id.vn';
-            $qrPath = get_setting('binance_qr_image', 'assets/images/qr_binane.jpg');
-            $photoUrl = "https://{$domain}/{$qrPath}";
-            $this->telegram->sendPhotoTo($chatId, $photoUrl, $msgSuccess);
+            $this->sendTelegramMediaOrText(
+                $chatId,
+                0,
+                (string) get_setting('binance_qr_image', 'assets/images/qr_binane.jpg'),
+                $msgSuccess
+            );
             return;
         }
 
@@ -689,10 +679,12 @@ trait TelegramBotServiceDepositTrait
         $tx = $binanceService->findMatchingTransaction($deposit);
         if (!$tx) {
             $retryKeyboard = TelegramService::buildInlineKeyboard([
-                [['text' => '🔄 Kiểm tra lại', 'callback_data' => 'bin_check_' . $depositCode]],
-                [['text' => '💳 Menu nạp tiền', 'callback_data' => 'deposit_menu']],
+                [
+                    ['text' => '🔍 Kiểm tra thanh toán', 'callback_data' => 'bin_check_' . $depositCode],
+                    ['text' => '❌ Hủy giao dịch', 'callback_data' => 'cancel_dep_' . $depositCode],
+                ],
             ]);
-            $this->telegram->editOrSend($chatId, $messageId, '⏳ Chưa tìm thấy giao dịch hợp lệ. Vui lòng thử lại sau 10–15 giây.', $retryKeyboard);
+            $this->telegram->editOrSend($chatId, $messageId, '⏳ Chưa tìm thấy giao dịch hợp lệ. Vui lòng thử lại sau 10-15 giây.', $retryKeyboard);
             return;
         }
 
@@ -702,12 +694,12 @@ trait TelegramBotServiceDepositTrait
             $msg = $this->buildBinanceSuccessMessage($freshUser ?? $user, $siteConfig);
             if ($messageId > 0)
                 $this->telegram->deleteMessage($chatId, $messageId);
-            $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
-            if (empty($domain))
-                $domain = 'kaishop.id.vn';
-            $qrPath = get_setting('binance_qr_image', 'assets/images/qr_binane.jpg');
-            $photoUrl = "https://{$domain}/{$qrPath}";
-            $this->telegram->sendPhotoTo($chatId, $photoUrl, $msg);
+            $this->sendTelegramMediaOrText(
+                $chatId,
+                0,
+                (string) get_setting('binance_qr_image', 'assets/images/qr_binane.jpg'),
+                $msg
+            );
             return;
         }
 
@@ -734,6 +726,118 @@ trait TelegramBotServiceDepositTrait
         return "🟡 <b>BINANCE PAY — THANH TOÁN THÀNH CÔNG</b>\n\n"
             . "✅ Đã nhận tiền vào tài khoản!\n"
             . "💰 Số dư hiện tại: <b>\${$balanceUsd}</b> (~{$balanceVndFmt} VND)";
+    }
+
+    /**
+     * @param array<string,mixed> $deposit
+     */
+    private function buildBinanceExpiredMessage(array $deposit): string
+    {
+        $depositCode = htmlspecialchars((string) ($deposit['deposit_code'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $usdtAmount = number_format((float) ($deposit['usdt_amount'] ?? 0), 2, '.', '');
+
+        return "⏰ <b>YÊU CẦU NẠP BINANCE PAY ĐÃ HẾT HẠN</b>\n\n"
+            . "📋 Mã nạp: <code>{$depositCode}</code>\n\n"
+            . "💰 USDT yêu cầu: <b>{$usdtAmount} USDT</b>\n\n"
+            . "Lệnh đã quá 5 phút và tự động hủy.\n"
+            . "Nếu đã chuyển tiền, vui lòng liên hệ hỗ trợ kèm TXID";
+    }
+
+    private function sendTelegramMediaOrText(string $chatId, int $messageId, string $imagePath, string $message, ?array $markup = null): void
+    {
+        $sendOptions = $markup ? ['reply_markup' => $markup] : [];
+        $imageUrl = $this->resolveTelegramPublicImageUrl($imagePath);
+        if ($imageUrl !== '' && $this->telegram->sendPhotoTo($chatId, $imageUrl, $message, $sendOptions)) {
+            if ($messageId > 0) {
+                $this->telegram->deleteMessage($chatId, $messageId);
+            }
+            return;
+        }
+
+        $localImagePath = $this->resolveTelegramLocalImagePath($imagePath);
+        if ($localImagePath !== '' && class_exists('CURLFile') && $this->telegram->sendPhotoTo($chatId, new CURLFile($localImagePath), $message, $sendOptions)) {
+            if ($messageId > 0) {
+                $this->telegram->deleteMessage($chatId, $messageId);
+            }
+            return;
+        }
+
+        $this->telegram->editOrSend($chatId, $messageId, $message, $markup);
+    }
+
+    private function resolveTelegramPublicImageUrl(string $imagePath): string
+    {
+        $resolvedPath = trim($imagePath);
+        if ($resolvedPath === '') {
+            return '';
+        }
+
+        $resolvedUrl = trim((string) asset($resolvedPath));
+        if ($resolvedUrl === '') {
+            return '';
+        }
+
+        if (!preg_match('~^https?://~i', $resolvedUrl)) {
+            $baseUrl = rtrim((string) (defined('BASE_URL') ? BASE_URL : ''), '/');
+            if ($baseUrl === '') {
+                return '';
+            }
+            $resolvedUrl = $baseUrl . '/' . ltrim($resolvedUrl, '/');
+        }
+
+        $host = strtolower(trim((string) parse_url($resolvedUrl, PHP_URL_HOST)));
+        if ($host === '' || !$this->isTelegramReachableHost($host)) {
+            return '';
+        }
+
+        return $resolvedUrl;
+    }
+
+    private function resolveTelegramLocalImagePath(string $imagePath): string
+    {
+        $resolvedPath = trim($imagePath);
+        if ($resolvedPath === '' || preg_match('~^https?://~i', $resolvedPath)) {
+            return '';
+        }
+
+        $urlPath = (string) (parse_url($resolvedPath, PHP_URL_PATH) ?? $resolvedPath);
+        $normalizedPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($urlPath, '/\\'));
+        $appDir = trim((string) (defined('APP_DIR') ? APP_DIR : ''), '/\\');
+
+        if ($appDir !== '') {
+            $appDirPrefix = $appDir . DIRECTORY_SEPARATOR;
+            if (stripos($normalizedPath, $appDirPrefix) === 0) {
+                $normalizedPath = substr($normalizedPath, strlen($appDirPrefix));
+            }
+        }
+
+        $projectRoot = dirname(__DIR__, 2);
+        $absolutePath = $projectRoot . DIRECTORY_SEPARATOR . $normalizedPath;
+        return is_file($absolutePath) ? $absolutePath : '';
+    }
+
+    private function isTelegramReachableHost(string $host): bool
+    {
+        $normalizedHost = trim(strtolower($host), '[]');
+        if ($normalizedHost === '' || $normalizedHost === 'localhost' || $normalizedHost === '127.0.0.1' || $normalizedHost === '::1') {
+            return false;
+        }
+
+        if (filter_var($normalizedHost, FILTER_VALIDATE_IP)) {
+            return (bool) filter_var($normalizedHost, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+        }
+
+        if (!str_contains($normalizedHost, '.')) {
+            return false;
+        }
+
+        foreach (['.local', '.localhost', '.test', '.invalid'] as $suffix) {
+            if (str_ends_with($normalizedHost, $suffix)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
