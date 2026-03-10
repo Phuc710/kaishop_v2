@@ -366,7 +366,7 @@
                 self.stopPolling();
                 self.clearActiveDepositSnapshot();
                 alertInfo('Giao dịch đã hết thời gian. Vui lòng tạo giao dịch mới.').then(function () {
-                    window.location.reload();
+                    window.location.href = window.location.pathname;
                 });
             }
         }
@@ -410,7 +410,7 @@
             this.stopAll();
             this.clearActiveDepositSnapshot();
             alertInfo('Giao dịch đã hết thời gian.').then(function () {
-                window.location.reload();
+                window.location.href = window.location.pathname;
             });
             return true;
         }
@@ -418,7 +418,7 @@
         if (res.status === 'cancelled') {
             this.stopAll();
             this.clearActiveDepositSnapshot();
-            window.location.reload();
+            window.location.href = window.location.pathname;
             return true;
         }
 
@@ -603,7 +603,7 @@
                 if (res && res.success) {
                     self.stopAll();
                     self.clearActiveDepositSnapshot();
-                    window.location.reload();
+                    window.location.href = window.location.pathname;
                     return;
                 }
                 alertError((res && res.message) ? res.message : 'Không thể hủy giao dịch');

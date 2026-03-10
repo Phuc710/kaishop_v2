@@ -206,7 +206,6 @@
 .user-page-content-col {
     align-self: flex-start !important;
     margin-top: 0 !important;
-    padding-top: 24px !important;
 }
 
 /* PC-only sticky sidebar */
@@ -820,17 +819,20 @@ body.auth-layout .header-primary {
     }
 
     .deposit-info-row {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
-    .deposit-info-actions {
-        width: 100%;
+        align-items: center;
+        flex-direction: row;
         justify-content: space-between;
     }
 
+    .deposit-info-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+    }
+
     .deposit-info-value {
-        text-align: left;
+        text-align: right;
     }
 
     main.bg-light section.py-5 {
