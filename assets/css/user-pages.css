@@ -350,7 +350,7 @@ body.auth-layout .header-primary {
 }
 
 .profile-card-header--with-actions {
-    align-items: flex-start;
+    align-items: center;
     gap: 12px;
 }
 
@@ -790,9 +790,11 @@ body.auth-layout .header-primary {
     }
 
     .profile-card-header {
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
         gap: 12px;
+        flex-wrap: wrap;
     }
 
     .balance-amount {
