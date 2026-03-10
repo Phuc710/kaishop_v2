@@ -3834,7 +3834,7 @@ Dashboard CSS Start
 .dashboard-profile {
     border: none;
     padding: 8px;
-    min-width: 180px;
+    min-width: 65vw;
     margin-top: 10px !important;
 }
 

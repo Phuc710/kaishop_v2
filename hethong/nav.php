@@ -451,21 +451,8 @@ foreach ($authNavPaths as $p) {
                         <?php endif; ?>
                     <?php endforeach; ?>
 
-                    <li class="nav-divider"></li>
-
-                    <?php if (isset($_SESSION['session'])): ?>
-                        <li class="nav-item">
-                            <a class="nav-link" href="javascript:void(0)"
-                                onclick="SwalHelper.confirmLogout('<?= url('logout') ?>')">
-                                <div class="nav-link-content">
-                                    <span class="nav-icon" style="color: #dc3545;">
-                                        <i class="fa-solid fa-right-from-bracket"></i>
-                                    </span>
-                                    <span class="nav-text" style="color: #dc3545; font-weight: 600;">Đăng xuất</span>
-                                </div>
-                            </a>
-                        </li>
-                    <?php else: ?>
+                    <?php if (!isset($_SESSION['session'])): ?>
+                        <li class="nav-divider"></li>
                         <li class="nav-item">
                             <a class="nav-link" href="<?= url('login') ?>">
                                 <div class="nav-link-content">
@@ -519,9 +506,24 @@ foreach ($authNavPaths as $p) {
                             </button>
 
 
-                            <?php $publicUserDropdownItems = NavConfig::publicUserDropdownItems(((int) ($user['level'] ?? 0)) === 9); ?>
+                            <?php 
+                            $publicUserDropdownItems = NavConfig::publicUserDropdownItems(((int) ($user['level'] ?? 0)) === 9); 
+                            $userSidebarItems = NavConfig::userSidebarItems();
+                            $mobileDropdownItems = [];
+                            if (((int) ($user['level'] ?? 0)) === 9) {
+                                $mobileDropdownItems[] = [
+                                    'type' => 'link',
+                                    'href' => url('admin'),
+                                    'icon' => 'fa-solid fa-gear',
+                                    'color' => '#ef4444',
+                                    'label' => 'Admin',
+                                ];
+                            }
+                            $mobileDropdownItems = array_merge($mobileDropdownItems, $userSidebarItems);
+                            ?>
                             <ul class="dashboard-profile dropdown-menu"
                                 style="position: absolute; inset: 0px 0px auto auto; margin: 0px; transform: translate3d(0px, 58.4px, 0px);">
+                                <!-- Desktop Items -->
                                 <?php foreach ($publicUserDropdownItems as $dropdownItem): ?>
                                     <?php
                                     $dropdownType = (string) ($dropdownItem['type'] ?? 'link');
@@ -529,7 +531,7 @@ foreach ($authNavPaths as $p) {
                                     $dropdownLabel = htmlspecialchars((string) ($dropdownItem['label'] ?? ''), ENT_QUOTES, 'UTF-8');
                                     $dropdownHref = htmlspecialchars((string) ($dropdownItem['href'] ?? '#'), ENT_QUOTES, 'UTF-8');
                                     ?>
-                                    <li>
+                                    <li class="d-none d-md-block">
                                         <?php if ($dropdownType === 'logout'): ?>
                                             <a class="dashboard-profile-item dropdown-item logout-item" href="javascript:void(0)"
                                                 onclick="SwalHelper.confirmLogout('<?= $dropdownHref ?>')">
@@ -538,6 +540,30 @@ foreach ($authNavPaths as $p) {
                                         <?php else: ?>
                                             <a class="dashboard-profile-item dropdown-item" href="<?= $dropdownHref ?>">
                                                 <i class="<?= $dropdownIcon ?>"></i><?= $dropdownLabel ?>
+                                            </a>
+                                        <?php endif; ?>
+                                    </li>
+                                <?php endforeach; ?>
+
+                                <!-- Mobile Items (replaces sidebar) -->
+                                <?php foreach ($mobileDropdownItems as $dropdownItem): ?>
+                                    <?php
+                                    $dropdownType = (string) ($dropdownItem['type'] ?? 'link');
+                                    $dropdownIcon = htmlspecialchars((string) ($dropdownItem['icon'] ?? ''), ENT_QUOTES, 'UTF-8');
+                                    $dropdownLabel = htmlspecialchars((string) ($dropdownItem['label'] ?? ''), ENT_QUOTES, 'UTF-8');
+                                    $dropdownHref = htmlspecialchars((string) ($dropdownItem['href'] ?? '#'), ENT_QUOTES, 'UTF-8');
+                                    $dropdownColor = (string) ($dropdownItem['color'] ?? '');
+                                    $iconStyle = $dropdownColor !== '' ? ' style="color: ' . $dropdownColor . ' !important;"' : '';
+                                    ?>
+                                    <li class="d-md-none">
+                                        <?php if ($dropdownType === 'logout'): ?>
+                                            <a class="dashboard-profile-item dropdown-item logout-item" href="javascript:void(0)"
+                                                onclick="SwalHelper.confirmLogout('<?= $dropdownHref ?>')">
+                                                <i class="<?= $dropdownIcon ?>"<?= $iconStyle ?>></i><?= $dropdownLabel ?>
+                                            </a>
+                                        <?php else: ?>
+                                            <a class="dashboard-profile-item dropdown-item" href="<?= $dropdownHref ?>">
+                                                <i class="<?= $dropdownIcon ?>"<?= $iconStyle ?>></i><?= $dropdownLabel ?>
                                             </a>
                                         <?php endif; ?>
                                     </li>
