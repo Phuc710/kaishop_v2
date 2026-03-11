@@ -6,7 +6,7 @@
     $siteName = (string) ($chungapi['ten_web'] ?? 'KaiShop');
     $seoTitle = 'Chính Sách | ' . $siteName;
     $seoDescription = 'Tuyên bố miễn trừ trách nhiệm và chính sách sử dụng dịch vụ tại ' . $siteName . '.';
-    $seoKeywords = 'chính sách, quy định, miễn trừ trách nhiệm, mmo, dịch vụ game, nạp tiền tự động, ' . $siteName;
+    $seoKeywords = 'chính sách hoàn tiền, chính sách KaiShop, điều khoản dịch vụ số, miễn trừ trách nhiệm, nạp tiền tự động 24/7 chính sách, ' . $siteName;
     $seoRobots = 'index, follow';
     ?>
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>
@@ -66,13 +66,15 @@
     <?php require __DIR__ . '/../../hethong/foot.php'; ?>
 
     <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "WebPage",
-        "name": "Chính Sách | <?= htmlspecialchars($siteName) ?>",
-        "description": "Tuyên bố miễn trừ trách nhiệm và chính sách sử dụng dịch vụ tại <?= htmlspecialchars($siteName) ?>.",
-        "inLanguage": "vi"
-    }
+    <?= json_encode([
+        '@context' => 'https://schema.org',
+        '@type' => 'WebPage',
+        'name' => 'Chính Sách & Quy Định | ' . $siteName,
+        'description' => 'Tuyên bố miễn trừ trách nhiệm và chính sách sử dụng dịch vụ tại ' . $siteName . '.',
+        'inLanguage' => 'vi',
+        'url' => url('chinh-sach'),
+        'isPartOf' => ['@type' => 'WebSite', 'url' => url(''), 'name' => $siteName],
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
     </script>
 </body>
 

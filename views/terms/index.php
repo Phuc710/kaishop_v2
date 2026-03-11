@@ -6,7 +6,7 @@
     $siteName = (string) ($chungapi['ten_web'] ?? 'KaiShop');
     $seoTitle = 'Điều Khoản & Điều Kiện | ' . $siteName;
     $seoDescription = 'Điều khoản sử dụng dịch vụ, hoàn tiền, bảo hành và bảo mật tài khoản tại ' . $siteName . '.';
-    $seoKeywords = 'điều khoản, điều kiện, hoàn tiền, bảo hành, bảo mật, mmo, nạp tiền 24/7, ' . $siteName;
+    $seoKeywords = 'điều khoản hoàn tiền KaiShop, điều khoản dịch vụ số, bảo hành tài khoản, bảo mật đăng nhập, nạp tiền tự động 24/7 điều khoản, ' . $siteName;
     $seoRobots = 'index, follow';
     ?>
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>
@@ -79,13 +79,15 @@
     <?php require __DIR__ . '/../../hethong/foot.php'; ?>
 
     <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "WebPage",
-        "name": "Điều Khoản & Điều Kiện | <?= htmlspecialchars($siteName) ?>",
-        "description": "Điều khoản sử dụng dịch vụ, hoàn tiền, bảo hành và bảo mật tài khoản tại <?= htmlspecialchars($siteName) ?>.",
-        "inLanguage": "vi"
-    }
+    <?= json_encode([
+        '@context' => 'https://schema.org',
+        '@type' => 'WebPage',
+        'name' => 'Điều Khoản & Điều Kiện | ' . $siteName,
+        'description' => 'Điều khoản sử dụng dịch vụ, hoàn tiền, bảo hành và bảo mật tài khoản tại ' . $siteName . '.',
+        'inLanguage' => 'vi',
+        'url' => url('dieu-khoan'),
+        'isPartOf' => ['@type' => 'WebSite', 'url' => url(''), 'name' => $siteName],
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
     </script>
 </body>
 

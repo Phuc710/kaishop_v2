@@ -110,7 +110,14 @@ $ogType = isset($seoOgType) && trim((string) $seoOgType) !== '' ? trim((string) 
 <?php endif; ?>
 <meta name="robots" content="<?= htmlspecialchars($seoRobotsValue, ENT_QUOTES, 'UTF-8') ?>">
 <meta name="theme-color" content="#ff6900">
+<meta name="author" content="<?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?>">
+<meta name="revisit-after" content="3 days">
+<meta name="geo.region" content="VN">
+<meta name="geo.placename" content="Việt Nam">
+<meta name="language" content="Vietnamese">
 <link rel="canonical" href="<?= htmlspecialchars($seoCanonicalValue, ENT_QUOTES, 'UTF-8') ?>">
+<link rel="alternate" hreflang="vi" href="<?= htmlspecialchars($seoCanonicalValue, ENT_QUOTES, 'UTF-8') ?>">
+<link rel="alternate" hreflang="x-default" href="<?= htmlspecialchars($seoCanonicalValue, ENT_QUOTES, 'UTF-8') ?>">
 
 <meta property="og:locale" content="vi_VN">
 <meta property="og:type" content="<?= htmlspecialchars($ogType, ENT_QUOTES, 'UTF-8') ?>">

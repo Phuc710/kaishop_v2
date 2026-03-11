@@ -348,11 +348,26 @@
                 }
             },
             error: function (xhr, status, error) {
-                var errorMsg = 'Lỗi kết nối server: ' + error;
+                // Parse server JSON response (dataType:'text' so responseJSON may be null)
+                var serverMsg = '';
+                try {
+                    var parsed = JSON.parse(xhr.responseText || '{}');
+                    serverMsg = parsed.error || parsed.message || (Array.isArray(parsed.details) ? parsed.details.join(', ') : '');
+                } catch (e) {}
+
+                var errorMsg;
                 if (xhr.status === 413) {
-                    errorMsg = 'File upload quá lớn so với giới hạn của hosting (413 Request Entity Too Large)';
+                    errorMsg = 'File upload quá lớn. Vui lòng chọn ảnh nhỏ hơn 32MB.';
                 } else if (xhr.status === 500) {
-                    errorMsg = 'Lỗi hệ thống từ server (500 Internal Server Error). Vui lòng kiểm tra lại cấu hình PHP.';
+                    errorMsg = 'Lỗi hệ thống server (500). Vui lòng kiểm tra cấu hình PHP.';
+                } else if (xhr.status === 403) {
+                    errorMsg = 'Không có quyền upload ảnh. Vui lòng đăng nhập lại.';
+                } else if (xhr.status === 419) {
+                    errorMsg = 'Phiên đăng nhập hết hạn (CSRF). Vui lòng tải lại trang.';
+                } else if (serverMsg) {
+                    errorMsg = serverMsg;
+                } else {
+                    errorMsg = 'Lỗi kết nối server (HTTP ' + xhr.status + '). ' + (error || '');
                 }
                 Swal.fire({
                     icon: 'error',

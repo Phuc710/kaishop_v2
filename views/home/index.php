@@ -3,7 +3,7 @@
 
 <head>
     <?php
-    $seoTitle = "KaiShop - Nạp tiền Auto 24/7, Dịch vụ MMO & Source Code Uy Tín";
+    $seoTitle = "KaiShop - Kho tài nguyên & Source Code Uy Tín";
     $seoDescription = "KaiShop chuyên cung cấp dịch vụ MMO, mua bán Source Code FREE và hệ thống nạp tiền tự động 24/7 siêu tốc qua Ngân hàng, MoMo, Binance. Giao dịch an toàn, bảo mật và uy tín hàng đầu.";
     $seoKeywords = "nạp tiền 24/7, nạp tiền tự động, dịch vụ mmo, mua source code, kaishop, nạp tiền giá rẻ, nạp tiền game";
 
@@ -50,7 +50,56 @@
         ],
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
     </script>
+    <script type="application/ld+json">
+    <?= json_encode([
+        '@context' => 'https://schema.org',
+        '@type' => 'FAQPage',
+        'mainEntity' => [
+            [
+                '@type' => 'Question',
+                'name' => 'KaiShop nạp tiền tự động qua những ngân hàng nào?',
+                'acceptedAnswer' => [
+                    '@type' => 'Answer',
+                    'text' => 'KaiShop hỗ trợ nạp tiền tự động 24/7 qua tất cả ngân hàng nội địa (Vietcombank, Techcombank, MB Bank, BIDV, VPBank...), ví MoMo và tiền mã hoá Binance (USDT).',
+                ],
+            ],
+            [
+                '@type' => 'Question',
+                'name' => 'KaiShop có an toàn và uy tín không?',
+                'acceptedAnswer' => [
+                    '@type' => 'Answer',
+                    'text' => 'KaiShop là hệ thống mua bán dịch vụ số hoạt động minh bạch. Mọi giao dịch nạp tiền được xử lý tự động qua SePay, lịch sử đơn hàng được lưu đầy đủ, và hỗ trợ 24/7 qua Telegram.',
+                ],
+            ],
+            [
+                '@type' => 'Question',
+                'name' => 'Sau khi mua hàng tôi nhận sản phẩm bằng cách nào?',
+                'acceptedAnswer' => [
+                    '@type' => 'Answer',
+                    'text' => 'Hệ thống giao hàng tự động ngay sau khi thanh toán thành công. Với sản phẩm tài khoản và source code, thông tin được giao ngay trong đơn hàng. Với dịch vụ thủ công, admin sẽ xử lý trong thời gian sớm nhất.',
+                ],
+            ],
+            [
+                '@type' => 'Question',
+                'name' => 'KaiShop bán những dịch vụ gì?',
+                'acceptedAnswer' => [
+                    '@type' => 'Answer',
+                    'text' => 'KaiShop cung cấp: tài khoản game, dịch vụ MMO (marketing online), source code website/app, dịch vụ tự động hoá, và các sản phẩm số giá rẻ uy tín.',
+                ],
+            ],
+            [
+                '@type' => 'Question',
+                'name' => 'Nạp tiền vào KaiShop mất bao lâu?',
+                'acceptedAnswer' => [
+                    '@type' => 'Answer',
+                    'text' => 'Hệ thống xử lý nạp tiền tự động trong vòng 1-60 giây. Tiền ập vào tài khoản ngay sau khi ngân hàng/ví điện tử xác nhận giao dịch thành công.',
+                ],
+            ],
+        ],
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
+    </script>
     <title><?= htmlspecialchars($seoTitle, ENT_QUOTES, 'UTF-8') ?></title>
+
     <style>
         .category-section-wrapper.d-none {
             display: none !important;

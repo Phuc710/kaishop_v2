@@ -1,9 +1,25 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 
+// Increase upload limits for this endpoint
+@ini_set('upload_max_filesize', '32M');
+@ini_set('post_max_size', '64M');
+@ini_set('memory_limit', '256M');
+
 ob_start();
 require_once __DIR__ . '/../config/app.php';
 ob_end_clean();
+
+// Detect when post_max_size is exceeded (PHP silently drops $_POST and $_FILES)
+$contentLength = isset($_SERVER['CONTENT_LENGTH']) ? (int) $_SERVER['CONTENT_LENGTH'] : 0;
+if ($contentLength > 0 && empty($_POST) && empty($_FILES)) {
+    http_response_code(413);
+    echo json_encode([
+        'success' => false,
+        'error' => 'File upload quá lớn. Giới hạn tối đa là 32MB mỗi file.',
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
 function image_json_response(int $status, array $payload): void
 {
