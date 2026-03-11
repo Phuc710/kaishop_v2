@@ -9,7 +9,40 @@ $activePage = 'history';
 require __DIR__ . '/layout/header.php';
 ?>
 
-<div class="profile-card">
+<style>
+    #history-table th {
+        min-width: 100px;
+    }
+
+    #history-balance-page .user-history-table {
+        width: 100% !important;
+        min-width: 920px;
+    }
+
+    #history-balance-page .user-history-table th,
+    #history-balance-page .user-history-table td {
+        padding: 10px 12px !important;
+        white-space: nowrap;
+    }
+
+    /* Chiều rộng các cột tự động thu lại */
+    .balance-cell-time,
+    .balance-cell-before,
+    .balance-cell-change,
+    .balance-cell-after {
+        width: 1%;
+    }
+
+    /* Riêng cột nội dung cho dài ra + wrap text nếu cần thiết */
+    #history-balance-page .user-history-table thead th:last-child,
+    #history-balance-page .user-history-table tbody td.balance-cell-reason {
+        text-align: left !important;
+        white-space: normal !important;
+        min-width: 200px;
+    }
+</style>
+
+<div class="profile-card" id="history-balance-page">
     <div class="profile-card-header profile-card-header--with-actions">
         <div>
             <h5 class="text-dark mb-1">BIẾN ĐỘNG SỐ DƯ</h5>
@@ -68,20 +101,19 @@ require __DIR__ . '/layout/header.php';
             </div>
         </div>
 
-        <div class="table-responsive user-history-table-wrap">
-            <table id="history-table" class="table table-hover align-middle mb-0 user-history-table">
-                <thead class="table-light">
-                    <tr>
-                        <th class="py-3 text-nowrap text-center">THỜI GIAN</th>
-                        <th class="py-3 text-nowrap text-center">SỐ DƯ TRƯỚC</th>
-                        <th class="py-3 text-nowrap text-center">BIẾN ĐỘNG</th>
-                        <th class="py-3 text-nowrap text-center">SỐ DƯ HIỆN TẠI</th>
-                        <th class="py-3 text-nowrap text-center">NỘI DUNG BIẾN ĐỘNG</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
+        <!-- Table: scroll ngang khi cần, không bao giờ rộng hơn container -->
+        <table id="history-table" class="table table-hover align-middle mb-0 user-history-table">
+            <thead class="table-light">
+                <tr>
+                    <th class="py-3 text-nowrap text-start">THỜI GIAN</th>
+                    <th class="py-3 text-nowrap text-start">SỐ DƯ TRƯỚC</th>
+                    <th class="py-3 text-nowrap text-start">BIẾN ĐỘNG</th>
+                    <th class="py-3 text-nowrap text-start">SỐ DƯ HIỆN TẠI</th>
+                    <th class="py-3 text-nowrap text-start">NỘI DUNG BIẾN ĐỘNG</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
     </div>
 </div>
 
@@ -162,6 +194,7 @@ require __DIR__ . '/layout/header.php';
 
         const table = $('#history-table').DataTable({
             serverSide: true,
+            autoWidth: false,
             ajax: {
                 url: BASE_URL + '/api/history-balance',
                 type: 'POST',
@@ -172,34 +205,35 @@ require __DIR__ . '/layout/header.php';
                 }
             },
             columns: [
+               
                 {
                     data: null,
-                    className: 'text-center',
-                    render: function (row) {
-                        return renderSharedTimeCell(row);
-                    }
-                },
-                {
-                    data: null,
-                    className: 'text-center text-nowrap',
+                    className: 'text-left text-nowrap balance-cell-before',
                     render: function (row) { return renderBalanceMoney(row.before_amount, 'before', row); }
                 },
                 {
                     data: null,
-                    className: 'text-center text-nowrap',
+                    className: 'text-left text-nowrap balance-cell-change',
                     render: function (row) { return renderBalanceMoney(row.change_amount, 'change', row); }
                 },
                 {
                     data: null,
-                    className: 'text-center text-nowrap',
+                    className: 'text-left text-nowrap balance-cell-after',
                     render: function (row) { return renderBalanceMoney(row.after_amount, 'after', row); }
                 },
-                { data: 'reason', className: 'text-start text-wrap' }
+                { data: 'reason', className: 'text-start text-wrap balance-cell-reason' },
+                 {
+                    data: null,
+                    className: 'text-left balance-cell-time',
+                    render: function (row) {
+                        return renderSharedTimeCell(row);
+                    }
+                }
             ],
             order: [],
             ordering: false,
             pageLength: 10,
-            dom: 't<"d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3"<"text-muted small"i><"d-flex align-items-center gap-3"p>>',
+            dom: '<"user-history-table-wrap" t><"d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3"<"text-muted small"i><"d-flex align-items-center gap-3"p>>',
             drawCallback: function () {
                 if (window.KAI_CURRENCY && typeof window.KAI_CURRENCY.refresh === 'function') {
                     window.KAI_CURRENCY.refresh();

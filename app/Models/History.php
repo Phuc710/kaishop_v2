@@ -18,9 +18,9 @@ class History extends Model
     /**
      * Get user history with filtering + pagination (DESC by event time)
      */
-    public function getUserHistory($username, $filters, $limit, $offset)
+    public function getUserHistory($userContext, $filters, $limit, $offset)
     {
-        $rows = $this->getFilteredUnifiedRows((string) $username, (array) $filters);
+        $rows = $this->getFilteredUnifiedRows($this->normalizeUserContext($userContext), (array) $filters);
         $limit = max(1, (int) $limit);
         $offset = max(0, (int) $offset);
         return array_slice($rows, $offset, $limit);
@@ -31,17 +31,17 @@ class History extends Model
      *
      * @return array<int,array<string,mixed>>
      */
-    public function getAllUserHistory($username, $filters): array
+    public function getAllUserHistory($userContext, $filters): array
     {
-        return $this->getFilteredUnifiedRows((string) $username, (array) $filters);
+        return $this->getFilteredUnifiedRows($this->normalizeUserContext($userContext), (array) $filters);
     }
 
     /**
      * Count total user history rows after filters
      */
-    public function countUserHistory($username, $filters)
+    public function countUserHistory($userContext, $filters)
     {
-        return count($this->getFilteredUnifiedRows((string) $username, (array) $filters));
+        return count($this->getFilteredUnifiedRows($this->normalizeUserContext($userContext), (array) $filters));
     }
 
     /**
@@ -81,9 +81,9 @@ class History extends Model
     /**
      * @return array<int,array<string,mixed>>
      */
-    private function getFilteredUnifiedRows(string $username, array $filters): array
+    private function getFilteredUnifiedRows(array $userContext, array $filters): array
     {
-        $rows = $this->getUnifiedRows($username);
+        $rows = $this->getUnifiedRows($userContext);
 
         $search = trim((string) ($filters['search'] ?? ''));
         if ($search !== '') {
@@ -117,11 +117,11 @@ class History extends Model
      *
      * @return array<int,array<string,mixed>>
      */
-    private function getUnifiedRows(string $username): array
+    private function getUnifiedRows(array $userContext): array
     {
         // Try LSBD first (unified balance log with stored before/after)
         if ($this->tableExists('lich_su_bien_dong_so_du')) {
-            $lsbdRows = $this->getLsbdRows($username);
+            $lsbdRows = $this->getLsbdRows($userContext);
             if ($lsbdRows !== []) {
                 // LSBD is the authoritative source — skip legacy tables to avoid duplicates
                 return $lsbdRows;
@@ -129,7 +129,7 @@ class History extends Model
         }
 
         // Fallback: legacy tables for users with no LSBD data (old accounts)
-        return $this->getLegacyRows($username);
+        return $this->getLegacyRows($userContext);
     }
 
     /**
@@ -138,7 +138,7 @@ class History extends Model
      *
      * @return array<int,array<string,mixed>>
      */
-    private function getLsbdRows(string $username): array
+    private function getLsbdRows(array $userContext): array
     {
         $rows = [];
         try {
@@ -146,9 +146,13 @@ class History extends Model
             if ($this->hasColumn('lich_su_bien_dong_so_du', 'source_channel')) {
                 $cols[] = 'source_channel';
             }
-            $sql = 'SELECT ' . implode(', ', $cols) . ' FROM `lich_su_bien_dong_so_du` WHERE `username` = :username';
+            [$whereSql, $params] = $this->buildLsbdUserWhere($userContext);
+            if ($whereSql === '') {
+                return [];
+            }
+            $sql = 'SELECT ' . implode(', ', $cols) . ' FROM `lich_su_bien_dong_so_du` WHERE ' . $whereSql;
             $stmt = $this->db->prepare($sql);
-            $stmt->execute(['username' => $username]);
+            $stmt->execute($params);
             foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
                 $change = (int) ($row['change_amount'] ?? 0);
                 $ts = $this->parseEventTimestamp($row['created_at'] ?? null, $row['time'] ?? null);
@@ -203,9 +207,13 @@ class History extends Model
      *
      * @return array<int,array<string,mixed>>
      */
-    private function getLegacyRows(string $username): array
+    private function getLegacyRows(array $userContext): array
     {
         $rows = [];
+        $username = trim((string) ($userContext['username'] ?? ''));
+        if ($username === '') {
+            return $rows;
+        }
 
         if ($this->tableExists('lich_su_hoat_dong')) {
             $hasCa = $this->hasColumn('lich_su_hoat_dong', 'created_at');
@@ -577,6 +585,49 @@ class History extends Model
         $value = preg_replace('/[^\p{L}\p{N}\s\-\+]/u', ' ', $value) ?? $value;
         $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
         return trim($value);
+    }
+
+    /**
+     * @param mixed $userContext
+     * @return array{user_id:int,username:string}
+     */
+    private function normalizeUserContext($userContext): array
+    {
+        if (is_array($userContext)) {
+            return [
+                'user_id' => max(0, (int) ($userContext['user_id'] ?? $userContext['id'] ?? 0)),
+                'username' => trim((string) ($userContext['username'] ?? '')),
+            ];
+        }
+
+        return [
+            'user_id' => 0,
+            'username' => trim((string) $userContext),
+        ];
+    }
+
+    /**
+     * @param array{user_id:int,username:string} $userContext
+     * @return array{0:string,1:array<string,mixed>}
+     */
+    private function buildLsbdUserWhere(array $userContext): array
+    {
+        $parts = [];
+        $params = [];
+        $userId = (int) ($userContext['user_id'] ?? 0);
+        $username = trim((string) ($userContext['username'] ?? ''));
+
+        if ($userId > 0 && $this->hasColumn('lich_su_bien_dong_so_du', 'user_id')) {
+            $parts[] = '`user_id` = :user_id';
+            $params['user_id'] = $userId;
+        }
+
+        if ($username !== '' && $this->hasColumn('lich_su_bien_dong_so_du', 'username')) {
+            $parts[] = '`username` = :username';
+            $params['username'] = $username;
+        }
+
+        return [implode(' OR ', $parts), $params];
     }
 
     private function tableExists(string $table): bool

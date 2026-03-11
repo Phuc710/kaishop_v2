@@ -45,6 +45,10 @@ class HistoryController extends Controller
 
         $user = $this->authService->getCurrentUser();
         $username = $user['username'];
+        $userContext = [
+            'id' => (int) ($user['id'] ?? 0),
+            'username' => (string) ($user['username'] ?? ''),
+        ];
 
         // DataTables parameters
         $draw = isset($_POST['draw']) ? (int) $_POST['draw'] : 1;
@@ -62,8 +66,8 @@ class HistoryController extends Controller
         ];
 
         // Get data
-        $recordsTotal = $this->historyModel->countUserHistory($username, []);
-        $allFilteredRows = $this->historyModel->getAllUserHistory($username, $filters);
+        $recordsTotal = $this->historyModel->countUserHistory($userContext, []);
+        $allFilteredRows = $this->historyModel->getAllUserHistory($userContext, $filters);
         $recordsFiltered = count($allFilteredRows);
 
         // Fetch fresh user balance

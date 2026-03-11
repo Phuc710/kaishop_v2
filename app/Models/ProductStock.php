@@ -9,12 +9,16 @@ class ProductStock extends Model
     protected $table = 'product_stock';
 
     protected ?TimeService $timeService = null;
+    private ?CryptoService $crypto = null;
 
     public function __construct()
     {
         parent::__construct();
         if (class_exists('TimeService')) {
             $this->timeService = TimeService::instance();
+        }
+        if (class_exists('CryptoService')) {
+            $this->crypto = new CryptoService();
         }
     }
 
@@ -113,7 +117,15 @@ class ProductStock extends Model
         $this->db->beginTransaction();
         try {
             $stmt = $this->db->prepare(
-                "SELECT id FROM {$this->table} WHERE product_id = ? AND status = 'available' ORDER BY id ASC LIMIT 1 FOR UPDATE"
+                "SELECT id
+                 FROM {$this->table}
+                 WHERE product_id = ? AND status = 'available'
+                 ORDER BY
+                    CASE WHEN created_at IS NULL THEN 1 ELSE 0 END ASC,
+                    created_at ASC,
+                    id ASC
+                 LIMIT 1
+                 FOR UPDATE"
             );
             $stmt->execute([$productId]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -228,6 +240,7 @@ class ProductStock extends Model
         }
 
         if ((string) ($existing['content'] ?? '') === $content) {
+            $this->syncOrderContentForSoldItem($existing, $content);
             return true;
         }
 
@@ -235,7 +248,9 @@ class ProductStock extends Model
             "UPDATE {$this->table} SET content=? WHERE id=?"
         );
         $stmt->execute([$content, $id]);
-        return $stmt->rowCount() > 0;
+        $updated = $stmt->rowCount() > 0;
+        $this->syncOrderContentForSoldItem($existing, $content);
+        return $updated;
     }
 
     public function releaseByOrderId(int $orderId): int
@@ -275,7 +290,10 @@ class ProductStock extends Model
         $stmt = $this->db->prepare(
             "SELECT * FROM {$this->table}
              WHERE product_id = ? AND status = 'available'
-             ORDER BY id ASC
+             ORDER BY
+                CASE WHEN created_at IS NULL THEN 1 ELSE 0 END ASC,
+                created_at ASC,
+                id ASC
              LIMIT 1
              FOR UPDATE"
         );
@@ -303,6 +321,31 @@ class ProductStock extends Model
         $row['order_id'] = $orderId;
         $row['sold_at'] = $now;
         return $row;
+    }
+
+    private function syncOrderContentForSoldItem(array $stockRow, string $content): void
+    {
+        $status = (string) ($stockRow['status'] ?? '');
+        $orderId = (int) ($stockRow['order_id'] ?? 0);
+        if ($status !== 'sold' || $orderId <= 0) {
+            return;
+        }
+
+        $storedContent = ($this->crypto instanceof CryptoService && $this->crypto->isEnabled())
+            ? $this->crypto->encryptString($content)
+            : $content;
+
+        try {
+            $stmt = $this->db->prepare(
+                "UPDATE `orders`
+                 SET `stock_content` = ?
+                 WHERE `id` = ?
+                 LIMIT 1"
+            );
+            $stmt->execute([$storedContent, $orderId]);
+        } catch (Throwable $e) {
+            // Keep stock update non-blocking if order sync fails.
+        }
     }
 }
 

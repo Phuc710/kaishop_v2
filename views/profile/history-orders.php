@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Lịch sử đơn hàng — History Orders Page
  * Layout: shared profile shell (header.php + footer.php)
@@ -15,26 +15,36 @@ require __DIR__ . '/layout/header.php';
 ?>
 
 <style>
-    /* Làm bảng gọn lại, cột khít nhau */
-    .user-history-table {
-        width: auto !important;
-        /* Không bắt buộc full 100% nếu nội dung ngắn */
-        min-width: 100%;
+    #order-history-page .user-history-table {
+        width: 100% !important;
+        min-width: 920px;
     }
 
-    .user-history-table th,
-    .user-history-table td {
+    #order-history-page .user-history-table th,
+    #order-history-page .user-history-table td {
         padding: 10px 12px !important;
-        /* Giảm padding cho khít */
         white-space: nowrap;
     }
 
-    /* Cột sản phẩm cho phép giãn, các cột khác co lại tối đa */
+    #order-history-page .user-history-table thead th:first-child,
+    #order-history-page .user-history-table tbody td.order-cell-product {
+        width: 5%;
+        min-width: 100px;
+        max-width: 100px;
+        text-align: left !important;
+    }
+
     .order-cell-product {
-        width: auto;
         white-space: normal !important;
-        /* Tên SP có thể xuống dòng nếu dài */
-        min-width: 200px;
+        vertical-align: middle;
+    }
+
+    .order-product-name {
+        display: -webkit-box;
+        overflow: hidden;
+        text-align: left !important;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
     }
 
     .order-cell-status,
@@ -43,7 +53,6 @@ require __DIR__ . '/layout/header.php';
     .order-cell-time,
     .order-cell-actions {
         width: 1%;
-        /* Co lại sát text */
     }
 
     .user-order-status {
@@ -124,7 +133,7 @@ require __DIR__ . '/layout/header.php';
             <table id="order-history-table" class="table table-hover align-middle mb-0 user-history-table">
                 <thead class="table-light">
                     <tr>
-                        <th class="py-3 text-nowrap">SẢN PHẨM</th>
+                        <th class="py-3 text-nowrap text-start">SẢN PHẨM</th>
                         <th class="py-3 text-nowrap text-center">TÌNH TRẠNG</th>
                         <th class="py-3 text-nowrap text-center">SL</th>
                         <th class="py-3 text-nowrap text-center">THANH TOÁN</th>
@@ -217,6 +226,7 @@ require __DIR__ . '/layout/header.php';
                 const self = this;
                 this.table = $('#order-history-table').DataTable({
                     serverSide: true,
+                    autoWidth: false,
                     ajax: {
                         url: this.baseUrl + '/api/history-orders',
                         type: 'POST',
@@ -231,9 +241,9 @@ require __DIR__ . '/layout/header.php';
                         // Cột: Sản phẩm — wrap text tự nhiên, không bao giờ rộng hơn container
                         {
                             data: 'product_name',
-                            className: 'order-cell-product',
+                            className: 'order-cell-product text-start',
                             render: function (data, type, row) {
-                                return '<div class="fw-semibold text-dark">' + escapeHtml(data || '') + '</div>';
+                                return '<div class="order-product-name fw-semibold text-dark text-start">' + escapeHtml(data || '') + '</div>';
                             }
                         },
                         // Cột: Tình trạng
@@ -277,7 +287,7 @@ require __DIR__ . '/layout/header.php';
                     order: [],
                     ordering: false,
                     pageLength: 10,
-                    dom: 't<"d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3"<"text-muted small"i><"d-flex align-items-center gap-3"p>>',
+                    dom: '<"user-history-table-wrap" t><"d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3"<"text-muted small"i><"d-flex align-items-center gap-3"p>>',
                     language: {
                         info: 'Hiển thị _START_ - _END_ trong tổng số _TOTAL_ đơn hàng',
                         infoEmpty: 'Chưa có đơn hàng nào',
