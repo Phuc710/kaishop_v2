@@ -297,8 +297,8 @@ class SepayWebhookController extends Controller
             'source_channel' => $sourceChannel,
         ]);
 
-        // 13. Log to Terminal
-        if (class_exists('TelegramLog')) {
+        // 13. Log to Terminal (Only if from Telegram)
+        if ($sourceChannel === SourceChannelHelper::BOTTELE && class_exists('TelegramLog')) {
             $logMsg = "💰 NẠP THÀNH CÔNG: " . ($username) . " + " . number_format($totalCredit) . "đ (Mã: " . $depositCode . ")";
             (new TelegramLog())->log($logMsg, 'INFO', 'INCOMING', 'DEPOSIT', [
                 'sepay_id' => $sepayId,

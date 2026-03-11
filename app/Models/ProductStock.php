@@ -346,6 +346,45 @@ class ProductStock extends Model
         } catch (Throwable $e) {
             // Keep stock update non-blocking if order sync fails.
         }
+
+        // Notify buyer via Telegram if they have a linked account
+        $this->notifyTelegramUserOfContentUpdate($orderId, $content);
+    }
+
+    private function notifyTelegramUserOfContentUpdate(int $orderId, string $newContent): void
+    {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT o.order_code, o.product_name, l.telegram_id
+                FROM `orders` o
+                LEFT JOIN `user_telegram_links` l ON l.user_id = o.user_id
+                WHERE o.id = ?
+                LIMIT 1
+            ");
+            $stmt->execute([$orderId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+            if (!$row || empty($row['telegram_id'])) {
+                return;
+            }
+
+            $orderCode = strtoupper(substr(hash('sha256', (string) ($row['order_code'] ?? '')), 0, 8));
+            $productName = htmlspecialchars((string) ($row['product_name'] ?? 'Sản phẩm'), ENT_QUOTES, 'UTF-8');
+            $contentEsc = htmlspecialchars($newContent, ENT_QUOTES, 'UTF-8');
+
+            if (!class_exists('TelegramService')) {
+                return;
+            }
+
+            $msg = "🔄 <b>CẬP NHẬT NỘI DUNG ĐƠN HÀNG</b>\n\n"
+                 . "📦 Sản phẩm: <b>{$productName}</b>\n"
+                 . "🔖 Mã đơn: <code>{$orderCode}</code>\n\n"
+                 . "🔑 Nội dung mới:\n<code>{$contentEsc}</code>";
+
+            (new TelegramService())->sendTo((string) $row['telegram_id'], $msg);
+        } catch (Throwable $e) {
+            // Non-blocking — Telegram notification failure must not affect stock update.
+        }
     }
 }
 

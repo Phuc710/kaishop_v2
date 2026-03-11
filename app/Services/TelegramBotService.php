@@ -169,7 +169,12 @@ class TelegramBotService
         $fromName = trim(($message['from']['first_name'] ?? '') . ' ' . ($message['from']['last_name'] ?? ''));
 
         $this->upsertTelegramUser($message['from']);
-        $this->writeLog("[MSG] {$fromName} ({$telegramId}): {$text}", 'INFO', 'INCOMING', 'MESSAGE');
+        // Only log MESSAGE if it is a command or part of an active flow
+        $isCommand = str_starts_with($text, '/');
+        $inFlow = $this->isPurchaseInputMode($telegramId) || $this->isDepositInputMode($telegramId) || $this->getBinanceSession($telegramId);
+        if ($isCommand || $inFlow) {
+            $this->writeLog("[MSG] {$fromName} ({$telegramId}): {$text}", 'INFO', 'INCOMING', 'MESSAGE');
+        }
 
         if (TelegramConfig::isMaintenanceEnabled() && !TelegramConfig::isAdmin($telegramId)) {
             $this->telegram->sendTo($chatId, TelegramConfig::maintenanceMessage());

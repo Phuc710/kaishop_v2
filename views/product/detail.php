@@ -1144,14 +1144,7 @@ if ($rawDescHtml !== '') {
             if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.purchaseResult === 'function') {
                 SwalHelper.purchaseResult(payload, {
                     historyUrl: historyUrl,
-                    detailUrl: detailUrl,
-                    onCompletedOpen: function () {
-                        if (window.KaiConfetti) {
-                            window.KaiConfetti.ensureReady().then(function () {
-                                window.KaiConfetti.fire();
-                            });
-                        }
-                    }
+                    detailUrl: detailUrl
                 });
                 return;
             }

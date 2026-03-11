@@ -550,8 +550,14 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
                             <td class="text-center align-middle"><a href="<?= url('admin/users/edit/') ?>${item.username}" class="font-weight-bold text-primary">${escapeHtml(item.username)}</a></td>
                             <td class="align-middle"><div class="small"><b class="text-dark">Yêu cầu:</b> <span class="text-muted">${escapeHtml(item.customer_input || 'N/A')}</span></div>${deliveryDiv}</td>
                             <td class="text-center align-middle">${statusBadge}</td>
-                            <td class="text-center align-middle">${item.created_at_display || item.created_at}</td>
-                            <td class="text-center align-middle">${item.status === 'completed' && item.fulfilled_at ? (item.fulfilled_at_display || item.fulfilled_at) : '<span class="text-muted small">—</span>'}</td>
+                            <td class="text-center align-middle">
+                                <span class="badge date-badge" data-toggle="tooltip" data-placement="top" title="${item.created_at_ago || ''}">${item.created_at_display || item.created_at || '—'}</span>
+                            </td>
+                            <td class="text-center align-middle">
+                                ${item.status === 'completed' && item.fulfilled_at
+                                ? `<span class="badge date-badge" data-toggle="tooltip" data-placement="top" title="${item.fulfilled_at_ago || ''}">${item.fulfilled_at_display || item.fulfilled_at}</span>`
+                                : '<span class="text-muted small">—</span>'}
+                            </td>
                             <td class="text-center align-middle">${actionBtns}</td>
                         </tr>`;
                     } else {
@@ -564,7 +570,7 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
                             : '<span class="text-muted small"><i class="fas fa-minus mr-1"></i>Chưa bán</span>';
 
                         const soldTime = (item.status === 'sold' && item.sold_at)
-                            ? `<div class="mt-1 small"><span class="text-danger font-weight-bold"><i class="far fa-clock mr-1"></i>Bán lúc:</span> <span class="text-muted">${item.sold_at_display || item.sold_at}</span></div>`
+                            ? `<div class="mt-1 small"><span class="text-danger font-weight-bold"><i class="far fa-clock mr-1"></i>Bán lúc:</span> <span class="badge date-badge" data-toggle="tooltip" data-placement="top" title="${item.sold_at_ago || ''}">${item.sold_at_display || item.sold_at}</span></div>`
                             : '';
 
                         const deleteBtn = item.status === 'available'
@@ -581,7 +587,9 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
                             </td>
                             <td class="text-center align-middle">${buyerLink}</td>
                             <td class="text-center align-middle">${statusBadge}</td>
-                            <td class="text-center align-middle">${item.created_at_display || item.created_at}</td>
+                            <td class="text-center align-middle">
+                                <span class="badge date-badge" data-toggle="tooltip" data-placement="top" title="${item.created_at_ago || ''}">${item.created_at_display || item.created_at || '—'}</span>
+                            </td>
                             <td class="text-center align-middle">
                                 <div class="btn-group">
                                     <button class="btn btn-search-dt btn-sm edit-stock-btn" data-id="${item.id}" data-content="${escapeHtml(item.content)}" title="${item.status === 'available' ? 'Sửa' : 'Sửa bảo hành'}"><i class="fas fa-edit"></i></button>

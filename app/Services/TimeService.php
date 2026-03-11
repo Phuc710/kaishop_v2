@@ -93,6 +93,10 @@ class TimeService
             'Y-m-d H:i',
             'd-m-Y H:i:s',
             'd/m/Y H:i:s',
+            'd-m-Y H:i',
+            'd/m/Y H:i',
+            'd-m-Y',
+            'd/m/Y',
             'H:i d-m-Y',
         ];
         foreach ($knownFormats as $format) {
@@ -191,7 +195,9 @@ class TimeService
             return '';
         }
 
-        $diff = max(0, $this->nowTs() - $ts);
+        $isFuture = ($ts > $this->nowTs());
+        $diff = abs($this->nowTs() - $ts);
+
         $units = [
             ['năm', 31536000],
             ['tháng', 2592000],
@@ -205,11 +211,11 @@ class TimeService
         foreach ($units as [$label, $seconds]) {
             $n = (int) floor($diff / $seconds);
             if ($n > 0) {
-                return $n . ' ' . $label . ' trước';
+                return $n . ' ' . $label . ($isFuture ? ' tới' : ' trước');
             }
         }
 
-        return 'vừa xong';
+        return $isFuture ? 'sắp tới' : 'vừa xong';
     }
 
     private function makeTimezone(string $name): DateTimeZone

@@ -8,9 +8,22 @@
 /* ── Product Grid ─────────────────────────────────── */
 .ds-product-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 20px;
     padding: 4px 0 20px;
+}
+
+@media (max-width: 1199.98px) {
+    .ds-product-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767.98px) {
+    .ds-product-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+    }
 }
 
 /* ── Card Base ────────────────────────────────────── */
@@ -205,18 +218,19 @@
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 8px;
 }
 
 .ds-price {
-    font-size: 18px;
+    font-size: 22px;
     font-weight: 800;
     color: #0d28fd;
-    letter-spacing: -0.3px;
+    letter-spacing: -0.4px;
+    line-height: 1.15;
 }
 
 .ds-old-price {
-    font-size: 12px;
+    font-size: 15px;
     color: #aaa;
     text-decoration: line-through;
 }
@@ -224,10 +238,11 @@
 .ds-discount {
     background: #dc3545;
     color: #fff;
-    padding: 1px 6px;
-    border-radius: 4px;
-    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 13px;
     font-weight: 700;
+    line-height: 1.1;
 }
 
 /* ── Offline / Unavailable ────────────────────────── */
@@ -518,22 +533,36 @@
 /* ── Responsive ───────────────────────────────────── */
 @media (max-width: 575px) {
     .ds-product-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: 1fr;
         gap: 12px;
+    }
+
+    .ds-price-row {
+        gap: 6px;
+        row-gap: 5px;
+    }
+
+    .ds-price {
+        flex: 0 0 auto;
+        max-width: none;
+        font-size: 23px;
+        line-height: 1.3;
+    }
+
+    .ds-old-price {
+        font-size: 18px;
+    }
+
+    .ds-discount {
+        font-size: 12px;
+        padding: 3px 8px;
+        border-radius: 5px;
     }
 
     .ds-card-title {
         font-size: 20px !important;
         min-height: 44px;
         line-height: 1.3;
-    }
-
-    .ds-price {
-        font-size: 22px;
-    }
-
-    .ds-old-price {
-        font-size: 14px;
     }
 
     .home-hero-banner {

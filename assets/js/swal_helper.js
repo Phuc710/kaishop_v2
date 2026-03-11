@@ -306,7 +306,7 @@ const SwalHelper = {
             '.ks-order-modal__btn:hover{filter:brightness(.95);transform:translateY(-2px);box-shadow:0 4px 6px rgba(0,0,0,0.1);}',
             '.ks-order-modal__btn.copy{background:#2563eb;color:#fff;}',
             '.ks-order-modal__btn.detail{background:#0891b2;color:#fff;}',
-            '.ks-order-modal__btn.more{background:#ffffff;color:#0f172a;border:1.5px solid #e2e8f0;box-shadow:none;}',
+            '.ks-order-modal__btn.more{background:#000000;color:#ffffff;border:1.5px solid #e2e8f0;box-shadow:none;}',
             '.ks-order-modal-close{color:#94a3b8 !important;font-size:32px !important;padding:12px !important;right:8px !important;top:8px !important;transition:color .2s ease;}',
             '.ks-order-modal-close:hover{color:#475569 !important;}',
             '@media (max-width:767.98px){'
