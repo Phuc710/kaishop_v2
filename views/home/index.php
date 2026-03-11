@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 
 <head>
     <?php
@@ -19,34 +19,38 @@
 
     <!-- Structured Data (JSON-LD) for SEO -->
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "KaiShop",
-      "url": "<?= url('') ?>",
-      "description": "<?= $seoDescription ?>",
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": "<?= url('') ?>?s={search_term_string}",
-        "query-input": "required name=search_term_string"
-      }
-    }
+    <?= json_encode([
+        '@context' => 'https://schema.org',
+        '@type' => 'WebSite',
+        'name' => $chungapi['ten_web'] ?? 'KaiShop',
+        'url' => url(''),
+        'description' => $seoDescription,
+        'potentialAction' => [
+            '@type' => 'SearchAction',
+            'target' => url('') . '?s={search_term_string}',
+            'query-input' => 'required name=search_term_string',
+        ],
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
     </script>
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "KaiShop",
-      "url": "<?= url('') ?>",
-      "logo": "<?= $chungapi['logo'] ?? asset('assets/images/logo.png') ?>",
-      "contactPoint": {
-        "@type": "ContactPoint",
-        "contactType": "customer support",
-        "url": "https://t.me/kaishop07"
-      }
-    }
+    <?= json_encode([
+        '@context' => 'https://schema.org',
+        '@type' => 'Organization',
+        'name' => $chungapi['ten_web'] ?? 'KaiShop',
+        'url' => url(''),
+        'logo' => $chungapi['logo'] ?? asset('assets/images/logo.png'),
+        'sameAs' => array_filter([
+            $chungapi['tele_admin'] ?? '',
+            $chungapi['support_tele'] ?? '',
+        ]),
+        'contactPoint' => [
+            '@type' => 'ContactPoint',
+            'contactType' => 'customer support',
+            'url' => $chungapi['support_tele'] ?? (url('lien-he')),
+        ],
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
     </script>
-    <title> Trang Chủ | <?= $chungapi['ten_web']; ?></title>
+    <title><?= htmlspecialchars($seoTitle, ENT_QUOTES, 'UTF-8') ?></title>
     <style>
         .category-section-wrapper.d-none {
             display: none !important;

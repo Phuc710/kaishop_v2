@@ -222,7 +222,7 @@
 }
 
 .ds-price {
-    font-size: 22px;
+    font-size: 18px;
     font-weight: 800;
     color: #0d28fd;
     letter-spacing: -0.4px;
@@ -545,7 +545,7 @@
     .ds-price {
         flex: 0 0 auto;
         max-width: none;
-        font-size: 23px;
+        font-size: 16px;
         line-height: 1.3;
     }
 

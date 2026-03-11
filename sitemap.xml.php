@@ -6,22 +6,69 @@ $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVE
 $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 $fullBase = $protocol . '://' . $host;
 
-$pages = [
-    '',
-    'chinh-sach',
-    'dieu-khoan',
-    'lien-he'
+// Static pages
+$staticPages = [
+    ['loc' => '', 'changefreq' => 'daily', 'priority' => '1.0'],
+    ['loc' => 'lien-he', 'changefreq' => 'monthly', 'priority' => '0.6'],
+    ['loc' => 'chinh-sach', 'changefreq' => 'monthly', 'priority' => '0.6'],
+    ['loc' => 'dieu-khoan', 'changefreq' => 'monthly', 'priority' => '0.6'],
 ];
+
+// Fetch active products from DB
+$productUrls = [];
+try {
+    $db = Database::getInstance()->getConnection();
+    $stmt = $db->query("
+        SELECT id, public_path, slug, updated_at
+        FROM products
+        WHERE status = 'ON'
+        ORDER BY updated_at DESC
+    ");
+    $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($products as $p) {
+        $path = trim((string) ($p['public_path'] ?? ''));
+        if ($path === '') {
+            $path = 'product/' . (int) $p['id'];
+        }
+        $lastmod = '';
+        if (!empty($p['updated_at'])) {
+            $ts = strtotime((string) $p['updated_at']);
+            if ($ts) {
+                $lastmod = date('Y-m-d', $ts);
+            }
+        }
+        $productUrls[] = [
+            'loc' => $path,
+            'lastmod' => $lastmod ?: date('Y-m-d'),
+            'changefreq' => 'daily',
+            'priority' => '0.8',
+        ];
+    }
+} catch (Throwable $e) {
+    // Silently skip product URLs if DB fails
+    $productUrls = [];
+}
 
 echo '<?xml version="1.0" encoding="UTF-8"?>';
 ?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-    <?php foreach ($pages as $page): ?>
-    <url>
-        <loc><?= htmlspecialchars($fullBase . url($page), ENT_QUOTES, 'UTF-8') ?></loc>
-        <lastmod><?= date('Y-m-d') ?></lastmod>
-        <changefreq>daily</changefreq>
-        <priority><?= $page === '' ? '1.0' : '0.8' ?></priority>
-    </url>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+    xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+    <?php foreach ($staticPages as $page): ?>
+        <url>
+            <loc><?= htmlspecialchars($fullBase . url($page['loc']), ENT_QUOTES, 'UTF-8') ?></loc>
+            <lastmod><?= date('Y-m-d') ?></lastmod>
+            <changefreq><?= $page['changefreq'] ?></changefreq>
+            <priority><?= $page['priority'] ?></priority>
+        </url>
+    <?php endforeach; ?>
+
+    <?php foreach ($productUrls as $p): ?>
+        <url>
+            <loc><?= htmlspecialchars($fullBase . url($p['loc']), ENT_QUOTES, 'UTF-8') ?></loc>
+            <lastmod><?= htmlspecialchars($p['lastmod'], ENT_QUOTES, 'UTF-8') ?></lastmod>
+            <changefreq><?= $p['changefreq'] ?></changefreq>
+            <priority><?= $p['priority'] ?></priority>
+        </url>
     <?php endforeach; ?>
 </urlset>

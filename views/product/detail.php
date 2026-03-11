@@ -120,6 +120,66 @@ if ($rawDescHtml !== '') {
 <head>
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>
     <title><?= htmlspecialchars($seoTitle, ENT_QUOTES, 'UTF-8') ?></title>
+
+    <?php if (!empty($galleryImages[0])): ?>
+    <link rel="preload" as="image" href="<?= htmlspecialchars($galleryImages[0], ENT_QUOTES, 'UTF-8') ?>" fetchpriority="high">
+    <?php endif; ?>
+
+    <!-- JSON-LD: Product Schema -->
+    <script type="application/ld+json">
+    <?php
+    $schemaAvailability = ($canPurchase) ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
+    $schemaProduct = [
+        '@context'    => 'https://schema.org',
+        '@type'       => 'Product',
+        'name'        => $productName,
+        'description' => $seoDescription !== '' ? $seoDescription : $productName,
+        'image'       => $galleryImages,
+        'url'         => $publicUrl,
+        'brand'       => [
+            '@type' => 'Brand',
+            'name'  => $chungapi['ten_web'] ?? 'KaiShop',
+        ],
+        'offers'      => [
+            '@type'         => 'Offer',
+            'priceCurrency' => 'VND',
+            'price'         => $priceVnd,
+            'availability'  => $schemaAvailability,
+            'url'           => $publicUrl,
+            'seller'        => [
+                '@type' => 'Organization',
+                'name'  => $chungapi['ten_web'] ?? 'KaiShop',
+                'url'   => url(''),
+            ],
+        ],
+    ];
+    echo json_encode($schemaProduct, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+    ?>
+    </script>
+
+    <!-- JSON-LD: BreadcrumbList Schema -->
+    <script type="application/ld+json">
+    <?php
+    $breadcrumbs = [
+        ['@type' => 'ListItem', 'position' => 1, 'name' => 'Trang chủ', 'item' => url('')],
+    ];
+    $pos = 2;
+    if ($categoryName !== '') {
+        $catUrl = $categorySlug !== '' ? url($categorySlug) : url('');
+        $breadcrumbs[] = ['@type' => 'ListItem', 'position' => $pos++, 'name' => $categoryName, 'item' => $catUrl];
+    }
+    $breadcrumbs[] = ['@type' => 'ListItem', 'position' => $pos, 'name' => $productName, 'item' => $publicUrl];
+
+    $schemaBreadcrumb = [
+        '@context'        => 'https://schema.org',
+        '@type'           => 'BreadcrumbList',
+        'itemListElement' => $breadcrumbs,
+    ];
+    echo json_encode($schemaBreadcrumb, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+    ?>
+    </script>
+
+
     <style>
         .pd-wrap {
             padding: 80px 0 48px;

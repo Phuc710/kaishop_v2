@@ -16,5 +16,21 @@ Disallow: /history-orders/
 Disallow: /login
 Disallow: /register
 Disallow: /password-reset/
+Disallow: /api/
+Disallow: /ajax/
+Crawl-delay: 1
 
 Sitemap: <?= $fullSitemapUrl ?>
+
+# Block aggressive SEO/scrapers
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /

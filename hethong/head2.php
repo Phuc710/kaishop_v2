@@ -120,6 +120,9 @@ $ogType = isset($seoOgType) && trim((string) $seoOgType) !== '' ? trim((string) 
 <meta property="og:site_name" content="<?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?>">
 <?php if ($seoImageValue !== ''): ?>
     <meta property="og:image" content="<?= htmlspecialchars($seoImageValue, ENT_QUOTES, 'UTF-8') ?>">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="<?= htmlspecialchars($seoTitleValue, ENT_QUOTES, 'UTF-8') ?>">
 <?php endif; ?>
 
 <meta name="twitter:card" content="summary_large_image">
@@ -127,6 +130,7 @@ $ogType = isset($seoOgType) && trim((string) $seoOgType) !== '' ? trim((string) 
 <meta name="twitter:description" content="<?= htmlspecialchars($seoDescriptionValue, ENT_QUOTES, 'UTF-8') ?>">
 <?php if ($seoImageValue !== ''): ?>
     <meta name="twitter:image" content="<?= htmlspecialchars($seoImageValue, ENT_QUOTES, 'UTF-8') ?>">
+    <meta name="twitter:image:alt" content="<?= htmlspecialchars($seoTitleValue, ENT_QUOTES, 'UTF-8') ?>">
 <?php endif; ?>
 
 <?php
