@@ -57,11 +57,11 @@ RewriteRule \.(?:jpe?g|png|gif|webp|svg)$ - [F,NC,L]
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
 
     # Disable risky browser features
-    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(self), usb=(), fullscreen=(self)"
+    # Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(self), usb=(), fullscreen=(self)"
 
     # Basic Content Security Policy
     # Allows: scripts/styles from self + common CDNs + fonts + images from anywhere
-    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com https://cdn.gtranslate.net https://cdnjs.cloudflare.com https://cdn.datatables.net https://cdn.jsdelivr.net https://challenges.cloudflare.com https://www.google.com https://www.google-analytics.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://code.ionicframework.com https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.datatables.net https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https: http:; connect-src 'self' https: https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://www.gstatic.com https://*.firebaseapp.com https://*.web.app; frame-src 'self' https://challenges.cloudflare.com https://www.google.com https://*.firebaseapp.com https://*.web.app; object-src 'none'; base-uri 'self'; form-action 'self' https:"
+    # Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com https://cdn.gtranslate.net https://cdnjs.cloudflare.com https://cdn.datatables.net https://cdn.jsdelivr.net https://challenges.cloudflare.com https://www.google.com https://www.google-analytics.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://code.ionicframework.com https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.datatables.net https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https: http:; connect-src 'self' https: https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://www.gstatic.com https://*.firebaseapp.com https://*.web.app; frame-src 'self' https://challenges.cloudflare.com https://www.google.com https://*.firebaseapp.com https://*.web.app; object-src 'none'; base-uri 'self'; form-action 'self' https:"
 
     # Prevent server version leaking
     Header always unset X-Powered-By
