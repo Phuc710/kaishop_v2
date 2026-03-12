@@ -249,9 +249,9 @@ $fallbackFaviconHref = asset('assets/images/kaishop_favicon.png');
 <?php endif; ?>
 
 <script>
-    const BASE_URL = '<?= url('') ?>';
-    const ASSET_URL = '<?= asset('') ?>';
-    const AJAX_URL = '<?= ajax_url('') ?>';
+    const BASE_URL = '<?= rtrim(url(''), '/') ?>';
+    const ASSET_URL = '<?= rtrim(asset(''), '/') ?>';
+    const AJAX_URL = '<?= rtrim(ajax_url(''), '/') ?>';
     window.KAI_ASSET_URL = ASSET_URL;
     window.KAI_EXCHANGE_RATE = <?= (int) max(1, (int) get_setting('binance_rate_vnd', 25000)) ?>;
     window.KS_TIME_CONFIG = Object.assign({}, window.KS_TIME_CONFIG || {}, {
