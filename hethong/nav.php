@@ -506,8 +506,8 @@ foreach ($authNavPaths as $p) {
                             </button>
 
 
-                            <?php 
-                            $publicUserDropdownItems = NavConfig::publicUserDropdownItems(((int) ($user['level'] ?? 0)) === 9); 
+                            <?php
+                            $publicUserDropdownItems = NavConfig::publicUserDropdownItems(((int) ($user['level'] ?? 0)) === 9);
                             $userSidebarItems = NavConfig::userSidebarItems();
                             $mobileDropdownItems = [];
                             if (((int) ($user['level'] ?? 0)) === 9) {
@@ -559,11 +559,11 @@ foreach ($authNavPaths as $p) {
                                         <?php if ($dropdownType === 'logout'): ?>
                                             <a class="dashboard-profile-item dropdown-item logout-item" href="javascript:void(0)"
                                                 onclick="SwalHelper.confirmLogout('<?= $dropdownHref ?>')">
-                                                <i class="<?= $dropdownIcon ?>"<?= $iconStyle ?>></i><?= $dropdownLabel ?>
+                                                <i class="<?= $dropdownIcon ?>" <?= $iconStyle ?>></i><?= $dropdownLabel ?>
                                             </a>
                                         <?php else: ?>
                                             <a class="dashboard-profile-item dropdown-item" href="<?= $dropdownHref ?>">
-                                                <i class="<?= $dropdownIcon ?>"<?= $iconStyle ?>></i><?= $dropdownLabel ?>
+                                                <i class="<?= $dropdownIcon ?>" <?= $iconStyle ?>></i><?= $dropdownLabel ?>
                                             </a>
                                         <?php endif; ?>
                                     </li>

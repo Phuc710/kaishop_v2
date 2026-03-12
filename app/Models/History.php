@@ -44,6 +44,148 @@ class History extends Model
         return count($this->getFilteredUnifiedRows($this->normalizeUserContext($userContext), (array) $filters));
     }
 
+    public function canUseFastPagination($userContext): bool
+    {
+        if (!$this->tableExists('lich_su_bien_dong_so_du')) {
+            return false;
+        }
+
+        $context = $this->normalizeUserContext($userContext);
+        [$whereSql, $params] = $this->buildLsbdUserWhere($context);
+
+        if ($whereSql === '') {
+            return false;
+        }
+
+        $stmt = $this->db->prepare("SELECT 1 FROM `lich_su_bien_dong_so_du` WHERE {$whereSql} LIMIT 1");
+        $stmt->execute($params);
+        return (bool) $stmt->fetchColumn();
+    }
+
+    private function buildLsbdFastFilters(array $filters): array
+    {
+        $where = [];
+        $params = [];
+
+        $timeRange = trim((string) ($filters['time_range'] ?? ''));
+        if ($timeRange !== '') {
+            $parts = null;
+            foreach ([' to ', ' - '] as $delimiter) {
+                if (strpos($timeRange, $delimiter) !== false) {
+                    $parts = explode($delimiter, $timeRange, 2);
+                    break;
+                }
+            }
+            if (is_array($parts) && count($parts) === 2) {
+                $where[] = "DATE(`created_at`) BETWEEN ? AND ?";
+                $params[] = trim($parts[0]);
+                $params[] = trim($parts[1]);
+            } else {
+                $where[] = "DATE(`created_at`) = ?";
+                $params[] = $timeRange;
+            }
+        }
+
+        $sortDate = trim((string) ($filters['sort_date'] ?? 'all'));
+        if ($sortDate === 'today') {
+            $where[] = "DATE(`created_at`) = CURDATE()";
+        } elseif ($sortDate === '7') {
+            $where[] = "DATE(`created_at`) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
+        } elseif ($sortDate === '30') {
+            $where[] = "DATE(`created_at`) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+        }
+
+        $whereSql = empty($where) ? '' : implode(' AND ', $where);
+        return [$whereSql, $params];
+    }
+
+    public function countUserHistoryFast($userContext, $filters): int
+    {
+        $context = $this->normalizeUserContext($userContext);
+        [$whereSql, $params] = $this->buildLsbdUserWhere($context);
+
+        [$extraWhere, $extraParams] = $this->buildLsbdFastFilters($filters);
+
+        if ($extraWhere !== '') {
+            $whereSql = "({$whereSql}) AND {$extraWhere}";
+            $params = array_merge($params, $extraParams);
+        }
+
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM `lich_su_bien_dong_so_du` WHERE {$whereSql}");
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function getUserHistoryFast($userContext, $filters, $limit, $offset): array
+    {
+        $context = $this->normalizeUserContext($userContext);
+        [$whereSql, $params] = $this->buildLsbdUserWhere($context);
+
+        [$extraWhere, $extraParams] = $this->buildLsbdFastFilters($filters);
+
+        if ($extraWhere !== '') {
+            $whereSql = "({$whereSql}) AND {$extraWhere}";
+            $params = array_merge($params, $extraParams);
+        }
+
+        $limit = max(1, (int) $limit);
+        $offset = max(0, (int) $offset);
+
+        $cols = ['id', 'before_balance', 'change_amount', 'after_balance', 'reason', 'time', 'created_at'];
+        if ($this->hasColumn('lich_su_bien_dong_so_du', 'source_channel')) {
+            $cols[] = 'source_channel';
+        }
+
+        $sql = "SELECT " . implode(', ', $cols) . " FROM `lich_su_bien_dong_so_du` WHERE {$whereSql} ORDER BY `id` DESC LIMIT {$limit} OFFSET {$offset}";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        $rows = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $change = (int) ($row['change_amount'] ?? 0);
+            $ts = $this->parseEventTimestamp($row['created_at'] ?? null, $row['time'] ?? null);
+            $reason = trim((string) ($row['reason'] ?? ''));
+            $sourceChannel = (int) ($row['source_channel'] ?? 0);
+
+            $lowerReason = mb_strtolower($reason, 'UTF-8');
+            if (strpos($lowerReason, 'nap tien') !== false || strpos($lowerReason, 'nạp tiền') !== false) {
+                $source = 'deposit';
+                $reasonText = $reason !== '' ? $reason : 'Nạp tiền';
+            } elseif (
+                strpos($lowerReason, 'thanh toan') !== false || strpos($lowerReason, 'thanh toán') !== false
+                || strpos($lowerReason, 'mua') !== false
+            ) {
+                $source = 'activity';
+                $reasonText = $reason !== '' ? $reason : 'Mua hàng';
+            } elseif (
+                strpos($lowerReason, 'admin') !== false || strpos($lowerReason, 'hoan tien') !== false
+                || strpos($lowerReason, 'hoàn tiền') !== false
+            ) {
+                $source = 'admin';
+                $reasonText = $reason !== '' ? $reason : 'Điều chỉnh';
+            } else {
+                $source = $change >= 0 ? 'deposit' : 'activity';
+                $reasonText = $reason !== '' ? $reason : ($change >= 0 ? 'Cộng tiền' : 'Trừ tiền');
+            }
+
+            $rows[] = [
+                'source' => $source,
+                'source_id' => (int) ($row['id'] ?? 0),
+                'event_ts' => $ts,
+                'event_time' => $ts > 0 ? date('Y-m-d H:i:s', $ts) : (string) ($row['created_at'] ?? ''),
+                'raw_time' => (string) ($row['time'] ?? ''),
+                'change_amount' => $change,
+                'reason_text' => $reasonText,
+                'source_channel' => $sourceChannel,
+                'has_stored_balances' => true,
+                'before_balance' => (int) ($row['before_balance'] ?? 0),
+                'after_balance' => (int) ($row['after_balance'] ?? 0),
+            ];
+        }
+
+        return $rows;
+    }
+
     /**
      * Calculate before/change/after balances from current balance over DESC rows.
      *
@@ -612,22 +754,21 @@ class History extends Model
      */
     private function buildLsbdUserWhere(array $userContext): array
     {
-        $parts = [];
         $params = [];
         $userId = (int) ($userContext['user_id'] ?? 0);
         $username = trim((string) ($userContext['username'] ?? ''));
 
         if ($userId > 0 && $this->hasColumn('lich_su_bien_dong_so_du', 'user_id')) {
-            $parts[] = '`user_id` = :user_id';
             $params['user_id'] = $userId;
+            return ['`user_id` = :user_id', $params];
         }
 
         if ($username !== '' && $this->hasColumn('lich_su_bien_dong_so_du', 'username')) {
-            $parts[] = '`username` = :username';
             $params['username'] = $username;
+            return ['`username` = :username', $params];
         }
 
-        return [implode(' OR ', $parts), $params];
+        return ['', []];
     }
 
     private function tableExists(string $table): bool

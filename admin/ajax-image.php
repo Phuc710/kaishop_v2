@@ -237,7 +237,7 @@ if ($action === 'upload') {
 
     image_json_response(400, [
         'success' => false,
-        'error' => 'Khong co file nao duoc upload thanh cong.',
+        'error' => count($errors) > 0 ? implode("\n", $errors) : 'Khong co file nao duoc upload thanh cong.',
         'details' => $errors,
     ]);
 }

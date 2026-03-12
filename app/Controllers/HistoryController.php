@@ -65,33 +65,41 @@ class HistoryController extends Controller
             'sort_date' => $_POST['sort_date'] ?? 'all'
         ];
 
-        // Get data
-        $recordsTotal = $this->historyModel->countUserHistory($userContext, []);
-        $allFilteredRows = $this->historyModel->getAllUserHistory($userContext, $filters);
-        $recordsFiltered = count($allFilteredRows);
+        // Use fast pagination when there is no search query and the model supports it
+        $searchKeyword = trim((string) ($filters['search'] ?? ''));
+        if ($searchKeyword !== '' || !$this->historyModel->canUseFastPagination($userContext)) {
+            $recordsTotal = $this->historyModel->countUserHistory($userContext, []);
+            $allFilteredRows = $this->historyModel->getAllUserHistory($userContext, $filters);
+            $recordsFiltered = count($allFilteredRows);
 
-        // Fetch fresh user balance
-        $userData = $this->userModel->findByUsername($username);
-        $currentBalance = (int) ($userData['money'] ?? 0);
+            // Fetch fresh user balance
+            $userData = $this->userModel->findByUsername($username);
+            $currentBalance = (int) ($userData['money'] ?? 0);
 
-        // Build result — LSBD rows have stored before/after, legacy rows need in-memory calculation
-        $hasMixedData = false;
-        foreach ($allFilteredRows as $r) {
-            if (empty($r['has_stored_balances'])) {
-                $hasMixedData = true;
-                break;
+            // Build result — LSBD rows have stored before/after, legacy rows need in-memory calculation
+            $hasMixedData = false;
+            foreach ($allFilteredRows as $r) {
+                if (empty($r['has_stored_balances'])) {
+                    $hasMixedData = true;
+                    break;
+                }
             }
-        }
 
-        // If any legacy rows exist, fall back to full in-memory running balance
-        if ($hasMixedData) {
-            $allCalculatedRows = $this->historyModel->calculateRunningBalances($allFilteredRows, $currentBalance);
+            // If any legacy rows exist, fall back to full in-memory running balance
+            if ($hasMixedData) {
+                $allCalculatedRows = $this->historyModel->calculateRunningBalances($allFilteredRows, $currentBalance);
+            } else {
+                // All rows from LSBD — stored balances are authoritative, no recalculation needed
+                $allCalculatedRows = $allFilteredRows;
+            }
+
+            $data = array_slice($allCalculatedRows, $start, $length);
         } else {
-            // All rows from LSBD — stored balances are authoritative, no recalculation needed
-            $allCalculatedRows = $allFilteredRows;
+            // Optimised fast path — only fetches requested page
+            $recordsTotal = $this->historyModel->countUserHistoryFast($userContext, []);
+            $recordsFiltered = $this->historyModel->countUserHistoryFast($userContext, $filters);
+            $data = $this->historyModel->getUserHistoryFast($userContext, $filters, $length, $start);
         }
-
-        $data = array_slice($allCalculatedRows, $start, $length);
 
         // Format data for DataTables
         $formattedData = [];

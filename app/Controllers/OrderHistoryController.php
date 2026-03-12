@@ -55,16 +55,8 @@ class OrderHistoryController extends Controller
         ];
 
         $recordsTotal = $this->orderModel->countUserVisibleOrders($userId, []);
-        $searchKeyword = trim((string) ($filters['search'] ?? ''));
-        if ($searchKeyword !== '') {
-            $allRows = $this->orderModel->getAllUserVisibleOrders($userId, $filters);
-            $filteredRows = $this->orderModel->smartFilterUserVisibleOrders($allRows, $searchKeyword);
-            $recordsFiltered = count($filteredRows);
-            $rows = array_slice($filteredRows, $start, $length);
-        } else {
-            $recordsFiltered = $this->orderModel->countUserVisibleOrders($userId, $filters);
-            $rows = $this->orderModel->getUserVisibleOrders($userId, $filters, $start, $length);
-        }
+        $recordsFiltered = $this->orderModel->countUserVisibleOrders($userId, $filters);
+        $rows = $this->orderModel->getUserVisibleOrders($userId, $filters, $start, $length);
 
         $data = [];
         $timeService = TimeService::instance();

@@ -105,10 +105,19 @@ class ProductInventoryService
             return [];
         }
 
+        $manualInfoProductIds = [];
+        foreach ($productsById as $productId => $product) {
+            if (!$this->usesUnlimitedStock($product) && Product::resolveDeliveryMode($product) === 'manual_info') {
+                $manualInfoProductIds[] = $productId;
+            }
+        }
+
         $accountStats = empty($accountProductIds)
             ? []
             : $this->stockModel->getStatsForProducts($accountProductIds);
+
         $soldCounts = $this->getSoldCounts(array_keys($productsById));
+        $pendingCompletedCounts = $this->getPendingAndCompletedCountsForProducts($manualInfoProductIds);
 
         $result = [];
         foreach ($productsById as $productId => $product) {
@@ -124,10 +133,15 @@ class ProductInventoryService
             $deliveryMode = Product::resolveDeliveryMode($product);
 
             if ($deliveryMode === 'manual_info') {
-                $pCounts = $this->getPendingAndCompletedCounts($productId);
+                $pCounts = $pendingCompletedCounts[$productId] ?? ['pending' => 0, 'completed' => 0];
+                $soldCount = (int) ($pCounts['completed'] ?? 0);
+                if (isset($soldCounts[$productId]) && $soldCounts[$productId] > $soldCount) {
+                    $soldCount = (int) $soldCounts[$productId]; // Fallback to overall sold count if higher (edge case where status changed without pending logic)
+                }
+
                 $result[$productId] = [
                     'available' => (int) ($product['manual_stock'] ?? 0),
-                    'sold' => (int) ($pCounts['completed'] ?? 0),
+                    'sold' => (int) $soldCount,
                     'pending' => (int) ($pCounts['pending'] ?? 0),
                     'unlimited' => false,
                     'is_manual_queue' => true
@@ -221,16 +235,31 @@ class ProductInventoryService
         return (int) $stmt->fetchColumn();
     }
 
-    private function getPendingAndCompletedCounts(int $productId): array
+    private function getPendingAndCompletedCountsForProducts(array $productIds): array
     {
+        if (empty($productIds)) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($productIds), '?'));
         $stmt = $this->db->prepare("
             SELECT 
+                `product_id`,
                 SUM(CASE WHEN `status` = 'pending' THEN 1 ELSE 0 END) as pending,
                 SUM(CASE WHEN `status` = 'completed' THEN 1 ELSE 0 END) as completed
             FROM `orders` 
-            WHERE `product_id` = ?
+            WHERE `product_id` IN ($placeholders)
+            GROUP BY `product_id`
         ");
-        $stmt->execute([$productId]);
-        return $stmt->fetch(PDO::FETCH_ASSOC) ?: ['pending' => 0, 'completed' => 0];
+        $stmt->execute($productIds);
+
+        $result = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $result[(int) ($row['product_id'] ?? 0)] = [
+                'pending' => (int) ($row['pending'] ?? 0),
+                'completed' => (int) ($row['completed'] ?? 0)
+            ];
+        }
+        return $result;
     }
 }
