@@ -59,9 +59,8 @@ $fmtInt = static function ($value): string {
 $orderStatusBadgeClass = static function (string $status): string {
     return match (strtolower(trim($status))) {
         'completed' => 'badge badge-success',
-        'pending' => 'badge badge-warning',
-        'processing' => 'badge badge-info',
-        'cancelled' => 'badge badge-danger',
+        'pending', 'processing' => 'badge badge-warning',
+        'cancelled', 'canceled', 'failed' => 'badge badge-danger',
         default => 'badge badge-secondary',
     };
 };

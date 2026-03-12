@@ -195,6 +195,10 @@ class PurchaseService
             $beforeBalance = (int) ($user['money'] ?? 0);
             $afterBalance = $beforeBalance - $totalPrice;
             if ($totalPrice > 0) {
+                if ($totalPrice > $beforeBalance) {
+                    $missingAmount = $totalPrice - $beforeBalance;
+                    throw new RuntimeException('Bạn còn thiếu ' . number_format($missingAmount, 0, ',', '.') . 'đ');
+                }
                 $debitStmt = $this->db->prepare("UPDATE `users` SET `money` = `money` - ? WHERE `id` = ? AND `money` >= ?");
                 $debitStmt->execute([$totalPrice, $userId, $totalPrice]);
                 if ($debitStmt->rowCount() < 1) {

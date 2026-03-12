@@ -1317,6 +1317,29 @@ if ($rawDescHtml !== '') {
                         window.location.href = PRODUCT_DETAIL.loginUrl;
                         return;
                     }
+                    if (msg.includes('Số dư không đủ') || msg.includes('Bạn còn thiếu')) {
+                        if (window.Swal && Swal.fire) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Số dư không đủ',
+                                html: msg + '<br><br>Vui lòng nạp thêm tiền để tiếp tục.',
+                                showCancelButton: true,
+                                confirmButtonText: '<i class="fas fa-wallet me-1"></i> Nạp tiền ngay',
+                                cancelButtonText: 'Đóng',
+                                confirmButtonColor: '#198754',
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    window.location.href = BASE_URL + '/deposit';
+                                }
+                            });
+                        } else {
+                            if (confirm(msg + '\nBạn có muốn đến trang nạp tiền không?')) {
+                                window.location.href = BASE_URL + '/deposit';
+                            }
+                        }
+                        return;
+                    }
+
                     if (window.Swal && Swal.fire) {
                         Swal.fire({ icon: 'error', title: 'Mua hàng thất bại', text: msg });
                     } else {

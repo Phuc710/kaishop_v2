@@ -102,14 +102,21 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                     <td class="text-center">
                                         <?php
                                         $st = strtolower($o['status']);
-                                        $badge = match ($st) {
-                                            'completed' => 'badge-success',
-                                            'pending', 'processing' => 'badge-warning',
-                                            'cancelled' => 'badge-danger',
-                                            default => 'badge-secondary'
-                                        };
+                                        $badge = 'badge-secondary';
+                                        $labelText = strtoupper($st);
+
+                                        if ($st === 'completed') {
+                                            $badge = 'badge-success';
+                                            $labelText = 'HOÀN TẤT';
+                                        } elseif ($st === 'pending' || $st === 'processing') {
+                                            $badge = 'badge-warning';
+                                            $labelText = 'ĐANG XỬ LÝ';
+                                        } elseif ($st === 'cancelled' || $st === 'canceled' || $st === 'failed') {
+                                            $badge = 'badge-danger';
+                                            $labelText = 'ĐÃ HỦY';
+                                        }
                                         ?>
-                                        <span class="badge <?= $badge ?> px-3 py-1"><?= strtoupper($st) ?></span>
+                                        <span class="badge <?= $badge ?> px-3 py-1"><?= $labelText ?></span>
                                     </td>
                                     <td class="text-right pr-4 text-muted small">
                                         <?= FormatHelper::eventTime($o['created_at'] ?? null, $o['created_at'] ?? null) ?>

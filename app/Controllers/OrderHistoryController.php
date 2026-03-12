@@ -64,9 +64,8 @@ class OrderHistoryController extends Controller
             $status = (string) ($row['status'] ?? '');
             $statusLabel = match ($status) {
                 'completed' => 'Hoàn tất',
-                'pending' => 'Chờ xử lý',
-                'processing' => 'Đang xử lý',
-                'cancelled' => 'Đã hủy',
+                'pending', 'processing' => 'Đang xử lý',
+                'cancelled', 'canceled', 'failed' => 'Đã hủy',
                 default => $status !== '' ? ucfirst($status) : 'Không rõ',
             };
 
@@ -91,6 +90,8 @@ class OrderHistoryController extends Controller
                 'time_ago' => $timeAgo,
                 'fulfilled_at' => (string) ($row['fulfilled_at'] ?? ''),
                 'fulfilled_at_display' => !empty($row['fulfilled_at']) ? TimeService::instance()->formatDisplay($row['fulfilled_at']) : '',
+                'customer_input' => (string) ($row['customer_input'] ?? ''),
+                'delivery_content' => (string) ($row['stock_content_plain'] ?? ''),
             ];
         }
 
@@ -132,7 +133,7 @@ class OrderHistoryController extends Controller
                 'created_at_iso_utc' => TimeService::instance()->toIso8601Utc($order['created_at'] ?? null),
                 'created_at_display' => TimeService::instance()->formatDisplay($order['created_at'] ?? null),
                 'customer_input' => (string) ($order['customer_input'] ?? ''),
-                'delivery_content' => ((string) ($order['status'] ?? '') === 'pending') ? '' : (string) ($order['stock_content_plain'] ?? ''),
+                'delivery_content' => (string) ($order['stock_content_plain'] ?? ''),
                 'cancel_reason' => (string) ($order['cancel_reason'] ?? ''),
                 'fulfilled_at' => (string) ($order['fulfilled_at'] ?? ''),
                 'fulfilled_at_display' => !empty($order['fulfilled_at']) ? TimeService::instance()->formatDisplay($order['fulfilled_at']) : '',

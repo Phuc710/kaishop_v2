@@ -125,7 +125,12 @@ class MailService
         $orderedAt = trim((string) ($order['ordered_at'] ?? $order['created_at'] ?? date('Y-m-d H:i:s')));
         $productName = trim((string) ($order['product_name'] ?? $product['name'] ?? 'Sản phẩm'));
         $statusRaw = strtolower(trim((string) ($order['status'] ?? 'completed')));
-        $statusLabel = $statusRaw === 'pending' ? 'ĐANG CHỜ' : ($statusRaw === 'processing' ? 'ĐANG XỬ LÝ' : 'HOÀN TẤT');
+        $statusLabel = match ($statusRaw) {
+            'completed' => 'HOÀN TẤT',
+            'pending', 'processing' => 'ĐANG XỬ LÝ',
+            'cancelled', 'canceled', 'failed' => 'ĐÃ HỦY',
+            default => 'HOÀN TẤT',
+        };
         $deliveryMode = $this->resolveDeliveryMode($order, $product);
 
         $baseData = [

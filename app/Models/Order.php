@@ -191,9 +191,8 @@ class Order extends Model
             $status = (string) ($row['status'] ?? '');
             $statusAliases = match ($status) {
                 'completed' => 'hoan tat thanh cong xong done completed',
-                'pending' => 'cho xu ly pending doi',
-                'processing' => 'dang xu ly processing',
-                'cancelled' => 'da huy huy cancelled',
+                'pending', 'processing' => 'dang xu ly cho xu ly pending processing doi',
+                'cancelled', 'canceled', 'failed' => 'da huy huy cancelled canceled failed',
                 default => $status,
             };
 
@@ -470,52 +469,90 @@ class Order extends Model
         $params = [$userId];
         $where[] = "`user_deleted_at` IS NULL";
 
-        $search = trim((string) ($filters['search'] ?? ''));
-        if ($search !== '') {
-            $searchLower = mb_strtolower($search, 'UTF-8');
-            $statusMatched = [];
-            
-            if (strpos($searchLower, 'done') !== false || strpos($searchLower, 'hoàn tất') !== false || strpos($searchLower, 'hoan tat') !== false || strpos($searchLower, 'xong') !== false || strpos($searchLower, 'thành công') !== false || strpos($searchLower, 'thanh cong') !== false || strpos($searchLower, 'completed') !== false) {
-                $statusMatched[] = 'completed';
-            }
-            if (strpos($searchLower, 'chờ') !== false || strpos($searchLower, 'cho') !== false || strpos($searchLower, 'đợi') !== false || strpos($searchLower, 'doi') !== false || strpos($searchLower, 'pending') !== false) {
-                $statusMatched[] = 'pending';
-            }
-            if (strpos($searchLower, 'đang') !== false || strpos($searchLower, 'dang') !== false || strpos($searchLower, 'xử lý') !== false || strpos($searchLower, 'xu ly') !== false || strpos($searchLower, 'processing') !== false) {
-                $statusMatched[] = 'processing';
-            }
-            if (strpos($searchLower, 'hủy') !== false || strpos($searchLower, 'huy') !== false || strpos($searchLower, 'cancelled') !== false) {
-                $statusMatched[] = 'cancelled';
-            }
-
-            $searchConditions = [
-                "`order_code` LIKE ?", 
-                "UPPER(SUBSTRING(SHA2(`order_code`, 256), 1, 8)) LIKE ?", 
-                "`product_name` LIKE ?",
-                "`customer_input` LIKE ?",
-                "`cancel_reason` LIKE ?"
-            ];
-            $likeStr = '%' . $search . '%';
-            $searchArray = [$likeStr, $likeStr, $likeStr, $likeStr, $likeStr];
-            
-            $numericSearch = preg_replace('/\D+/', '', $search);
-            if ($numericSearch !== '') {
-                $searchConditions[] = "`price` = ?";
-                $searchArray[] = $numericSearch;
-                $searchConditions[] = "`quantity` = ?";
-                $searchArray[] = $numericSearch;
-                $searchConditions[] = "`id` = ?";
-                $searchArray[] = $numericSearch;
-            }
-
-            if (!empty($statusMatched)) {
-                $statusPlaceholders = implode(',', array_fill(0, count($statusMatched), '?'));
-                $searchConditions[] = "`status` IN ($statusPlaceholders)";
-                $searchArray = array_merge($searchArray, $statusMatched);
-            }
-
-            $where[] = '(' . implode(' OR ', $searchConditions) . ')';
-            $params = array_merge($params, $searchArray);
+        $search = trim((string) ($filters['search'] ?? ''));
+
+        if ($search !== '') {
+
+            $searchLower = mb_strtolower($search, 'UTF-8');
+
+            $statusMatched = [];
+
+
+
+            if (strpos($searchLower, 'done') !== false || strpos($searchLower, 'hoàn tất') !== false || strpos($searchLower, 'hoan tat') !== false || strpos($searchLower, 'xong') !== false || strpos($searchLower, 'thành công') !== false || strpos($searchLower, 'thanh cong') !== false || strpos($searchLower, 'completed') !== false) {
+
+                $statusMatched[] = 'completed';
+
+            }
+
+            if (strpos($searchLower, 'chờ') !== false || strpos($searchLower, 'cho') !== false || strpos($searchLower, 'đợi') !== false || strpos($searchLower, 'doi') !== false || strpos($searchLower, 'pending') !== false || strpos($searchLower, 'đang') !== false || strpos($searchLower, 'dang') !== false || strpos($searchLower, 'xử lý') !== false || strpos($searchLower, 'xu ly') !== false || strpos($searchLower, 'processing') !== false) {
+                $statusMatched[] = 'pending';
+                $statusMatched[] = 'processing';
+            }
+            if (strpos($searchLower, 'hủy') !== false || strpos($searchLower, 'huy') !== false || strpos($searchLower, 'cancelled') !== false || strpos($searchLower, 'canceled') !== false || strpos($searchLower, 'failed') !== false) {
+                $statusMatched[] = 'cancelled';
+                $statusMatched[] = 'canceled';
+                $statusMatched[] = 'failed';
+            }
+
+
+
+            $searchConditions = [
+
+                "`order_code` LIKE ?",
+
+                "UPPER(SUBSTRING(SHA2(`order_code`, 256), 1, 8)) LIKE ?",
+
+                "`product_name` LIKE ?",
+
+                "`customer_input` LIKE ?",
+
+                "`cancel_reason` LIKE ?"
+
+            ];
+
+            $likeStr = '%' . $search . '%';
+
+            $searchArray = [$likeStr, $likeStr, $likeStr, $likeStr, $likeStr];
+
+
+
+            $numericSearch = preg_replace('/\D+/', '', $search);
+
+            if ($numericSearch !== '') {
+
+                $searchConditions[] = "`price` = ?";
+
+                $searchArray[] = $numericSearch;
+
+                $searchConditions[] = "`quantity` = ?";
+
+                $searchArray[] = $numericSearch;
+
+                $searchConditions[] = "`id` = ?";
+
+                $searchArray[] = $numericSearch;
+
+            }
+
+
+
+            if (!empty($statusMatched)) {
+
+                $statusPlaceholders = implode(',', array_fill(0, count($statusMatched), '?'));
+
+                $searchConditions[] = "`status` IN ($statusPlaceholders)";
+
+                $searchArray = array_merge($searchArray, $statusMatched);
+
+            }
+
+
+
+            $where[] = '(' . implode(' OR ', $searchConditions) . ')';
+
+            $params = array_merge($params, $searchArray);
+
         }
 
         $timeRange = trim((string) ($filters['time_range'] ?? ''));

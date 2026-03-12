@@ -370,11 +370,9 @@ class JournalController extends Controller
             $status = trim((string) ($row['status'] ?? 'processing'));
             if ($status === 'completed') {
                 $statusLabel = '<span style="display:none;">completed</span><span class="badge badge-pill badge-soft-success">Hoàn tất</span>';
-            } elseif ($status === 'cancelled') {
+            } elseif ($status === 'cancelled' || $status === 'canceled' || $status === 'failed') {
                 $statusLabel = '<span style="display:none;">cancelled</span><span class="badge badge-pill badge-soft-danger">Đã hủy</span>';
-            } elseif ($status === 'pending') {
-                $statusLabel = '<span style="display:none;">pending</span><span class="badge badge-pill badge-soft-warning">Pending</span>';
-            } elseif ($status === 'processing') {
+            } elseif ($status === 'pending' || $status === 'processing') {
                 $statusLabel = '<span style="display:none;">processing</span><span class="badge badge-pill badge-soft-warning">Đang xử lý</span>';
             } else {
                 $statusLabel = '<span class="badge bg-secondary">' . htmlspecialchars($status) . '</span>';

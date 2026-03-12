@@ -105,10 +105,10 @@ require __DIR__ . '/layout/header.php';
         <table id="history-table" class="table table-hover align-middle mb-0 user-history-table">
             <thead class="table-light">
                 <tr>
-                    <th class="py-3 text-nowrap text-start">THỜI GIAN</th>
-                    <th class="py-3 text-nowrap text-start">SỐ DƯ TRƯỚC</th>
-                    <th class="py-3 text-nowrap text-start">BIẾN ĐỘNG</th>
-                    <th class="py-3 text-nowrap text-start">SỐ DƯ HIỆN TẠI</th>
+                    <th class="py-3 text-nowrap text-center">THỜI GIAN</th>
+                    <th class="py-3 text-nowrap text-center">SỐ DƯ TRƯỚC</th>
+                    <th class="py-3 text-nowrap text-center">BIẾN ĐỘNG</th>
+                    <th class="py-3 text-nowrap text-center">SỐ DƯ HIỆN TẠI</th>
                     <th class="py-3 text-nowrap text-start">NỘI DUNG BIẾN ĐỘNG</th>
                 </tr>
             </thead>
@@ -205,30 +205,29 @@ require __DIR__ . '/layout/header.php';
                 }
             },
             columns: [
-               
                 {
                     data: null,
-                    className: 'text-left text-nowrap balance-cell-before',
+                    className: 'text-center balance-cell-time',
+                    render: function (row) {
+                        return renderSharedTimeCell(row);
+                    }
+                },
+                {
+                    data: null,
+                    className: 'text-center text-nowrap balance-cell-before',
                     render: function (row) { return renderBalanceMoney(row.before_amount, 'before', row); }
                 },
                 {
                     data: null,
-                    className: 'text-left text-nowrap balance-cell-change',
+                    className: 'text-center text-nowrap balance-cell-change',
                     render: function (row) { return renderBalanceMoney(row.change_amount, 'change', row); }
                 },
                 {
                     data: null,
-                    className: 'text-left text-nowrap balance-cell-after',
+                    className: 'text-center text-nowrap balance-cell-after',
                     render: function (row) { return renderBalanceMoney(row.after_amount, 'after', row); }
                 },
-                { data: 'reason', className: 'text-start text-wrap balance-cell-reason' },
-                 {
-                    data: null,
-                    className: 'text-left balance-cell-time',
-                    render: function (row) {
-                        return renderSharedTimeCell(row);
-                    }
-                }
+                { data: 'reason', className: 'text-start text-wrap balance-cell-reason' }
             ],
             order: [],
             ordering: false,

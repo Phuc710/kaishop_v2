@@ -37,7 +37,7 @@ class OrderNotificationService
         $createdAt = $order['created_at'] ?? date('Y-m-d H:i:s');
         $source = SourceChannelHelper::label(SourceChannelHelper::fromOrderRow($order));
 
-        $msg = "🔔 <b>ĐƠN HÀNG CHỜ XỬ LÝ MỚI</b>\n\n";
+        $msg = "🔔 <b>ĐƠN HÀNG ĐANG XỬ LÝ MỚI</b>\n\n";
         $msg .= "🔢 ID đơn: <code>#{$orderId}</code>\n";
         $msg .= "🎫 Mã đơn: <code>{$orderCode}</code>\n";
         $msg .= "👤 Khách hàng: <b>{$username}</b>\n";

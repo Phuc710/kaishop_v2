@@ -230,7 +230,7 @@ class ProductInventoryService
 
     private function countPendingOrders(int $productId): int
     {
-        $stmt = $this->db->prepare("SELECT COUNT(*) FROM `orders` WHERE `product_id` = ? AND `status` = 'pending'");
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM `orders` WHERE `product_id` = ? AND `status` IN ('pending', 'processing')");
         $stmt->execute([$productId]);
         return (int) $stmt->fetchColumn();
     }
@@ -245,7 +245,7 @@ class ProductInventoryService
         $stmt = $this->db->prepare("
             SELECT 
                 `product_id`,
-                SUM(CASE WHEN `status` = 'pending' THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN `status` IN ('pending', 'processing') THEN 1 ELSE 0 END) as pending,
                 SUM(CASE WHEN `status` = 'completed' THEN 1 ELSE 0 END) as completed
             FROM `orders` 
             WHERE `product_id` IN ($placeholders)

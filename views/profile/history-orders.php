@@ -15,49 +15,325 @@ require __DIR__ . '/layout/header.php';
 ?>
 
 <style>
+    /* Premium Table Styles */
+    /* Standardized User Table Styles */
     #order-history-page .user-history-table {
         width: 100% !important;
-        min-width: 920px;
+        min-width: 1000px;
+        border-collapse: collapse;
+        /* Match balance history */
     }
 
-    #order-history-page .user-history-table th,
+    #order-history-page .user-history-table thead th {
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0 !important;
+        color: #64748b;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 11px;
+        padding: 12px 15px !important;
+    }
+
+    #order-history-page .user-history-table tbody tr {
+        transition: background 0.2s;
+    }
+
+    #order-history-page .user-history-table tbody tr:hover td {
+        /* No hover effect on table cells as requested */
+    }
+
     #order-history-page .user-history-table td {
-        padding: 10px 12px !important;
-        white-space: nowrap;
-    }
-
-    #order-history-page .user-history-table thead th:first-child,
-    #order-history-page .user-history-table tbody td.order-cell-product {
-        width: 5%;
-        min-width: 100px;
-        max-width: 100px;
-        text-align: left !important;
+        padding: 12px 15px !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+        vertical-align: middle;
+        background: #fff;
     }
 
     .order-cell-product {
-        white-space: normal !important;
-        vertical-align: middle;
+        width: 20%;
+        min-width: 180px;
     }
 
     .order-product-name {
-        display: -webkit-box;
-        overflow: hidden;
-        text-align: left !important;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
+        font-size: 14px;
+        margin-bottom: 4px;
+        color: #1e293b;
     }
 
-    .order-cell-status,
-    .order-cell-qty,
-    .order-cell-payment,
-    .order-cell-time,
-    .order-cell-actions {
-        width: 1%;
+    /* Content Column */
+    .order-cell-content {
+        max-width: 350px;
     }
 
+    .content-textarea-wrap {
+        position: relative;
+        width: 100%;
+        min-width: 350px;
+    }
+
+    .content-textarea {
+        width: 100%;
+        font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        font-size: 14.5px;
+        color: #334155;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 8px 30px 8px 10px;
+        resize: vertical;
+        min-height: 60px;
+        line-height: 1.5;
+    }
+
+    /* Custom Scrollbar for Textarea */
+    .content-textarea::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .content-textarea::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .content-textarea::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+    }
+
+    .content-textarea::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    .content-textarea:focus {
+        outline: none;
+        border-color: #cbd5e1;
+    }
+
+    .btn-copy-absolute {
+        position: absolute;
+        top: 6px;
+        right: 14px;
+        padding: 4px 6px;
+        font-size: 11px;
+        background: #fff;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        color: #64748b;
+        transition: all 0.2s;
+        cursor: pointer;
+        z-index: 5;
+    }
+
+    .btn-copy-absolute:hover {
+        background: #3b82f6;
+        color: #fff;
+        border-color: #3b82f6;
+    }
+
+    /* Status Tags (Consistent with App Design) */
     .user-order-status {
-        padding: 4px 10px !important;
-        font-size: 12px !important;
+        font-size: 13px !important;
+        font-weight: 700;
+        display: inline-block;
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+    }
+
+    .user-order-status.is-completed {
+        color: #16a34a !important;
+    }
+
+    .user-order-status.is-pending,
+    .user-order-status.is-processing {
+        color: #b45309 !important;
+    }
+
+    .user-order-status.is-cancelled {
+        color: #b91c1c !important;
+    }
+
+    /* Action Buttons */
+    .order-action-btn {
+        width: 30px;
+        height: 30px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        transition: all 0.2s;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        cursor: pointer;
+        color: #64748b;
+        margin: 0 2px;
+    }
+
+    .order-action-btn:hover {
+        background: #f1f5f9;
+        color: #3b82f6;
+    }
+
+    /* Premium Modal Styles */
+    /* Premium Modal Styles - Step Id: 391 Match */
+    .premium-order-modal .swal2-popup {
+        padding: 0;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    .premium-order-modal .swal2-title {
+        display: none !important;
+        /* Managed by custom header */
+    }
+
+    .premium-order-modal .swal2-html-container {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .user-order-detail {
+        text-align: left;
+        background: #f4f6fb;
+    }
+
+    .user-order-detail__header {
+        background: #1494a9;
+        color: #fff;
+        padding: 15px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .user-order-detail__close {
+        background: none;
+        border: none;
+        color: #fff;
+        font-size: 24px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .user-order-detail__body {
+        padding: 20px;
+    }
+
+    .user-order-detail__section {
+        background: #fff;
+        border: 1px solid #e5edf0;
+        border-radius: 12px;
+        padding: 14px;
+        margin-bottom: 20px;
+    }
+
+    .user-order-detail__row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px dashed #e5e7eb;
+    }
+
+    .user-order-detail__row:last-child {
+        border-bottom: none;
+    }
+
+    .user-order-detail__label {
+        color: #6b7280;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .user-order-detail__value {
+        color: #111827;
+        font-weight: 600;
+        font-size: 14px;
+        text-align: right;
+    }
+
+    /* Pill-style Status Badges for Modal */
+    .user-order-detail__status-pill {
+        padding: 4px 12px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .user-order-detail__status-pill.is-completed {
+        background: #eafaf0;
+        color: #16a34a;
+    }
+
+    .user-order-detail__status-pill.is-pending {
+        background: #fffbeb;
+        color: #d97706;
+    }
+
+    .user-order-detail__status-pill.is-cancelled {
+        background: #fef2f2;
+        color: #dc2626;
+    }
+
+    .user-order-detail__block-label {
+        font-size: 15px;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 12px;
+        display: block;
+    }
+
+    .user-order-detail__content-box {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 10px 12px;
+        border: 1px solid #dbe4e8;
+        background: #f9fcfd;
+        border-radius: 10px;
+        position: relative;
+    }
+
+    .user-order-detail__textarea {
+        flex: 1;
+        background: transparent;
+        border: none;
+        padding: 0;
+        margin: 0;
+        font-family: inherit;
+        font-size: 14.5px;
+        font-weight: 600;
+        color: #0f172a;
+        line-height: 1.5;
+        resize: none;
+        overflow: hidden;
+        min-height: 24px;
+    }
+
+    .user-order-detail__textarea:focus {
+        outline: none;
+    }
+
+    .btn-copy-pill {
+        flex-shrink: 0;
+        background: #1494a9;
+        color: #fff;
+        border: none;
+        padding: 6px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        transition: 0.2s;
+    }
+
+    .btn-copy-pill:hover {
+        opacity: 0.9;
     }
 </style>
 
@@ -133,12 +409,12 @@ require __DIR__ . '/layout/header.php';
             <table id="order-history-table" class="table table-hover align-middle mb-0 user-history-table">
                 <thead class="table-light">
                     <tr>
-                        <th class="py-3 text-nowrap text-start">SẢN PHẨM</th>
-                        <th class="py-3 text-nowrap text-center">TÌNH TRẠNG</th>
-                        <th class="py-3 text-nowrap text-center">SL</th>
-                        <th class="py-3 text-nowrap text-center">THANH TOÁN</th>
-                        <th class="py-3 text-nowrap text-center">THỜI GIAN</th>
-                        <th class="py-3 text-nowrap text-center">THAO TÁC</th>
+                        <th class="text-start">SẢN PHẨM</th>
+                        <th class="text-center">SL</th>
+                        <th class="text-start">NỘI DUNG</th>
+                        <th class="text-center">THANH TOÁN</th>
+                        <th class="text-center">THỜI GIAN</th>
+                        <th class="text-center">THAO TÁC</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -238,36 +514,47 @@ require __DIR__ . '/layout/header.php';
                         }
                     },
                     columns: [
-                        // Cột: Sản phẩm — wrap text tự nhiên, không bao giờ rộng hơn container
                         {
                             data: 'product_name',
                             className: 'order-cell-product text-start',
                             render: function (data, type, row) {
-                                return '<div class="order-product-name fw-semibold text-dark text-start">' + escapeHtml(data || '') + '</div>';
+                                let html = '<div class="order-product-name fw-bold">' + escapeHtml(data || '') + '</div>';
+                                html += '<div>' + self._renderStatusBadge(row.status_label || row.status || '', row.status) + '</div>';
+                                return html;
                             }
                         },
-                        // Cột: Tình trạng
-                        {
-                            data: null,
-                            className: 'text-center order-cell-status',
-                            render: function (data, type, row) {
-                                return self._renderStatusBadge(row.status_label || row.status || '', row.status);
-                            }
-                        },
-                        // Cột: Số lượng
                         {
                             data: 'quantity',
-                            className: 'text-center text-nowrap order-cell-qty'
+                            className: 'text-center fw-bold order-cell-qty',
+                            render: function (data) {
+                                return '<span class="text-muted">x' + data + '</span>';
+                            }
                         },
-                        // Cột: Thanh toán
+                        {
+                            data: 'delivery_content',
+                            className: 'order-cell-content',
+                            render: function (data, type, row) {
+                                if (!data) return '<span class="text-muted small"><em>Đang xử lý...</em></span>';
+                                const clean = data.trim();
+                                if (!clean) return '<span class="text-muted small"><em>Đang xử lý...</em></span>';
+
+                                return `
+                                    <div class="content-textarea-wrap">
+                                        <textarea class="content-textarea" readonly rows="2">${escapeHtml(clean)}</textarea>
+                                        <button type="button" class="btn-copy-absolute js-copy-now" data-text="${escapeHtml(clean)}" title="Copy nhanh">
+                                            <i class="far fa-copy"></i>
+                                        </button>
+                                    </div>
+                                `;
+                            }
+                        },
                         {
                             data: 'payment',
                             className: 'text-center text-nowrap order-cell-payment',
                             render: function (data) {
-                                return '<span class="fw-bold" style="color:#00ad5c;">' + fmtMoney(data) + '</span>';
+                                return '<span class="fw-bold" style="color:#059669;">' + fmtMoney(data) + '</span>';
                             }
                         },
-                        // Cột: Thời gian
                         {
                             data: null,
                             className: 'text-center text-nowrap order-cell-time',
@@ -275,7 +562,6 @@ require __DIR__ . '/layout/header.php';
                                 return self._renderTimeCell(row);
                             }
                         },
-                        // Cột: Thao tác
                         {
                             data: null,
                             className: 'text-center order-cell-actions',
@@ -347,6 +633,33 @@ require __DIR__ . '/layout/header.php';
                 $('#order-history-table').on('click', '.js-delete-order', function () {
                     self.deleteOrder($(this).data('id'));
                 });
+
+                $('#order-history-table').on('click', '.js-copy-now', function (e) {
+                    e.stopPropagation();
+                    const txt = $(this).data('text');
+                    copyToClipboard(txt).then(() => {
+                        const $icon = $(this).find('i');
+                        $icon.removeClass('far fa-copy').addClass('fas fa-check');
+                        setTimeout(() => {
+                            $icon.removeClass('fas fa-check').addClass('far fa-copy');
+                        }, 1000);
+                        SwalHelper.toast('Đã copy nội dung!', 'success');
+                    });
+                });
+
+                // Modal copy button (delegated)
+                $(document).on('click', '.js-modal-copy', function() {
+                    const targetId = $(this).data('target');
+                    const txt = $('#' + targetId).val();
+                    copyToClipboard(txt).then(() => {
+                        const originalText = $(this).text();
+                        $(this).text('Copied!').prop('disabled', true);
+                        setTimeout(() => {
+                            $(this).text(originalText).prop('disabled', false);
+                        }, 1500);
+                        SwalHelper.toast('Đã copy nội dung!', 'success');
+                    });
+                });
             }
 
             // ── Render Helpers ───────────────────────────────────────────────
@@ -367,15 +680,25 @@ require __DIR__ . '/layout/header.php';
             _getStatusClass(status) {
                 const s = String(status || '').trim().toLowerCase();
                 if (s === 'completed') return 'is-completed';
-                if (s === 'pending') return 'is-pending';
-                if (s === 'processing') return 'is-processing';
                 if (s === 'cancelled' || s === 'canceled' || s === 'failed') return 'is-cancelled';
-                return 'is-default';
+                // Everything else (pending, processing, etc.) is orange
+                return 'is-pending';
             }
 
             _renderStatusBadge(label, status) {
+                const s = String(status || '').trim().toLowerCase();
+                let displayLabel = label || status || '--';
+
+                if (s === 'completed') {
+                    displayLabel = 'Hoàn tất';
+                } else if (s === 'cancelled' || s === 'canceled' || s === 'failed') {
+                    displayLabel = 'Đã hủy';
+                } else {
+                    displayLabel = 'Đang xử lý';
+                }
+
                 return '<span class="user-order-status ' + this._getStatusClass(status) + '">'
-                    + escapeHtml(String(label || status || '--'))
+                    + escapeHtml(displayLabel)
                     + '</span>';
             }
 
@@ -411,16 +734,22 @@ require __DIR__ . '/layout/header.php';
                     }
 
                     const o = data.order;
-                    const html = this._buildDetailHtml(o);
-
                     Swal.fire({
-                        title: 'Chi tiết đơn hàng',
-                        html: html,
-                        width: 760,
-                        confirmButtonText: 'Đóng'
+                        html: this._buildDetailHtml(o),
+                        showConfirmButton: false,
+                        width: '460px',
+                        focusConfirm: false,
+                        padding: '0',
+                        customClass: {
+                            container: 'premium-order-modal-container',
+                            popup: 'premium-order-modal'
+                        },
+                        showCloseButton: false,
+                        backdrop: `rgba(0,0,0,0.55)`
                     });
 
                 } catch (err) {
+                    console.error(err);
                     SwalHelper.closeLoading();
                     SwalHelper.error('Không thể tải chi tiết đơn hàng.');
                 }
@@ -455,47 +784,92 @@ require __DIR__ . '/layout/header.php';
             }
 
             _buildDetailHtml(o) {
-                const rows = [
-                    ['Sản phẩm', escapeHtml(o.product_name || '')],
-                    ['Mã đơn hàng', escapeHtml(o.order_code_short || o.order_code || '')],
-                    ['Số lượng', escapeHtml(o.quantity || 0)],
-                    ['Trạng thái', this._renderStatusBadge(o.status_label || o.status || '', o.status)],
-                    ['Ngày đặt', escapeHtml(o.created_at_display || o.created_at || '')],
-                    ['Thanh toán', '<span class="text-success fw-bold">' + fmtMoney(o.price || 0) + '</span>'],
-                ];
-                if (o.fulfilled_at_display) {
-                    rows.push(['Ngày giao', escapeHtml(o.fulfilled_at_display)]);
-                }
+                const self = this;
+                const status = String(o.status || '').toLowerCase();
+                const isPending = (status === 'pending' || status === 'processing');
+                const isCompleted = (status === 'completed');
+                
+                // Determine if this is a "requested" type order
+                const isRequestedOrder = (o.customer_input && o.customer_input.trim() !== '' && o.customer_input.trim().toLowerCase() !== 'không có');
 
-                let html = '<div class="user-order-detail"><div class="user-order-detail__grid">';
-                rows.forEach(function (pair) {
-                    html += '<div>'
-                        + '<div class="user-order-detail__label">' + pair[0] + '</div>'
-                        + '<div class="user-order-detail__value">' + pair[1] + '</div>'
-                        + '</div>';
-                });
-                html += '</div>';
+                let html = `
+                    <div class="user-order-detail">
+                        <div class="user-order-detail__header">
+                            <span>Chi tiết đơn hàng</span>
+                            <button type="button" class="user-order-detail__close" onclick="Swal.close()">×</button>
+                        </div>
+                        <div class="user-order-detail__body">
+                            <div class="user-order-detail__section">
+                                <div class="user-order-detail__row">
+                                    <span class="user-order-detail__label">Mã đơn</span>
+                                    <span class="user-order-detail__value">#${escapeHtml(o.order_code_short || o.order_code || '')}</span>
+                                </div>
+                                <div class="user-order-detail__row">
+                                    <span class="user-order-detail__label">Sản phẩm</span>
+                                    <span class="user-order-detail__value">${escapeHtml(o.product_name || '')}</span>
+                                </div>
+                                <div class="user-order-detail__row">
+                                    <span class="user-order-detail__label">Mã đơn hàng</span>
+                                    <span class="user-order-detail__value">#${escapeHtml(o.order_code || '')}</span>
+                                </div>
+                                <div class="user-order-detail__row">
+                                    <span class="user-order-detail__label">Trạng thái</span>
+                                    <span class="user-order-detail__status-pill ${this._getStatusClass(o.status)}">
+                                        ${escapeHtml(o.status_label || (isCompleted ? "Hoàn tất" : (isPending ? "Đang xử lý" : (o.status || "Đã hủy"))))}
+                                    </span>
+                                </div>
+                                <div class="user-order-detail__row">
+                                    <span class="user-order-detail__label">Số lượng</span>
+                                    <span class="user-order-detail__value">x${o.quantity || 1}</span>
+                                </div>
+                                <div class="user-order-detail__row">
+                                    <span class="user-order-detail__label">Tổng thanh toán</span>
+                                    <span class="user-order-detail__value">${fmtMoney(o.price || 0)}</span>
+                                </div>
+                                <div class="user-order-detail__row">
+                                    <span class="user-order-detail__label">Thời gian đặt</span>
+                                    <span class="user-order-detail__value">${o.created_at_display || o.created_at || ''}</span>
+                                </div>
+                                ${ (isRequestedOrder || o.fulfilled_at_display) ? `
+                                <div class="user-order-detail__row">
+                                    <span class="user-order-detail__label">Thời gian giao</span>
+                                    <span class="user-order-detail__value">
+                                        ${isPending ? '<span class="text-warning">Đang xử lý</span>' : (o.fulfilled_at_display || '--')}
+                                    </span>
+                                </div>
+                                ` : '' }
+                            </div>
 
-                if (o.customer_input && o.customer_input.trim() !== '' && o.customer_input.trim().toLowerCase() !== 'không có') {
-                    html += '<div class="user-order-detail__block">'
-                        + '<div class="user-order-detail__label">Thông tin bạn gửi</div>'
-                        + '<div class="user-order-detail__textarea">' + nl2brSafe(o.customer_input) + '</div>'
-                        + '</div>';
-                }
+                            ${isRequestedOrder ? `
+                            <div class="user-order-detail__section">
+                                <h3 class="user-order-detail__block-label">Thông tin yêu cầu của bạn</h3>
+                                <div class="user-order-detail__content-box">
+                                    <textarea class="user-order-detail__textarea" readonly id="modal-req-text">${escapeHtml(o.customer_input)}</textarea>
+                                    <button type="button" class="btn-copy-pill js-modal-copy" data-target="modal-req-text">Copy</button>
+                                </div>
+                            </div>
+                            ` : ''}
 
-                html += '<div class="user-order-detail__block">'
-                    + '<div class="user-order-detail__label">Nội dung bàn giao</div>'
-                    + '<div class="user-order-detail__textarea">' + nl2brSafe(o.delivery_content || 'Chưa có nội dung bàn giao') + '</div>'
-                    + '</div>';
-
-                if (o.cancel_reason) {
-                    html += '<div class="user-order-detail__block">'
-                        + '<div class="user-order-detail__label">Lý do hủy / phản hồi</div>'
-                        + '<div class="user-order-detail__textarea">' + nl2brSafe(o.cancel_reason) + '</div>'
-                        + '</div>';
-                }
-
-                html += '</div>';
+                            <div class="user-order-detail__section">
+                                <h3 class="user-order-detail__block-label">Nội dung sản phẩm / bàn giao</h3>
+                                <div class="user-order-detail__content-box">
+                                    <textarea class="user-order-detail__textarea" readonly id="modal-del-text" 
+                                        style="${isPending ? 'font-style:italic;color:#94a3b8;' : ''}">${escapeHtml(isPending ? 'Đang xử lý...' : (o.delivery_content || 'Chưa có nội dung'))}</textarea>
+                                    ${!isPending && o.delivery_content ? `
+                                        <button type="button" class="btn-copy-pill js-modal-copy" data-target="modal-del-text">Copy</button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            
+                            ${o.cancel_reason ? `
+                            <div class="user-order-detail__section" style="border-color:#fecaca;background:#fff5f5;">
+                                <h3 class="user-order-detail__block-label" style="color:#b91c1c;">Lý do hủy / Phản hồi</h3>
+                                <p style="margin:0;font-size:14px;color:#b91c1c;">${escapeHtml(o.cancel_reason)}</p>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
                 return html;
             }
         }
