@@ -5,6 +5,7 @@ RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
 # NO RewriteBase — Apache auto-detects from .htaccess directory
 # Local: /kaishop_v2/  |  Production: /  — zero config needed
+ErrorDocument 403 403.php
 ErrorDocument 500 500.php
 
 # ─── SECURITY: Block access to sensitive files and directories ───
@@ -28,9 +29,19 @@ RewriteRule ^storage/ - [F,L]
 Options -Indexes
 
 # --- SECURITY: Block common scraper/bot User-Agents ---
-# Do not apply to machine-to-machine endpoints.
+# Only apply this filter to public GET/HEAD requests.
+# Business POST actions (purchase, login, deposit, profile updates, APIs)
+# must always reach PHP so the app can validate them correctly.
+RewriteCond %{REQUEST_METHOD} !POST
+RewriteCond %{REQUEST_METHOD} !PUT
+RewriteCond %{REQUEST_METHOD} !PATCH
+RewriteCond %{REQUEST_METHOD} !DELETE
 RewriteCond %{REQUEST_URI} !^/(?:[^/]+/)?deploy\.php$ [NC]
 RewriteCond %{REQUEST_URI} !^/(?:[^/]+/)?api/(?:sepay/webhook|telegram/webhook|[A-Za-z0-9_-]{16,120}(?:/index\.php)?)$ [NC]
+RewriteCond %{REQUEST_URI} !^/(?:[^/]+/)?product/[0-9]+/(?:quote|purchase)$ [NC]
+RewriteCond %{REQUEST_URI} !^/(?:[^/]+/)?(?:login|register|password-reset)(?:/.*)?$ [NC]
+RewriteCond %{REQUEST_URI} !^/(?:[^/]+/)?(?:deposit|deposit-create|deposit-bank|balance)(?:/.*)?$ [NC]
+RewriteCond %{REQUEST_URI} !^/(?:[^/]+/)?(?:profile|password)(?:/.*)?$ [NC]
 RewriteCond %{HTTP_USER_AGENT} (curl|wget|python|scrapy|httpclient|java|libwww|mechanize|phantom|headless|sqlmap|nikto|nmap|masscan) [NC]
 RewriteRule ^ - [F,L]
 
