@@ -174,33 +174,55 @@ require __DIR__ . '/layout/header.php';
         color: #3b82f6;
     }
 
-    /* Premium Modal Styles */
-    /* Premium Modal Styles - Step Id: 391 Match */
+    /* Refactored Premium Modal Styles */
     .premium-order-modal .swal2-popup {
-        padding: 0;
-        border-radius: 16px;
-        overflow: hidden;
+        padding: 0 !important;
+        border-radius: 14px !important;
+        overflow: hidden !important;
+        box-shadow: 0 18px 50px rgba(0, 0, 0, .18) !important;
+        width: 100% !important;
+        max-width: 460px !important;
+        background: #fff !important;
+    }
+
+    @media (max-width: 767.98px) {
+        .premium-order-modal .swal2-popup {
+            width: 95vw !important;
+            max-width: 95vw !important;
+            margin: 0 auto;
+        }
+
+        .user-order-detail__body {
+            padding: 15px !important;
+        }
+
+        .user-order-detail__header {
+            padding: 12px 15px !important;
+            font-size: 16px !important;
+        }
     }
 
     .premium-order-modal .swal2-title {
         display: none !important;
-        /* Managed by custom header */
     }
 
     .premium-order-modal .swal2-html-container {
         margin: 0 !important;
         padding: 0 !important;
+        overflow: visible !important;
     }
 
     .user-order-detail {
+        width: 100%;
         text-align: left;
-        background: #f4f6fb;
+        border-radius: 14px;
+        background: #fff;
     }
 
     .user-order-detail__header {
         background: #1494a9;
         color: #fff;
-        padding: 15px 20px;
+        padding: 14px 18px;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -216,6 +238,11 @@ require __DIR__ . '/layout/header.php';
         line-height: 1;
         cursor: pointer;
         padding: 0;
+        transition: opacity 0.2s;
+    }
+
+    .user-order-detail__close:hover {
+        opacity: 0.8;
     }
 
     .user-order-detail__body {
@@ -223,11 +250,11 @@ require __DIR__ . '/layout/header.php';
     }
 
     .user-order-detail__section {
-        background: #fff;
-        border: 1px solid #e5edf0;
+        background: #f8fbfc;
+        border: 1px solid #cbd5e1;
         border-radius: 12px;
         padding: 14px;
-        margin-bottom: 20px;
+        margin-bottom: 16px;
     }
 
     .user-order-detail__row {
@@ -235,56 +262,51 @@ require __DIR__ . '/layout/header.php';
         justify-content: space-between;
         align-items: flex-start;
         gap: 12px;
-        padding: 10px 0;
+        padding: 8px 0;
         border-bottom: 1px dashed #e5e7eb;
     }
 
     .user-order-detail__row:last-child {
         border-bottom: none;
+        padding-bottom: 0;
     }
 
     .user-order-detail__label {
         color: #6b7280;
         font-size: 14px;
-        font-weight: 500;
     }
 
     .user-order-detail__value {
         color: #111827;
-        font-weight: 600;
         font-size: 14px;
+        font-weight: 600;
         text-align: right;
     }
 
-    /* Pill-style Status Badges for Modal */
     .user-order-detail__status-pill {
-        padding: 4px 12px;
+        color: #16a34a;
+        background: #eafaf0;
+        padding: 4px 10px;
         border-radius: 999px;
         font-size: 13px;
         font-weight: 700;
     }
 
-    .user-order-detail__status-pill.is-completed {
-        background: #eafaf0;
-        color: #16a34a;
-    }
-
     .user-order-detail__status-pill.is-pending {
-        background: #fffbeb;
         color: #d97706;
+        background: #fffbeb;
     }
 
     .user-order-detail__status-pill.is-cancelled {
-        background: #fef2f2;
         color: #dc2626;
+        background: #fef2f2;
     }
 
     .user-order-detail__block-label {
+        margin: 0 0 10px;
         font-size: 15px;
+        color: #111827;
         font-weight: 700;
-        color: #1e293b;
-        margin-bottom: 12px;
-        display: block;
     }
 
     .user-order-detail__content-box {
@@ -292,27 +314,27 @@ require __DIR__ . '/layout/header.php';
         align-items: center;
         justify-content: space-between;
         gap: 10px;
-        padding: 10px 12px;
-        border: 1px solid #dbe4e8;
+        border: 1px solid #cbd5e1;
         background: #f9fcfd;
         border-radius: 10px;
-        position: relative;
+        padding: 10px 12px;
     }
 
     .user-order-detail__textarea {
+        font-size: 14px;
+        font-weight: 600;
+        color: #0f172a;
+        word-break: break-all;
         flex: 1;
         background: transparent;
         border: none;
         padding: 0;
         margin: 0;
-        font-family: inherit;
-        font-size: 14.5px;
-        font-weight: 600;
-        color: #0f172a;
-        line-height: 1.5;
         resize: none;
+        font-family: inherit;
         overflow: hidden;
-        min-height: 24px;
+        min-height: 20px;
+        line-height: 1.5;
     }
 
     .user-order-detail__textarea:focus {
@@ -320,20 +342,20 @@ require __DIR__ . '/layout/header.php';
     }
 
     .btn-copy-pill {
-        flex-shrink: 0;
         background: #1494a9;
         color: #fff;
         border: none;
-        padding: 6px 14px;
         border-radius: 8px;
-        cursor: pointer;
-        font-size: 13px;
+        padding: 6px 10px;
+        font-size: 11px;
         font-weight: 600;
-        transition: 0.2s;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: opacity 0.2s;
     }
 
     .btn-copy-pill:hover {
-        opacity: 0.9;
+        opacity: .92;
     }
 </style>
 
@@ -648,14 +670,20 @@ require __DIR__ . '/layout/header.php';
                 });
 
                 // Modal copy button (delegated)
-                $(document).on('click', '.js-modal-copy', function() {
+                $(document).on('click', '.js-modal-copy-text', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
                     const targetId = $(this).data('target');
-                    const txt = $('#' + targetId).val();
+                    const $el = $('#' + targetId);
+                    const txt = $el.is('textarea, input') ? $el.val() : $el.text();
+
+                    const $btn = $(this);
+                    const originalHtml = $btn.html();
+
                     copyToClipboard(txt).then(() => {
-                        const originalText = $(this).text();
-                        $(this).text('Copied!').prop('disabled', true);
+                        $btn.html('<i class="fa-solid fa-check"></i>').prop('disabled', true);
                         setTimeout(() => {
-                            $(this).text(originalText).prop('disabled', false);
+                            $btn.html(originalHtml).prop('disabled', false);
                         }, 1500);
                         SwalHelper.toast('Đã copy nội dung!', 'success');
                     });
@@ -745,7 +773,9 @@ require __DIR__ . '/layout/header.php';
                             popup: 'premium-order-modal'
                         },
                         showCloseButton: false,
-                        backdrop: `rgba(0,0,0,0.55)`
+                        backdrop: `rgba(0,0,0,0.55)`,
+                        allowOutsideClick: true,  // Allow closing on backdrop click
+                        allowEscapeKey: true      // Still allow ESC to close for UX
                     });
 
                 } catch (err) {
@@ -788,7 +818,7 @@ require __DIR__ . '/layout/header.php';
                 const status = String(o.status || '').toLowerCase();
                 const isPending = (status === 'pending' || status === 'processing');
                 const isCompleted = (status === 'completed');
-                
+
                 // Determine if this is a "requested" type order
                 const isRequestedOrder = (o.customer_input && o.customer_input.trim() !== '' && o.customer_input.trim().toLowerCase() !== 'không có');
 
@@ -801,16 +831,12 @@ require __DIR__ . '/layout/header.php';
                         <div class="user-order-detail__body">
                             <div class="user-order-detail__section">
                                 <div class="user-order-detail__row">
-                                    <span class="user-order-detail__label">Mã đơn</span>
-                                    <span class="user-order-detail__value">#${escapeHtml(o.order_code_short || o.order_code || '')}</span>
+                                    <span class="user-order-detail__label">Mã đơn hàng</span>     
+                                    <span class="user-order-detail__value">#${escapeHtml(o.order_code || '')}</span>
                                 </div>
                                 <div class="user-order-detail__row">
                                     <span class="user-order-detail__label">Sản phẩm</span>
                                     <span class="user-order-detail__value">${escapeHtml(o.product_name || '')}</span>
-                                </div>
-                                <div class="user-order-detail__row">
-                                    <span class="user-order-detail__label">Mã đơn hàng</span>
-                                    <span class="user-order-detail__value">#${escapeHtml(o.order_code || '')}</span>
                                 </div>
                                 <div class="user-order-detail__row">
                                     <span class="user-order-detail__label">Trạng thái</span>
@@ -830,22 +856,20 @@ require __DIR__ . '/layout/header.php';
                                     <span class="user-order-detail__label">Thời gian đặt</span>
                                     <span class="user-order-detail__value">${o.created_at_display || o.created_at || ''}</span>
                                 </div>
-                                ${ (isRequestedOrder || o.fulfilled_at_display) ? `
+                                ${(isRequestedOrder && !isPending && o.fulfilled_at_display) ? `
                                 <div class="user-order-detail__row">
                                     <span class="user-order-detail__label">Thời gian giao</span>
-                                    <span class="user-order-detail__value">
-                                        ${isPending ? '<span class="text-warning">Đang xử lý</span>' : (o.fulfilled_at_display || '--')}
-                                    </span>
+                                    <span class="user-order-detail__value">${o.fulfilled_at_display}</span>
                                 </div>
-                                ` : '' }
+                                ` : ''}
                             </div>
 
                             ${isRequestedOrder ? `
                             <div class="user-order-detail__section">
                                 <h3 class="user-order-detail__block-label">Thông tin yêu cầu của bạn</h3>
                                 <div class="user-order-detail__content-box">
-                                    <textarea class="user-order-detail__textarea" readonly id="modal-req-text">${escapeHtml(o.customer_input)}</textarea>
-                                    <button type="button" class="btn-copy-pill js-modal-copy" data-target="modal-req-text">Copy</button>
+                                    <textarea class="user-order-detail__textarea" readonly id="modal-req-text" rows="1">${escapeHtml(o.customer_input)}</textarea>
+                                    <button type="button" class="btn-copy-pill js-modal-copy-text" data-target="modal-req-text"><i class="fa-solid fa-copy"></i></button>
                                 </div>
                             </div>
                             ` : ''}
@@ -853,10 +877,10 @@ require __DIR__ . '/layout/header.php';
                             <div class="user-order-detail__section">
                                 <h3 class="user-order-detail__block-label">Nội dung sản phẩm / bàn giao</h3>
                                 <div class="user-order-detail__content-box">
-                                    <textarea class="user-order-detail__textarea" readonly id="modal-del-text" 
-                                        style="${isPending ? 'font-style:italic;color:#94a3b8;' : ''}">${escapeHtml(isPending ? 'Đang xử lý...' : (o.delivery_content || 'Chưa có nội dung'))}</textarea>
+                                    <textarea class="user-order-detail__textarea" readonly id="modal-del-text" rows="1"
+                                        style="${isPending ? 'font-style:italic;color:#94a3b8;' : ''}">${isPending ? 'Đang xử lý...' : (o.delivery_content || 'Chưa có nội dung')}</textarea>
                                     ${!isPending && o.delivery_content ? `
-                                        <button type="button" class="btn-copy-pill js-modal-copy" data-target="modal-del-text">Copy</button>
+                                        <button type="button" class="btn-copy-pill js-modal-copy-text" data-target="modal-del-text"><i class="fa-solid fa-copy"></i></button>
                                     ` : ''}
                                 </div>
                             </div>
