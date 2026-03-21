@@ -37,6 +37,15 @@ class DepositService
         $ttlSeconds = $this->pendingDepositModel->getPendingTtlSeconds();
 
         $methods = $this->getAvailableMethods($siteConfig);
+        $isEnglishStorefront = function_exists('app_is_english') && app_is_english() && PHP_SAPI !== 'cli';
+        $methods = array_values(array_filter($methods, static function (array $method) use ($isEnglishStorefront): bool {
+            $code = (string) ($method['code'] ?? '');
+            if ($isEnglishStorefront) {
+                return $code === self::METHOD_BINANCE;
+            }
+
+            return $code === self::METHOD_BANK_SEPAY;
+        }));
         $availableCodes = [];
         $enabledCodes = [];
         foreach ($methods as $method) {
@@ -97,6 +106,7 @@ class DepositService
             'activeDepositPayload' => $activeDepositPayload,
             'ttlSeconds' => $ttlSeconds,
         ];
+
     }
 
     /**
@@ -161,6 +171,7 @@ class DepositService
                 'qr_url' => $this->buildVietQrUrl($bankName, $bankAccount, $amount, (string) $result['deposit_code'], $bankOwner),
             ],
         ];
+
     }
     /**
      * @param array<string,mixed> $user
@@ -246,6 +257,7 @@ class DepositService
                 'server_now_ts' => $this->nowTs(),
             ],
         ];
+
     }
 
     public function makeBinanceService(array $siteConfig): ?BinancePayService

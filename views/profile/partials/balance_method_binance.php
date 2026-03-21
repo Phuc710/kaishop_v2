@@ -19,8 +19,8 @@ $quickButtons = [
         <h4 class="font-weight-bold text-dark">METHOD UNDER MAINTENANCE</h4>
         <p class="text-muted">Binance Pay is currently under maintenance for system updates. Please check back later or use
             other payment methods.</p>
-        <a href="<?= url('balance/bank') ?>" class="btn btn-outline-primary mt-3">
-            <i class="fas fa-exchange-alt me-1"></i> Switch to Bank Transfer
+        <a href="<?= url('') ?>" class="btn btn-outline-primary mt-3">
+            <i class="fas fa-home me-1"></i> Back to Home
         </a>
     </div>
     <?php return; endif; ?>

@@ -13,8 +13,8 @@ $isBankEnabled = ((int) ($chungapi['bank_pay_enabled'] ?? 1) === 1);
         <h4 class="font-weight-bold text-dark">PHƯƠNG THỨC ĐANG BẢO TRÌ</h4>
         <p class="text-muted">Kênh nạp ngân hàng hiện đang được bảo trì để nâng cấp hệ thống. Vui lòng quay lại sau hoặc sử
             dụng phương thức khác.</p>
-        <a href="<?= url('balance/binance') ?>" class="btn btn-outline-primary mt-3">
-            <i class="fas fa-exchange-alt me-1"></i> Chuyển sang Binance Pay
+        <a href="<?= url('') ?>" class="btn btn-outline-primary mt-3">
+            <i class="fas fa-home me-1"></i> Về trang chủ
         </a>
     </div>
     <?php return; endif; ?>

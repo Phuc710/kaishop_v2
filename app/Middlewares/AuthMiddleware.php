@@ -17,7 +17,7 @@ class AuthMiddleware {
      */
     public function handle() {
         if (!$this->authService->isLoggedIn()) {
-            header('Location: ' . BASE_URL . '/login');
+            header('Location: ' . url('login'));
             exit;
         }
         

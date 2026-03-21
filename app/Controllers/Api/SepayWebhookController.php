@@ -184,6 +184,74 @@ class SepayWebhookController extends Controller
             // Still process but log the discrepancy — use the actual transferred amount
         }
 
+        $orderId = (int) ($deposit['order_id'] ?? 0);
+        if ($orderId > 0) {
+            if ($transferAmount < $expectedAmount) {
+                return $this->json(['success' => true, 'message' => 'Order payment amount not enough']);
+            }
+
+            $purchaseService = new PurchaseService();
+            $finalize = $purchaseService->finalizeTelegramOrderPayment(
+                array_merge($deposit, ['method' => DepositService::METHOD_BANK_SEPAY]),
+                [
+                    'gateway' => 'sepay',
+                    'transaction_id' => ($referenceCode !== '' ? $referenceCode : (string) $sepayId),
+                    'paid_amount' => $transferAmount,
+                ]
+            );
+
+            if (empty($finalize['success'])) {
+                Logger::warning('Billing', 'order_payment_finalize_failed', 'SePay webhook: cannot finalize telegram order payment', [
+                    'sepay_id' => $sepayId,
+                    'deposit_code' => $depositCode,
+                    'order_id' => $orderId,
+                    'error' => (string) ($finalize['message'] ?? 'unknown'),
+                ]);
+                http_response_code(500);
+                return $this->json(['success' => false, 'message' => (string) ($finalize['message'] ?? 'Could not finalize order payment')]);
+            }
+
+            $this->depositModel->markComplete((int) $deposit['id'], $sepayId);
+
+            try {
+                if (class_exists('UserTelegramLink')) {
+                    $link = (new UserTelegramLink())->findByUserId((int) ($deposit['user_id'] ?? 0));
+                    if ($link && (int) ($link['telegram_id'] ?? 0) > 0) {
+                        $replyMarkup = [
+                            'inline_keyboard' => [
+                                [
+                                    ['text' => '📦 Đơn hàng', 'callback_data' => 'orders'],
+                                    ['text' => '🏠 Menu', 'callback_data' => 'menu'],
+                                ]
+                            ]
+                        ];
+                        $this->sendTelegramDirect(
+                            (int) $link['telegram_id'],
+                            $this->buildTelegramOrderPaidMessage(
+                                (array) ($finalize['order'] ?? []),
+                                'Bank',
+                                ($referenceCode !== '' ? $referenceCode : (string) $sepayId),
+                                $transferAmount
+                            ),
+                            $replyMarkup
+                        );
+                    }
+                }
+            } catch (Throwable $teleErr) {
+                // non-blocking
+            }
+
+            Logger::info('Billing', 'order_payment_completed', 'Thanh toan don Telegram qua SePay thanh cong', [
+                'sepay_id' => $sepayId,
+                'deposit_code' => $depositCode,
+                'order_id' => $orderId,
+                'amount' => $transferAmount,
+            ]);
+
+            http_response_code(200);
+            return $this->json(['success' => true, 'message' => 'Order payment completed']);
+        }
+
         // 8. Calculate bonus
         $bonusPercent = (int) $deposit['bonus_percent'];
         $bonusAmount = (int) ($transferAmount * $bonusPercent / 100);
@@ -313,6 +381,37 @@ class SepayWebhookController extends Controller
         // 14. Return success
         http_response_code(200);
         return $this->json(['success' => true, 'message' => 'Deposit credited']);
+    }
+
+    /**
+     * @param array<string,mixed> $order
+     */
+    private function buildTelegramOrderPaidMessage(array $order, string $methodLabel, string $transactionId, int $paidAmount): string
+    {
+        $orderCode = htmlspecialchars((string) ($order['order_code_short'] ?? $order['order_code'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $productName = htmlspecialchars((string) ($order['product_name'] ?? 'Sản phẩm'), ENT_QUOTES, 'UTF-8');
+        $quantity = max(1, (int) ($order['quantity'] ?? 1));
+        $status = (string) ($order['status'] ?? '');
+        $deliveryContent = trim((string) ($order['delivery_content'] ?? $order['stock_content_plain'] ?? ''));
+
+        $msg = "🎉 <b>THANH TOÁN THÀNH CÔNG</b>\n\n";
+        $msg .= "🧾 Mã đơn: <code>{$orderCode}</code>\n";
+        $msg .= "📦 Sản phẩm: <b>{$productName}</b>\n";
+        $msg .= "🔢 Số lượng: <b>{$quantity}</b>\n";
+        $msg .= "💳 Phương thức: <b>{$methodLabel}</b>\n";
+        $msg .= "💵 Đã nhận: <b>" . number_format($paidAmount, 0, ',', '.') . "đ</b>\n";
+        $msg .= "🔖 Giao dịch: <code>" . htmlspecialchars($transactionId, ENT_QUOTES, 'UTF-8') . "</code>\n";
+        $msg .= "━━━━━━━━━━━━━━";
+
+        if ($status === 'completed' && $deliveryContent !== '') {
+            $msg .= "\n\n🔑 <b>NỘI DUNG GIAO HÀNG</b>\n<code>" . htmlspecialchars($deliveryContent, ENT_QUOTES, 'UTF-8') . "</code>";
+        } elseif ($status === 'processing') {
+            $msg .= "\n\n🛠️ Đơn đã vào hàng chờ xử lý. Admin sẽ giao sớm cho bạn.";
+        } else {
+            $msg .= "\n\n📦 Đơn đã được ghi nhận. Bạn có thể xem lại trong mục Đơn hàng.";
+        }
+
+        return $msg;
     }
 
     private function hasColumn(string $table, string $column): bool

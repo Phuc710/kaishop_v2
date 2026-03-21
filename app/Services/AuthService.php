@@ -153,7 +153,7 @@ class AuthService {
      */
     public function requireAuth() {
         if ($this->getCurrentUser() === null) {
-            header('Location: ' . BASE_URL . '/login');
+            header('Location: ' . url('login'));
             exit;
         }
     }

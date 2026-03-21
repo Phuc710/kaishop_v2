@@ -83,6 +83,63 @@ if (PHP_SAPI === 'cli') {
 }
 define('BASE_URL', $baseUrl);
 
+if (!function_exists('app_request_path')) {
+    function app_request_path(bool $stripLocale = false): string
+    {
+        $requestPath = (string) (parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/');
+        $appDir = defined('APP_DIR') ? rtrim((string) APP_DIR, '/') : '';
+        if ($appDir !== '' && strpos($requestPath, $appDir) === 0) {
+            $requestPath = substr($requestPath, strlen($appDir));
+        }
+        if ($requestPath === '') {
+            $requestPath = '/';
+        }
+        if ($stripLocale) {
+            if ($requestPath === '/en') {
+                return '/';
+            }
+            if (strpos($requestPath, '/en/') === 0) {
+                $requestPath = substr($requestPath, 3);
+                if ($requestPath === '') {
+                    $requestPath = '/';
+                }
+            }
+        }
+        return $requestPath;
+    }
+}
+
+if (!defined('APP_LOCALE')) {
+    $localePath = strtolower(app_request_path(false));
+    $appLocale = ($localePath === '/en' || strpos($localePath, '/en/') === 0) ? 'en' : 'vi';
+    define('APP_LOCALE', $appLocale);
+}
+
+if (!defined('APP_LOCALE_PREFIX')) {
+    define('APP_LOCALE_PREFIX', APP_LOCALE === 'en' ? '/en' : '');
+}
+
+if (!function_exists('app_locale')) {
+    function app_locale(): string
+    {
+        return defined('APP_LOCALE') ? (string) APP_LOCALE : 'vi';
+    }
+}
+
+if (!function_exists('app_locale_prefix')) {
+    function app_locale_prefix(): string
+    {
+        return defined('APP_LOCALE_PREFIX') ? (string) APP_LOCALE_PREFIX : '';
+    }
+}
+
+if (!function_exists('app_is_english')) {
+    function app_is_english(): bool
+    {
+        return app_locale() === 'en';
+    }
+}
+
 if (!defined('APP_KEY')) {
     define('APP_KEY', (string) EnvHelper::get('APP_KEY', ''));
 }

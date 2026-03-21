@@ -32,7 +32,7 @@ class AuthController extends Controller
         $this->setNoCache();
         // Already logged in? Redirect to home
         if ($this->authService->isLoggedIn()) {
-            $this->redirect(BASE_URL . '/');
+            $this->redirect(url(''));
         }
 
         $siteConfig = Config::getSiteConfig();
@@ -46,21 +46,21 @@ class AuthController extends Controller
     {
         $this->setNoCache();
         if ($this->authService->isLoggedIn()) {
-            $this->redirect(BASE_URL . '/');
+            $this->redirect(url(''));
         }
 
         $challengeId = trim((string) $this->get('challenge_id', ''));
         if ($challengeId === '') {
-            $this->redirect(BASE_URL . '/login');
+            $this->redirect(url('login'));
         }
 
         $challengeRow = $this->findOtpChallenge($challengeId, 'login_2fa');
         if (!$challengeRow) {
-            $this->redirect(BASE_URL . '/login');
+            $this->redirect(url('login'));
         }
 
         if (!empty($challengeRow['consumed_at']) || !empty($challengeRow['verified_at'])) {
-            $this->redirect(BASE_URL . '/login');
+            $this->redirect(url('login'));
         }
 
         $otpEmail = trim((string) ($challengeRow['email'] ?? ''));
@@ -237,7 +237,7 @@ class AuthController extends Controller
     {
         $this->setNoCache();
         if ($this->authService->isLoggedIn()) {
-            $this->redirect(BASE_URL . '/');
+            $this->redirect(url(''));
         }
 
         $siteConfig = Config::getSiteConfig();
@@ -316,7 +316,7 @@ class AuthController extends Controller
             return $this->json([
                 'success' => true,
                 'message' => 'Đăng ký thành công.',
-                'redirect' => BASE_URL . '/',
+                'redirect' => url(''),
             ]);
         }
 
@@ -329,7 +329,7 @@ class AuthController extends Controller
     public function logout()
     {
         $this->authService->logout();
-        $this->redirect(BASE_URL . '/login');
+        $this->redirect(url('login'));
     }
 
     /**
@@ -339,7 +339,7 @@ class AuthController extends Controller
     {
         $this->setNoCache();
         if ($this->authService->isLoggedIn()) {
-            $this->redirect(BASE_URL . '/');
+            $this->redirect(url(''));
         }
 
         $siteConfig = Config::getSiteConfig();
@@ -417,7 +417,7 @@ class AuthController extends Controller
     {
         $this->setNoCache();
         if ($this->authService->isLoggedIn()) {
-            $this->redirect(BASE_URL . '/');
+            $this->redirect(url(''));
         }
 
         $siteConfig = Config::getSiteConfig();
@@ -501,7 +501,7 @@ class AuthController extends Controller
         return $this->json([
             'success' => true,
             'message' => 'Xác minh OTP thành công. Đăng nhập thành công.',
-            'redirect' => BASE_URL . '/',
+            'redirect' => url(''),
             'access_expires_in' => 900,
             'refresh_expires_in' => $rememberMe ? 1209600 : 86400
         ]);
@@ -760,7 +760,7 @@ class AuthController extends Controller
         return $this->json([
             'success' => true,
             'message' => 'Đăng nhập Google thành công.',
-            'redirect' => BASE_URL . '/',
+            'redirect' => url(''),
             'access_expires_in' => 900,
             'refresh_expires_in' => $rememberMe ? 1209600 : 86400
         ]);

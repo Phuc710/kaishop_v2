@@ -10,21 +10,18 @@ $isLocalHost = $host === 'localhost'
     || $host === '[::1]'
     || strpos($host, '[::1]:') === 0;
 
-$requestPath = (string) (parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/');
-$appDir = defined('APP_DIR') ? rtrim((string) APP_DIR, '/') : '';
-if ($appDir !== '' && strpos($requestPath, $appDir) === 0) {
-    $requestPath = substr($requestPath, strlen($appDir));
-}
-if ($requestPath === '') {
-    $requestPath = '/';
-}
+$requestPath = function_exists('app_request_path') ? app_request_path(false) : ((string) (parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/'));
+$requestPathNoLocale = function_exists('app_request_path') ? app_request_path(true) : $requestPath;
 
 $siteName = (string) ($chungapi['ten_web'] ?? 'KaiShop');
+$isEnglishPage = function_exists('app_is_english') && app_is_english();
 $defaultTitle = $siteName;
 $defaultDescription = (string) ($chungapi['mo_ta'] ?? 'Dịch vụ số chất lượng cao.');
 $defaultKeywords = (string) ($chungapi['key_words'] ?? '');
 $defaultImage = (string) ($chungapi['banner'] ?? ($chungapi['logo'] ?? ''));
-$defaultCanonical = url(ltrim($requestPath, '/'));
+$viCanonical = rtrim((string) BASE_URL, '/') . ($requestPathNoLocale === '/' ? '/' : $requestPathNoLocale);
+$enCanonical = rtrim((string) BASE_URL, '/') . '/en' . ($requestPathNoLocale === '/' ? '' : $requestPathNoLocale);
+$defaultCanonical = $isEnglishPage ? $enCanonical : $viCanonical;
 
 $seoTitleValue = isset($seoTitle) && trim((string) $seoTitle) !== '' ? trim((string) $seoTitle) : $defaultTitle;
 $seoDescriptionValue = isset($seoDescription) && trim((string) $seoDescription) !== '' ? trim((string) $seoDescription) : $defaultDescription;
@@ -46,7 +43,7 @@ $privatePaths = [
 ];
 $isPrivatePage = false;
 foreach ($privatePaths as $p) {
-    if ($requestPath === $p || (substr($p, -1) !== '/' && strpos($requestPath, $p . '/') === 0)) {
+    if ($requestPathNoLocale === $p || (substr($p, -1) !== '/' && strpos($requestPathNoLocale, $p . '/') === 0)) {
         $isPrivatePage = true;
         break;
     }
@@ -74,7 +71,7 @@ $lightweightPaths = [
 ];
 $isLightweightPath = false;
 foreach ($lightweightPaths as $p) {
-    if ($requestPath === $p || (substr($p, -1) !== '/' && strpos($requestPath, $p . '/') === 0)) {
+    if ($requestPathNoLocale === $p || (substr($p, -1) !== '/' && strpos($requestPathNoLocale, $p . '/') === 0)) {
         $isLightweightPath = true;
         break;
     }
@@ -83,8 +80,8 @@ $defaultInteractiveBundle = !$isLightweightPath;
 
 $resolvedAssetFlags = [
     'interactive_bundle' => array_key_exists('interactive_bundle', $pageAssets) ? (bool) $pageAssets['interactive_bundle'] : $defaultInteractiveBundle,
-    'datatables' => array_key_exists('datatables', $pageAssets) ? (bool) $pageAssets['datatables'] : ($requestPath === '/history-code'),
-    'flatpickr' => array_key_exists('flatpickr', $pageAssets) ? (bool) $pageAssets['flatpickr'] : ($requestPath === '/history-code'),
+    'datatables' => array_key_exists('datatables', $pageAssets) ? (bool) $pageAssets['datatables'] : ($requestPathNoLocale === '/history-code'),
+    'flatpickr' => array_key_exists('flatpickr', $pageAssets) ? (bool) $pageAssets['flatpickr'] : ($requestPathNoLocale === '/history-code'),
     'turnstile' => array_key_exists('turnstile', $pageAssets) ? (bool) $pageAssets['turnstile'] : false,
     // Split heavy interactive assets so pages can opt out safely without disabling all scripts.
     'vendor_quill' => array_key_exists('vendor_quill', $pageAssets) ? (bool) $pageAssets['vendor_quill'] : $defaultInteractiveBundle,
@@ -101,6 +98,10 @@ if ($isLocalHost) {
 $GLOBALS['pageAssetFlagsResolved'] = $resolvedAssetFlags;
 
 $ogType = isset($seoOgType) && trim((string) $seoOgType) !== '' ? trim((string) $seoOgType) : 'website';
+$geoRegion = $isEnglishPage ? 'GLOBAL' : 'VN';
+$geoPlacename = $isEnglishPage ? 'International' : 'Việt Nam';
+$languageName = $isEnglishPage ? 'English' : 'Vietnamese';
+$ogLocale = $isEnglishPage ? 'en_US' : 'vi_VN';
 ?>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -112,14 +113,15 @@ $ogType = isset($seoOgType) && trim((string) $seoOgType) !== '' ? trim((string) 
 <meta name="theme-color" content="#ff6900">
 <meta name="author" content="<?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?>">
 <meta name="revisit-after" content="3 days">
-<meta name="geo.region" content="VN">
+<meta name="geo.region" content="<?= htmlspecialchars($geoRegion, ENT_QUOTES, 'UTF-8') ?>">
 <meta name="geo.placename" content="Việt Nam">
-<meta name="language" content="Vietnamese">
+<meta name="language" content="<?= htmlspecialchars($languageName, ENT_QUOTES, 'UTF-8') ?>">
 <link rel="canonical" href="<?= htmlspecialchars($seoCanonicalValue, ENT_QUOTES, 'UTF-8') ?>">
-<link rel="alternate" hreflang="vi" href="<?= htmlspecialchars($seoCanonicalValue, ENT_QUOTES, 'UTF-8') ?>">
-<link rel="alternate" hreflang="x-default" href="<?= htmlspecialchars($seoCanonicalValue, ENT_QUOTES, 'UTF-8') ?>">
+<link rel="alternate" hreflang="vi" href="<?= htmlspecialchars($viCanonical, ENT_QUOTES, 'UTF-8') ?>">
+<link rel="alternate" hreflang="en" href="<?= htmlspecialchars($enCanonical, ENT_QUOTES, 'UTF-8') ?>">
+<link rel="alternate" hreflang="x-default" href="<?= htmlspecialchars($viCanonical, ENT_QUOTES, 'UTF-8') ?>">
 
-<meta property="og:locale" content="vi_VN">
+<meta property="og:locale" content="<?= htmlspecialchars($ogLocale, ENT_QUOTES, 'UTF-8') ?>">
 <meta property="og:type" content="<?= htmlspecialchars($ogType, ENT_QUOTES, 'UTF-8') ?>">
 <meta property="og:title" content="<?= htmlspecialchars($seoTitleValue, ENT_QUOTES, 'UTF-8') ?>">
 <meta property="og:description" content="<?= htmlspecialchars($seoDescriptionValue, ENT_QUOTES, 'UTF-8') ?>">
@@ -258,7 +260,7 @@ $fallbackFaviconHref = asset('assets/images/kaishop_favicon.png');
         appTimezone: '<?= htmlspecialchars(function_exists('app_timezone') ? app_timezone() : date_default_timezone_get(), ENT_QUOTES, 'UTF-8') ?>',
         displayTimezone: '<?= htmlspecialchars(function_exists('app_display_timezone') ? app_display_timezone() : date_default_timezone_get(), ENT_QUOTES, 'UTF-8') ?>',
         dbTimezone: '<?= htmlspecialchars(function_exists('app_db_timezone') ? app_db_timezone() : date_default_timezone_get(), ENT_QUOTES, 'UTF-8') ?>',
-        locale: 'vi-VN'
+        locale: '<?= $isEnglishPage ? 'en-US' : 'vi-VN' ?>'
     });
 </script>
 <script src="<?= asset('assets/js/time-utils.js') ?>" defer></script>

@@ -74,7 +74,7 @@ class HomeController extends Controller
         }
 
         if (!$categoryData) {
-            $this->redirect(BASE_URL . '/');
+            $this->redirect(url(''));
         }
 
         $categories = [$categoryData];

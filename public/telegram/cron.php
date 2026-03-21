@@ -227,6 +227,10 @@ function notifyExpiredDeposits(PendingDeposit $depositModel, TelegramOutbox $out
     $linkModel = new UserTelegramLink();
 
     foreach ($justExpired as $dep) {
+        if ((int) ($dep['order_id'] ?? 0) > 0) {
+            continue;
+        }
+
         $userId = (int) ($dep['user_id'] ?? 0);
         if ($userId <= 0) {
             continue;
@@ -276,6 +280,60 @@ function notifyExpiredDeposits(PendingDeposit $depositModel, TelegramOutbox $out
             echo "    [Notify-Fallback] Deposit #" . (int) ($dep['id'] ?? 0) . "\n";
         } else {
             echo "    [Notify] Deposit #" . (int) ($dep['id'] ?? 0) . "\n";
+        }
+    }
+}
+
+function notifyExpiredTelegramOrders(TelegramOutbox $outboxModel, string $botToken): void
+{
+    if (!class_exists('PurchaseService')) {
+        return;
+    }
+
+    $purchaseService = new PurchaseService();
+    $expiredOrders = $purchaseService->expireTelegramPendingOrders();
+    if (empty($expiredOrders)) {
+        return;
+    }
+
+    echo '  [Order] ' . count($expiredOrders) . " pending order(s) expired\n";
+
+    $linkModel = new UserTelegramLink();
+    foreach ($expiredOrders as $order) {
+        $telegramId = (int) ($order['telegram_id'] ?? 0);
+        if ($telegramId <= 0) {
+            $userId = (int) ($order['user_id'] ?? 0);
+            if ($userId > 0) {
+                $link = $linkModel->findByUserId($userId);
+                $telegramId = (int) ($link['telegram_id'] ?? 0);
+            }
+        }
+        if ($telegramId <= 0) {
+            continue;
+        }
+
+        $orderCode = htmlspecialchars((string) ($order['order_code'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $productName = htmlspecialchars((string) ($order['product_name'] ?? 'Sản phẩm'), ENT_QUOTES, 'UTF-8');
+        $quantity = max(1, (int) ($order['quantity'] ?? 1));
+        $amount = number_format((int) ($order['price'] ?? 0), 0, ',', '.');
+
+        $msg = "⌛ <b>ĐƠN HÀNG ĐÃ HẾT HẠN</b>\n\n";
+        $msg .= "🧾 Mã đơn: <code>{$orderCode}</code>\n";
+        $msg .= "📦 Sản phẩm: <b>{$productName}</b>\n";
+        $msg .= "🔢 Số lượng: <b>{$quantity}</b>\n";
+        $msg .= "💎 Tổng thanh toán: <b>{$amount}đ</b>\n\n";
+        $msg .= "⚠️ Đơn đã quá thời gian thanh toán nên hệ thống tự hủy.";
+
+        $keyboard = [
+            [
+                ['text' => '📦 Đơn hàng', 'callback_data' => 'orders'],
+                ['text' => '🏠 Menu', 'callback_data' => 'menu'],
+            ]
+        ];
+
+        $sent = sendTelegramWithButton($botToken, $telegramId, $msg, $keyboard);
+        if (!$sent) {
+            $outboxModel->enqueue($telegramId, $msg);
         }
     }
 }
@@ -421,6 +479,7 @@ function runCronSweepWindow(
 
     do {
         processPendingBinanceDeposits($depositModel);
+        notifyExpiredTelegramOrders($outboxModel, $botToken);
         notifyExpiredDeposits($depositModel, $outboxModel, $botToken);
         processOutboxParallel($outboxModel, $botToken);
 
@@ -454,6 +513,7 @@ if ($isPollMode) {
 
             processOutboxParallel($outboxModel, $botToken);
             processPendingBinanceDeposits($depositModel);
+            notifyExpiredTelegramOrders($outboxModel, $botToken);
             notifyExpiredDeposits($depositModel, $outboxModel, $botToken);
             runPolling($telegram, $botLogic);
             saveLastCronRun($db);

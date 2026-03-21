@@ -52,6 +52,25 @@ class DepositController extends Controller
         return DepositService::METHOD_BANK_SEPAY;
     }
 
+    private function isEnglishStorefront(): bool
+    {
+        return function_exists('app_is_english') && app_is_english();
+    }
+
+    private function preferredRouteSegment(): string
+    {
+        return $this->isEnglishStorefront() ? 'binance' : 'bank';
+    }
+
+    private function isMethodAllowedForStorefront(string $methodCode): bool
+    {
+        if ($this->isEnglishStorefront()) {
+            return $methodCode === DepositService::METHOD_BINANCE;
+        }
+
+        return $methodCode === DepositService::METHOD_BANK_SEPAY;
+    }
+
     /**
      * @param array<string,mixed> $user
      */
@@ -247,23 +266,26 @@ class DepositController extends Controller
     public function index()
     {
         $this->requireUser();
-        return $this->redirect(url('balance/bank'));
+        return $this->redirect(url('balance/' . $this->preferredRouteSegment()));
     }
 
     public function legacyRedirect()
     {
-        return $this->redirect(url('balance/bank'));
+        return $this->redirect(url('balance/' . $this->preferredRouteSegment()));
     }
 
     public function balance()
     {
-        return $this->redirect(url('balance/bank'));
+        return $this->redirect(url('balance/' . $this->preferredRouteSegment()));
     }
 
     public function balanceMethod($method)
     {
         $input = strtolower(trim((string) $method));
         $methodCode = $this->routeSegmentToMethodCode($input);
+        if (!$this->isMethodAllowedForStorefront($methodCode)) {
+            return $this->redirect(url('balance/' . $this->preferredRouteSegment()));
+        }
         $canonical = $this->methodCodeToRouteSegment($methodCode);
         if ($input !== $canonical) {
             return $this->redirect(url('balance/' . $canonical));
@@ -273,6 +295,10 @@ class DepositController extends Controller
 
     public function create()
     {
+        if ($this->isEnglishStorefront()) {
+            return $this->json(['success' => false, 'message' => 'Bank transfer is only available on the Vietnamese storefront.'], 403);
+        }
+
         $user = $this->requireUser();
         if (!$this->validateCsrf()) {
             return $this->json(['success' => false, 'message' => 'Phiên làm việc hết hạn, vui lòng tải lại trang.'], 403);
@@ -307,6 +333,10 @@ class DepositController extends Controller
 
     public function createBinance()
     {
+        if (!$this->isEnglishStorefront()) {
+            return $this->json(['success' => false, 'message' => 'Binance Pay chỉ khả dụng trên storefront quốc tế.'], 403);
+        }
+
         $user = $this->requireUser();
         if (!$this->validateCsrf()) {
             return $this->json(['success' => false, 'message' => 'Phiên làm việc hết hạn, vui lòng tải lại trang.'], 403);

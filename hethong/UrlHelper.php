@@ -103,7 +103,50 @@ class UrlHelper
      */
     public static function page($path)
     {
-        return self::base(ltrim($path, '/'));
+        if (preg_match('~^(?:https?:)?//|^(?:data|blob):~i', (string) $path)) {
+            return self::base($path);
+        }
+
+        $cleanPath = ltrim((string) $path, '/');
+        if (
+            $cleanPath !== ''
+            && function_exists('app_locale')
+            && app_locale() === 'en'
+            && self::shouldLocalizePath($cleanPath)
+            && $cleanPath !== 'en'
+            && strpos($cleanPath, 'en/') !== 0
+        ) {
+            $cleanPath = 'en/' . $cleanPath;
+        } elseif (
+            $cleanPath === ''
+            && function_exists('app_locale')
+            && app_locale() === 'en'
+        ) {
+            $cleanPath = 'en';
+        }
+
+        return self::base($cleanPath);
+    }
+
+    private static function shouldLocalizePath(string $path): bool
+    {
+        if ($path === '') {
+            return true;
+        }
+
+        foreach (['api/', 'admin/', 'assets/', 'storage/', 'public/', 'hethong/'] as $prefix) {
+            if (strpos($path, $prefix) === 0) {
+                return false;
+            }
+        }
+
+        foreach (['robots.txt', 'sitemap.xml', 'banned.php', '404.php', '500.php', '503.php'] as $exact) {
+            if ($path === $exact) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -176,7 +219,7 @@ class UrlHelper
 // Global helper functions
 function url($path = '')
 {
-    return UrlHelper::base($path);
+    return UrlHelper::page($path);
 }
 
 function asset($path)

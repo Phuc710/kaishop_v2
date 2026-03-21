@@ -55,6 +55,16 @@ class Router
         // Remove query string
         $uri = strtok($uri, '?');
 
+        // Locale prefix: allow /en/... to reuse the same route table.
+        if ($uri === '/en') {
+            $uri = '/';
+        } elseif (strpos($uri, '/en/') === 0) {
+            $uri = substr($uri, 3);
+            if ($uri === '') {
+                $uri = '/';
+            }
+        }
+
         // If URI is the entry point file itself, treat as root
         if ($uri === '/index.php' || $uri === 'index.php') {
             $uri = '/';

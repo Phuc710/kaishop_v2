@@ -17,11 +17,21 @@ class Controller
         // Extract data to variables
         extract($data);
 
-        // Include view file
-        $viewPath = __DIR__ . "/../views/{$view}.php";
+        $localizedViewPath = __DIR__ . "/../views/" . (app_locale() === 'en' ? "en/{$view}.php" : "{$view}.php");
+        $viewPath = file_exists($localizedViewPath)
+            ? $localizedViewPath
+            : __DIR__ . "/../views/{$view}.php";
 
         if (!file_exists($viewPath)) {
             die("View not found: {$view}");
+        }
+
+        if (app_locale() === 'en' && !file_exists($localizedViewPath) && class_exists('LocaleViewService')) {
+            ob_start();
+            require $viewPath;
+            $html = (string) ob_get_clean();
+            echo (new LocaleViewService())->transform($html, (string) $view);
+            return;
         }
 
         require_once $viewPath;

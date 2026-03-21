@@ -18,6 +18,7 @@ class PendingDeposit extends Model
             $this->timeService = TimeService::instance();
         }
         $this->ensureSourceChannelSchema();
+        $this->ensureOrderLinkSchema();
     }
 
     /**
@@ -43,10 +44,14 @@ class PendingDeposit extends Model
         string $username,
         int $amount,
         int $bonusPercent = 0,
-        int $sourceChannel = SourceChannelHelper::WEB
+        int $sourceChannel = SourceChannelHelper::WEB,
+        ?int $orderId = null,
+        bool $cancelExistingPending = true
     ) {
         // Cancel any existing pending deposits for this user
-        $this->cancelAllPendingByUser($userId);
+        if ($cancelExistingPending) {
+            $this->cancelAllPendingByUser($userId);
+        }
 
         // Expire old ones globally
         $this->markExpired();
@@ -69,6 +74,11 @@ class PendingDeposit extends Model
             $columns[] = 'source_channel';
             $marks[] = ':source_channel';
             $params['source_channel'] = SourceChannelHelper::normalize($sourceChannel);
+        }
+        if ($orderId !== null && $orderId > 0 && $this->hasColumnCached($this->table, 'order_id')) {
+            $columns[] = 'order_id';
+            $marks[] = ':order_id';
+            $params['order_id'] = $orderId;
         }
 
         $sql = "
@@ -105,7 +115,9 @@ class PendingDeposit extends Model
         float $usdtAmount,
         string $payerUid,
         int $bonusPercent = 0,
-        int $sourceChannel = SourceChannelHelper::WEB
+        int $sourceChannel = SourceChannelHelper::WEB,
+        ?int $orderId = null,
+        bool $cancelExistingPending = true
     ) {
         if (
             !$this->hasColumnCached($this->table, 'method')
@@ -115,7 +127,9 @@ class PendingDeposit extends Model
             return false;
         }
 
-        $this->cancelAllPendingByUser($userId);
+        if ($cancelExistingPending) {
+            $this->cancelAllPendingByUser($userId);
+        }
         $this->markExpired();
 
         $code = $this->generateCode();
@@ -127,6 +141,10 @@ class PendingDeposit extends Model
         if ($this->hasColumnCached($this->table, 'source_channel')) {
             $columns[] = 'source_channel';
             $values[] = SourceChannelHelper::normalize($sourceChannel);
+        }
+        if ($orderId !== null && $orderId > 0 && $this->hasColumnCached($this->table, 'order_id')) {
+            $columns[] = 'order_id';
+            $values[] = $orderId;
         }
         $columns[] = 'method';
         $values[] = 'binance';
@@ -156,6 +174,24 @@ class PendingDeposit extends Model
     {
         $stmt = $this->db->prepare("SELECT * FROM `{$this->table}` WHERE `deposit_code` = :code LIMIT 1");
         $stmt->execute(['code' => $code]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
+    public function findLatestByOrderId(int $orderId, bool $pendingOnly = false): ?array
+    {
+        if ($orderId <= 0 || !$this->hasColumnCached($this->table, 'order_id')) {
+            return null;
+        }
+
+        $sql = "SELECT * FROM `{$this->table}` WHERE `order_id` = :order_id";
+        if ($pendingOnly) {
+            $sql .= " AND `status` = 'pending'";
+        }
+        $sql .= " ORDER BY `id` DESC LIMIT 1";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['order_id' => $orderId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
     }
@@ -229,6 +265,19 @@ class PendingDeposit extends Model
             WHERE `user_id` = :uid AND `status` = 'pending'
         ");
         $stmt->execute(['uid' => $userId]);
+    }
+
+    public function cancelPendingByOrderId(int $orderId): void
+    {
+        if ($orderId <= 0 || !$this->hasColumnCached($this->table, 'order_id')) {
+            return;
+        }
+
+        $stmt = $this->db->prepare("
+            UPDATE `{$this->table}` SET `status` = 'cancelled'
+            WHERE `order_id` = :order_id AND `status` = 'pending'
+        ");
+        $stmt->execute(['order_id' => $orderId]);
     }
 
     /**
@@ -377,6 +426,25 @@ class PendingDeposit extends Model
         }
 
         $this->hasSourceChannelColumn = null;
+    }
+
+    private function ensureOrderLinkSchema(): void
+    {
+        if (!$this->tableExists() || $this->hasColumnCached($this->table, 'order_id')) {
+            return;
+        }
+
+        try {
+            $this->db->exec("ALTER TABLE `{$this->table}` ADD COLUMN `order_id` BIGINT(20) NULL AFTER `source_channel`");
+        } catch (Throwable $e) {
+            // ignore if ALTER is restricted
+        }
+
+        try {
+            $this->db->exec("ALTER TABLE `{$this->table}` ADD KEY `idx_pd_order_status_created` (`order_id`, `status`, `created_at`)");
+        } catch (Throwable $e) {
+            // ignore if key exists or ALTER is restricted
+        }
     }
 
     private function tableExists(): bool

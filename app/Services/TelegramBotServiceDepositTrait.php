@@ -58,6 +58,28 @@ trait TelegramBotServiceDepositTrait
             [['text' => '⬅️ Quay lại', 'callback_data' => 'back_home']],
         ];
 
+        if ($this->isTelegramEnglish($telegramId)) {
+            $binanceLabel = $binanceEnabled ? '🟡 Binance Pay' : '🔴 Binance Offline';
+            $msg = "🟡 <b>BINANCE PAY (USDT)</b>\n\n";
+            $msg .= "👇 Tap below to continue:";
+            $rows = [
+                [
+                    ['text' => $binanceLabel, 'callback_data' => 'binance_start'],
+                ],
+                [[$this->backHomeButton($telegramId)]],
+            ];
+        } else {
+            $bankLabel = $bankEnabled ? '🏦 Nạp qua Bank' : '🔴 Bank bảo trì';
+            $msg = "🏦 <b>NẠP TIỀN QUA NGÂN HÀNG</b>\n\n";
+            $msg .= "👇 Chọn để tiếp tục:";
+            $rows = [
+                [
+                    ['text' => $bankLabel, 'callback_data' => 'deposit_bank'],
+                ],
+                [[$this->backHomeButton($telegramId)]],
+            ];
+        }
+
         $markup = TelegramService::buildInlineKeyboard($rows);
 
         if ($messageId > 0) {
@@ -257,7 +279,11 @@ trait TelegramBotServiceDepositTrait
         $msg .= "📌 Nạp tối thiểu: <b>{$minFormatted}đ</b>\n";
         $msg .= "👇 Chọn nhanh hoặc nhập số tiền bạn muốn nạp:";
 
-        $markup = $this->buildDepositQuickMarkup();
+        $msg = $this->tgText($telegramId, 'deposit_input_title', [
+            'min' => $minFormatted . 'đ',
+        ]);
+
+        $markup = $this->buildDepositQuickMarkup($telegramId);
 
         if ($messageId > 0) {
             $this->telegram->editOrSend($chatId, $messageId, $msg, $markup);
@@ -271,7 +297,7 @@ trait TelegramBotServiceDepositTrait
      *
      * @return array<string,mixed>
      */
-    private function buildDepositQuickMarkup(): array
+    private function buildDepositQuickMarkup(int $telegramId = 0): array
     {
         // Lấy bonus tiers từ DB để đồng bộ các nút nhanh
         $siteConfig = Config::getSiteConfig();
@@ -305,6 +331,13 @@ trait TelegramBotServiceDepositTrait
                 $label = (string) $a;
             }
             $quickButtons[] = ['text' => $label, 'callback_data' => 'deposit_' . $a];
+        }
+
+        if ($telegramId > 0) {
+            return TelegramService::buildInlineKeyboard([
+                $quickButtons,
+                [$this->backHomeButton($telegramId)],
+            ]);
         }
 
         return TelegramService::buildInlineKeyboard([
@@ -429,7 +462,7 @@ trait TelegramBotServiceDepositTrait
             $amount = (float) $amountRaw;
             if ($amount <= 0) {
                 $this->telegram->sendTo($chatId, '⚠️ Số tiền không hợp lệ. Vui lòng nhập số USDT cần nạp (ví dụ: <code>10</code>).', [
-                    'reply_markup' => $this->buildBinanceAmountKeyboard(),
+                    'reply_markup' => $this->buildBinanceAmountKeyboard($telegramId),
                 ]);
                 return true;
             }
@@ -454,8 +487,16 @@ trait TelegramBotServiceDepositTrait
                 return true;
             }
 
-            $amount = (float) ($session['amount'] ?? 0);
             $messageId = (int) ($session['message_id'] ?? 0);
+            $purpose = (string) ($session['purpose'] ?? '');
+            if ($purpose === 'order_payment') {
+                $orderId = (int) ($session['order_id'] ?? 0);
+                $this->clearBinanceSession($telegramId);
+                $this->cbOrderPayBinance($chatId, $telegramId, $orderId, $messageId, (string) $uid);
+                return true;
+            }
+
+            $amount = (float) ($session['amount'] ?? 0);
 
             $this->clearBinanceSession($telegramId);
             $this->cmdBinance($chatId, $telegramId, [(string) $amount, (string) $uid], $messageId);
@@ -487,6 +528,10 @@ trait TelegramBotServiceDepositTrait
         $msg .= "👇 Vui lòng chọn nhanh hoặc nhập số USDT bạn muốn nạp:";
 
         $markup = $this->buildBinanceAmountKeyboard();
+        $msg = $this->tgText($telegramId, 'binance_input_title', [
+            'min' => $minUsdtLabel,
+        ]);
+        $markup = $this->buildBinanceAmountKeyboard($telegramId);
         if ($messageId > 0) {
             $this->telegram->editOrSend($chatId, $messageId, $msg, $markup);
             return;
@@ -899,7 +944,7 @@ trait TelegramBotServiceDepositTrait
      *
      * @return array<string,mixed>
      */
-    private function buildBinanceAmountKeyboard(): array
+    private function buildBinanceAmountKeyboard(int $telegramId = 0): array
     {
         $siteConfig = Config::getSiteConfig();
         $rate = max(1, (int) ($siteConfig['binance_rate_vnd'] ?? 25000));
@@ -915,7 +960,7 @@ trait TelegramBotServiceDepositTrait
 
         return TelegramService::buildInlineKeyboard([
             $buttons,
-            [$this->backHomeButton()],
+            [$this->backHomeButton($telegramId)],
         ]);
     }
 

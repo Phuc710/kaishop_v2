@@ -294,7 +294,7 @@ class BinancePayService
             }
 
             $lockStmt = $this->db->prepare("
-                SELECT `id`, `status`, `created_at`, `bonus_percent`, `source_channel`, `user_id`, `usdt_amount`, `payer_uid`
+                SELECT `id`, `status`, `created_at`, `bonus_percent`, `source_channel`, `user_id`, `amount`, `order_id`, `usdt_amount`, `payer_uid`
                 FROM `pending_deposits`
                 WHERE `id` = ?
                 LIMIT 1
@@ -318,22 +318,27 @@ class BinancePayService
             }
 
             $sourceChannel = (int) ($locked['source_channel'] ?? $sourceChannel);
-            $bonusPercent = (int) ($locked['bonus_percent'] ?? 0);
+            $orderId = (int) ($locked['order_id'] ?? 0);
+            $bonusPercent = $orderId > 0 ? 0 : (int) ($locked['bonus_percent'] ?? 0);
             $usdtAmount = (float) $expectedAmountRaw;
             $baseVnd = $this->usdtToVnd($usdtAmount);
             $bonusVnd = (int) floor($baseVnd * max(0, $bonusPercent) / 100);
-            $totalCredit = $baseVnd + $bonusVnd;
+            $totalCredit = $orderId > 0 ? max(0, (int) ($locked['amount'] ?? 0)) : ($baseVnd + $bonusVnd);
 
-            $this->db->prepare("
-                UPDATE `users`
-                SET `money` = `money` + ?, `tong_nap` = `tong_nap` + ?
-                WHERE `id` = ?
-            ")->execute([$totalCredit, $baseVnd, $userId]);
+            $beforeBalance = 0;
+            $afterBalance = 0;
+            if ($orderId <= 0) {
+                $this->db->prepare("
+                    UPDATE `users`
+                    SET `money` = `money` + ?, `tong_nap` = `tong_nap` + ?
+                    WHERE `id` = ?
+                ")->execute([$totalCredit, $baseVnd, $userId]);
 
-            $balStmt = $this->db->prepare("SELECT `money` FROM `users` WHERE `id` = ? LIMIT 1");
-            $balStmt->execute([$userId]);
-            $afterBalance = (int) ($balStmt->fetchColumn() ?? 0);
-            $beforeBalance = $afterBalance - $totalCredit;
+                $balStmt = $this->db->prepare("SELECT `money` FROM `users` WHERE `id` = ? LIMIT 1");
+                $balStmt->execute([$userId]);
+                $afterBalance = (int) ($balStmt->fetchColumn() ?? 0);
+                $beforeBalance = $afterBalance - $totalCredit;
+            }
 
             $nowSql = $this->nowDbSql();
             $nowTs = (string) $this->nowTs();
@@ -358,6 +363,53 @@ class BinancePayService
                 "INSERT INTO `binance_transactions` (`" . implode('`, `', $txColumns) . "`) VALUES (" .
                 implode(', ', array_fill(0, count($txColumns), '?')) . ")"
             )->execute($txValues);
+
+            if ($orderId > 0) {
+                $this->db->prepare("
+                    UPDATE `pending_deposits`
+                    SET `status` = 'completed', `completed_at` = ?
+                    WHERE `id` = ? AND `status` = 'pending'
+                ")->execute([$nowSql, $depositId]);
+
+                $purchaseService = new PurchaseService();
+                $finalize = $purchaseService->finalizeTelegramOrderPayment(
+                    array_merge($pendingDeposit, $locked, ['order_id' => $orderId, 'method' => DepositService::METHOD_BINANCE]),
+                    [
+                        'transaction_id' => $txId,
+                        'paid_usdt' => $usdtAmount,
+                    ]
+                );
+
+                if (empty($finalize['success'])) {
+                    throw new RuntimeException((string) ($finalize['message'] ?? 'Khong the xac nhan thanh toan don hang'));
+                }
+
+                $this->db->commit();
+
+                $this->notifyTelegramOrderPaid(
+                    $userId,
+                    (array) ($finalize['order'] ?? []),
+                    $txId,
+                    $usdtAmount,
+                    $totalCredit
+                );
+
+                Logger::info('BinancePay', 'order_payment_completed', "Thanh toan don Telegram qua Binance thanh cong: {$username}", [
+                    'tx_id' => $txId,
+                    'order_id' => $orderId,
+                    'usdt' => $usdtAmount,
+                    'amount_vnd' => $totalCredit,
+                    'payer_uid' => $payerUid,
+                    'receiver_uid' => $receiverUid,
+                    'deposit_id' => $depositId,
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => 'Order paid',
+                    'tx_id' => $txId,
+                ];
+            }
 
             $historyColumns = ['trans_id', 'username', 'type', 'ctk', 'thucnhan', 'status', 'time', 'created_at'];
             $historyValues = [
@@ -606,6 +658,73 @@ class BinancePayService
         $stmt->execute([$depositId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
+    }
+
+    /**
+     * @param array<string,mixed> $order
+     */
+    private function notifyTelegramOrderPaid(int $userId, array $order, string $txId, float $usdt, int $amountVnd): void
+    {
+        try {
+            if (!class_exists('UserTelegramLink')) {
+                return;
+            }
+
+            $link = (new UserTelegramLink())->findByUserId($userId);
+            if (!$link || (int) ($link['telegram_id'] ?? 0) <= 0) {
+                return;
+            }
+
+            $telegramId = (int) $link['telegram_id'];
+            $replyMarkup = [
+                'inline_keyboard' => [
+                    [
+                        ['text' => '📦 Đơn hàng', 'callback_data' => 'orders'],
+                        ['text' => '🏠 Menu', 'callback_data' => 'menu'],
+                    ]
+                ]
+            ];
+
+            $message = $this->buildTelegramOrderPaidMessage($order, $txId, $usdt, $amountVnd);
+            if (!$this->sendTelegramDirectTo((string) $telegramId, $message, $replyMarkup) && class_exists('TelegramOutbox')) {
+                (new TelegramOutbox())->enqueue($telegramId, $message, 'HTML');
+            }
+        } catch (Throwable $e) {
+            // Non-blocking
+        }
+    }
+
+    /**
+     * @param array<string,mixed> $order
+     */
+    private function buildTelegramOrderPaidMessage(array $order, string $txId, float $usdt, int $amountVnd): string
+    {
+        $orderCode = htmlspecialchars((string) ($order['order_code_short'] ?? $order['order_code'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $productName = htmlspecialchars((string) ($order['product_name'] ?? 'Sản phẩm'), ENT_QUOTES, 'UTF-8');
+        $quantity = max(1, (int) ($order['quantity'] ?? 1));
+        $status = (string) ($order['status'] ?? '');
+        $deliveryContent = trim((string) ($order['delivery_content'] ?? $order['stock_content_plain'] ?? ''));
+        $usdtText = rtrim(rtrim(number_format($usdt, 8, '.', ''), '0'), '.');
+
+        $msg = "🎉 <b>THANH TOÁN THÀNH CÔNG</b>\n\n";
+        $msg .= "🧾 Mã đơn: <code>{$orderCode}</code>\n";
+        $msg .= "📦 Sản phẩm: <b>{$productName}</b>\n";
+        $msg .= "🔢 Số lượng: <b>{$quantity}</b>\n";
+        $msg .= "💳 Phương thức: <b>Binance Pay</b>\n";
+        $msg .= "💵 Đã nhận: <b>{$usdtText} USDT</b>\n";
+        $msg .= "💰 Quy đổi: <b>" . number_format($amountVnd, 0, ',', '.') . "đ</b>\n";
+        $msg .= "🔖 Giao dịch: <code>" . htmlspecialchars($txId, ENT_QUOTES, 'UTF-8') . "</code>\n";
+        $msg .= "━━━━━━━━━━━━━━";
+
+        if ($status === 'completed' && $deliveryContent !== '') {
+            $msg .= "\n\n🔑 <b>NỘI DUNG GIAO HÀNG</b>\n<code>" . htmlspecialchars($deliveryContent, ENT_QUOTES, 'UTF-8') . "</code>";
+        } elseif ($status === 'processing') {
+            $msg .= "\n\n🛠️ Đơn đã vào hàng chờ xử lý. Admin sẽ giao sớm cho bạn.";
+        } else {
+            $msg .= "\n\n📦 Đơn đã được ghi nhận. Bạn có thể xem lại trong mục Đơn hàng.";
+        }
+
+        return $msg;
     }
 
     private function notifyTelegramAsync(
