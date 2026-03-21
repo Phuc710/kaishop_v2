@@ -762,7 +762,7 @@ trait TelegramBotServiceShopTrait
         $message = $this->buildTelegramOrderBankPaymentMessage($order, $payment);
         $markup = TelegramService::buildInlineKeyboard([
             [
-                ['text' => '✅ Kiểm tra thanh toán', 'callback_data' => 'order_check_' . $orderId],
+                ['text' => '✅ Kiểm tra', 'callback_data' => 'order_check_' . $orderId],
                 ['text' => '❌ Hủy đơn', 'callback_data' => 'order_cancel_' . $orderId],
             ]
         ]);
@@ -813,7 +813,7 @@ trait TelegramBotServiceShopTrait
         $message = $this->buildTelegramOrderBinancePaymentMessage($order, $payment);
         $markup = TelegramService::buildInlineKeyboard([
             [
-                ['text' => '🔍 Kiểm tra thanh toán', 'callback_data' => 'order_check_' . $orderId],
+                ['text' => '🔍 Kiểm tra', 'callback_data' => 'order_check_' . $orderId],
                 ['text' => '❌ Hủy đơn', 'callback_data' => 'order_cancel_' . $orderId],
             ]
         ]);
@@ -896,8 +896,7 @@ trait TelegramBotServiceShopTrait
             $msg .= "⏰ Hết hạn: <b>{$expiresAt}</b>\n";
         }
 
-        $msg .= "\n📲 Quét QR để thanh toán\n";
-        $msg .= "✅ Tự động xác nhận khi nhận tiền\n";
+        $msg .= "\n📲 Quét QR để thanh toán | Auto Banking\n";
         return $msg;
     }
 
@@ -929,7 +928,7 @@ trait TelegramBotServiceShopTrait
         }
         $msg .= "💎 Tổng đơn: <b>{$vndText}</b>\n";
         $msg .= "━━━━━━━━━━━━━━\n";
-        $msg .= "🏷 Người nhận: <b>{$receiverName}</b>\n";
+        $msg .= "🙍 Người nhận: <b>{$receiverName}</b>\n";
         $msg .= "🆔 UID nhận: <code>{$receiverUid}</code>\n";
         $msg .= "📋 Mã giao dịch: <code>{$depositCode}</code>\n";
         $msg .= "👤 UID của bạn: <code>{$payerUid}</code>\n";
@@ -938,9 +937,7 @@ trait TelegramBotServiceShopTrait
             $msg .= "⏰ Hết hạn: <b>{$expiresAt}</b>\n";
         }
 
-        $msg .= "\n📲 Quét QR để thanh toán\n";
-        $msg .= "✅ Tự động xác nhận khi nhận tiền\n";
-        $msg .= "⚠️ Đơn hết hạn sau 5 phút";
+        $msg .= "\n📲 Quét QR để thanh toán | Auto Banking\n";
 
         return $msg;
     }
@@ -1035,7 +1032,7 @@ trait TelegramBotServiceShopTrait
         }
     }
 
-    private function cbOrderCancel(string $chatId, int $telegramId, int $orderId, int $messageId = 0): void
+    private function cbOrderCancel(string $chatId, int $telegramId, int $orderId, int $messageId = 0, string $callbackId = ''): void
     {
         $user = $this->resolveLinkedUser($chatId, $telegramId);
         if (!$user) {
@@ -1044,7 +1041,9 @@ trait TelegramBotServiceShopTrait
 
         $order = $this->orderModel->getByIdForUser($orderId, (int) ($user['id'] ?? 0));
         if (!$order) {
-            $this->telegram->editOrSend($chatId, $messageId, '❌ Không tìm thấy đơn hàng.');
+            if ($callbackId !== '') {
+                $this->telegram->answerCallbackQuery($callbackId, '❌ Không tìm thấy đơn hàng.', true);
+            }
             return;
         }
 
@@ -1052,7 +1051,11 @@ trait TelegramBotServiceShopTrait
         $this->purchaseService->cancelTelegramPendingOrder($orderId, (int) ($user['id'] ?? 0), 'Người dùng hủy đơn.');
         $this->clearBinanceSession($telegramId);
 
-        // Chuyển hướng về Main Menu với thông báo toast/alert
-        $this->showMainMenu($chatId, $telegramId, '✅ <b>Đã hủy đơn hàng.</b>', true, $messageId);
+        if ($callbackId !== '') {
+            $this->telegram->answerCallbackQuery($callbackId, '✅ Đã hủy đơn hàng.', false);
+        }
+
+        // Chuyển hướng về Main Menu
+        $this->showMainMenu($chatId, $telegramId, '', false, $messageId);
     }
 }

@@ -379,6 +379,7 @@ class TelegramBotService
                 $this->cmdShop($chatId, $telegramId, $messageId);
                 break;
             case 'cat':
+                $this->telegram->answerCallbackQuery($callbackId, '✅ Đã cập nhật sản phẩm mới nhất.', false);
                 $this->cbCategory($chatId, $telegramId, (int) ($parts[1] ?? 0), $messageId);
                 break;
             case 'prod':
@@ -388,13 +389,14 @@ class TelegramBotService
                 $this->cbBuyConfirm($chatId, $telegramId, (int) ($parts[1] ?? 0), (int) ($parts[2] ?? 1), null, $messageId);
                 break;
             case 'orders':
+                $this->telegram->answerCallbackQuery($callbackId, '✅ Đã cập nhật lịch sử đơn hàng.', false);
                 $this->cmdOrders($chatId, $telegramId, $messageId);
                 break;
             case 'order':
                 if (($parts[1] ?? '') === 'check') {
                     $this->cbOrderCheck($chatId, $telegramId, (int) ($parts[2] ?? 0), $messageId, $callbackId);
                 } elseif (($parts[1] ?? '') === 'cancel') {
-                    $this->cbOrderCancel($chatId, $telegramId, (int) ($parts[2] ?? 0), $messageId);
+                    $this->cbOrderCancel($chatId, $telegramId, (int) ($parts[2] ?? 0), $messageId, $callbackId);
                 }
                 break;
             case 'menu':
