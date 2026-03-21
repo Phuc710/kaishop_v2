@@ -132,11 +132,6 @@ class TelegramBotService
             ['command' => 'start', 'description' => 'Mở bot'],
             ['command' => 'menu', 'description' => 'Mở menu nhanh'],
             ['command' => 'shop', 'description' => 'Duyệt danh mục sản phẩm'],
-            ['command' => 'wallet', 'description' => 'Xem số dư ví'],
-            ['command' => 'balance', 'description' => 'Xem số dư ví'],
-            ['command' => 'bank', 'description' => 'Nạp tiền qua ngân hàng (VND)'],
-            ['command' => 'deposit', 'description' => 'Nạp tiền qua ngân hàng'],
-            ['command' => 'binance', 'description' => 'Nạp tiền qua Binance Pay (USD)'],
             ['command' => 'orders', 'description' => 'Lịch sử 5 đơn hàng gần nhất'],
             ['command' => 'help', 'description' => 'Danh sách lệnh trợ giúp'],
         ];
@@ -145,11 +140,6 @@ class TelegramBotService
             ['command' => 'start', 'description' => 'Open bot'],
             ['command' => 'menu', 'description' => 'Open quick menu'],
             ['command' => 'shop', 'description' => 'Browse products'],
-            ['command' => 'wallet', 'description' => 'View wallet'],
-            ['command' => 'balance', 'description' => 'View wallet'],
-            ['command' => 'bank', 'description' => 'Bank deposit (VND)'],
-            ['command' => 'deposit', 'description' => 'Bank deposit'],
-            ['command' => 'binance', 'description' => 'Binance Pay deposit (USD)'],
             ['command' => 'orders', 'description' => 'Recent orders'],
             ['command' => 'help', 'description' => 'Help command list'],
         ];
@@ -987,7 +977,7 @@ class TelegramBotService
             return ['name' => 'browse_shop', 'weight' => 1];
         if ($data === 'binance_start' || str_starts_with($data, 'bin_amount_') || str_starts_with($data, 'bin_check_'))
             return ['name' => 'binance_action', 'weight' => 2];
-        if (in_array($data, ['wallet', 'orders', 'deposit', 'deposit_menu'], true))
+        if (in_array($data, ['orders'], true))
             return ['name' => 'account_action', 'weight' => 2];
         if (in_array($data, ['menu', 'back', 'help'], true))
             return ['name' => 'menu_action', 'weight' => 1];
@@ -998,7 +988,7 @@ class TelegramBotService
     {
         if (in_array($command, ['/broadcast', '/maintenance', '/setbank'], true))
             return ['name' => ltrim($command, '/'), 'weight' => 5];
-        if (in_array($command, ['/deposit', '/bank', '/binance', '/orders', '/wallet'], true))
+        if (in_array($command, ['/orders'], true))
             return ['name' => ltrim($command, '/'), 'weight' => 3];
         if (in_array($command, ['/shop', '/stats'], true))
             return ['name' => ltrim($command, '/'), 'weight' => 2];

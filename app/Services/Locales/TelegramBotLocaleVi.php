@@ -34,7 +34,7 @@ class TelegramBotLocaleVi implements TelegramBotLocaleInterface
         'confirm_total' => '💎 Tổng thanh toán',
         'confirm_discount' => '🏷️ Giảm giá',
         'confirm_info' => '📝 Thông tin',
-
+        'confirm_button' => '✅ Xác nhận mua',
     ];
 
     public function getLocaleCode(): string

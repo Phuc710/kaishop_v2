@@ -439,9 +439,11 @@ trait TelegramBotServiceShopTrait
         $msg .= "📦 Kho: <b>{$stockText}</b>\n\n";
 
         $descRaw = (string) ($p['description'] ?? '');
-        $desc = strip_tags($descRaw);
+        // Preserve newlines from block elements
+        $desc = str_ireplace(['<br>', '<br/>', '<br />', '</p>', '</div>', '</li>'], "\n", $descRaw);
         $desc = str_replace(['&nbsp;', '&amp;', '&quot;', '&apos;', '&lt;', '&gt;'], [' ', '&', '"', "'", '<', '>'], $desc);
-        $desc = trim($desc);
+        $desc = strip_tags($desc);
+        $desc = trim(preg_replace("/\n\s*\n+/", "\n\n", $desc));
 
         if ($desc !== '') {
             $msg .= "<b>Mô tả:</b>\n<i>" . htmlspecialchars(mb_substr($desc, 0, 500)) . (mb_strlen($desc) > 500 ? '...' : '') . "</i>\n";
@@ -893,6 +895,10 @@ trait TelegramBotServiceShopTrait
             $msg .= "⏰ Hết hạn: <b>{$expiresAt}</b>\n";
         }
 
+        $msg .= "\n📲 Quét QR để thanh toán\n";
+        $msg .= "✅ Tự động xác nhận khi nhận tiền\n";
+        $msg .= "⚠️ Đơn hết hạn sau 5 phút";
+
         return $msg;
     }
 
@@ -932,7 +938,10 @@ trait TelegramBotServiceShopTrait
         if ($expiresAt !== '') {
             $msg .= "⏰ Hết hạn: <b>{$expiresAt}</b>\n";
         }
-        $msg .= "\n⚠️ Chuyển đúng UID gửi, UID nhận và số USDT để hệ thống auto match đơn hàng.";
+
+        $msg .= "\n📲 Quét QR để thanh toán\n";
+        $msg .= "✅ Tự động xác nhận khi nhận tiền\n";
+        $msg .= "⚠️ Đơn hết hạn sau 5 phút";
 
         return $msg;
     }
@@ -1040,21 +1049,11 @@ trait TelegramBotServiceShopTrait
             return;
         }
 
-        $result = $this->purchaseService->cancelTelegramPendingOrder($orderId, (int) ($user['id'] ?? 0), 'Người dùng hủy đơn.');
-        if (empty($result['success'])) {
-            $this->telegram->editOrSend($chatId, $messageId, '❌ ' . htmlspecialchars((string) ($result['message'] ?? 'Không thể hủy đơn.'), ENT_QUOTES, 'UTF-8'));
-            return;
-        }
-
+        // Thực hiện hủy đơn ngay lập tức
+        $this->purchaseService->cancelTelegramPendingOrder($orderId, (int) ($user['id'] ?? 0), 'Người dùng hủy đơn.');
         $this->clearBinanceSession($telegramId);
 
-        $markup = TelegramService::buildInlineKeyboard([
-            [
-                ['text' => '🛍️ Mua lại', 'callback_data' => 'prod_' . (int) ($order['product_id'] ?? 0)],
-                ['text' => '🏠 Menu', 'callback_data' => 'menu'],
-            ]
-        ]);
-
-        $this->telegram->editOrSend($chatId, $messageId, '❌ <b>Đã hủy đơn hàng.</b>', $markup);
+        // Chuyển hướng về Main Menu với thông báo toast/alert
+        $this->showMainMenu($chatId, $telegramId, '✅ <b>Đã hủy đơn hàng.</b>', true, $messageId);
     }
 }
