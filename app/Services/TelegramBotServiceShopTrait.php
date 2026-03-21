@@ -747,10 +747,7 @@ trait TelegramBotServiceShopTrait
             [
                 ['text' => '🔍 Kiểm tra thanh toán', 'callback_data' => 'order_check_' . $orderId],
                 ['text' => '❌ Hủy đơn', 'callback_data' => 'order_cancel_' . $orderId],
-            ],
-            [
-                ['text' => '🏠 Menu', 'callback_data' => 'menu'],
-            ],
+            ]
         ]);
 
         $qrUrl = trim((string) ($payment['qr_url'] ?? ''));
@@ -801,10 +798,7 @@ trait TelegramBotServiceShopTrait
             [
                 ['text' => '🔍 Kiểm tra thanh toán', 'callback_data' => 'order_check_' . $orderId],
                 ['text' => '❌ Hủy đơn', 'callback_data' => 'order_cancel_' . $orderId],
-            ],
-            [
-                ['text' => '🏠 Menu', 'callback_data' => 'menu'],
-            ],
+            ]
         ]);
 
         $this->sendTelegramMediaOrText(
@@ -865,11 +859,16 @@ trait TelegramBotServiceShopTrait
         $productName = htmlspecialchars((string) ($order['product_name'] ?? 'Sản phẩm'), ENT_QUOTES, 'UTF-8');
         $quantity = max(1, (int) ($order['quantity'] ?? 1));
         $expiresAt = htmlspecialchars((string) ($payment['expires_at'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $discountAmount = (int) ($order['discount_amount'] ?? 0);
+        $giftcode = htmlspecialchars(trim((string) ($order['giftcode_code'] ?? '')), ENT_QUOTES, 'UTF-8');
 
         $msg = "🏦 <b>THANH TOÁN ĐƠN HÀNG</b>\n\n";
         $msg .= "🧾 Mã đơn: <code>{$orderCode}</code>\n";
         $msg .= "📦 Sản phẩm: <b>{$productName}</b>\n";
         $msg .= "🔢 Số lượng: <b>{$quantity}</b>\n";
+        if ($discountAmount > 0 && $giftcode !== '') {
+            $msg .= "🏷️ Giảm giá: -<b>" . number_format($discountAmount, 0, ',', '.') . "đ</b> (<i>{$giftcode}</i>)\n";
+        }
         $msg .= "💎 Tổng cần trả: <b>{$amount}</b>\n";
         $msg .= "━━━━━━━━━━━━━━\n";
         $msg .= "🏛 Ngân hàng: <b>{$bankName}</b>\n";
@@ -900,11 +899,16 @@ trait TelegramBotServiceShopTrait
         $usdtText = number_format((float) ($payment['usdt_amount'] ?? 0), 2, '.', '');
         $vndText = number_format((int) ($payment['amount'] ?? 0), 0, ',', '.') . 'đ';
         $expiresAt = htmlspecialchars((string) ($payment['expires_at'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $discountAmount = (int) ($order['discount_amount'] ?? 0);
+        $giftcode = htmlspecialchars(trim((string) ($order['giftcode_code'] ?? '')), ENT_QUOTES, 'UTF-8');
 
         $msg = "🟡 <b>BINANCE PAY — THANH TOÁN ĐƠN</b>\n\n";
         $msg .= "🧾 Mã đơn: <code>{$orderCode}</code>\n";
         $msg .= "📦 Sản phẩm: <b>{$productName}</b>\n";
         $msg .= "🔢 Số lượng: <b>{$quantity}</b>\n";
+        if ($discountAmount > 0 && $giftcode !== '') {
+            $msg .= "🏷️ Giảm giá: -<b>" . number_format($discountAmount, 0, ',', '.') . "đ</b> (<i>{$giftcode}</i>)\n";
+        }
         $msg .= "💎 Tổng đơn: <b>{$vndText}</b>\n";
         $msg .= "━━━━━━━━━━━━━━\n";
         $msg .= "🏷 Người nhận: <b>{$receiverName}</b>\n";
