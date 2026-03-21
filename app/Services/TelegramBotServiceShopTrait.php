@@ -387,9 +387,10 @@ trait TelegramBotServiceShopTrait
             $stockText = $stock === null ? 'Vô hạn' : number_format($stock);
             $priceText = number_format((float) $p['price_vnd']) . 'đ';
 
-            $btnText = "{$p['name']} | {$priceText} | 📦 {$stockText}";
             if ($isOutOfStock) {
-                $btnText .= " (❌ Hết Hàng)";
+                $btnText = "{$p['name']} | {$priceText} | ❌ Hết hàng";
+            } else {
+                $btnText = "{$p['name']} | {$priceText} | 📦 {$stockText}";
             }
 
             $rows[] = [['text' => $btnText, 'callback_data' => 'prod_' . $p['id']]];
@@ -988,7 +989,7 @@ trait TelegramBotServiceShopTrait
         $deposit = $depositModel->findLatestByOrderId($orderId, true);
         if (!$deposit) {
             if ($callbackId !== '') {
-                $this->telegram->answerCallbackQuery($callbackId, '⏳ Chưa có giao dịch được xác nhận.', true);
+                $this->telegram->answerCallbackQuery($callbackId, '❌ Chưa tìm thấy giao dịch khớp.', true);
             }
             return;
         }
@@ -996,7 +997,7 @@ trait TelegramBotServiceShopTrait
         $method = strtolower(trim((string) ($deposit['method'] ?? DepositService::METHOD_BANK_SEPAY)));
         if ($method !== DepositService::METHOD_BINANCE) {
             if ($callbackId !== '') {
-                $this->telegram->answerCallbackQuery($callbackId, '⏳ Chưa thấy chuyển khoản phù hợp. Thử lại sau 10-15s.', true);
+                $this->telegram->answerCallbackQuery($callbackId, '❌ Chưa tìm thấy giao dịch khớp.', true);
             }
             return;
         }
@@ -1021,7 +1022,7 @@ trait TelegramBotServiceShopTrait
         $tx = $binanceService->findMatchingTransaction($deposit);
         if (!$tx) {
             if ($callbackId !== '') {
-                $this->telegram->answerCallbackQuery($callbackId, '⏳ Chưa thấy giao dịch. Thử lại sau 10-15s.', true);
+                $this->telegram->answerCallbackQuery($callbackId, '❌ Chưa tìm thấy giao dịch khớp.', true);
             }
             return;
         }
@@ -1030,7 +1031,7 @@ trait TelegramBotServiceShopTrait
         if ($callbackId !== '') {
             $this->telegram->answerCallbackQuery(
                 $callbackId,
-                !empty($result['success']) ? '🎉 Thanh toán thành công!' : '⚠️ Chưa xác minh được giao dịch.',
+                !empty($result['success']) ? '🎉 Thanh toán thành công!' : '❌ Chưa tìm thấy giao dịch khớp.',
                 true
             );
         }
