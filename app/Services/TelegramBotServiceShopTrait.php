@@ -34,6 +34,8 @@ trait TelegramBotServiceShopTrait
 
     private function setPurchaseSession(int $telegramId, array $data): void
     {
+        $this->clearBinanceSession($telegramId);
+
         $dir = $this->purchaseInputDir();
         if (!is_dir($dir)) {
             @mkdir($dir, 0700, true);
@@ -129,15 +131,19 @@ trait TelegramBotServiceShopTrait
 
     private function setBinanceSession(int $telegramId, array $data, int $ttl = 300): void
     {
+        $this->clearPurchaseSession($telegramId);
+
         $dir = $this->binanceSessionDir();
         if (!is_dir($dir)) {
             @mkdir($dir, 0700, true);
         }
 
         $now = $this->timeService ? $this->timeService->nowTs() : time();
+        $ttl = max(60, $ttl);
         $data['created_at'] = (int) ($data['created_at'] ?? $now);
         $data['updated_at'] = $now;
-        $data['expires_at'] = $now + max(60, $ttl);
+        $data['ttl_seconds'] = (int) ($data['ttl_seconds'] ?? $ttl);
+        $data['expires_at'] = $now + (int) $data['ttl_seconds'];
 
         @file_put_contents($this->binanceSessionFile($telegramId), json_encode($data), LOCK_EX);
     }
@@ -167,6 +173,7 @@ trait TelegramBotServiceShopTrait
         }
 
         $data['updated_at'] = $now;
+        $data['expires_at'] = $now + max(60, (int) ($data['ttl_seconds'] ?? 300));
         @file_put_contents($file, json_encode($data), LOCK_EX);
 
         return $data;
@@ -215,6 +222,27 @@ trait TelegramBotServiceShopTrait
         $this->telegram->editOrSend($chatId, $messageId, $message, $markup);
     }
 
+    private function findLatestPendingTelegramOrderId(int $userId): int
+    {
+        if ($userId <= 0) {
+            return 0;
+        }
+
+        $orders = $this->orderModel->getUserVisibleOrders($userId, [], 0, 10);
+        foreach ($orders as $order) {
+            if ((string) ($order['status'] ?? '') !== 'pending') {
+                continue;
+            }
+            if ((string) ($order['payment_status'] ?? '') !== 'pending') {
+                continue;
+            }
+
+            return (int) ($order['id'] ?? 0);
+        }
+
+        return 0;
+    }
+
     // =========================================================
     //  Xử lý input mua hàng
     // =========================================================
@@ -226,12 +254,19 @@ trait TelegramBotServiceShopTrait
         if (!$session) {
             if ($wasInMode) {
                 $this->clearBinanceSession($telegramId);
+                $user = $this->resolveLinkedUser($chatId, $telegramId);
+                $pendingOrderId = $user ? $this->findLatestPendingTelegramOrderId((int) ($user['id'] ?? 0)) : 0;
+                if ($pendingOrderId > 0) {
+                    $this->startOrderBinanceUidInputMode($chatId, $telegramId, $pendingOrderId, 0);
+                    return true;
+                }
+
                 $this->telegram->sendTo(
                     $chatId,
                     $this->tgChoice(
                         $telegramId,
-                        '⌛ Phiên nhập UID Binance đã hết hạn. Vui lòng thao tác lại từ đơn hàng.',
-                        '⌛ Your Binance UID entry session has expired. Please reopen the order and try again.'
+                        '⌛ Phiên nhập UID Binance đã hết hạn. Vui lòng mở lại đơn hàng và nhập UID Binance của bạn.',
+                        '⌛ Your Binance UID prompt expired. Please reopen the order and enter your Binance UID again.'
                     )
                 );
                 return true;
@@ -543,6 +578,9 @@ trait TelegramBotServiceShopTrait
      */
     private function cbCategory(string $chatId, int $telegramId, int $catId, int $messageId = 0, string $callbackId = ''): void
     {
+        $this->clearPurchaseSession($telegramId);
+        $this->clearBinanceSession($telegramId);
+
         $products = $this->productModel->getFiltered(['category_id' => $catId, 'status' => 'ON']);
         if (empty($products)) {
             if ($callbackId !== '') {
@@ -592,6 +630,9 @@ trait TelegramBotServiceShopTrait
      */
     private function cbProduct(string $chatId, int $telegramId, int $prodId, int $messageId = 0): void
     {
+        $this->clearPurchaseSession($telegramId);
+        $this->clearBinanceSession($telegramId);
+
         $p = $this->productModel->find($prodId);
         if (!$p || $p['status'] !== 'ON') {
             $errMsg = $this->tgChoice($telegramId, '❌ Sản phẩm không tồn tại hoặc đã ngừng bán.', '❌ Product does not exist or is no longer available.');
@@ -1032,7 +1073,8 @@ trait TelegramBotServiceShopTrait
         $msg = "🟡 <b>BINANCE PAY</b>\n\n";
         $msg .= "🧾 Order ID: <code>" . htmlspecialchars((string) ($order['order_code_short'] ?? $order['order_code'] ?? ''), ENT_QUOTES, 'UTF-8') . "</code>\n";
         $msg .= "💎 Total: <b>" . number_format($total, 0, ',', '.') . "đ</b>\n\n";
-        $msg .= "👤 Please enter your <b>Binance UID</b> to continue.";
+        $msg .= "👤 Please enter <b>your Binance UID</b> to continue.\n";
+        $msg .= "🔢 Send digits only, 4 to 20 numbers.";
 
         $this->sendTelegramMediaOrText(
             $chatId,
@@ -1077,6 +1119,7 @@ trait TelegramBotServiceShopTrait
             $msg .= $this->tgChoice($telegramId, '⏰ Hết hạn', '⏰ Expires At') . ": <b>{$expiresAt}</b>\n";
         }
 
+        $msg .= "\n" . $this->tgChoice($telegramId, "🚫 <b>QUAN TRỌNG:</b> Nội dung chuyển khoản và số tiền phải chính xác.", "🚫 <b>IMPORTANT:</b> Transfer note and amount must be exact.") . "\n";
         $msg .= "\n" . $this->tgChoice($telegramId, '✅ Quét QR để thanh toán | Auto Banking', '✅ Scan the QR code to pay | Auto Banking') . "\n";
         return $msg;
     }
@@ -1118,7 +1161,8 @@ trait TelegramBotServiceShopTrait
             $msg .= "⏰ Expires at: <b>{$expiresAt}</b>\n";
         }
 
-        $msg .= "\n✅Scan QR to pay | Auto Matching\n";
+        $msg .= "\n" . $this->tgChoice($telegramId, "🚫 <b>QUAN TRỌNG:</b> Nội dung chuyển khoản và số tiền phải chính xác.", "🚫 <b>IMPORTANT:</b> Transfer note and amount must be exact.") . "\n";
+        $msg .= "\n" . $this->tgChoice($telegramId, '✅ Quét QR để thanh toán | Auto Matching', '✅ Scan QR to pay | Auto Matching') . "\n";
 
         return $msg;
     }

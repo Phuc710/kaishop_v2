@@ -343,10 +343,9 @@ class TelegramBotService
         }
 
         if (!str_starts_with($text, '/')) {
-            if ($this->handleBinanceInput($chatId, $telegramId, $text))
-                return;
-
             if ($this->handlePurchaseInput($chatId, $telegramId, $text))
+                return;
+            if ($this->handleBinanceInput($chatId, $telegramId, $text))
                 return;
             $this->handleMenuText($chatId, $telegramId, $text);
             return;
@@ -519,12 +518,17 @@ class TelegramBotService
     /** /start — Chào mừng + mở menu */
     private function cmdStart(string $chatId, int $telegramId, string $name): void
     {
+        $this->clearPurchaseSession($telegramId);
+        $this->clearBinanceSession($telegramId);
         $this->showLanguageSelection($chatId, $telegramId, 0, $name);
     }
 
     /** /menu — Menu bàn phím + inline theo vai trò */
     private function cmdMenu(string $chatId, int $telegramId): void
     {
+        $this->clearPurchaseSession($telegramId);
+        $this->clearBinanceSession($telegramId);
+
         if (!$this->hasTelegramLocale($telegramId)) {
             $this->showLanguageSelection($chatId, $telegramId);
             return;
@@ -535,6 +539,9 @@ class TelegramBotService
 
     private function showLanguageSelection(string $chatId, int $telegramId, int $messageId = 0, string $name = ''): void
     {
+        $this->clearPurchaseSession($telegramId);
+        $this->clearBinanceSession($telegramId);
+
         $siteName = get_setting('ten_web', 'KaiShop');
         $displayName = trim($name) !== '' ? trim($name) : ($this->isTelegramEnglish($telegramId) ? 'friend' : 'bạn');
 
@@ -566,6 +573,9 @@ class TelegramBotService
      */
     private function showMainMenu(string $chatId, int $telegramId, string $name = '', bool $withGreeting = false, int $messageId = 0): void
     {
+        $this->clearPurchaseSession($telegramId);
+        $this->clearBinanceSession($telegramId);
+
         if (!$this->hasTelegramLocale($telegramId)) {
             $this->showLanguageSelection($chatId, $telegramId, $messageId, $name);
             return;
@@ -667,6 +677,9 @@ class TelegramBotService
     /** /shop — Danh mục sản phẩm */
     private function cmdShop(string $chatId, int $telegramId, int $messageId = 0): void
     {
+        $this->clearPurchaseSession($telegramId);
+        $this->clearBinanceSession($telegramId);
+
         $categories = $this->categoryModel->getActive();
         if (empty($categories)) {
             $emptyMsg = $this->tgChoice($telegramId, '🛍️ Hiện hệ thống chưa có danh mục sản phẩm nào.', '🛍️ There are no product categories yet.');
@@ -702,6 +715,9 @@ class TelegramBotService
     /** /orders — 5 đơn hàng gần nhất */
     private function cmdOrders(string $chatId, int $telegramId, int $messageId = 0): void
     {
+        $this->clearPurchaseSession($telegramId);
+        $this->clearBinanceSession($telegramId);
+
         $user = $this->resolveLinkedUser($chatId, $telegramId);
         if (!$user)
             return;
@@ -777,6 +793,9 @@ class TelegramBotService
     /** /help — Danh sách lệnh */
     private function cmdHelp(string $chatId, int $telegramId, int $messageId = 0): void
     {
+        $this->clearPurchaseSession($telegramId);
+        $this->clearBinanceSession($telegramId);
+
         $isAdmin = TelegramConfig::isAdmin($telegramId);
 
         $msg = $this->tgText($telegramId, 'help_title') . "\n\n";
