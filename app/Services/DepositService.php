@@ -390,7 +390,7 @@ class DepositService
 
         $qrBankName = $this->resolveQrBankName($bankName);
         return 'https://img.vietqr.io/image/' . rawurlencode($qrBankName) . '-' . rawurlencode($bankAccount)
-            . '-compact2.png?amount=' . $amount
+            . '-qr_only.png?amount=' . $amount
             . '&addInfo=' . rawurlencode($content)
             . '&accountName=' . rawurlencode($accountName);
     }

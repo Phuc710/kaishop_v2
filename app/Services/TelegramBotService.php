@@ -400,6 +400,13 @@ class TelegramBotService
             case 'orders':
                 $this->cmdOrders($chatId, $telegramId, $messageId);
                 break;
+            case 'order':
+                if (($parts[1] ?? '') === 'check') {
+                    $this->cbOrderCheck($chatId, $telegramId, (int) ($parts[2] ?? 0), $messageId, $callbackId);
+                } elseif (($parts[1] ?? '') === 'cancel') {
+                    $this->cbOrderCancel($chatId, $telegramId, (int) ($parts[2] ?? 0), $messageId);
+                }
+                break;
             case 'menu':
             case 'back':
 
@@ -682,28 +689,8 @@ class TelegramBotService
     {
         $isAdmin = TelegramConfig::isAdmin($telegramId);
 
-        $msg = "✨ <b>TRỢ GIÚP — DANH SÁCH LỆNH</b>\n\n";
-        $msg .= "🛍️ /shop    — Cửa hàng\n";
-        $msg .= "💰 /balance — Ví của tôi\n";
-        $msg .= "💳 /bank    — Nạp tiền ngân hàng (VND)\n";
-        $msg .= "🟡 /binance — Nạp tiền Binance Pay (USD)\n";
-        $msg .= "📦 /orders  — Lịch sử đơn hàng\n";
-        $msg .= "📋 /menu    — Mở menu nhanh\n";
-        $msg .= "❓ /help    — Trợ giúp\n";
-
-        if ($isAdmin) {
-            $msg .= "\n👑 <b>LỆNH ADMIN:</b>\n";
-            $msg .= "📊 /stats                   — Thống kê\n";
-            $msg .= "📢 /broadcast &lt;nội_dung&gt; — Gửi thông báo\n";
-            $msg .= "🚧 /maintenance on|off       — Bảo trì\n";
-            $msg .= "🏦 /setbank &lt;bank|stk|chủ&gt; — Đổi ngân hàng\n";
-        }
-
         $msg = $this->tgText($telegramId, 'help_title') . "\n\n";
         $msg .= $this->tgText($telegramId, 'help_shop') . "\n";
-        $msg .= $this->tgText($telegramId, 'help_wallet') . "\n";
-        $msg .= $this->tgText($telegramId, 'help_bank') . "\n";
-        $msg .= $this->tgText($telegramId, 'help_binance') . "\n";
         $msg .= $this->tgText($telegramId, 'help_orders') . "\n";
         $msg .= $this->tgText($telegramId, 'help_menu') . "\n";
         $msg .= $this->tgText($telegramId, 'help_help');

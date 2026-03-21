@@ -196,7 +196,7 @@ trait TelegramBotServiceShopTrait
             } else {
                 $session['step'] = 'confirm';
                 $this->setPurchaseSession($telegramId, $this->attachPurchaseMessageId($session, $messageId));
-                $this->cbBuyConfirm($chatId, $telegramId, $prodId, $qty, null, $messageId);
+                $this->cbBuyConfirm($chatId, $telegramId, $prodId, $qty, null, 0);
             }
             return true;
         }
@@ -205,14 +205,14 @@ trait TelegramBotServiceShopTrait
             $session['info'] = $text;
             $session['step'] = 'confirm';
             $this->setPurchaseSession($telegramId, $this->attachPurchaseMessageId($session, $messageId));
-            $this->cbBuyConfirm($chatId, $telegramId, $prodId, (int) $session['qty'], $text, $messageId);
+            $this->cbBuyConfirm($chatId, $telegramId, $prodId, (int) $session['qty'], $text, 0);
             return true;
         }
 
         if ($step === 'gift') {
             $giftcode = strtoupper(trim($text));
             if ($giftcode === '') {
-                $this->telegram->editOrSend($chatId, $messageId, "⚠️ Vui lòng nhập mã giảm giá hợp lệ.");
+                $this->telegram->editOrSend($chatId, 0, "⚠️ Vui lòng nhập mã giảm giá hợp lệ.");
                 return true;
             }
 
@@ -224,20 +224,30 @@ trait TelegramBotServiceShopTrait
                 ]);
 
                 if (empty($quote['success'])) {
-                    $message = (string) ($quote['message'] ?? 'Mã giảm giá không hợp lệ.');
-                    $this->telegram->editOrSend($chatId, $messageId, "❌ <b>MÃ GIẢM GIÁ KHÔNG HỢP LỆ</b>\n{$message}\n\nVui lòng nhập lại mã khác hoặc bấm Quay lại.");
+                    $errorMsg = (string) ($quote['message'] ?? '');
+                    $fullMsg = $this->tgText($telegramId, 'gift_invalid_title') . "\n";
+                    if ($errorMsg !== '') {
+                        $fullMsg .= htmlspecialchars($errorMsg) . "\n\n";
+                    }
+                    $fullMsg .= $this->tgText($telegramId, 'gift_invalid_msg');
+
+                    $markup = TelegramService::buildInlineKeyboard([
+                        [['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => "buy_{$prodId}_{$qty}"]]
+                    ]);
+
+                    $this->telegram->editOrSend($chatId, 0, $fullMsg, $markup);
                     return true;
                 }
             } catch (Throwable $e) {
                 error_log('Telegram giftcode quote failed: ' . $e->getMessage());
-                $this->telegram->editOrSend($chatId, $messageId, "⚠️ Không thể kiểm tra mã giảm giá lúc này. Vui lòng thử lại sau.");
+                $this->telegram->editOrSend($chatId, 0, "⚠️ Không thể kiểm tra mã giảm giá lúc này. Vui lòng thử lại sau.");
                 return true;
             }
 
             $session['giftcode'] = $giftcode;
             $session['step'] = 'confirm';
             $this->setPurchaseSession($telegramId, $this->attachPurchaseMessageId($session, $messageId));
-            $this->cbBuyConfirm($chatId, $telegramId, $prodId, $qty, $session['info'] ?? null, $messageId);
+            $this->cbBuyConfirm($chatId, $telegramId, $prodId, $qty, $session['info'] ?? null, 0);
             return true;
         }
 
@@ -344,7 +354,7 @@ trait TelegramBotServiceShopTrait
         $session['step'] = 'gift';
         $this->setPurchaseSession($telegramId, $this->attachPurchaseMessageId($session, $messageId));
 
-        $this->telegram->editOrSend($chatId, $messageId, "🏷️ <b>NHẬP MÃ GIẢM GIÁ</b>\n\n👇 Vui lòng nhập mã giảm giá của bạn:", TelegramService::buildInlineKeyboard([
+        $this->telegram->editOrSend($chatId, $messageId, $this->tgText($telegramId, 'gift_input_title') . "\n\n" . $this->tgText($telegramId, 'gift_input_prompt'), TelegramService::buildInlineKeyboard([
             [['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'buy_' . $prodId . '_' . $qty]],
         ]));
     }
@@ -385,8 +395,8 @@ trait TelegramBotServiceShopTrait
             $rows[] = [['text' => $btnText, 'callback_data' => 'prod_' . $p['id']]];
         }
 
-        $rows[] = [['text' => '🔄 Cập nhật sản phẩm', 'callback_data' => 'cat_' . $catId]];
-        $rows[] = [['text' => '⬅️ Thay đổi Danh mục', 'callback_data' => 'shop']];
+        $rows[] = [['text' => $this->tgText($telegramId, 'button_refresh'), 'callback_data' => 'cat_' . $catId]];
+        $rows[] = [['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'shop']];
 
         $msg = "🛍️ <b>DANH SÁCH SẢN PHẨM</b>\n\n👇 Chọn sản phẩm bên dưới:";
         $markup = TelegramService::buildInlineKeyboard($rows);
@@ -428,14 +438,18 @@ trait TelegramBotServiceShopTrait
         }
         $msg .= "📦 Kho: <b>{$stockText}</b>\n\n";
 
-        $desc = strip_tags((string) ($p['description'] ?? ''));
+        $descRaw = (string) ($p['description'] ?? '');
+        $desc = strip_tags($descRaw);
+        $desc = str_replace(['&nbsp;', '&amp;', '&quot;', '&apos;', '&lt;', '&gt;'], [' ', '&', '"', "'", '<', '>'], $desc);
+        $desc = trim($desc);
+
         if ($desc !== '') {
-            $msg .= "📝 <b>Mô tả:</b>\n<i>" . htmlspecialchars(mb_substr($desc, 0, 300)) . (mb_strlen($desc) > 300 ? '...' : '') . "</i>\n";
+            $msg .= "<b>Mô tả:</b>\n<i>" . htmlspecialchars(mb_substr($desc, 0, 500)) . (mb_strlen($desc) > 500 ? '...' : '') . "</i>\n";
         }
 
         $rows = [];
         if ($stock === null || $stock > 0) {
-            $rows[] = [['text' => '🛒 MUA NGAY', 'callback_data' => 'buy_' . $p['id'] . '_1']];
+            $rows[] = [['text' => $this->tgText($telegramId, 'buy_now'), 'callback_data' => 'buy_' . $p['id'] . '_1']];
         }
         $rows[] = [['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'cat_' . ($p['category_id'] ?? 0)]];
 
@@ -558,33 +572,33 @@ trait TelegramBotServiceShopTrait
             'message_id' => $messageId,
         ]);
 
-        $msg = "🧾 <b>Xác nhận đơn hàng</b>\n\n";
+        $msg = $this->tgText($telegramId, 'confirm_order_title') . "\n\n";
         if ($giftError) {
             $msg .= "⚠️ Lỗi mã giảm giá: " . htmlspecialchars($giftError) . "\n\n";
         }
-        $msg .= "📦 Sản phẩm: " . htmlspecialchars($p['name']) . "\n";
-        $msg .= "🔢 Số lượng: {$qty}\n";
-        $msg .= "💵 Đơn giá: " . number_format($unitPrice) . "đ\n";
+        $msg .= "📦 Sản phẩm: <b>" . htmlspecialchars($p['name']) . "</b>\n";
+        $msg .= "🔢 Số lượng: <b>{$qty}</b>\n";
+        $msg .= $this->tgText($telegramId, 'confirm_unit_price') . ": <b>" . number_format($unitPrice) . "đ</b>\n";
 
         if ($customerInfo !== null && trim($customerInfo) !== '') {
-            $msg .= "📝 Thông tin: <code>" . htmlspecialchars($customerInfo) . "</code>\n";
+            $msg .= $this->tgText($telegramId, 'confirm_info') . ": <code>" . htmlspecialchars($customerInfo) . "</code>\n";
         }
 
         if ($discount > 0) {
-            $msg .= "🏷️ Giảm giá: -" . number_format($discount) . "đ (<i>{$giftcode}</i>)\n";
+            $msg .= $this->tgText($telegramId, 'confirm_discount') . ": -<b>" . number_format($discount) . "đ</b> (<i>{$giftcode}</i>)\n";
         }
 
         $msg .= "\n────────────\n\n";
-        $msg .= "💎 Tổng thanh toán: " . number_format($total) . "đ";
+        $msg .= $this->tgText($telegramId, 'confirm_total') . ": <b>" . number_format($total) . "đ</b>";
 
         $rows = [];
         $row1 = [];
         $row1[] = ['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'prod_' . $prodId];
         if (!$giftcode) {
-            $row1[] = ['text' => '🎟 Nhập mã giảm giá', 'callback_data' => 'buy_gift_' . $prodId . '_' . $qty];
+            $row1[] = ['text' => $this->tgText($telegramId, 'gift_button'), 'callback_data' => 'buy_gift_' . $prodId . '_' . $qty];
         }
         $rows[] = $row1;
-        $rows[] = [['text' => '✅ Xác nhận', 'callback_data' => $confirmAction]];
+        $rows[] = [['text' => $this->tgText($telegramId, 'confirm_button'), 'callback_data' => $confirmAction]];
 
         $this->telegram->editOrSend($chatId, $messageId, $msg, TelegramService::buildInlineKeyboard($rows));
     }
@@ -745,7 +759,7 @@ trait TelegramBotServiceShopTrait
         $message = $this->buildTelegramOrderBankPaymentMessage($order, $payment);
         $markup = TelegramService::buildInlineKeyboard([
             [
-                ['text' => '🔍 Kiểm tra thanh toán', 'callback_data' => 'order_check_' . $orderId],
+                ['text' => '✅ Kiểm tra thanh toán', 'callback_data' => 'order_check_' . $orderId],
                 ['text' => '❌ Hủy đơn', 'callback_data' => 'order_cancel_' . $orderId],
             ]
         ]);
@@ -878,7 +892,6 @@ trait TelegramBotServiceShopTrait
         if ($expiresAt !== '') {
             $msg .= "⏰ Hết hạn: <b>{$expiresAt}</b>\n";
         }
-        $msg .= "\n⚠️ Chuyển đúng số tiền và đúng nội dung để hệ thống auto xác nhận.";
 
         return $msg;
     }
