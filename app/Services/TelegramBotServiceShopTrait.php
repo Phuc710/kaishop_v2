@@ -545,46 +545,7 @@ trait TelegramBotServiceShopTrait
         }
 
         $balance = (float) ($user['money'] ?? 0);
-
-        $msg = "🛒 <b>XÁC NHẬN MUA HÀNG</b>\n\n";
-        if ($giftError) {
-            $msg .= "⚠️ <b>Lỗi mã giảm giá:</b> " . htmlspecialchars($giftError) . "\n\n";
-        }
-        $msg .= "📦 Sản phẩm: <b>" . htmlspecialchars($p['name']) . "</b>\n";
-        $msg .= "🔢 Số lượng: <b>{$qty}</b>\n";
-
-        if ($discount > 0) {
-            $msg .= "🏷️ Tạm tính: <s>" . number_format($subtotal) . "đ</s>\n";
-            $msg .= "🏷️ Giảm giá: -<b>" . number_format($discount) . "đ</b> (<i>{$giftcode}</i>)\n";
-        }
-
-        $msg .= "━━━━━━━━━━━━━━\n\n";
-        $msg .= "💎 Thành tiền: <b>" . number_format($total) . "đ</b>\n";
-        $msg .= "💰 Số dư ví: <b>" . number_format($balance) . "đ</b>\n";
-
-        if ($customerInfo !== null && trim($customerInfo) !== '') {
-            $msg .= "\n📝 Thông tin: <code>" . htmlspecialchars($customerInfo) . "</code>\n";
-        }
-
-        if ($balance < $total) {
-            $shortfall = (int) ceil($total - $balance);
-            $depositAmount = max(DepositService::MIN_AMOUNT, $shortfall);
-            $msg .= "\n\n⚠️ Số dư không đủ! Cần nạp thêm: <b>" . number_format($shortfall) . "đ</b>";
-            if ($depositAmount > $shortfall) {
-                $msg .= "\n(Mức nạp tối thiểu hiện tại: <b>" . number_format(DepositService::MIN_AMOUNT) . "đ</b>)";
-            }
-
-            $this->telegram->editOrSend($chatId, $messageId, $msg, TelegramService::buildInlineKeyboard([
-                [
-                    ['text' => '💳 Nạp thêm ' . number_format($shortfall) . 'đ', 'callback_data' => 'deposit_' . $depositAmount],
-                    ['text' => '❌ Hủy bỏ', 'callback_data' => 'prod_' . $prodId],
-                ]
-            ]));
-            return;
-        }
-
-        $msg .= "\n\n⚠️ Xác nhận thanh toán trừ tiền ví.";
-
+        $unitPrice = $price;
         $confirmAction = "do_buy_" . $prodId . "_" . $qty;
 
         $this->setPurchaseSession($telegramId, [
@@ -596,12 +557,54 @@ trait TelegramBotServiceShopTrait
             'message_id' => $messageId,
         ]);
 
+        $msg = "🧾 <b>XÁC NHẬN ĐƠN HÀNG</b>\n\n";
+        if ($giftError) {
+            $msg .= "⚠️ <b>Lỗi mã giảm giá:</b> " . htmlspecialchars($giftError) . "\n\n";
+        }
+        $msg .= "📦 Sản phẩm: <b>" . htmlspecialchars($p['name']) . "</b>\n";
+        $msg .= "🔢 Số lượng: <b>{$qty}</b>\n";
+        $msg .= "💵 Đơn giá: <b>" . number_format($unitPrice) . "đ</b>\n";
+        $msg .= "🧮 Tạm tính: <b>" . number_format($subtotal) . "đ</b>\n";
+
+        if ($discount > 0) {
+            $msg .= "🏷️ Giảm giá: -<b>" . number_format($discount) . "đ</b> (<i>{$giftcode}</i>)\n";
+        }
+
+        $msg .= "🧾 Phí: <b>0đ</b>\n";
+
+        $msg .= "━━━━━━━━━━━━━━\n\n";
+        $msg .= "💎 Tổng thanh toán: <b>" . number_format($total) . "đ</b>\n";
+        $msg .= "💰 Số dư ví: <b>" . number_format($balance) . "đ</b>\n";
+
+        if ($customerInfo !== null && trim($customerInfo) !== '') {
+            $msg .= "\n📝 Thông tin: <code>" . htmlspecialchars($customerInfo) . "</code>\n";
+        }
+
         $rows = [];
         if (!$giftcode) {
             $rows[] = [['text' => '🏷️ Nhập mã giảm giá', 'callback_data' => 'buy_gift_' . $prodId . '_' . $qty]];
         }
+
+        if ($balance < $total) {
+            $shortfall = (int) ceil($total - $balance);
+            $depositAmount = max(DepositService::MIN_AMOUNT, $shortfall);
+            $msg .= "\n⚠️ Còn thiếu: <b>" . number_format($shortfall) . "đ</b>";
+            if ($depositAmount > $shortfall) {
+                $msg .= "\n📌 Mức nạp tối thiểu hiện tại: <b>" . number_format(DepositService::MIN_AMOUNT) . "đ</b>";
+            }
+
+            $rows[] = [
+                ['text' => '💳 Nạp thêm ' . number_format($shortfall) . 'đ', 'callback_data' => 'deposit_' . $depositAmount],
+                ['text' => '◀️ Quay lại sửa', 'callback_data' => 'prod_' . $prodId],
+            ];
+
+            $this->telegram->editOrSend($chatId, $messageId, $msg, TelegramService::buildInlineKeyboard($rows));
+            return;
+        }
+
+        $msg .= "\n✅ Bấm xác nhận để thanh toán bằng số dư ví.";
         $rows[] = [
-            ['text' => '❌ HỦY BỎ', 'callback_data' => 'prod_' . $prodId],
+            ['text' => '◀️ Quay lại sửa', 'callback_data' => 'prod_' . $prodId],
             ['text' => '✅ XÁC NHẬN MUA', 'callback_data' => $confirmAction],
         ];
 
