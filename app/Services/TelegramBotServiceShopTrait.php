@@ -635,7 +635,7 @@ trait TelegramBotServiceShopTrait
             return;
         }
 
-        $this->telegram->editOrSend($chatId, $messageId, "⏳ Đang xử lý giao dịch và tạo QR Code...\nVui lòng chờ trong giây lát.");
+        $this->telegram->editOrSend($chatId, $messageId, "⏳ Đang xử lý giao dịch và tạo QR Code.");
 
         $customerInput = ((int) ($session['prod_id'] ?? 0) === $prodId) ? ($session['info'] ?? null) : null;
         $giftcode = ((int) ($session['prod_id'] ?? 0) === $prodId) ? ($session['giftcode'] ?? null) : null;
@@ -898,8 +898,6 @@ trait TelegramBotServiceShopTrait
 
         $msg .= "\n📲 Quét QR để thanh toán\n";
         $msg .= "✅ Tự động xác nhận khi nhận tiền\n";
-        $msg .= "⚠️ Đơn hết hạn sau 5 phút";
-
         return $msg;
     }
 
