@@ -163,7 +163,6 @@ class TelegramBotService
         'Không thể xác nhận thanh toán lúc này.' => 'Could not confirm payment right now.',
         'Đơn hàng không hợp lệ.' => 'Invalid order.',
         'Bạn không có quyền thao tác đơn này.' => 'You do not have permission to modify this order.',
-        'Đơn hàng này không còn chờ thanh toán.' => 'This order is no longer pending payment.',
         'Đơn hàng đã hết hạn.' => 'The order has expired.',
         'Đã hủy đơn hàng.' => 'Order cancelled.',
         'Không thể hủy đơn lúc này.' => 'Could not cancel the order right now.',
@@ -179,8 +178,8 @@ class TelegramBotService
         'Mã giảm giá không áp dụng cho sản phẩm này.' => 'This discount code does not apply to this product.',
         'Đơn hàng chưa đạt mức tối thiểu để dùng mã giảm giá.' => 'The order does not meet the minimum amount for this discount code.',
         'Đơn hàng vượt quá giá trị áp dụng của mã giảm giá.' => 'The order exceeds the applicable amount for this discount code.',
-            'Mã giảm giá vừa hết lượt. Vui lòng thử lại.' => 'The discount code has just run out. Please try again.',
-            'User not found' => 'Could not identify your Telegram account. Please send /start and try again.',
+        'Mã giảm giá vừa hết lượt. Vui lòng thử lại.' => 'The discount code has just run out. Please try again.',
+        'User not found' => 'Could not identify your Telegram account. Please send /start and try again.',
         ];
 
         if (isset($runtimeMap[$message])) {
