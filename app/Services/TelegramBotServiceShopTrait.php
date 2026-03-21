@@ -113,6 +113,39 @@ trait TelegramBotServiceShopTrait
         return $session;
     }
 
+    private function binanceSessionDir(): string
+    {
+        return TelegramConfig::rateDir() . DIRECTORY_SEPARATOR . 'binance_session';
+    }
+
+    private function binanceSessionFile(int $telegramId): string
+    {
+        return $this->binanceSessionDir() . DIRECTORY_SEPARATOR . $telegramId . '.json';
+    }
+
+    private function setBinanceSession(int $telegramId, array $data, int $ttl = 300): void
+    {
+        $dir = $this->binanceSessionDir();
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0700, true);
+        }
+
+        $now = $this->timeService ? $this->timeService->nowTs() : time();
+        $data['created_at'] = (int) ($data['created_at'] ?? $now);
+        $data['updated_at'] = $now;
+        $data['expires_at'] = $now + max(60, $ttl);
+
+        @file_put_contents($this->binanceSessionFile($telegramId), json_encode($data), LOCK_EX);
+    }
+
+    private function clearBinanceSession(int $telegramId): void
+    {
+        $file = $this->binanceSessionFile($telegramId);
+        if (is_file($file)) {
+            @unlink($file);
+        }
+    }
+
     // =========================================================
     //  Xử lý input mua hàng
     // =========================================================
@@ -762,7 +795,7 @@ trait TelegramBotServiceShopTrait
         $message = $this->buildTelegramOrderBankPaymentMessage($order, $payment);
         $markup = TelegramService::buildInlineKeyboard([
             [
-                ['text' => '✅ Kiểm tra', 'callback_data' => 'order_check_' . $orderId],
+                ['text' => '🔍 Kiểm tra', 'callback_data' => 'order_check_' . $orderId],
                 ['text' => '❌ Hủy đơn', 'callback_data' => 'order_cancel_' . $orderId],
             ]
         ]);
@@ -813,8 +846,8 @@ trait TelegramBotServiceShopTrait
         $message = $this->buildTelegramOrderBinancePaymentMessage($order, $payment);
         $markup = TelegramService::buildInlineKeyboard([
             [
-                ['text' => '🔍 Kiểm tra', 'callback_data' => 'order_check_' . $orderId],
-                ['text' => '❌ Hủy đơn', 'callback_data' => 'order_cancel_' . $orderId],
+                ['text' => '🔍 Check', 'callback_data' => 'order_check_' . $orderId],
+                ['text' => '❌ Cancel', 'callback_data' => 'order_cancel_' . $orderId],
             ]
         ]);
 
@@ -849,9 +882,9 @@ trait TelegramBotServiceShopTrait
 
         $total = (int) ($order['price'] ?? 0);
         $msg = "🟡 <b>BINANCE PAY</b>\n\n";
-        $msg .= "🧾 Mã đơn: <code>" . htmlspecialchars((string) ($order['order_code_short'] ?? $order['order_code'] ?? ''), ENT_QUOTES, 'UTF-8') . "</code>\n";
-        $msg .= "💎 Cần thanh toán: <b>" . number_format($total, 0, ',', '.') . "đ</b>\n\n";
-        $msg .= "👤 Vui lòng nhập <b>UID Binance của bạn</b> để tiếp tục.";
+        $msg .= "🧾 Order ID: <code>" . htmlspecialchars((string) ($order['order_code_short'] ?? $order['order_code'] ?? ''), ENT_QUOTES, 'UTF-8') . "</code>\n";
+        $msg .= "💎 Total: <b>" . number_format($total, 0, ',', '.') . "đ</b>\n\n";
+        $msg .= "👤 Please enter your <b>Binance UID</b> to continue.";
 
         $this->sendTelegramMediaOrText(
             $chatId,
@@ -896,7 +929,7 @@ trait TelegramBotServiceShopTrait
             $msg .= "⏰ Hết hạn: <b>{$expiresAt}</b>\n";
         }
 
-        $msg .= "\n📲 Quét QR để thanh toán | Auto Banking\n";
+        $msg .= "\n✅ Quét QR để thanh toán | Auto Banking\n";
         return $msg;
     }
 
@@ -919,25 +952,25 @@ trait TelegramBotServiceShopTrait
         $discountAmount = (int) ($order['discount_amount'] ?? 0);
         $giftcode = htmlspecialchars(trim((string) ($order['giftcode_code'] ?? '')), ENT_QUOTES, 'UTF-8');
 
-        $msg = "🟡 <b>BINANCE PAY — THANH TOÁN ĐƠN</b>\n\n";
-        $msg .= "🧾 Mã đơn: <code>{$orderCode}</code>\n";
-        $msg .= "📦 Sản phẩm: <b>{$productName}</b>\n";
-        $msg .= "🔢 Số lượng: <b>{$quantity}</b>\n";
+        $msg = "🟡 <b>BINANCE PAY — ORDER PAYMENT</b>\n\n";
+        $msg .= "🧾 Order ID: <code>{$orderCode}</code>\n";
+        $msg .= "📦 Product: <b>{$productName}</b>\n";
+        $msg .= "🔢 Quantity: <b>{$quantity}</b>\n";
         if ($discountAmount > 0 && $giftcode !== '') {
-            $msg .= "🏷️ Giảm giá: -<b>" . number_format($discountAmount, 0, ',', '.') . "đ</b> (<i>{$giftcode}</i>)\n";
+            $msg .= "🏷️ Discount: -<b>" . number_format($discountAmount, 0, ',', '.') . "đ</b> (<i>{$giftcode}</i>)\n";
         }
-        $msg .= "💎 Tổng đơn: <b>{$vndText}</b>\n";
+        $msg .= "💎 Total: <b>{$vndText}</b>\n";
         $msg .= "━━━━━━━━━━━━━━\n";
-        $msg .= "🙍 Người nhận: <b>{$receiverName}</b>\n";
-        $msg .= "🆔 UID nhận: <code>{$receiverUid}</code>\n";
-        $msg .= "📋 Mã giao dịch: <code>{$depositCode}</code>\n";
-        $msg .= "👤 UID của bạn: <code>{$payerUid}</code>\n";
+        $msg .= "🙍 Receiver: <b>{$receiverName}</b>\n";
+        $msg .= "🆔 Receiver UID: <code>{$receiverUid}</code>\n";
+        $msg .= "📋 Deposit Code: <code>{$depositCode}</code>\n";
+        $msg .= "👤 Your UID: <code>{$payerUid}</code>\n";
         $msg .= "💵 Send EXACTLY: <b>$" . $usdtText . " USDT</b>\n";
         if ($expiresAt !== '') {
-            $msg .= "⏰ Hết hạn: <b>{$expiresAt}</b>\n";
+            $msg .= "⏰ Expires at: <b>{$expiresAt}</b>\n";
         }
 
-        $msg .= "\n📲 Quét QR để thanh toán | Auto Banking\n";
+        $msg .= "\n📲 Scan QR to pay | Auto Matching\n";
 
         return $msg;
     }
@@ -1047,15 +1080,23 @@ trait TelegramBotServiceShopTrait
             return;
         }
 
-        // Thực hiện hủy đơn ngay lập tức
-        $this->purchaseService->cancelTelegramPendingOrder($orderId, (int) ($user['id'] ?? 0), 'Người dùng hủy đơn.');
+        $result = $this->purchaseService->cancelTelegramPendingOrder($orderId, (int) ($user['id'] ?? 0), 'Người dùng hủy đơn.');
         $this->clearBinanceSession($telegramId);
 
         if ($callbackId !== '') {
-            $this->telegram->answerCallbackQuery($callbackId, '✅ Đã hủy đơn hàng.', false);
+            $success = !empty($result['success']);
+            $message = trim((string) ($result['message'] ?? ($success ? 'Đã hủy đơn hàng.' : 'Không thể hủy đơn.')));
+            $this->telegram->answerCallbackQuery($callbackId, ($success ? '✅ ' : '❌ ') . $message, !$success);
         }
 
-        // Chuyển hướng về Main Menu
-        $this->showMainMenu($chatId, $telegramId, '', false, $messageId);
+        if (empty($result['success'])) {
+            return;
+        }
+
+        if ($messageId > 0) {
+            $this->telegram->deleteMessage($chatId, $messageId);
+        }
+
+        $this->showMainMenu($chatId, $telegramId, '', false, 0);
     }
 }
