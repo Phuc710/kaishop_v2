@@ -17,7 +17,7 @@ trait TelegramBotServiceAdminTrait
     private function cmdStats(string $chatId, int $telegramId): void
     {
         if (!TelegramConfig::isAdmin($telegramId)) {
-            $this->telegram->sendTo($chatId, "⛔ Bạn không có quyền quản trị.");
+            $this->telegram->sendTo($chatId, $this->tgChoice($telegramId, '⛔ Bạn không có quyền quản trị.', '⛔ You do not have admin permission.'));
             return;
         }
 
@@ -39,19 +39,21 @@ trait TelegramBotServiceAdminTrait
         $outboxStats = (new TelegramOutbox())->getStats();
 
         $lastCron = trim((string) get_setting('last_cron_run', ''));
-        $workerStatus = $lastCron === '' ? '❌ Chưa chạy' : "✅ {$lastCron}";
+        $workerStatus = $lastCron === ''
+            ? $this->tgChoice($telegramId, '❌ Chưa chạy', '❌ Not running yet')
+            : "✅ {$lastCron}";
 
-        $msg = "📊 <b>THỐNG KÊ HỆ THỐNG</b> ({$today})\n\n";
-        $msg .= "👥 Tổng user web: <b>{$userCount}</b>\n";
-        $msg .= "🔗 Đã liên kết TG: <b>{$tgCount}</b> <i>(+{$newTgToday} hôm nay)</i>\n\n";
-        $msg .= "🛍 <b>Đơn hàng hôm nay:</b>\n";
-        $msg .= "   Số đơn: <b>" . $todayOrders['cnt'] . "</b>\n";
-        $msg .= "   Doanh thu: <b>" . number_format((float) $todayOrders['rev']) . "đ</b>\n\n";
-        $msg .= "💰 Nạp chờ duyệt: <b>{$depositPending}</b>\n\n";
+        $msg = $this->tgChoice($telegramId, "📊 <b>THỐNG KÊ HỆ THỐNG</b> ({$today})\n\n", "📊 <b>SYSTEM STATISTICS</b> ({$today})\n\n");
+        $msg .= $this->tgChoice($telegramId, '👥 Tổng user web', '👥 Total web users') . ": <b>{$userCount}</b>\n";
+        $msg .= $this->tgChoice($telegramId, '🔗 Đã liên kết TG', '🔗 Linked Telegram users') . ": <b>{$tgCount}</b> <i>" . $this->tgChoice($telegramId, "(+{$newTgToday} hôm nay)", "(+{$newTgToday} today)") . "</i>\n\n";
+        $msg .= $this->tgChoice($telegramId, "🛍 <b>Đơn hàng hôm nay:</b>\n", "🛍 <b>Today's orders:</b>\n");
+        $msg .= '   ' . $this->tgChoice($telegramId, 'Số đơn', 'Count') . ": <b>" . $todayOrders['cnt'] . "</b>\n";
+        $msg .= '   ' . $this->tgChoice($telegramId, 'Doanh thu', 'Revenue') . ": <b>" . number_format((float) $todayOrders['rev']) . "đ</b>\n\n";
+        $msg .= $this->tgChoice($telegramId, '💰 Nạp chờ duyệt', '💰 Pending deposits') . ": <b>{$depositPending}</b>\n\n";
         $msg .= "📤 <b>Outbox:</b>\n";
-        $msg .= "   Chờ gửi: <b>{$outboxStats['pending']}</b>\n";
-        $msg .= "   Đã gửi:  <b>{$outboxStats['sent']}</b>\n";
-        $msg .= "   Lỗi:     <b>{$outboxStats['failed']}</b>\n\n";
+        $msg .= '   ' . $this->tgChoice($telegramId, 'Chờ gửi', 'Pending') . ": <b>{$outboxStats['pending']}</b>\n";
+        $msg .= '   ' . $this->tgChoice($telegramId, 'Đã gửi', 'Sent') . ":  <b>{$outboxStats['sent']}</b>\n";
+        $msg .= '   ' . $this->tgChoice($telegramId, 'Lỗi', 'Failed') . ":     <b>{$outboxStats['failed']}</b>\n\n";
         $msg .= "⚙️ Worker: {$workerStatus}";
 
         $this->telegram->sendTo($chatId, $msg);
@@ -63,7 +65,7 @@ trait TelegramBotServiceAdminTrait
     private function cmdBroadcast(string $chatId, int $telegramId, array $args): void
     {
         if (!TelegramConfig::isAdmin($telegramId)) {
-            $this->telegram->sendTo($chatId, "⛔ Bạn không có quyền quản trị.");
+            $this->telegram->sendTo($chatId, $this->tgChoice($telegramId, '⛔ Bạn không có quyền quản trị.', '⛔ You do not have admin permission.'));
             return;
         }
 
@@ -71,7 +73,7 @@ trait TelegramBotServiceAdminTrait
         if ($content === '') {
             $this->telegram->sendTo(
                 $chatId,
-                "📢 <b>BROADCAST</b>\n\nCú pháp:\n<code>/broadcast &lt;nội dung&gt;</code>\n\nVí dụ:\n<code>/broadcast ⚡ Flash sale 50% trong 24h!</code>"
+                $this->tgChoice($telegramId, "📢 <b>BROADCAST</b>\n\nCú pháp:\n<code>/broadcast &lt;nội dung&gt;</code>\n\nVí dụ:\n<code>/broadcast ⚡ Flash sale 50% trong 24h!</code>", "📢 <b>BROADCAST</b>\n\nSyntax:\n<code>/broadcast &lt;content&gt;</code>\n\nExample:\n<code>/broadcast ⚡ Flash sale 50% in 24 hours!</code>")
             );
             return;
         }
@@ -80,12 +82,12 @@ trait TelegramBotServiceAdminTrait
         $links = $conn->query("SELECT `telegram_id` FROM `user_telegram_links`")->fetchAll(PDO::FETCH_COLUMN);
 
         if (empty($links)) {
-            $this->telegram->sendTo($chatId, "⚠️ Chưa có user nào liên kết Telegram.");
+            $this->telegram->sendTo($chatId, $this->tgChoice($telegramId, '⚠️ Chưa có user nào liên kết Telegram.', '⚠️ No users have linked Telegram yet.'));
             return;
         }
 
         $outbox = new TelegramOutbox();
-        $msgText = "📢 <b>THÔNG BÁO HỆ THỐNG</b>\n\n" . $content;
+        $msgText = $this->tgChoice($telegramId, "📢 <b>THÔNG BÁO HỆ THỐNG</b>\n\n", "📢 <b>SYSTEM ANNOUNCEMENT</b>\n\n") . $content;
         $count = 0;
 
         foreach ($links as $tid) {
@@ -95,7 +97,7 @@ trait TelegramBotServiceAdminTrait
 
         $this->telegram->sendTo(
             $chatId,
-            "✅ Đã xếp hàng <b>{$count}</b> tin vào Outbox.\nSẽ gửi trong ít phút tới."
+            $this->tgChoice($telegramId, "✅ Đã xếp hàng <b>{$count}</b> tin vào Outbox.\nSẽ gửi trong ít phút tới.", "✅ Queued <b>{$count}</b> messages in the Outbox.\nThey will be sent in the next few minutes.")
         );
     }
 
@@ -105,14 +107,16 @@ trait TelegramBotServiceAdminTrait
     private function cmdMaintenance(string $chatId, int $telegramId, array $args): void
     {
         if (!TelegramConfig::isAdmin($telegramId)) {
-            $this->telegram->sendTo($chatId, "⛔ Bạn không có quyền quản trị.");
+            $this->telegram->sendTo($chatId, $this->tgChoice($telegramId, '⛔ Bạn không có quyền quản trị.', '⛔ You do not have admin permission.'));
             return;
         }
 
         $action = strtolower($args[0] ?? '');
         if ($action !== 'on' && $action !== 'off') {
-            $status = TelegramConfig::isMaintenanceEnabled() ? "🔴 Đang BẬT" : "🟢 Đang TẮT";
-            $this->telegram->sendTo($chatId, "🛠 <b>BẢO TRÌ HỆ THỐNG</b>\nTrạng thái hiện tại: {$status}\n\nSử dụng:\n<code>/maintenance on</code> — Bật bảo trì toàn hệ thống\n<code>/maintenance off</code> — Tắt bảo trì toàn hệ thống");
+            $status = TelegramConfig::isMaintenanceEnabled()
+                ? $this->tgChoice($telegramId, '🔴 Đang BẬT', '🔴 ENABLED')
+                : $this->tgChoice($telegramId, '🟢 Đang TẮT', '🟢 DISABLED');
+            $this->telegram->sendTo($chatId, $this->tgChoice($telegramId, "🛠 <b>BẢO TRÌ HỆ THỐNG</b>\nTrạng thái hiện tại: {$status}\n\nSử dụng:\n<code>/maintenance on</code> — Bật bảo trì toàn hệ thống\n<code>/maintenance off</code> — Tắt bảo trì toàn hệ thống", "🛠 <b>SYSTEM MAINTENANCE</b>\nCurrent status: {$status}\n\nUsage:\n<code>/maintenance on</code> — Enable system-wide maintenance\n<code>/maintenance off</code> — Disable system-wide maintenance"));
             return;
         }
 
@@ -124,15 +128,15 @@ trait TelegramBotServiceAdminTrait
                 $svc->saveConfig(['maintenance_enabled' => '1']);
                 $db->prepare("UPDATE `setting` SET `telegram_maintenance_enabled` = 1 ORDER BY `id` ASC LIMIT 1")->execute();
                 Config::clearSiteConfigCache();
-                $this->telegram->sendTo($chatId, "🔧 <b>Đã bật bảo trì TOÀN HỆ THỐNG!</b>\nWebsite và Bot hiện đã tạm dừng phục vụ.");
+                $this->telegram->sendTo($chatId, $this->tgChoice($telegramId, '🔧 <b>Đã bật bảo trì TOÀN HỆ THỐNG!</b>\nWebsite và Bot hiện đã tạm dừng phục vụ.', '🔧 <b>SYSTEM-WIDE MAINTENANCE ENABLED!</b>\nThe website and bot are now temporarily unavailable.'));
             } else {
                 $svc->clearNow();
                 $db->prepare("UPDATE `setting` SET `telegram_maintenance_enabled` = 0 ORDER BY `id` ASC LIMIT 1")->execute();
                 Config::clearSiteConfigCache();
-                $this->telegram->sendTo($chatId, "✅ <b>Đã tắt bảo trì TOÀN HỆ THỐNG!</b>\nWebsite và Bot đã hoạt động trở lại.");
+                $this->telegram->sendTo($chatId, $this->tgChoice($telegramId, '✅ <b>Đã tắt bảo trì TOÀN HỆ THỐNG!</b>\nWebsite và Bot đã hoạt động trở lại.', '✅ <b>SYSTEM-WIDE MAINTENANCE DISABLED!</b>\nThe website and bot are available again.'));
             }
         } catch (Throwable $e) {
-            $this->telegram->sendTo($chatId, "❌ Lỗi: " . $e->getMessage());
+            $this->telegram->sendTo($chatId, $this->tgChoice($telegramId, '❌ Lỗi: ', '❌ Error: ') . $e->getMessage());
         }
     }
 
@@ -142,7 +146,7 @@ trait TelegramBotServiceAdminTrait
     private function cmdSetBank(string $chatId, int $telegramId, array $args): void
     {
         if (!TelegramConfig::isAdmin($telegramId)) {
-            $this->telegram->sendTo($chatId, "⛔ Bạn không có quyền quản trị.");
+            $this->telegram->sendTo($chatId, $this->tgChoice($telegramId, '⛔ Bạn không có quyền quản trị.', '⛔ You do not have admin permission.'));
             return;
         }
 
@@ -152,7 +156,7 @@ trait TelegramBotServiceAdminTrait
         if (count($parts) < 3) {
             $this->telegram->sendTo(
                 $chatId,
-                "🏦 <b>SETBANK</b>\n\nCú pháp:\n<code>/setbank Ngân hàng|Số TK|Chủ TK</code>\n\nVí dụ:\n<code>/setbank MB Bank|0123456789|NGUYEN THANH PHUC</code>"
+                $this->tgChoice($telegramId, "🏦 <b>SETBANK</b>\n\nCú pháp:\n<code>/setbank Ngân hàng|Số TK|Chủ TK</code>\n\nVí dụ:\n<code>/setbank MB Bank|0123456789|NGUYEN THANH PHUC</code>", "🏦 <b>SETBANK</b>\n\nSyntax:\n<code>/setbank Bank Name|Account Number|Account Holder</code>\n\nExample:\n<code>/setbank MB Bank|0123456789|NGUYEN THANH PHUC</code>")
             );
             return;
         }
@@ -166,7 +170,7 @@ trait TelegramBotServiceAdminTrait
 
         $this->telegram->sendTo(
             $chatId,
-            "✅ <b>Đã cập nhật ngân hàng!</b>\n\n"
+            $this->tgChoice($telegramId, "✅ <b>Đã cập nhật ngân hàng!</b>\n\n", "✅ <b>Bank information updated!</b>\n\n")
             . "🏦 " . htmlspecialchars($bankName) . "\n"
             . "💳 " . htmlspecialchars($bankAcc) . "\n"
             . "👤 " . htmlspecialchars($bankOwner)

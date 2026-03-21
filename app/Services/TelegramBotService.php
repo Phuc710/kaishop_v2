@@ -118,6 +118,82 @@ class TelegramBotService
         return $localeClass->getMessage($key, $vars);
     }
 
+    private function tgChoice(int $telegramId, string $vi, string $en): string
+    {
+        return $this->isTelegramEnglish($telegramId) ? $en : $vi;
+    }
+
+    private function tgRuntimeMessage(int $telegramId, string $message): string
+    {
+        $message = trim($message);
+        if ($message === '' || !$this->isTelegramEnglish($telegramId)) {
+            return $message;
+        }
+
+        static $runtimeMap = [
+        'Bạn chưa đăng nhập. /start and try again.' => 'Could not identify your Telegram account. Please send /start and try again.',
+        'Tài khoản đang bị khóa.' => 'Your account is locked.',
+        'Sản phẩm không khả dụng.' => 'This product is not available.',
+        'Giá sản phẩm không hợp lệ.' => 'Invalid product price.',
+        'Số lượng mua nhỏ hơn mức tối thiểu.' => 'Quantity is below the minimum allowed.',
+        'Vui lòng nhập thông tin yêu cầu trước khi mua.' => 'Please enter the required information before purchasing.',
+        'Vui lòng nhập thông tin yêu cầu trước khi tiếp tục.' => 'Please enter the required information before continuing.',
+        'Sản phẩm tạm hết hàng.' => 'This product is temporarily out of stock.',
+        'Số lượng mua vượt quá tồn kho hoặc giới hạn tối đa.' => 'Quantity exceeds stock or the maximum allowed limit.',
+        'Số lượng mua vượt quá giới hạn tối đa.' => 'Quantity exceeds the maximum allowed limit.',
+        'Số dư không đủ để thanh toán.' => 'Your balance is insufficient for payment.',
+        'Loại sản phẩm này chỉ được mua tối đa 1 cái mỗi đơn hàng.' => 'This product type can only be purchased once per order.',
+        'Loại sản phẩm này chỉ hỗ trợ mua tối đa 1 sản phẩm mỗi đơn.' => 'This product type supports only one item per order.',
+        'Sản phẩm Source Link chưa được cấu hình link giao.' => 'The Source Link product has not been configured with a delivery link.',
+        'Sản phẩm Source Link chưa được cấu hình nội dung giao.' => 'The Source Link product has not been configured with delivery content.',
+        'Không thể xử lý đơn hàng lúc này. Vui lòng thử lại sau.' => 'Could not process the order right now. Please try again later.',
+        'Không thể tạo đơn hàng lúc này.' => 'Could not create the order right now.',
+        'Phương thức thanh toán không hợp lệ.' => 'Invalid payment method.',
+        'Không tìm thấy đơn hàng.' => 'Order not found.',
+        'Đơn hàng này không còn chờ thanh toán.' => 'This order is no longer pending payment.',
+        'Đơn hàng đã hết hạn thanh toán.' => 'This order has expired.',
+        'Không tìm thấy tài khoản người dùng.' => 'User account not found.',
+        'Giá trị đơn hàng không hợp lệ.' => 'Invalid order amount.',
+        'Deposit không gắn với đơn hàng nào.' => 'This deposit is not linked to any order.',
+        'Đơn hàng không tồn tại.' => 'Order does not exist.',
+        'Đơn hàng đã được thanh toán trước đó.' => 'This order has already been paid.',
+        'Đơn hàng không còn ở trạng thái chờ thanh toán.' => 'This order is no longer in pending-payment status.',
+        'Sản phẩm không còn tồn tại.' => 'The product no longer exists.',
+        'Đã xác nhận thanh toán đơn hàng.' => 'Order payment confirmed.',
+        'Không thể xác nhận thanh toán lúc này.' => 'Could not confirm payment right now.',
+        'Đơn hàng không hợp lệ.' => 'Invalid order.',
+        'Bạn không có quyền thao tác đơn này.' => 'You do not have permission to modify this order.',
+        'Đơn hàng này không còn chờ thanh toán.' => 'This order is no longer pending payment.',
+        'Đơn hàng đã hết hạn.' => 'The order has expired.',
+        'Đã hủy đơn hàng.' => 'Order cancelled.',
+        'Không thể hủy đơn lúc này.' => 'Could not cancel the order right now.',
+        'UID Binance không hợp lệ.' => 'Invalid Binance UID.',
+        'Binance Pay chưa sẵn sàng.' => 'Binance Pay is not ready yet.',
+        'Binance Pay chưa được cấu hình.' => 'Binance Pay is not configured.',
+        'Không thể tạo phiên thanh toán Binance.' => 'Could not create a Binance payment session.',
+        'Hệ thống mã giảm giá chưa sẵn sàng.' => 'The discount-code system is not ready yet.',
+        'Mã giảm giá không tồn tại.' => 'Discount code does not exist.',
+        'Mã giảm giá đã bị tắt.' => 'Discount code has been disabled.',
+        'Mã giảm giá đã hết lượt sử dụng.' => 'Discount code has no remaining uses.',
+        'Mã giảm giá đã hết hạn.' => 'Discount code has expired.',
+        'Mã giảm giá không áp dụng cho sản phẩm này.' => 'This discount code does not apply to this product.',
+        'Đơn hàng chưa đạt mức tối thiểu để dùng mã giảm giá.' => 'The order does not meet the minimum amount for this discount code.',
+        'Đơn hàng vượt quá giá trị áp dụng của mã giảm giá.' => 'The order exceeds the applicable amount for this discount code.',
+            'Mã giảm giá vừa hết lượt. Vui lòng thử lại.' => 'The discount code has just run out. Please try again.',
+            'User not found' => 'Could not identify your Telegram account. Please send /start and try again.',
+        ];
+
+        if (isset($runtimeMap[$message])) {
+            return $runtimeMap[$message];
+        }
+
+        if (preg_match('/^Bạn còn thiếu (.+)$/u', $message, $m)) {
+            return 'You still need ' . $m[1] . '.';
+        }
+
+        return $message;
+    }
+
     // =========================================================
     //  Bot Initialization
     // =========================================================
@@ -214,9 +290,11 @@ class TelegramBotService
                 if ($chatId !== '' && $this->checkAndSetCooldown("rl_warn_{$telegramId}", 5)) {
                     $retryAfter = max(1, (int) ($rateState['retry_after'] ?? 1));
                     $actionName = (string) ($rateState['action'] ?? 'request');
-                    $message = "⚠️ <b>Bạn đang thao tác quá nhanh!</b>\n";
-                    $message .= "Hành động: <b>{$actionName}</b>\n";
-                    $message .= "Vui lòng chờ <b>{$retryAfter} giây</b> rồi thử lại.";
+                    $message = $this->tgChoice(
+                        $telegramId,
+                        "⚠️ <b>Bạn đang thao tác quá nhanh!</b>\nVui lòng đợi <b>{$retryAfter} giây</b> trước khi thực hiện hành động tiếp theo.",
+                        "⚠️ <b>You're acting too quickly.</b>\nPlease wait <b>{$retryAfter} seconds</b> before your next action."
+                    );
                     $this->telegram->sendTo($chatId, $message);
                 }
                 return;
@@ -254,7 +332,14 @@ class TelegramBotService
         }
 
         if (TelegramConfig::isMaintenanceEnabled() && !TelegramConfig::isAdmin($telegramId)) {
-            $this->telegram->sendTo($chatId, TelegramConfig::maintenanceMessage());
+            $this->telegram->sendTo(
+                $chatId,
+                $this->tgChoice(
+                    $telegramId,
+                    TelegramConfig::maintenanceMessage(),
+                    '🛠 The system is under maintenance. Please try again later.'
+                )
+            );
             return;
         }
 
@@ -281,7 +366,7 @@ class TelegramBotService
             '/broadcast' => $this->cmdBroadcast($chatId, $telegramId, $args),
             '/maintenance' => $this->cmdMaintenance($chatId, $telegramId, $args),
             '/setbank' => $this->cmdSetBank($chatId, $telegramId, $args),
-            default => $this->telegram->sendTo($chatId, "❌ Lệnh không hợp lệ. Gửi /start để mở menu."),
+            default => $this->telegram->sendTo($chatId, $this->tgText($telegramId, 'invalid_command')),
         };
     }
 
@@ -299,7 +384,7 @@ class TelegramBotService
             $this->cmdShop($chatId, $telegramId);
             return;
         }
-        if ($text === 'đơn hàng' || $text === 'don hang') {
+        if ($text === 'orders' || $text === 'đơn hàng' || $text === 'don hang') {
             $this->cmdOrders($chatId, $telegramId);
             return;
         }
@@ -339,7 +424,7 @@ class TelegramBotService
         $this->upsertTelegramUser($query['from']);
 
         if (TelegramConfig::isMaintenanceEnabled() && !TelegramConfig::isAdmin($telegramId)) {
-            $this->telegram->answerCallbackQuery($callbackId, "Hệ thống đang bảo trì, vui lòng thử lại sau.", true);
+            $this->telegram->answerCallbackQuery($callbackId, $this->tgChoice($telegramId, 'Hệ thống đang bảo trì, vui lòng thử lại sau.', 'The system is under maintenance. Please try again later.'), true);
             return;
         }
 
@@ -376,19 +461,23 @@ class TelegramBotService
 
         switch ($action) {
             case 'shop':
+                if ($messageId > 0)
+                    $this->telegram->answerCallbackQuery($callbackId, $this->tgChoice($telegramId, '✅ Đã cập nhật.', '✅ Updated.'), false);
                 $this->cmdShop($chatId, $telegramId, $messageId);
-                break;
+                return;
             case 'cat':
-                $this->cbCategory($chatId, $telegramId, (int) ($parts[1] ?? 0), $messageId);
-                break;
+                $this->cbCategory($chatId, $telegramId, (int) ($parts[1] ?? 0), $messageId, $callbackId);
+                return;
             case 'prod':
+                if ($messageId > 0)
+                    $this->telegram->answerCallbackQuery($callbackId, $this->tgChoice($telegramId, '✅ Đã cập nhật.', '✅ Updated.'), false);
                 $this->cbProduct($chatId, $telegramId, (int) ($parts[1] ?? 0), $messageId);
-                break;
+                return;
             case 'buy':
                 $this->cbBuyConfirm($chatId, $telegramId, (int) ($parts[1] ?? 0), (int) ($parts[2] ?? 1), null, $messageId);
                 break;
             case 'orders':
-                $this->telegram->answerCallbackQuery($callbackId, '✅ Đã cập nhật.', false);
+                $this->telegram->answerCallbackQuery($callbackId, $this->tgChoice($telegramId, '✅ Đã cập nhật.', '✅ Updated.'), false);
                 $this->cmdOrders($chatId, $telegramId, $messageId);
                 return;
             case 'order':
@@ -542,24 +631,24 @@ class TelegramBotService
             return ['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'back_home'];
         }
 
-        return ['text' => '◀️ Quay lại', 'callback_data' => 'back_home'];
+        return ['text' => '◀️ Back', 'callback_data' => 'back_home'];
     }
 
     /** @return array<string,mixed> */
-    private function buildPayNowBackKeyboard(string $payUrl = '', string $depositCode = ''): array
+    private function buildPayNowBackKeyboard(string $payUrl = '', string $depositCode = '', int $telegramId = 0): array
     {
         $rows = [];
         $url = trim($payUrl);
         if ($url !== '' && str_starts_with($url, 'http')) {
-            $rows[] = [['text' => '💳 Thanh toán ngay', 'url' => $url]];
+            $rows[] = [['text' => $this->tgChoice($telegramId, '💳 Thanh toán ngay', '💳 Pay Now'), 'url' => $url]];
         } else {
-            $rows[] = [['text' => '💳 Thanh toán ngay', 'callback_data' => 'deposit_menu']];
+            $rows[] = [['text' => $this->tgChoice($telegramId, '💳 Thanh toán ngay', '💳 Pay Now'), 'callback_data' => 'deposit_menu']];
         }
 
         if ($depositCode !== '') {
-            $rows[] = [['text' => '❌ Hủy giao dịch', 'callback_data' => 'cancel_dep_' . $depositCode]];
+            $rows[] = [['text' => $this->tgChoice($telegramId, '❌ Hủy giao dịch', '❌ Cancel Payment'), 'callback_data' => 'cancel_dep_' . $depositCode]];
         } else {
-            $rows[] = [['text' => '❌ Hủy giao dịch', 'callback_data' => 'deposit_menu']];
+            $rows[] = [['text' => $this->tgChoice($telegramId, '❌ Hủy giao dịch', '❌ Cancel Payment'), 'callback_data' => 'deposit_menu']];
         }
 
         return TelegramService::buildInlineKeyboard($rows);
@@ -570,7 +659,7 @@ class TelegramBotService
     {
         $categories = $this->categoryModel->getActive();
         if (empty($categories)) {
-            $emptyMsg = "🛍️ Hiện hệ thống chưa có danh mục sản phẩm nào.";
+            $emptyMsg = $this->tgChoice($telegramId, '🛍️ Hiện hệ thống chưa có danh mục sản phẩm nào.', '🛍️ There are no product categories yet.');
             $emptyMarkup = TelegramService::buildInlineKeyboard([
                 [['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'back_home']],
             ]);
@@ -588,7 +677,7 @@ class TelegramBotService
         }
         $rows[] = [['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'back_home']];
 
-        $msg = "🛍️ <b>TẤT CẢ DANH MỤC</b>\n\n👇 Vui lòng chọn danh mục:";
+        $msg = $this->tgChoice($telegramId, "🛍️ <b>TẤT CẢ DANH MỤC</b>\n\n👇 Vui lòng chọn danh mục:", "🛍️ <b>ALL CATEGORIES</b>\n\n👇 Please choose a category:");
         $markup = TelegramService::buildInlineKeyboard($rows);
 
         if ($messageId > 0) {
@@ -610,13 +699,13 @@ class TelegramBotService
         $orders = $this->orderModel->getUserVisibleOrders((int) $user['id'], [], 0, 5);
 
         if (empty($orders)) {
-            $this->telegram->sendTo($chatId, "📦 Bạn chưa có đơn hàng nào.\n\n👉 Chọn cửa hàng để mua sản phẩm", [
-                'reply_markup' => TelegramService::buildInlineKeyboard([[$this->backHomeButton()]]),
+            $this->telegram->sendTo($chatId, $this->tgChoice($telegramId, "📦 Bạn chưa có đơn hàng nào.\n\n👉 Vui lòng ghé thăm cửa hàng để mua sản phẩm!", "📦 You don't have any orders yet.\n\n👉 Please visit the shop to buy a product!"), [
+                'reply_markup' => TelegramService::buildInlineKeyboard([[$this->backHomeButton($telegramId)]]),
             ]);
             return;
         }
 
-        $msg = "📦 <b>LỊCH SỬ ĐƠN HÀNG (5 gần nhất)</b>\n\n";
+        $msg = $this->tgChoice($telegramId, "📦 <b>LỊCH SỬ ĐƠN HÀNG</b>\n<i>(Hiển thị 5 đơn hàng gần nhất)</i>\n\n", "📦 <b>ORDER HISTORY</b>\n<i>(Showing latest 5 orders)</i>\n\n");
         foreach ($orders as $o) {
             $statusIcon = ((string) ($o['status'] ?? '') === 'completed') ? '✅' : '⏳';
             $orderCode = htmlspecialchars((string) ($o['order_code_short'] ?? $o['order_code'] ?? ''), ENT_QUOTES, 'UTF-8');
@@ -627,23 +716,23 @@ class TelegramBotService
             $rawContent = trim((string) ($o['stock_content_plain'] ?? ''));
             if ($rawContent === '') {
                 $rawContent = ((string) ($o['status'] ?? '') === 'completed')
-                    ? 'Đơn hoàn tất nhưng chưa có nội dung bàn giao.'
-                    : 'Đơn đang xử lý, nội dung sẽ được cập nhật sau.';
+                    ? $this->tgChoice($telegramId, 'Đơn hoàn tất nhưng chưa có nội dung bàn giao.', 'The order is completed but no delivery content is available yet.')
+                    : $this->tgChoice($telegramId, 'Đơn đang xử lý, nội dung sẽ được cập nhật sau.', 'The order is being processed. Content will be updated later.');
             }
             $content = $this->formatOrderContentForTelegram($rawContent);
 
-            $msg .= "{$statusIcon} Mã đơn: <code>{$orderCode}</code>\n";
-            $msg .= "📦 Tên SP: <b>{$productName}</b>\n";
-            $msg .= "💰 Giá: <b>{$price}</b>\n";
-            $msg .= "🔢 SL: <b>{$quantity}</b>\n";
-            $msg .= "🔑 Nội dung:\n<code>{$content}</code>\n";
+            $msg .= $this->tgChoice($telegramId, "{$statusIcon} Mã đơn: <code>{$orderCode}</code>\n", "{$statusIcon} Order ID: <code>{$orderCode}</code>\n");
+            $msg .= $this->tgChoice($telegramId, "📦 Tên SP: <b>{$productName}</b>\n", "📦 Product: <b>{$productName}</b>\n");
+            $msg .= $this->tgChoice($telegramId, "💰 Giá: <b>{$price}</b>\n", "💰 Price: <b>{$price}</b>\n");
+            $msg .= $this->tgChoice($telegramId, "🔢 SL: <b>{$quantity}</b>\n", "🔢 Qty: <b>{$quantity}</b>\n");
+            $msg .= $this->tgChoice($telegramId, "🔑 Nội dung:\n<code>{$content}</code>\n", "🔑 Content:\n<code>{$content}</code>\n");
             $msg .= "━━━━━━━━━━━━━━\n";
         }
 
         $markup = TelegramService::buildInlineKeyboard([
             [
-                ['text' => '🔄 Cập nhật', 'callback_data' => 'orders'],
-                $this->backHomeButton(),
+                ['text' => $this->tgChoice($telegramId, '🔄 Cập nhật', '🔄 Refresh'), 'callback_data' => 'orders'],
+                $this->backHomeButton($telegramId),
             ]
         ]);
 
@@ -658,14 +747,14 @@ class TelegramBotService
     {
         $clean = trim($content);
         if ($clean === '')
-            return 'Chưa có nội dung.';
+            return 'No content yet.';
 
         if (function_exists('mb_strlen') && function_exists('mb_substr')) {
             if (mb_strlen($clean, 'UTF-8') > $limit) {
-                $clean = mb_substr($clean, 0, $limit, 'UTF-8') . "\n... (đã rút gọn)";
+                $clean = mb_substr($clean, 0, $limit, 'UTF-8') . "\n... (truncated)";
             }
         } elseif (strlen($clean) > $limit) {
-            $clean = substr($clean, 0, $limit) . "\n... (đã rút gọn)";
+            $clean = substr($clean, 0, $limit) . "\n... (truncated)";
         }
 
         return htmlspecialchars($clean, ENT_QUOTES, 'UTF-8');
@@ -715,18 +804,18 @@ class TelegramBotService
         }
 
         if (!$link) {
-            $this->telegram->sendTo($chatId, "❌ Không thể khởi tạo tài khoản. Vui lòng thử lại.");
+            $this->telegram->sendTo($chatId, $this->tgChoice($telegramId, '❌ Không thể khởi tạo tài khoản. Vui lòng thử lại.', '❌ Could not initialize your account. Please try again.'));
             return null;
         }
 
         $user = $this->userModel->findById($link['user_id']);
         if (!$user) {
-            $this->telegram->sendTo($chatId, "⚠️ Lỗi: Không tìm thấy tài khoản hệ thống.");
+            $this->telegram->sendTo($chatId, $this->tgChoice($telegramId, '⚠️ Lỗi: Không tìm thấy tài khoản hệ thống.', '⚠️ Error: System account not found.'));
             return null;
         }
 
         if ((int) ($user['bannd'] ?? 0) === 1) {
-            $this->telegram->sendTo($chatId, "🚫 Tài khoản của bạn đã bị khóa. Liên hệ hỗ trợ nếu có nhầm lẫn.");
+            $this->telegram->sendTo($chatId, $this->tgChoice($telegramId, '🚫 Tài khoản của bạn đã bị khóa. Liên hệ hỗ trợ nếu có nhầm lẫn.', '🚫 Your account has been locked. Contact support if this is a mistake.'));
             return null;
         }
 
