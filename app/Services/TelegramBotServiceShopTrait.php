@@ -562,20 +562,20 @@ trait TelegramBotServiceShopTrait
         if ($giftError) {
             $msg .= "⚠️ Lỗi mã giảm giá: " . htmlspecialchars($giftError) . "\n\n";
         }
-        $msg .= "📦 Sản phẩm: <b>" . htmlspecialchars($p['name']) . "</b>\n";
-        $msg .= "🔢 Số lượng: <b>{$qty}</b>\n";
-        $msg .= "💵 Đơn giá: <b>" . number_format($unitPrice) . "đ</b>\n";
+        $msg .= "📦 Sản phẩm: " . htmlspecialchars($p['name']) . "\n";
+        $msg .= "🔢 Số lượng: {$qty}\n";
+        $msg .= "💵 Đơn giá: " . number_format($unitPrice) . "đ\n";
 
         if ($customerInfo !== null && trim($customerInfo) !== '') {
             $msg .= "📝 Thông tin: <code>" . htmlspecialchars($customerInfo) . "</code>\n";
         }
 
         if ($discount > 0) {
-            $msg .= "🏷️ Giảm giá: -<b>" . number_format($discount) . "đ</b> (<i>{$giftcode}</i>)\n";
+            $msg .= "🏷️ Giảm giá: -" . number_format($discount) . "đ (<i>{$giftcode}</i>)\n";
         }
 
         $msg .= "\n────────────\n\n";
-        $msg .= "💎 Tổng thanh toán: <b>" . number_format($total) . "đ</b>";
+        $msg .= "💎 Tổng thanh toán: " . number_format($total) . "đ";
 
         $rows = [];
         $row1 = [];
@@ -617,6 +617,8 @@ trait TelegramBotServiceShopTrait
             $this->telegram->editOrSend($chatId, $messageId, "⏳ Bạn đang thao tác quá nhanh. Vui lòng chờ <b>{$remaining} giây</b> rồi thử lại.");
             return;
         }
+
+        $this->telegram->editOrSend($chatId, $messageId, "⏳ Đang xử lý giao dịch và tạo QR Code...\nVui lòng chờ trong giây lát.");
 
         $customerInput = ((int) ($session['prod_id'] ?? 0) === $prodId) ? ($session['info'] ?? null) : null;
         $giftcode = ((int) ($session['prod_id'] ?? 0) === $prodId) ? ($session['giftcode'] ?? null) : null;
@@ -754,11 +756,7 @@ trait TelegramBotServiceShopTrait
         $qrUrl = trim((string) ($payment['qr_url'] ?? ''));
         $sent = false;
         if ($qrUrl !== '' && str_starts_with($qrUrl, 'http')) {
-            $telegramQrUrl = $this->toTelegramQrUrl($qrUrl);
-            $sent = $this->telegram->sendPhotoTo($chatId, $telegramQrUrl, $message, ['reply_markup' => $markup]);
-            if (!$sent && $telegramQrUrl !== $qrUrl) {
-                $sent = $this->telegram->sendPhotoTo($chatId, $qrUrl, $message, ['reply_markup' => $markup]);
-            }
+            $sent = $this->telegram->sendPhotoTo($chatId, $qrUrl, $message, ['reply_markup' => $markup]);
         }
 
         if ($sent) {
