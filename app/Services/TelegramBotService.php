@@ -458,11 +458,11 @@ class TelegramBotService
         ]);
 
         if ($messageId > 0) {
-            $this->telegram->editOrSend($chatId, $messageId, $message, $markup);
+            $this->telegram->editOrSend($chatId, $messageId, $message, $markup, ['disable_web_page_preview' => true]);
             return;
         }
 
-        $this->telegram->sendTo($chatId, $message, ['reply_markup' => $markup]);
+        $this->telegram->sendTo($chatId, $message, ['reply_markup' => $markup, 'disable_web_page_preview' => true]);
     }
 
     /**
@@ -506,9 +506,9 @@ class TelegramBotService
         }
 
         if ($messageId > 0) {
-            $this->telegram->editOrSend($chatId, $messageId, $msg, $markup);
+            $this->telegram->editOrSend($chatId, $messageId, $msg, $markup, ['disable_web_page_preview' => true]);
         } else {
-            $this->telegram->sendTo($chatId, $msg, ['reply_markup' => $markup]);
+            $this->telegram->sendTo($chatId, $msg, ['reply_markup' => $markup, 'disable_web_page_preview' => true]);
         }
     }
 

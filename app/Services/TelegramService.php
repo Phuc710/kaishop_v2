@@ -52,6 +52,7 @@ class TelegramService
                 'text' => $chunk,
                 'parse_mode' => $options['parse_mode'] ?? 'HTML',
                 'disable_web_page_preview' => !empty($options['disable_web_page_preview']) ? 'true' : 'false',
+                'link_preview_options' => !empty($options['disable_web_page_preview']) ? json_encode(['is_disabled' => true]) : null,
             ];
 
             if (!empty($options['reply_markup']) && $index === 0) {
@@ -98,6 +99,7 @@ class TelegramService
                 'text' => $chunk,
                 'parse_mode' => $options['parse_mode'] ?? 'HTML',
                 'disable_web_page_preview' => !empty($options['disable_web_page_preview']) ? 'true' : 'false',
+                'link_preview_options' => !empty($options['disable_web_page_preview']) ? json_encode(['is_disabled' => true]) : null,
             ];
 
             if (!empty($options['reply_markup']) && $index === 0) {
@@ -157,13 +159,15 @@ class TelegramService
      *
      * @param mixed $keyboard
      */
-    public function editMessage(string $chatId, int $messageId, string $text, $keyboard = null): bool
+    public function editMessage(string $chatId, int $messageId, string $text, $keyboard = null, array $options = []): bool
     {
         $payload = [
             'chat_id' => $chatId,
             'message_id' => $messageId,
             'text' => trim($text),
-            'parse_mode' => 'HTML',
+            'parse_mode' => $options['parse_mode'] ?? 'HTML',
+            'disable_web_page_preview' => !empty($options['disable_web_page_preview']) ? 'true' : 'false',
+            'link_preview_options' => !empty($options['disable_web_page_preview']) ? json_encode(['is_disabled' => true]) : null,
         ];
 
         if ($keyboard !== null) {
@@ -190,10 +194,10 @@ class TelegramService
      *
      * @param array|null $keyboard  Inline keyboard markup array (not encoded)
      */
-    public function editOrSend(string $chatId, int $messageId, string $text, ?array $keyboard = null): bool
+    public function editOrSend(string $chatId, int $messageId, string $text, ?array $keyboard = null, array $options = []): bool
     {
         if ($messageId > 0) {
-            $edited = $this->editMessage($chatId, $messageId, $text, $keyboard);
+            $edited = $this->editMessage($chatId, $messageId, $text, $keyboard, $options);
             if ($edited) {
                 return true;
             }
