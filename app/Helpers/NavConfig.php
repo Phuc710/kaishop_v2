@@ -138,6 +138,33 @@ class NavConfig
                     ],
                 ],
             ],
+            [
+                'type' => 'tree',
+                'icon' => 'fas fa-robot',
+                'label' => 'GPT Business',
+                'children' => [
+                    [
+                        'href' => self::buildUrl('admin/chatgpt/farms'),
+                        'label' => 'Quản lý Farm',
+                        'active_prefixes' => ['admin/chatgpt/farms'],
+                    ],
+                    [
+                        'href' => self::buildUrl('admin/chatgpt/orders'),
+                        'label' => 'Đơn hàng GPT',
+                        'active_prefixes' => ['admin/chatgpt/orders'],
+                    ],
+                    [
+                        'href' => self::buildUrl('admin/chatgpt/members'),
+                        'label' => 'Thành viên Farm',
+                        'active_prefixes' => ['admin/chatgpt/members'],
+                    ],
+                    [
+                        'href' => self::buildUrl('admin/chatgpt/logs'),
+                        'label' => 'Audit Logs',
+                        'active_prefixes' => ['admin/chatgpt/logs'],
+                    ],
+                ],
+            ],
             ['type' => 'header', 'label' => 'QUẢN LÝ'],
             [
                 'type' => 'link',

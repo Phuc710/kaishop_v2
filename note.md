@@ -25,7 +25,7 @@ Invoke-WebRequest -Uri $webhookUrl -Method Post -Headers $headers -Body $payload
 
 
 
-
+php /home/kaishopi/domains/kaishop.id.vn/public_html/chatgpt/cron/guard.php
 php /home/kaishopi/domains/kaishop.id.vn/public_html/public/telegram/cron.php >> /dev/null 2>&1
 
 

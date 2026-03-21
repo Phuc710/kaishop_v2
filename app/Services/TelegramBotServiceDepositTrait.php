@@ -612,47 +612,47 @@ trait TelegramBotServiceDepositTrait
         );
     }
 
-    private function cbBinanceCheck(string $chatId, int $telegramId, string $depositCode, int $messageId = 0): void
+    private function cbBinanceCheck(string $chatId, int $telegramId, string $depositCode, int $messageId = 0, string $callbackId = ''): void
     {
         $user = $this->resolveLinkedUser($chatId, $telegramId);
         if (!$user) {
+            if ($callbackId !== '') {
+                $this->telegram->answerCallbackQuery($callbackId, 'Không tìm thấy tài khoản liên kết.', true);
+            }
             return;
         }
 
         $depositModel = new PendingDeposit();
         $deposit = $depositModel->findByCode($depositCode);
         if (!$deposit || (int) ($deposit['user_id'] ?? 0) !== (int) ($user['id'] ?? 0)) {
-            $markup = TelegramService::buildInlineKeyboard([
-                [['text' => '💳 Menu nạp tiền', 'callback_data' => 'deposit_menu']],
-                [$this->backHomeButton()],
-            ]);
-            $this->telegram->editOrSend($chatId, $messageId, '❌ Không tìm thấy phiên nạp Binance.', $markup);
+            if ($callbackId !== '') {
+                $this->telegram->answerCallbackQuery($callbackId, 'Không tìm thấy phiên nạp Binance.', true);
+            }
             return;
         }
 
         $method = strtolower(trim((string) ($deposit['method'] ?? '')));
         if ($method !== DepositService::METHOD_BINANCE) {
-            $markup = TelegramService::buildInlineKeyboard([
-                [['text' => '💳 Menu nạp tiền', 'callback_data' => 'deposit_menu']],
-                [$this->backHomeButton()],
-            ]);
-            $this->telegram->editOrSend($chatId, $messageId, '⚠️ Phiên này không phải Binance Pay.', $markup);
+            if ($callbackId !== '') {
+                $this->telegram->answerCallbackQuery($callbackId, 'Phiên này không phải Binance Pay.', true);
+            }
             return;
         }
 
         if ($depositModel->isLogicallyExpired($deposit)) {
             $depositModel->markExpired();
-            $markup = TelegramService::buildInlineKeyboard([
-                [['text' => '💳 Menu nạp tiền', 'callback_data' => 'deposit_menu']],
-                [$this->backHomeButton()],
-            ]);
-            $this->telegram->editOrSend($chatId, $messageId, $this->buildBinanceExpiredMessage($deposit), $markup);
+            if ($callbackId !== '') {
+                $this->telegram->answerCallbackQuery($callbackId, 'Giao dịch Binance đã hết hạn.', true);
+            }
             return;
         }
 
         $siteConfig = Config::getSiteConfig();
 
         if (strtolower((string) ($deposit['status'] ?? '')) === 'completed') {
+            if ($callbackId !== '') {
+                $this->telegram->answerCallbackQuery($callbackId, 'Thanh toán Binance đã được xác nhận.', true);
+            }
             $msgSuccess = $this->buildBinanceSuccessMessage($user, $siteConfig);
             if ($messageId > 0) {
                 $this->telegram->deleteMessage($chatId, $messageId);
@@ -668,28 +668,25 @@ trait TelegramBotServiceDepositTrait
 
         $binanceService = $this->depositService->makeBinanceService($siteConfig);
         if (!$binanceService || !$binanceService->isEnabled()) {
-            $markup = TelegramService::buildInlineKeyboard([
-                [['text' => '💳 Menu nạp tiền', 'callback_data' => 'deposit_menu']],
-                [$this->backHomeButton()],
-            ]);
-            $this->telegram->editOrSend($chatId, $messageId, '🔴 Binance Pay đang tạm dừng. Vui lòng thử lại sau.', $markup);
+            if ($callbackId !== '') {
+                $this->telegram->answerCallbackQuery($callbackId, 'Binance Pay đang tạm dừng. Vui lòng thử lại sau.', true);
+            }
             return;
         }
 
         $tx = $binanceService->findMatchingTransaction($deposit);
         if (!$tx) {
-            $retryKeyboard = TelegramService::buildInlineKeyboard([
-                [
-                    ['text' => '🔍 Kiểm tra thanh toán', 'callback_data' => 'bin_check_' . $depositCode],
-                    ['text' => '❌ Hủy giao dịch', 'callback_data' => 'cancel_dep_' . $depositCode],
-                ],
-            ]);
-            $this->telegram->editOrSend($chatId, $messageId, '⏳ Chưa tìm thấy giao dịch hợp lệ. Vui lòng thử lại sau 10-15 giây.', $retryKeyboard);
+            if ($callbackId !== '') {
+                $this->telegram->answerCallbackQuery($callbackId, 'Chưa tìm thấy giao dịch hợp lệ. Vui lòng thử lại sau 10-15 giây.', true);
+            }
             return;
         }
 
         $result = $binanceService->processTransaction($tx, $deposit, $user);
         if (!empty($result['success'])) {
+            if ($callbackId !== '') {
+                $this->telegram->answerCallbackQuery($callbackId, 'Đã xác nhận thanh toán Binance thành công.', true);
+            }
             $freshUser = $this->userModel->findById((int) ($user['id'] ?? 0));
             $msg = $this->buildBinanceSuccessMessage($freshUser ?? $user, $siteConfig);
             if ($messageId > 0)
@@ -703,11 +700,13 @@ trait TelegramBotServiceDepositTrait
             return;
         }
 
-        $markup = TelegramService::buildInlineKeyboard([
-            [['text' => '💳 Menu nạp tiền', 'callback_data' => 'deposit_menu']],
-            [$this->backHomeButton()],
-        ]);
-        $this->telegram->editOrSend($chatId, $messageId, '❌ Chưa xác minh được giao dịch: ' . htmlspecialchars((string) ($result['message'] ?? 'Lỗi không xác định'), ENT_QUOTES, 'UTF-8'), $markup);
+        if ($callbackId !== '') {
+            $this->telegram->answerCallbackQuery(
+                $callbackId,
+                'Chưa xác minh được giao dịch: ' . trim((string) ($result['message'] ?? 'Lỗi không xác định')),
+                true
+            );
+        }
     }
 
     /**
@@ -861,10 +860,7 @@ trait TelegramBotServiceDepositTrait
 
         return TelegramService::buildInlineKeyboard([
             $buttons,
-            [
-                ['text' => '💳 Menu nạp tiền', 'callback_data' => 'deposit_menu'],
-                $this->backHomeButton(),
-            ],
+            [$this->backHomeButton()],
         ]);
     }
 

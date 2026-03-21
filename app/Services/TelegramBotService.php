@@ -327,8 +327,7 @@ class TelegramBotService
             return;
         }
         if (preg_match('/^bin_check_([A-Za-z0-9_-]{3,64})$/', $data, $m)) {
-            $this->cbBinanceCheck($chatId, $telegramId, (string) $m[1], $messageId);
-            $this->telegram->answerCallbackQuery($callbackId);
+            $this->cbBinanceCheck($chatId, $telegramId, (string) $m[1], $messageId, $callbackId);
             return;
         }
         if (preg_match('/^deposit_(\d+)$/', $data, $m)) {
@@ -343,40 +342,8 @@ class TelegramBotService
             return;
         }
 
-        if (preg_match('/^cancel_dep_confirm_([A-Za-z0-9_-]{3,64})$/', $data, $m)) {
-            $code = $m[1];
-            $user = $this->resolveLinkedUser($chatId, $telegramId);
-            if ($user) {
-                $depositModel = new PendingDeposit();
-                $deposit = $depositModel->findByCode($code);
-                if ($deposit && (int) $deposit['user_id'] === (int) $user['id'] && $deposit['status'] === 'pending') {
-                    $depositModel->cancelByUser((int) $deposit['id'], (int) $user['id']);
-                }
-            }
-            $this->telegram->deleteMessage($chatId, $messageId);
-            $this->showDepositMethodMenu($chatId, $telegramId);
-            $this->telegram->answerCallbackQuery($callbackId, "Đã hủy giao dịch.");
-            return;
-        }
-
-        if (preg_match('/^cancel_dep_abort_([A-Za-z0-9_-]{3,64})$/', $data, $m)) {
-            $this->telegram->deleteMessage($chatId, $messageId);
-            $this->telegram->answerCallbackQuery($callbackId, "Đã giữ lại giao dịch.");
-            return;
-        }
-
         if (preg_match('/^cancel_dep_([A-Za-z0-9_-]{3,64})$/', $data, $m)) {
-            $code = $m[1];
-            $confirmMarkup = TelegramService::buildInlineKeyboard([
-                [
-                    ['text' => 'Confirm', 'callback_data' => 'cancel_dep_confirm_' . $code],
-                    ['text' => 'Cancel', 'callback_data' => 'cancel_dep_abort_' . $code],
-                ],
-            ]);
-            $this->telegram->sendTo($chatId, "Bạn chắc chắn muốn hủy giao dịch Binance này?", [
-                'reply_markup' => $confirmMarkup,
-            ]);
-            $this->telegram->answerCallbackQuery($callbackId, "Chọn Confirm hoặc Cancel.");
+            $this->cancelDepositFromCallback($chatId, $telegramId, (string) $m[1], $messageId, $callbackId);
             return;
         }
 
@@ -427,6 +394,60 @@ class TelegramBotService
         }
 
         $this->telegram->answerCallbackQuery($callbackId);
+    }
+
+    private function cancelDepositFromCallback(string $chatId, int $telegramId, string $depositCode, int $messageId, string $callbackId): void
+    {
+        $user = $this->resolveLinkedUser($chatId, $telegramId);
+        if (!$user) {
+            $this->telegram->answerCallbackQuery($callbackId, 'Không tìm thấy tài khoản liên kết.', true);
+            return;
+        }
+
+        $depositModel = new PendingDeposit();
+        $deposit = $depositModel->findByCode($depositCode);
+        if (
+            !$deposit
+            || (int) ($deposit['user_id'] ?? 0) !== (int) ($user['id'] ?? 0)
+        ) {
+            $this->telegram->answerCallbackQuery($callbackId, 'Không tìm thấy giao dịch nạp tiền.', true);
+            return;
+        }
+
+        $method = $this->normalizeDepositMethod((string) ($deposit['method'] ?? DepositService::METHOD_BANK_SEPAY));
+        $methodLabel = $method === DepositService::METHOD_BINANCE ? 'Binance' : 'Bank';
+        $status = strtolower(trim((string) ($deposit['status'] ?? '')));
+
+        if ($status === 'pending') {
+            $depositModel->cancelByUser((int) $deposit['id'], (int) ($user['id'] ?? 0));
+            $this->clearDepositInputMode($telegramId);
+            if ($method === DepositService::METHOD_BINANCE) {
+                $this->clearBinanceSession($telegramId);
+            }
+            if ($messageId > 0) {
+                $this->telegram->deleteMessage($chatId, $messageId);
+            }
+            $this->showDepositMethodMenu($chatId, $telegramId);
+            $this->telegram->answerCallbackQuery($callbackId, 'Đã hủy giao dịch ' . $methodLabel . '.');
+            return;
+        }
+
+        $statusText = match ($status) {
+            'completed' => 'đã hoàn tất',
+            'cancelled' => 'đã bị hủy',
+            'expired' => 'đã hết hạn',
+            default => 'không còn hoạt động',
+        };
+
+        $this->telegram->answerCallbackQuery($callbackId, 'Giao dịch ' . $methodLabel . ' ' . $statusText . '.', true);
+    }
+
+    private function normalizeDepositMethod(string $method): string
+    {
+        $method = strtolower(trim($method));
+        return $method === DepositService::METHOD_BINANCE
+            ? DepositService::METHOD_BINANCE
+            : DepositService::METHOD_BANK_SEPAY;
     }
 
     // =========================================================

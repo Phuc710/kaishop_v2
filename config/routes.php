@@ -169,6 +169,23 @@ $routes = [
     ['GET', '/admin/telegram/terminal', 'Admin\\TelegramAdminController@terminal'],
     ['GET', '/admin/telegram/terminal/poll', 'Admin\\TelegramAdminController@terminalPoll'],
 
+    // ========== CHATGPT PRO FARM ROUTES ==========
+    ['GET', '/chatgpt/pro-1-month-add-farm', 'ChatGptController@product'],
+    ['POST', '/chatgpt/pro-1-month-add-farm/order', 'ChatGptController@order'],
+    ['GET', '/chatgpt/pro-1-month-add-farm/success', 'ChatGptController@success'],
+
+    // Admin ChatGPT Panel
+    ['GET', '/admin/chatgpt/farms', 'Admin\\ChatGptAdminController@farms'],
+    ['GET', '/admin/chatgpt/farms/add', 'Admin\\ChatGptAdminController@farmAdd'],
+    ['POST', '/admin/chatgpt/farms/add', 'Admin\\ChatGptAdminController@farmStore'],
+    ['GET', '/admin/chatgpt/farms/edit/{id}', 'Admin\\ChatGptAdminController@farmEdit'],
+    ['POST', '/admin/chatgpt/farms/edit/{id}', 'Admin\\ChatGptAdminController@farmUpdate'],
+    ['POST', '/admin/chatgpt/farms/sync-now/{id}', 'Admin\\ChatGptAdminController@farmSyncNow'],
+    ['GET', '/admin/chatgpt/orders', 'Admin\\ChatGptAdminController@orders'],
+    ['GET', '/admin/chatgpt/members', 'Admin\\ChatGptAdminController@members'],
+    ['GET', '/admin/chatgpt/invites', 'Admin\\ChatGptAdminController@invites'],
+    ['GET', '/admin/chatgpt/logs', 'Admin\\ChatGptAdminController@logs'],
+
     // ========== CANONICAL PRODUCT SLUG ROUTE ==========
     // Keep this near the end to avoid catching admin/api routes like /admin/users
     ['GET', '/{categorySlug}/{productSlug}', 'ProductController@showBySlug'],
