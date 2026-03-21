@@ -367,6 +367,7 @@ CREATE TABLE IF NOT EXISTS `setting` (
   `binance_api_key` varchar(255) DEFAULT NULL,
   `binance_api_secret` varchar(255) DEFAULT NULL,
   `binance_uid` varchar(50) DEFAULT NULL,
+  `binance_owner` varchar(150) DEFAULT NULL,
   `binance_rate_vnd` int(11) NOT NULL DEFAULT 25000,
   `binance_pay_enabled` tinyint(1) NOT NULL DEFAULT 0,
   `deposit_warning_bank` text DEFAULT NULL COMMENT 'HTML warning shown on bank deposit page',
@@ -405,7 +406,7 @@ INSERT IGNORE INTO `setting` (
   `id`, `ten_web`, `logo`, `logo_footer`, `banner`, `favicon`, `key_words`, `mo_ta`, `fb_admin`, `sdt_admin`, `tele_admin`, `tiktok_admin`, `youtube_admin`,
   `email_auto`, `pass_mail_auto`, `ten_nguoi_gui`,
   `email_cf`, `contact_page_title`, `contact_page_subtitle`, `contact_email_label`, `contact_phone_label`, `contact_support_note`, `policy_page_title`, `policy_page_subtitle`, `policy_content_html`, `policy_notice_text`, `terms_page_title`, `terms_page_subtitle`, `terms_content_html`, `terms_notice_text`, `apikey`, `thongbao`, `license`,
-  `bank_name`, `bank_account`, `bank_owner`, `bank_pay_enabled`, `sepay_api_key`, `binance_api_key`, `binance_api_secret`, `binance_uid`, `binance_rate_vnd`, `binance_pay_enabled`, `deposit_warning_bank`, `deposit_warning_binance`,
+  `bank_name`, `bank_account`, `bank_owner`, `bank_pay_enabled`, `sepay_api_key`, `binance_api_key`, `binance_api_secret`, `binance_uid`, `binance_owner`, `binance_rate_vnd`, `binance_pay_enabled`, `deposit_warning_bank`, `deposit_warning_binance`,
   `telegram_bot_token`, `telegram_chat_id`, `telegram_webhook_secret`, `telegram_webhook_path`, `telegram_bot_user`, `telegram_last_update_id`,
   `telegram_admin_ids`, `telegram_purchase_session_ttl`, `telegram_maintenance_enabled`, `telegram_maintenance_message`, `last_cron_run`,
   `bonus_1_amount`, `bonus_1_percent`, `bonus_2_amount`, `bonus_2_percent`, `bonus_3_amount`, `bonus_3_percent`,
@@ -421,7 +422,7 @@ INSERT IGNORE INTO `setting` (
   <b>Phiên bản: v1.1</b><br>
   <span>Khi dùng dịch vụ chính hãng, bạn được hỗ trợ tốt hơn và nâng cấp tính năng với chi phí tối ưu.</span>
 </div>', '',
-  'MB Bank', '', '', 1, '', '', '', '', 25000, 0, NULL, NULL,
+  'MB Bank', '', '', 1, '', '', '', '', '', 25000, 0, NULL, NULL,
   '', '', '', 'bottelekaishop_default', 'KaiShopBot', 0,
   NULL, 900, 0, 'Hệ thống Bot đang bảo trì. Vui lòng quay lại sau ít phút.', NULL,
   100000, 10, 200000, 15, 500000, 20,

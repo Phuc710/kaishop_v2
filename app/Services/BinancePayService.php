@@ -431,7 +431,11 @@ class BinancePayService
                 'deposit_id' => $depositId,
             ]);
 
-            return ['success' => true, 'message' => 'Credited ' . number_format($totalCredit, 0, ',', '.') . 'đ'];
+            return [
+                'success' => true,
+                'message' => 'Credited ' . number_format($totalCredit, 0, ',', '.') . 'đ',
+                'tx_id' => $txId,
+            ];
         } catch (Throwable $e) {
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
@@ -637,16 +641,43 @@ class BinancePayService
                 $link = (new UserTelegramLink())->findByUserId($userId);
                 if ($link && (int) ($link['telegram_id'] ?? 0) > 0) {
                     $telegramId = (int) $link['telegram_id'];
-                    $userMsg = "🎉 <b>DEPOSIT SUCCESSFUL</b>\n\n"
-                        . "💳 Method: <b>Binance Pay</b>\n"
-                        . "💰 Received: <b>{$usdtText} USDT</b>\n"
-                        . "💵 Credit Amount: <b>" . number_format($totalVnd, 0, ',', '.') . "đ</b>\n"
-                        . "🔖 Transaction ID: <code>{$txId}</code>";
-                    $outbox->enqueue($telegramId, $userMsg, 'HTML');
+                    $userMsg = "🎉 <b>NẠP TIỀN THÀNH CÔNG</b>\n\n"
+                        . "💳 Phương thức: <b>Binance Pay</b>\n"
+                        . "💵 Đã nhận: <b>{$usdtText} USDT</b>\n"
+                        . "💰 Đã cộng: <b>" . number_format($totalVnd, 0, ',', '.') . "đ</b>\n"
+                        . "🔖 Mã giao dịch: <code>{$txId}</code>";
+
+                    $menuMarkup = ['inline_keyboard' => [[['text' => '🏠 Menu', 'callback_data' => 'menu']]]];
+                    if (!$this->sendTelegramDirectTo((string) $telegramId, $userMsg, $menuMarkup)) {
+                        $outbox->enqueue($telegramId, $userMsg, 'HTML');
+                    }
                 }
             }
         } catch (Throwable $e) {
             // Non-blocking
+        }
+    }
+
+    private function sendTelegramDirectTo(string $chatId, string $message, ?array $replyMarkup = null): bool
+    {
+        if (!class_exists('TelegramService')) {
+            return false;
+        }
+
+        try {
+            $telegram = new TelegramService(null, null, 3);
+            if (!$telegram->isConfigured()) {
+                return false;
+            }
+
+            $options = ['disable_web_page_preview' => true];
+            if ($replyMarkup !== null) {
+                $options['reply_markup'] = $replyMarkup;
+            }
+
+            return $telegram->sendTo($chatId, $message, $options);
+        } catch (Throwable $e) {
+            return false;
         }
     }
 

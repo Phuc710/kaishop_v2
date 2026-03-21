@@ -131,10 +131,12 @@ class SettingController extends Controller
                 return $this->updateSettings([$key]);
 
             case 'update_binance':
+                $this->ensureSettingColumn('binance_owner', "VARCHAR(150) NULL AFTER `binance_uid`");
                 return $this->updateSettings([
                     'binance_api_key',
                     'binance_api_secret',
                     'binance_uid',
+                    'binance_owner',
                     'binance_rate_vnd',
                     'binance_pay_enabled',
                     'deposit_warning_binance',
@@ -254,6 +256,31 @@ class SettingController extends Controller
         }
 
         return $this->json(['status' => 'error', 'message' => 'Lỗi database: ' . $connection->error]);
+    }
+
+    private function ensureSettingColumn(string $column, string $definition): void
+    {
+        global $connection;
+
+        $column = trim($column);
+        $definition = trim($definition);
+        if ($column === '' || $definition === '') {
+            return;
+        }
+
+        $safeColumn = $connection->real_escape_string($column);
+        $exists = false;
+        $result = $connection->query("SHOW COLUMNS FROM `setting` LIKE '{$safeColumn}'");
+        if ($result instanceof mysqli_result) {
+            $exists = $result->num_rows > 0;
+            $result->free();
+        }
+
+        if ($exists) {
+            return;
+        }
+
+        $connection->query("ALTER TABLE `setting` ADD COLUMN `{$column}` {$definition}");
     }
 
 

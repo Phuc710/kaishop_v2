@@ -213,17 +213,20 @@ class SepayWebhookController extends Controller
                 $link = $linkModel->findByUserId($userId);
                 if ($link) {
                     $telegramId = (int) $link['telegram_id'];
-                    $notifMsg = "🎉🎊 <b>NẠP TIỀN THÀNH CÔNG</b> 🎊🎉\n\n";
-                    $notifMsg .= "💰 Số tiền: <b>" . number_format($transferAmount) . "đ</b>\n";
+                    $notifMsg = "🎉 <b>NẠP TIỀN THÀNH CÔNG</b>\n\n";
+                    $notifMsg .= "💳 Phương thức: <b>Chuyển khoản ngân hàng</b>\n";
+                    $notifMsg .= "💵 Đã nhận: <b>" . number_format($transferAmount) . "đ</b>\n";
                     if ($bonusAmount > 0) {
                         $notifMsg .= "🎁 Khuyến mãi: <b>" . number_format($bonusAmount) . "đ</b>\n";
                     }
-                    $notifMsg .= "✅ Thực nhận: <b>" . number_format($totalCredit) . "đ</b>\n";
-                    $notifMsg .= "💼 Số dư hiện tại: <b>" . number_format($afterBalance) . "đ</b>\n\n";
-                    $notifMsg .= "👇 <i>Mua ngay tại cửa hàng!</i>";
+                    $notifMsg .= "💰 Đã cộng: <b>" . number_format($totalCredit) . "đ</b>\n";
+                    $notifMsg .= "📝 Nội dung CK: <code>" . htmlspecialchars($depositCode, ENT_QUOTES, 'UTF-8') . "</code>\n";
+                    $notifMsg .= "💼 Số dư hiện tại: <b>" . number_format($afterBalance) . "đ</b>";
+
+                    $menuMarkup = ['inline_keyboard' => [[['text' => '🏠 Menu', 'callback_data' => 'menu']]]];
 
                     // Try direct send (non-blocking, max 3s) — avoids 0-60s cron delay
-                    $directSent = $this->sendTelegramDirect($telegramId, $notifMsg);
+                    $directSent = $this->sendTelegramDirect($telegramId, $notifMsg, $menuMarkup);
 
                     // Fallback to outbox if direct send fails
                     if (!$directSent) {
@@ -348,7 +351,7 @@ class SepayWebhookController extends Controller
      * Fire-and-forget Telegram sendMessage (non-blocking, max 3s timeout).
      * Returns true if Telegram returned ok:true.
      */
-    private function sendTelegramDirect(int $telegramId, string $message): bool
+    private function sendTelegramDirect(int $telegramId, string $message, ?array $replyMarkup = null): bool
     {
         $botToken = '';
         if (function_exists('get_setting')) {
@@ -370,12 +373,13 @@ class SepayWebhookController extends Controller
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => http_build_query([
+            CURLOPT_POSTFIELDS => http_build_query(array_filter([
                 'chat_id' => $telegramId,
                 'text' => $message,
                 'parse_mode' => 'HTML',
                 'disable_web_page_preview' => 'true',
-            ]),
+                'reply_markup' => $replyMarkup ? json_encode($replyMarkup, JSON_UNESCAPED_UNICODE) : null,
+            ], static fn($value) => $value !== null)),
             CURLOPT_TIMEOUT => 3,     // max 3s — not 5s to keep webhook fast
             CURLOPT_CONNECTTIMEOUT => 2,
             CURLOPT_NOSIGNAL => 1,     // required for sub-second timeouts

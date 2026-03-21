@@ -230,6 +230,7 @@ class DepositService
                 'payer_uid' => $payerUid,
                 'exchange_rate' => $binanceService->getExchangeRate(),
                 'binance_uid' => $binanceService->getUid(),
+                'binance_owner' => trim((string) ($siteConfig['binance_owner'] ?? get_setting('ten_web', 'KaiShop'))),
                 'transfer_note' => $transferNote,
                 'note_text' => $this->buildBinanceInstructionNote($transferNote),
                 'warning_rules' => $this->buildBinanceRules(),
@@ -443,6 +444,7 @@ class DepositService
             $base['payer_uid'] = trim((string) ($activeDeposit['payer_uid'] ?? ''));
             $base['exchange_rate'] = $exchangeRate;
             $base['binance_uid'] = trim((string) ($siteConfig['binance_uid'] ?? ''));
+            $base['binance_owner'] = trim((string) ($siteConfig['binance_owner'] ?? get_setting('ten_web', 'KaiShop')));
             $base['transfer_note'] = $transferNote;
             $base['note_text'] = $this->buildBinanceInstructionNote($transferNote);
             $base['warning_rules'] = $this->buildBinanceRules();

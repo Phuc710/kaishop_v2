@@ -592,11 +592,19 @@ require_once __DIR__ . '/layout/breadcrumb.php';
                             </div>
 
                             <div class="form-group">
+                                <label class="font-weight-bold small text-uppercase">Tên owner Binance</label>
+                                <input type="text" name="binance_owner" class="form-control"
+                                    value="<?= htmlspecialchars((string) ($chungapi['binance_owner'] ?? '')) ?>"
+                                    placeholder="Ví dụ: KaiHub hoặc tên chủ tài khoản Binance">
+                                <small class="text-muted">Tên này sẽ hiển thị trong bot để user biết đang chuyển cho ai.</small>
+                            </div>
+
+                            <div class="form-group">
                                 <label class="font-weight-bold small text-uppercase">Ghi chú nạp tiền (Binance)</label>
                                 <textarea name="deposit_warning_binance" class="form-control" rows="3"
                                     placeholder="Cảnh báo hiển thị khi người dùng nạp tiền qua Binance..."><?= htmlspecialchars((string) ($chungapi['deposit_warning_binance'] ?? '')) ?></textarea>
-                                <small class="text-muted">Sử dụng <code>{amount}</code> và <code>{uid}</code> để hiển
-                                    thị động số tiền và UID.</small>
+                                <small class="text-muted">Sử dụng <code>{amount}</code>, <code>{uid}</code> và <code>{owner}</code> để hiển
+                                    thị động số tiền, UID nhận và tên owner.</small>
                             </div>
 
                             <div class="form-group">

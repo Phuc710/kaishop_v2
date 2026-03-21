@@ -580,13 +580,19 @@ trait TelegramBotServiceDepositTrait
         $depositCode = (string) ($d['deposit_code'] ?? '');
         $usdtAmount = (float) ($d['usdt_amount'] ?? 0);
         $receiverUid = (string) ($d['binance_uid'] ?? '');
+        $receiverName = trim((string) ($d['binance_owner'] ?? ($siteConfig['binance_owner'] ?? get_setting('ten_web', 'KaiShop'))));
         $expiresAt = trim((string) ($d['expires_at'] ?? ''));
+        $receiverUidSafe = htmlspecialchars($receiverUid, ENT_QUOTES, 'UTF-8');
+        $receiverNameSafe = htmlspecialchars($receiverName !== '' ? $receiverName : 'KaiShop', ENT_QUOTES, 'UTF-8');
+        $payerUidSafe = htmlspecialchars($payerUid, ENT_QUOTES, 'UTF-8');
+        $usdtText = number_format($usdtAmount, 2, '.', '');
 
         $msg = "🟡 <b>BINANCE PAY — THÔNG TIN THANH TOÁN</b>\n\n";
-        $msg .= "📬 Pay to Binance ID: <b>" . htmlspecialchars($receiverUid, ENT_QUOTES, 'UTF-8') . "</b>\n\n";
+        $msg .= "🏷️ Người nhận: <b>{$receiverNameSafe}</b>\n";
+        $msg .= "🆔 UID nhận: <code>{$receiverUidSafe}</code>\n\n";
         $msg .= "📋 Mã giao dịch: <code>" . htmlspecialchars($depositCode, ENT_QUOTES, 'UTF-8') . "</code>\n";
-        $msg .= "👤 UID: <code>" . htmlspecialchars($payerUid, ENT_QUOTES, 'UTF-8') . "</code>\n";
-        $msg .= "💵 Send EXACTLY: <b>$" . number_format($usdtAmount, 2, '.', '') . " USDT</b>\n";
+        $msg .= "👤 UID Binance của bạn: <code>{$payerUidSafe}</code>\n";
+        $msg .= "💵 Cần chuyển: <b>$" . $usdtText . " USDT</b>\n";
         if ($expiresAt !== '') {
             $msg .= "⏰ Hết hạn: <b>" . htmlspecialchars($expiresAt, ENT_QUOTES, 'UTF-8') . "</b>\n";
         }
@@ -594,13 +600,14 @@ trait TelegramBotServiceDepositTrait
         $telegramBinanceWarning = trim((string) ($siteConfig['deposit_warning_binance'] ?? ''));
         if ($telegramBinanceWarning !== '') {
             $telegramBinanceWarning = str_replace(
-                ['{amount}', '{uid}'],
-                ['<b>' . number_format($usdtAmount, 2, '.', '') . ' USDT</b>', '<b>' . htmlspecialchars($receiverUid, ENT_QUOTES, 'UTF-8') . '</b>'],
+                ['{amount}', '{uid}', '{owner}'],
+                ['<b>$' . $usdtText . ' USDT</b>', '<code>' . $receiverUidSafe . '</code>', '<b>' . $receiverNameSafe . '</b>'],
                 $telegramBinanceWarning
             );
             $msg .= "\n⚠️ " . $telegramBinanceWarning;
         } else {
-            $msg .= "\n⚠️ Lưu ý: nhập chính xác <b>UID Binance của bạn</b> và chuyển đúng <b>$" . number_format($usdtAmount, 2, '.', '') . " USDT</b> thì hệ thống mới auto match được.";
+            $msg .= "\n⚠️ Chuyển đúng <b>$" . $usdtText . " USDT</b> tới <b>{$receiverNameSafe}</b> - UID <code>{$receiverUidSafe}</code>,";
+            $msg .= " đồng thời nhập đúng <b>UID Binance của bạn</b> để hệ thống tự khớp giao dịch.";
         }
 
         $markup = TelegramService::buildInlineKeyboard([
@@ -660,7 +667,13 @@ trait TelegramBotServiceDepositTrait
             if ($callbackId !== '') {
                 $this->telegram->answerCallbackQuery($callbackId, '✅ Thanh toán đã xác nhận.', true);
             }
-            $msgSuccess = $this->buildBinanceSuccessMessage($user, $siteConfig);
+            $txId = '';
+            $binanceService = $this->depositService->makeBinanceService($siteConfig);
+            if ($binanceService) {
+                $txRow = $binanceService->getTransactionByDepositId((int) ($deposit['id'] ?? 0));
+                $txId = trim((string) ($txRow['tx_id'] ?? ''));
+            }
+            $msgSuccess = $this->buildBinanceSuccessMessage($user, $siteConfig, $txId, (float) ($deposit['usdt_amount'] ?? 0));
             if ($messageId > 0) {
                 $this->telegram->deleteMessage($chatId, $messageId);
             }
@@ -668,7 +681,8 @@ trait TelegramBotServiceDepositTrait
                 $chatId,
                 0,
                 (string) get_setting('binance_qr_image', 'assets/images/qr_binane.jpg'),
-                $msgSuccess
+                $msgSuccess,
+                $this->buildMenuOnlyKeyboard()
             );
             return;
         }
@@ -695,14 +709,20 @@ trait TelegramBotServiceDepositTrait
                 $this->telegram->answerCallbackQuery($callbackId, '🎉 Thanh toán Binance thành công!', true);
             }
             $freshUser = $this->userModel->findById((int) ($user['id'] ?? 0));
-            $msg = $this->buildBinanceSuccessMessage($freshUser ?? $user, $siteConfig);
+            $msg = $this->buildBinanceSuccessMessage(
+                $freshUser ?? $user,
+                $siteConfig,
+                (string) ($result['tx_id'] ?? ''),
+                (float) ($deposit['usdt_amount'] ?? 0)
+            );
             if ($messageId > 0)
                 $this->telegram->deleteMessage($chatId, $messageId);
             $this->sendTelegramMediaOrText(
                 $chatId,
                 0,
                 (string) get_setting('binance_qr_image', 'assets/images/qr_binane.jpg'),
-                $msg
+                $msg,
+                $this->buildMenuOnlyKeyboard()
             );
             return;
         }
@@ -722,16 +742,28 @@ trait TelegramBotServiceDepositTrait
      * @param array<string,mixed> $user
      * @param array<string,mixed> $siteConfig
      */
-    private function buildBinanceSuccessMessage(array $user, array $siteConfig): string
+    private function buildBinanceSuccessMessage(array $user, array $siteConfig, string $txId = '', float $usdtAmount = 0.0): string
     {
         $balanceVnd = (int) ($user['money'] ?? 0);
         $rate = max(1, (int) ($siteConfig['binance_rate_vnd'] ?? 25000));
         $balanceUsd = number_format($balanceVnd / $rate, 2, '.', ',');
         $balanceVndFmt = number_format($balanceVnd, 0, ',', '.');
+        $usdtText = rtrim(rtrim(number_format($usdtAmount, 8, '.', ''), '0'), '.');
 
-        return "🟡 <b>BINANCE PAY — THANH TOÁN THÀNH CÔNG</b>\n\n"
-            . "✅ Đã nhận tiền vào tài khoản!\n"
-            . "💰 Số dư hiện tại: <b>\${$balanceUsd}</b> (~{$balanceVndFmt} VND)";
+        $msg = "🎉 <b>NẠP TIỀN THÀNH CÔNG</b>\n\n"
+            . "💳 Phương thức: <b>Binance Pay</b>\n";
+
+        if ($usdtAmount > 0) {
+            $msg .= "💵 Đã nhận: <b>{$usdtText} USDT</b>\n";
+        }
+
+        $msg .= "💰 Số dư hiện tại: <b>\${$balanceUsd}</b> (~{$balanceVndFmt} VND)";
+
+        if ($txId !== '') {
+            $msg .= "\n🔖 Mã giao dịch: <code>" . htmlspecialchars($txId, ENT_QUOTES, 'UTF-8') . "</code>";
+        }
+
+        return $msg;
     }
 
     /**
@@ -778,6 +810,13 @@ trait TelegramBotServiceDepositTrait
         }
 
         $this->telegram->editOrSend($chatId, $messageId, $message, $markup);
+    }
+
+    private function buildMenuOnlyKeyboard(): array
+    {
+        return TelegramService::buildInlineKeyboard([
+            [['text' => '🏠 Menu', 'callback_data' => 'menu']],
+        ]);
     }
 
     private function resolveTelegramPublicImageUrl(string $imagePath): string
