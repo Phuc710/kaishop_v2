@@ -452,8 +452,8 @@ class TelegramBotService
 
         $markup = TelegramService::buildInlineKeyboard([
             [
-                ['text' => '🇻🇳 Việt Nam', 'callback_data' => 'lang_vi'],
-                ['text' => '🇺🇸 English', 'callback_data' => 'lang_en'],
+                ['text' => '[ 🇻🇳 Tiếng Việt ]', 'callback_data' => 'lang_vi'],
+                ['text' => '[ 🇺🇸 English ]', 'callback_data' => 'lang_en'],
             ],
         ]);
 
