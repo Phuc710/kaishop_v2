@@ -283,7 +283,7 @@ class TelegramBotService
         match ($command) {
             '/start' => $this->cmdStart($chatId, $telegramId, $fromName),
             '/menu' => $this->cmdMenu($chatId, $telegramId),
-            '/shop' => $this->cmdShop($chatId),
+            '/shop' => $this->cmdShop($chatId, $telegramId),
             '/orders' => $this->cmdOrders($chatId, $telegramId),
             '/help' => $this->cmdHelp($chatId, $telegramId),
             // Admin
@@ -306,7 +306,7 @@ class TelegramBotService
             return;
         }
         if ($text === 'shop' || $text === 'cửa hàng' || $text === 'cua hang') {
-            $this->cmdShop($chatId);
+            $this->cmdShop($chatId, $telegramId);
             return;
         }
         if ($text === 'đơn hàng' || $text === 'don hang') {
@@ -386,13 +386,13 @@ class TelegramBotService
 
         switch ($action) {
             case 'shop':
-                $this->cmdShop($chatId, $messageId);
+                $this->cmdShop($chatId, $telegramId, $messageId);
                 break;
             case 'cat':
-                $this->cbCategory($chatId, (int) ($parts[1] ?? 0), $messageId);
+                $this->cbCategory($chatId, $telegramId, (int) ($parts[1] ?? 0), $messageId);
                 break;
             case 'prod':
-                $this->cbProduct($chatId, (int) ($parts[1] ?? 0), $messageId);
+                $this->cbProduct($chatId, $telegramId, (int) ($parts[1] ?? 0), $messageId);
                 break;
             case 'buy':
                 $this->cbBuyConfirm($chatId, $telegramId, (int) ($parts[1] ?? 0), (int) ($parts[2] ?? 1), null, $messageId);
@@ -528,16 +528,11 @@ class TelegramBotService
 
         if (TelegramConfig::isAdmin($telegramId)) {
             $inlineRows[] = [
-                ['text' => '📊 Thống kê Admin', 'callback_data' => 'stats_admin'],
+                ['text' => $this->tgText($telegramId, 'menu_admin'), 'callback_data' => 'stats_admin'],
             ];
         }
 
-        if (TelegramConfig::isAdmin($telegramId)) {
-            $lastIndex = count($inlineRows) - 1;
-            if ($lastIndex >= 0) {
-                $inlineRows[$lastIndex][0]['text'] = $this->tgText($telegramId, 'menu_admin');
-            }
-        }
+
 
         return $inlineRows;
     }
@@ -573,13 +568,13 @@ class TelegramBotService
     }
 
     /** /shop — Danh mục sản phẩm */
-    private function cmdShop(string $chatId, int $messageId = 0): void
+    private function cmdShop(string $chatId, int $telegramId, int $messageId = 0): void
     {
         $categories = $this->categoryModel->getActive();
         if (empty($categories)) {
             $emptyMsg = "🛍️ Hiện hệ thống chưa có danh mục sản phẩm nào.";
             $emptyMarkup = TelegramService::buildInlineKeyboard([
-                [['text' => '⬅️ Quay lại menu chính', 'callback_data' => 'back_home']],
+                [['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'back_home']],
             ]);
             if ($messageId > 0) {
                 $this->telegram->editOrSend($chatId, $messageId, $emptyMsg, $emptyMarkup);
@@ -593,7 +588,7 @@ class TelegramBotService
         foreach ($categories as $cat) {
             $rows[] = [['text' => '📦 ' . $cat['name'], 'callback_data' => 'cat_' . $cat['id']]];
         }
-        $rows[] = [['text' => '⬅️ Quay lại menu chính', 'callback_data' => 'back_home']];
+        $rows[] = [['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'back_home']];
 
         $msg = "🛍️ <b>TẤT CẢ DANH MỤC</b>\n\n👇 Vui lòng chọn danh mục:";
         $markup = TelegramService::buildInlineKeyboard($rows);

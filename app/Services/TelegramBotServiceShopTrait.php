@@ -129,7 +129,7 @@ trait TelegramBotServiceShopTrait
             }
             return false;
         }
-        $messageId = $this->resolvePurchaseMessageId(0, $session);
+        $messageId = 0; // Always send new message for text input responses as requested by user
 
         $text = trim($text);
         if ($text === '') {
@@ -140,7 +140,7 @@ trait TelegramBotServiceShopTrait
         if (in_array($normalized, ['hủy', 'huy', 'thoát', 'thoat', 'back', 'quay lại', 'quay lai'], true)) {
             $prodId = (int) ($session['prod_id'] ?? 0);
             $this->clearPurchaseSession($telegramId);
-            $this->showCategoryListForProduct($chatId, $prodId, $messageId);
+            $this->showCategoryListForProduct($chatId, $telegramId, $prodId, $messageId);
             return true;
         }
 
@@ -244,17 +244,17 @@ trait TelegramBotServiceShopTrait
         return false;
     }
 
-    private function showCategoryListForProduct(string $chatId, int $prodId, int $messageId = 0): void
+    private function showCategoryListForProduct(string $chatId, int $telegramId, int $prodId, int $messageId = 0): void
     {
         if ($prodId > 0) {
             $product = $this->productModel->find($prodId);
             $catId = (int) ($product['category_id'] ?? 0);
             if ($catId > 0) {
-                $this->cbCategory($chatId, $catId, $messageId);
+                $this->cbCategory($chatId, $telegramId, $catId, $messageId);
                 return;
             }
         }
-        $this->cmdShop($chatId, $messageId);
+        $this->cmdShop($chatId, $telegramId, $messageId);
     }
 
     private function getQuantityRules(array $product): array
@@ -337,7 +337,7 @@ trait TelegramBotServiceShopTrait
         $messageId = $this->resolvePurchaseMessageId($messageId, $session ?? []);
         if (!$session) {
             $this->telegram->editOrSend($chatId, $messageId, $this->purchaseSessionTimeoutText() . "\nVui lòng chọn lại sản phẩm để tiếp tục.");
-            $this->showCategoryListForProduct($chatId, $prodId, $messageId);
+            $this->showCategoryListForProduct($chatId, $telegramId, $prodId, $messageId);
             return;
         }
 
@@ -345,7 +345,7 @@ trait TelegramBotServiceShopTrait
         $this->setPurchaseSession($telegramId, $this->attachPurchaseMessageId($session, $messageId));
 
         $this->telegram->editOrSend($chatId, $messageId, "🏷️ <b>NHẬP MÃ GIẢM GIÁ</b>\n\n👇 Vui lòng nhập mã giảm giá của bạn:", TelegramService::buildInlineKeyboard([
-            [['text' => '◀️ Quay lại', 'callback_data' => 'buy_' . $prodId . '_' . $qty]],
+            [['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'buy_' . $prodId . '_' . $qty]],
         ]));
     }
 
@@ -356,13 +356,13 @@ trait TelegramBotServiceShopTrait
     /**
      * cat_{id} — Danh sách sản phẩm theo danh mục
      */
-    private function cbCategory(string $chatId, int $catId, int $messageId = 0): void
+    private function cbCategory(string $chatId, int $telegramId, int $catId, int $messageId = 0): void
     {
         $products = $this->productModel->getFiltered(['category_id' => $catId, 'status' => 'ON']);
         if (empty($products)) {
             $this->telegram->sendTo($chatId, "⚠️ Danh mục này hiện chưa có sản phẩm nào.", [
                 'reply_markup' => TelegramService::buildInlineKeyboard([
-                    [['text' => '⬅️ Quay lại', 'callback_data' => 'shop']],
+                    [['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'shop']],
                 ]),
             ]);
             return;
@@ -401,7 +401,7 @@ trait TelegramBotServiceShopTrait
     /**
      * prod_{id} — Chi tiết sản phẩm
      */
-    private function cbProduct(string $chatId, int $prodId, int $messageId = 0): void
+    private function cbProduct(string $chatId, int $telegramId, int $prodId, int $messageId = 0): void
     {
         $p = $this->productModel->find($prodId);
         if (!$p || $p['status'] !== 'ON') {
@@ -437,7 +437,7 @@ trait TelegramBotServiceShopTrait
         if ($stock === null || $stock > 0) {
             $rows[] = [['text' => '🛒 MUA NGAY', 'callback_data' => 'buy_' . $p['id'] . '_1']];
         }
-        $rows[] = [['text' => '⬅️ Quay lại', 'callback_data' => 'cat_' . ($p['category_id'] ?? 0)]];
+        $rows[] = [['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'cat_' . ($p['category_id'] ?? 0)]];
 
         $markup = TelegramService::buildInlineKeyboard($rows);
 
@@ -589,7 +589,7 @@ trait TelegramBotServiceShopTrait
 
         $msg .= "\n✅ Bấm xác nhận để đặt hàng và nhận thông tin thanh toán.";
         $rows[] = [
-            ['text' => '◀️ Quay lại sửa', 'callback_data' => 'prod_' . $prodId],
+            ['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'prod_' . $prodId],
             ['text' => '✅ XÁC NHẬN MUA', 'callback_data' => $confirmAction],
         ];
 
@@ -637,7 +637,7 @@ trait TelegramBotServiceShopTrait
         if (!$result['success']) {
             $this->writeLog("❌ Mua hàng thất bại: {$prodName} x {$qty} (" . ($result['message'] ?? 'Lỗi') . ")", 'WARN', 'INCOMING', 'PURCHASE');
             $this->telegram->editOrSend($chatId, $messageId, "❌ <b>LỖI:</b> " . htmlspecialchars((string) ($result['message'] ?? 'Giao dịch không thành công.')), TelegramService::buildInlineKeyboard([
-                [['text' => '⬅️ Quay lại sản phẩm', 'callback_data' => 'prod_' . $prodId]],
+                [['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'prod_' . $prodId]],
             ]));
             return;
         }
