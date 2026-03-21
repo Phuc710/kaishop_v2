@@ -244,18 +244,21 @@ function notifyExpiredDeposits(PendingDeposit $depositModel, TelegramOutbox $out
 
         if ($method === DepositService::METHOD_BINANCE) {
             $usdtAmount = number_format((float) ($dep['usdt_amount'] ?? 0), 2, '.', '');
-            $msg = "⏰ <b>YÊU CẦU NẠP BINANCE PAY ĐÃ HẾT HẠN</b>\n\n";
-            $msg .= "📋 Mã nạp: <code>{$code}</code>\n";
-            $msg .= "💵 Số tiền đăng ký: <b>{$amount}đ</b>\n";
-            $msg .= "💰 USDT yêu cầu: <b>{$usdtAmount} USDT</b>\n\n";
-            $msg .= "Lệnh đã quá 5 phút và tự động hủy.\n";
-            $msg .= "Nếu đã chuyển tiền, vui lòng liên hệ hỗ trợ kèm TXID.";
+            $payerUid = htmlspecialchars(trim((string) ($dep['payer_uid'] ?? '')), ENT_QUOTES, 'UTF-8');
+            $msg = "⌛ <b>BINANCE PAY ĐÃ HẾT HẠN</b>\n\n";
+            $msg .= "📋 Mã giao dịch: <code>{$code}</code>\n";
+            $msg .= "💵 Số tiền: <b>$" . $usdtAmount . " USDT</b>\n";
+            if ($payerUid !== '') {
+                $msg .= "👤 UID Binance: <code>{$payerUid}</code>\n";
+            }
+            $msg .= "\n⚠️ Lệnh đã quá <b>5 phút</b> nên hệ thống tự hủy.\n";
+            $msg .= "Nếu bạn đã chuyển tiền, vui lòng liên hệ hỗ trợ kèm <b>TXID</b>.";
         } else {
-            $msg = "⏰ <b>GIAO DỊCH NẠP TIỀN ĐÃ HẾT HẠN</b>\n\n";
-            $msg .= "📋 Mã nạp: <code>{$code}</code>\n";
-            $msg .= "💵 Số tiền: <b>{$amount}đ</b>\n\n";
-            $msg .= "Phiên nạp tiền đã quá 5 phút và tự động bị hủy.\n";
-            $msg .= "👇 Bấm nút bên dưới để nạp lại.";
+            $msg = "⌛ <b>GIAO DỊCH NẠP BANK ĐÃ HẾT HẠN</b>\n\n";
+            $msg .= "💵 Số tiền: <b>{$amount}đ</b>\n";
+            $msg .= "📝 Nội dung CK: <code>{$code}</code>\n\n";
+            $msg .= "⚠️ Phiên nạp đã quá <b>5 phút</b> nên hệ thống tự hủy.\n";
+            $msg .= "Bạn có thể bấm nạp lại để tạo mã mới.";
         }
 
         $retryCallback = ($method === DepositService::METHOD_BINANCE) ? 'binance_start' : 'deposit';
