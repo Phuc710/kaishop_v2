@@ -142,6 +142,41 @@ trait TelegramBotServiceShopTrait
         @file_put_contents($this->binanceSessionFile($telegramId), json_encode($data), LOCK_EX);
     }
 
+    private function getBinanceSession(int $telegramId): ?array
+    {
+        $file = $this->binanceSessionFile($telegramId);
+        if (!is_file($file)) {
+            return null;
+        }
+
+        $raw = @file_get_contents($file);
+        if (!$raw) {
+            return null;
+        }
+
+        $data = json_decode($raw, true);
+        if (!is_array($data)) {
+            return null;
+        }
+
+        $now = $this->timeService ? $this->timeService->nowTs() : time();
+        $expiresAt = (int) ($data['expires_at'] ?? 0);
+        if ($expiresAt > 0 && $now >= $expiresAt) {
+            $this->clearBinanceSession($telegramId);
+            return null;
+        }
+
+        $data['updated_at'] = $now;
+        @file_put_contents($file, json_encode($data), LOCK_EX);
+
+        return $data;
+    }
+
+    private function isBinanceInputMode(int $telegramId): bool
+    {
+        return is_file($this->binanceSessionFile($telegramId));
+    }
+
     private function clearBinanceSession(int $telegramId): void
     {
         $file = $this->binanceSessionFile($telegramId);
@@ -183,6 +218,79 @@ trait TelegramBotServiceShopTrait
     // =========================================================
     //  Xử lý input mua hàng
     // =========================================================
+
+    private function handleBinanceInput(string $chatId, int $telegramId, string $text): bool
+    {
+        $wasInMode = $this->isBinanceInputMode($telegramId);
+        $session = $this->getBinanceSession($telegramId);
+        if (!$session) {
+            if ($wasInMode) {
+                $this->clearBinanceSession($telegramId);
+                $this->telegram->sendTo(
+                    $chatId,
+                    $this->tgChoice(
+                        $telegramId,
+                        '⌛ Phiên nhập UID Binance đã hết hạn. Vui lòng thao tác lại từ đơn hàng.',
+                        '⌛ Your Binance UID entry session has expired. Please reopen the order and try again.'
+                    )
+                );
+                return true;
+            }
+
+            return false;
+        }
+
+        if ((string) ($session['step'] ?? '') !== 'await_uid') {
+            return false;
+        }
+
+        $text = trim($text);
+        if ($text === '') {
+            return true;
+        }
+
+        $normalized = function_exists('mb_strtolower')
+            ? mb_strtolower($text, 'UTF-8')
+            : strtolower($text);
+
+        if (in_array($normalized, ['hủy', 'huy', 'thoát', 'thoat', 'cancel', 'back'], true)) {
+            $this->clearBinanceSession($telegramId);
+            $this->showMainMenu($chatId, $telegramId, '', false, 0);
+            return true;
+        }
+
+        if (!preg_match('/^\d{4,20}$/', $text)) {
+            $this->telegram->sendTo(
+                $chatId,
+                $this->tgChoice(
+                    $telegramId,
+                    '⚠️ UID Binance không hợp lệ. Vui lòng chỉ nhập số từ 4 đến 20 chữ số.',
+                    '⚠️ Invalid Binance UID. Please enter digits only, between 4 and 20 digits.'
+                )
+            );
+            return true;
+        }
+
+        $messageId = (int) ($session['message_id'] ?? 0);
+        $purpose = (string) ($session['purpose'] ?? '');
+        $this->clearBinanceSession($telegramId);
+
+        if ($purpose === 'order_payment') {
+            $orderId = (int) ($session['order_id'] ?? 0);
+            $this->cbOrderPayBinance($chatId, $telegramId, $orderId, $messageId, $text);
+            return true;
+        }
+
+        $this->telegram->sendTo(
+            $chatId,
+            $this->tgChoice(
+                $telegramId,
+                '⚠️ Không xác định được tác vụ Binance. Vui lòng thử lại.',
+                '⚠️ Could not determine the Binance action. Please try again.'
+            )
+        );
+        return true;
+    }
 
     private function handlePurchaseInput(string $chatId, int $telegramId, string $text): bool
     {

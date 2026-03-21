@@ -325,7 +325,7 @@ class TelegramBotService
         $this->upsertTelegramUser($message['from']);
         // Only log MESSAGE if it is a command or part of an active flow
         $isCommand = str_starts_with($text, '/');
-        $inFlow = $this->isPurchaseInputMode($telegramId);
+        $inFlow = $this->isPurchaseInputMode($telegramId) || $this->isBinanceInputMode($telegramId);
         if ($isCommand || $inFlow) {
             $this->writeLog("[MSG] {$fromName} ({$telegramId}): {$text}", 'INFO', 'INCOMING', 'MESSAGE');
         }
@@ -343,6 +343,8 @@ class TelegramBotService
         }
 
         if (!str_starts_with($text, '/')) {
+            if ($this->handleBinanceInput($chatId, $telegramId, $text))
+                return;
 
             if ($this->handlePurchaseInput($chatId, $telegramId, $text))
                 return;
