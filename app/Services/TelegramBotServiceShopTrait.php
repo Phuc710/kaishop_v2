@@ -759,7 +759,6 @@ trait TelegramBotServiceShopTrait
         $msg .= "📦 Sản phẩm: <b>{$productName}</b>\n";
         $msg .= "🔢 Số lượng: <b>{$quantity}</b>\n";
         $msg .= "💵 Đơn giá: <b>" . number_format($unitPrice, 0, ',', '.') . "đ</b>\n";
-        $msg .= "🧮 Tạm tính: <b>" . number_format($subtotal, 0, ',', '.') . "đ</b>\n";
         if ($discount > 0) {
             $msg .= "🏷️ Giảm giá: -<b>" . number_format($discount, 0, ',', '.') . "đ</b>\n";
         }
@@ -929,7 +928,7 @@ trait TelegramBotServiceShopTrait
             $msg .= "⏰ Hết hạn: <b>{$expiresAt}</b>\n";
         }
 
-        $msg .= "\n✅ Quét QR để thanh toán | Auto Banking\n";
+        $msg .= "\n✅Quét QR để thanh toán | Auto Banking\n";
         return $msg;
     }
 
@@ -970,7 +969,7 @@ trait TelegramBotServiceShopTrait
             $msg .= "⏰ Expires at: <b>{$expiresAt}</b>\n";
         }
 
-        $msg .= "\n📲 Scan QR to pay | Auto Matching\n";
+        $msg .= "\n✅Scan QR to pay | Auto Matching\n";
 
         return $msg;
     }
