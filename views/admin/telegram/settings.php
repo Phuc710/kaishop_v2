@@ -22,6 +22,8 @@ $currentChatId = $siteConfig['telegram_chat_id'] ?? '';
 $currentMainChannelId = $siteConfig['telegram_main_channel_id'] ?? '';
 $currentSecret = $siteConfig['telegram_webhook_secret'] ?? '';
 $currentPath = $siteConfig['telegram_webhook_path'] ?? 'bottelekaishop_default';
+$currentSupportChannel = $siteConfig['telegram_support_channel'] ?? 'https://t.me/';
+$currentSupportAdmin = $siteConfig['telegram_support_admin'] ?? '@';
 $botMaintenanceOn = ((int) ($siteConfig['telegram_maintenance_enabled'] ?? 0) === 1);
 
 $baseUrl = rtrim(defined('BASE_URL') ? BASE_URL : '', '/');
@@ -241,6 +243,28 @@ $tgCssVersion = (string) @filemtime(dirname(__DIR__, 3) . '/assets/css/telegram_
                                         <input type="text" name="telegram_chat_id"
                                             class="form-control bg-light border-0"
                                             value="<?= htmlspecialchars($currentChatId) ?>">
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group mb-4">
+                                                <label class="filter-label font-weight-bold">Support Channel (Public
+                                                    Link)</label>
+                                                <input type="text" name="telegram_support_channel"
+                                                    class="form-control bg-light border-0"
+                                                    value="<?= htmlspecialchars($currentSupportChannel) ?>"
+                                                    placeholder="https://t.me/your_channel">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group mb-4">
+                                                <label class="filter-label font-weight-bold">Support Admin
+                                                    Contact</label>
+                                                <input type="text" name="telegram_support_admin"
+                                                    class="form-control bg-light border-0"
+                                                    value="<?= htmlspecialchars($currentSupportAdmin) ?>"
+                                                    placeholder="@your_username">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

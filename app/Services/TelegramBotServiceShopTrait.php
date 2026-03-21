@@ -150,6 +150,36 @@ trait TelegramBotServiceShopTrait
         }
     }
 
+    private function sendTelegramMediaOrText(string $chatId, int $messageId, string $mediaPath, string $message, ?array $markup = null): void
+    {
+        $mediaPath = trim($mediaPath);
+        $sent = false;
+
+        if ($mediaPath !== '') {
+            $photo = $mediaPath;
+            if (!str_starts_with($photo, 'http://') && !str_starts_with($photo, 'https://')) {
+                $photo = rtrim((string) BASE_URL, '/') . '/' . ltrim($photo, '/');
+            }
+
+            if (!str_contains($photo, 'localhost') && !str_contains($photo, '127.0.0.1')) {
+                $options = [];
+                if ($markup !== null) {
+                    $options['reply_markup'] = $markup;
+                }
+                $sent = $this->telegram->sendPhotoTo($chatId, $photo, $message, $options);
+            }
+        }
+
+        if ($sent) {
+            if ($messageId > 0) {
+                $this->telegram->deleteMessage($chatId, $messageId);
+            }
+            return;
+        }
+
+        $this->telegram->editOrSend($chatId, $messageId, $message, $markup);
+    }
+
     // =========================================================
     //  Xử lý input mua hàng
     // =========================================================
@@ -436,16 +466,13 @@ trait TelegramBotServiceShopTrait
             $rows[] = [['text' => $btnText, 'callback_data' => 'prod_' . $p['id']]];
         }
 
-        $rows[] = [['text' => $this->tgText($telegramId, 'button_refresh'), 'callback_data' => 'cat_' . $catId]];
+        $rows[] = [['text' => $this->tgText($telegramId, 'button_refresh'), 'callback_data' => 'cat_refresh_' . $catId]];
         $rows[] = [['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'shop']];
 
         $msg = $this->tgChoice($telegramId, "🛍️ <b>DANH SÁCH SẢN PHẨM</b>\n\n👇 Chọn sản phẩm bên dưới:", "🛍️ <b>PRODUCT LIST</b>\n\n👇 Choose a product below:");
         $markup = TelegramService::buildInlineKeyboard($rows);
 
         if ($messageId > 0) {
-            if ($callbackId !== '') {
-                $this->telegram->answerCallbackQuery($callbackId, $this->tgChoice($telegramId, '✅ Đã cập nhật.', '✅ Updated.'), false);
-            }
             $this->telegram->editOrSend($chatId, $messageId, $msg, $markup);
         } else {
             $this->telegram->sendTo($chatId, $msg, ['reply_markup' => $markup]);

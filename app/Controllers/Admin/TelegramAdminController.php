@@ -100,6 +100,8 @@ class TelegramAdminController extends Controller
             'telegram_webhook_path',
             'telegram_admin_ids',
             'telegram_main_channel_id',
+            'telegram_support_channel',
+            'telegram_support_admin',
             'telegram_maintenance_enabled',
             'telegram_maintenance_message',
         ];
@@ -125,7 +127,18 @@ class TelegramAdminController extends Controller
         $this->ensureSettingColumn(
             $db,
             'telegram_maintenance_message',
-            "TEXT NULL AFTER `telegram_maintenance_enabled`"
+            "TEXT NULL AFTER `telegram_maintenance_enabled`
+        "
+        );
+        $this->ensureSettingColumn(
+            $db,
+            'telegram_support_channel',
+            "VARCHAR(255) DEFAULT 'https://t.me/' AFTER `telegram_main_channel_id`"
+        );
+        $this->ensureSettingColumn(
+            $db,
+            'telegram_support_admin',
+            "VARCHAR(120) DEFAULT '@' AFTER `telegram_support_channel`"
         );
 
         foreach ($fields as $field) {

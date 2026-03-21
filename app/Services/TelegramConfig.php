@@ -136,6 +136,22 @@ final class TelegramConfig
     }
 
     /**
+     * Support Channel URL
+     */
+    public static function supportChannelUrl(): string
+    {
+        return (string) get_setting('telegram_support_channel', 'https://t.me/');
+    }
+
+    /**
+     * Support Admin Contact (e.g. @username)
+     */
+    public static function supportAdminContact(): string
+    {
+        return (string) get_setting('telegram_support_admin', '@');
+    }
+
+    /**
      * Tất cả Admin IDs (bao gồm primary + telegram_admin_ids)
      * @return int[]
      */

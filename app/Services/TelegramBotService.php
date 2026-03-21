@@ -452,6 +452,16 @@ class TelegramBotService
             $this->telegram->answerCallbackQuery($callbackId);
             return;
         }
+        if (preg_match('/^cat_refresh_(\d+)$/', $data, $m)) {
+            $this->telegram->answerCallbackQuery($callbackId, $this->tgChoice($telegramId, '✅ Đã cập nhật.', '✅ Updated.'), false);
+            $this->cbCategory($chatId, $telegramId, (int) $m[1], $messageId);
+            return;
+        }
+        if ($data === 'orders_refresh') {
+            $this->telegram->answerCallbackQuery($callbackId, $this->tgChoice($telegramId, '✅ Đã cập nhật.', '✅ Updated.'), false);
+            $this->cmdOrders($chatId, $telegramId, $messageId);
+            return;
+        }
 
 
 
@@ -460,23 +470,18 @@ class TelegramBotService
 
         switch ($action) {
             case 'shop':
-                if ($messageId > 0)
-                    $this->telegram->answerCallbackQuery($callbackId, $this->tgChoice($telegramId, '✅ Đã cập nhật.', '✅ Updated.'), false);
                 $this->cmdShop($chatId, $telegramId, $messageId);
                 return;
             case 'cat':
-                $this->cbCategory($chatId, $telegramId, (int) ($parts[1] ?? 0), $messageId, $callbackId);
+                $this->cbCategory($chatId, $telegramId, (int) ($parts[1] ?? 0), $messageId);
                 return;
             case 'prod':
-                if ($messageId > 0)
-                    $this->telegram->answerCallbackQuery($callbackId, $this->tgChoice($telegramId, '✅ Đã cập nhật.', '✅ Updated.'), false);
                 $this->cbProduct($chatId, $telegramId, (int) ($parts[1] ?? 0), $messageId);
                 return;
             case 'buy':
                 $this->cbBuyConfirm($chatId, $telegramId, (int) ($parts[1] ?? 0), (int) ($parts[2] ?? 1), null, $messageId);
                 break;
             case 'orders':
-                $this->telegram->answerCallbackQuery($callbackId, $this->tgChoice($telegramId, '✅ Đã cập nhật.', '✅ Updated.'), false);
                 $this->cmdOrders($chatId, $telegramId, $messageId);
                 return;
             case 'order':
@@ -534,6 +539,8 @@ class TelegramBotService
         $message = $this->tgText($telegramId, 'language_picker', [
             'name' => htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8'),
             'site' => htmlspecialchars((string) $siteName, ENT_QUOTES, 'UTF-8'),
+            'channel' => TelegramConfig::supportChannelUrl(),
+            'admin' => TelegramConfig::supportAdminContact(),
         ]);
 
         $markup = TelegramService::buildInlineKeyboard([
@@ -586,6 +593,8 @@ class TelegramBotService
                 'name' => htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8'),
                 'site' => htmlspecialchars((string) $siteName, ENT_QUOTES, 'UTF-8'),
                 'domain' => htmlspecialchars((string) $domain, ENT_QUOTES, 'UTF-8'),
+                'channel' => TelegramConfig::supportChannelUrl(),
+                'admin' => TelegramConfig::supportAdminContact(),
             ]);
         } else {
             $msg = $this->tgText($telegramId, 'main_prompt');
@@ -730,7 +739,7 @@ class TelegramBotService
 
         $markup = TelegramService::buildInlineKeyboard([
             [
-                ['text' => $this->tgChoice($telegramId, '🔄 Cập nhật', '🔄 Refresh'), 'callback_data' => 'orders'],
+                ['text' => $this->tgChoice($telegramId, '🔄 Cập nhật', '🔄 Refresh'), 'callback_data' => 'orders_refresh'],
                 $this->backHomeButton($telegramId),
             ]
         ]);
