@@ -601,23 +601,7 @@ class TelegramAdminController extends Controller
         ]);
     }
 
-    public function unlinkAction(): void
-    {
-        $this->requireAdmin();
-        $userId = (int) $this->post('user_id', 0);
-        if ($userId <= 0) {
-            $this->json(['success' => false, 'message' => 'Thiếu ID người dùng']);
-            return;
-        }
 
-        $linkModel = new UserTelegramLink();
-        $success = $linkModel->unlinkUser($userId);
-
-        $this->json([
-            'success' => $success,
-            'message' => $success ? 'Đã hủy liên kết thành công' : 'Không thể thực hiện hủy liên kết',
-        ]);
-    }
 
     // ——— Outbox —————————————————————————————————————————————
 

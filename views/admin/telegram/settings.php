@@ -113,7 +113,7 @@ $tgCssVersion = (string) @filemtime(dirname(__DIR__, 3) . '/assets/css/telegram_
                     <div class="tg-stat-label">Người dùng</div>
                 </div>
                 <div class="tg-stat-value"><?= number_format($totalUsers) ?></div>
-                <div class="small text-muted mt-auto"><?= number_format($totalLinks) ?> liên kết Bot</div>
+                <div class="small text-muted mt-auto"><?= number_format($totalLinks) ?> người có TG</div>
             </div>
 
             <!-- Card 4: Order Stats (KPI Details) -->
@@ -367,7 +367,8 @@ $tgCssVersion = (string) @filemtime(dirname(__DIR__, 3) . '/assets/css/telegram_
                         class="card-header bg-white d-flex justify-content-between align-items-center py-3 tg-channels-header">
                         <div>
                             <h3 class="card-title font-weight-bold mb-1">Kênh nhận đơn tự động</h3>
-                            <div class="small text-muted">Nhận tất cả thông báo đơn hàng: tạo đơn, hoàn tất và hủy đơn.</div>
+                            <div class="small text-muted">Nhận tất cả thông báo đơn hàng: tạo đơn, hoàn tất và hủy đơn.
+                            </div>
                         </div>
                         <button class="btn btn-sm btn-success px-4 tg-add-channel-btn" data-toggle="modal"
                             data-target="#modalAddChannel"><i class="fas fa-plus mr-1"></i> THÊM KÊNH</button>

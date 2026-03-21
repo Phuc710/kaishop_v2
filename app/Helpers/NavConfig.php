@@ -123,7 +123,7 @@ class NavConfig
                     ],
                     [
                         'href' => self::buildUrl('admin/telegram/links'),
-                        'label' => 'Lịch sử liên kết',
+                        'label' => 'Người dùng Telegram',
                         'active_prefixes' => ['admin/telegram/links'],
                     ],
                     [
@@ -369,14 +369,7 @@ class NavConfig
                 'color' => '#14b8a6', // Teal
                 'label' => 'Thay đổi mật khẩu',
             ],
-            [
-                'type' => 'link',
-                'active_key' => 'telegram',
-                'href' => self::buildUrl('profile?section=telegram'),
-                'icon' => 'fab fa-telegram-plane',
-                'color' => '#0ea5e9', // Sky Blue
-                'label' => 'Liên kết Telegram',
-            ],
+
             [
                 'type' => 'logout',
                 'href' => self::buildUrl('logout'),

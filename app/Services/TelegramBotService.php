@@ -21,7 +21,7 @@
  */
 class TelegramBotService
 {
-    use TelegramBotServiceDepositTrait;
+
     use TelegramBotServiceShopTrait;
     use TelegramBotServiceAdminTrait;
 
@@ -110,95 +110,12 @@ class TelegramBotService
 
     private function tgText(int $telegramId, string $key, array $vars = []): string
     {
-        $locale = $this->isTelegramEnglish($telegramId) ? 'en' : 'vi';
-        $map = [
-            'vi' => [
-                'invalid_command' => '❌ Lệnh không hợp lệ. Gửi /start để mở bot.',
-                'back_home' => '◀️ Quay lại',
-                'menu_shop' => '🛍️ Cửa hàng',
-                'menu_wallet' => '💰 Ví của tôi',
-                'menu_deposit' => '💳 Nạp tiền',
-                'menu_orders' => '📦 Đơn hàng',
-                'menu_link' => '🔗 Liên kết Web',
-                'menu_unlink' => '🔓 Hủy liên kết',
-                'menu_help' => '❓ Trợ giúp',
-                'menu_language' => '🌐 Ngôn ngữ',
-                'menu_admin' => '📊 Thống kê Admin',
-                'main_prompt' => '👇 Chọn chức năng bên dưới để bắt đầu:',
-                'main_prompt_short' => '👇 Chọn chức năng bên dưới để bắt đầu',
-                'greeting' => "👋 Xin chào <b>{name}</b>!\nChào mừng bạn đến với <b>{site}</b>.\nOfficial Website: 🔗 <a href=\"https://{domain}\">Here</a>\n\n👤 Tài khoản: <b>{username}</b>\n💵 Số dư: <b>{money}</b>\n\n━━━━━━━━━━━━━━\n👇 Chọn chức năng bên dưới để bắt đầu",
-                'language_picker' => "✨ <b>Xin chào {name}</b>\n\nChào mừng bạn đến với <b>{site}</b>.\n🌐 Vui lòng chọn ngôn ngữ để tiếp tục:",
-                'language_updated_vi' => '🇻🇳 Đã chuyển sang Tiếng Việt.',
-                'language_updated_en' => '🇺🇸 Switched to English.',
-                'help_title' => '✨ <b>TRỢ GIÚP — DANH SÁCH LỆNH</b>',
-                'help_shop' => '🛍️ /shop    — Cửa hàng',
-                'help_wallet' => '💰 /balance — Ví của tôi',
-                'help_bank' => '🏦 /bank    — Nạp tiền ngân hàng (VND)',
-                'help_binance' => '🟡 /binance — Nạp tiền Binance Pay (USD)',
-                'help_orders' => '📦 /orders  — Lịch sử đơn hàng',
-                'help_menu' => '📋 /menu    — Mở menu nhanh',
-                'help_link' => '🔗 /link    — Liên kết Web',
-                'help_help' => '❓ /help    — Trợ giúp',
-                'help_admin' => "\n🔐 <b>LỆNH ADMIN:</b>\n📊 /stats                   — Thống kê\n📢 /broadcast &lt;nội_dung&gt; — Gửi thông báo\n🚧 /maintenance on|off       — Bảo trì\n🏦 /setbank &lt;bank|stk|chủ&gt; — Đổi ngân hàng",
-                'deposit_menu_title' => '💳 <b>CHỌN PHƯƠNG THỨC NẠP TIỀN</b>',
-                'deposit_menu_desc' => "1️⃣ <b>Ngân hàng (VND)</b> — Chuyển khoản nội địa qua SePay.\n2️⃣ <b>Binance Pay (USDT)</b> — Nạp qua tài khoản Binance Funding.\n\n👇 Vui lòng chọn phương thức phù hợp:",
-                'deposit_menu_bank' => '🏦 Ngân hàng',
-                'deposit_menu_bank_off' => '🏦 Ngân hàng (Bảo trì)',
-                'deposit_menu_binance' => '🟡 Binance Pay',
-                'deposit_menu_binance_off' => '🟡 Binance (Bảo trì)',
-                'deposit_input_title' => "💳 <b>NẠP TIỀN</b>\n\n📌 Nạp tối thiểu: <b>{min}</b>\n👇 Chọn nhanh hoặc nhập số tiền bạn muốn nạp:",
-                'binance_input_title' => "💳 <b>BINANCE PAY (USDT)</b>\n\n📌 Nạp tối thiểu: <b>${min}</b>\n👇 Chọn nhanh hoặc nhập số USDT bạn muốn nạp:",
-            ],
-            'en' => [
-                'invalid_command' => '❌ Invalid command. Send /start to open the bot.',
-                'back_home' => '◀️ Back',
-                'menu_shop' => '🛍️ Shop',
-                'menu_wallet' => '💰 Wallet',
-                'menu_deposit' => '💳 Top Up',
-                'menu_orders' => '📦 Orders',
-                'menu_link' => '🔗 Link Web',
-                'menu_unlink' => '🔓 Unlink Web',
-                'menu_help' => '❓ Help',
-                'menu_language' => '🌐 Language',
-                'menu_admin' => '📊 Admin Stats',
-                'main_prompt' => '👇 Choose an option below to continue:',
-                'main_prompt_short' => '👇 Choose an option below to continue',
-                'greeting' => "👋 Hello <b>{name}</b>!\nWelcome to <b>{site}</b>.\nOfficial Website: 🔗 <a href=\"https://{domain}\">Here</a>\n\n👤 Account: <b>{username}</b>\n💵 Balance: <b>{money}</b>\n\n━━━━━━━━━━━━━━\n👇 Choose an option below to continue",
-                'language_picker' => "✨ <b>Hello {name}</b>\n\nWelcome to <b>{site}</b>.\n🌐 Please choose your language to continue:",
-                'language_updated_vi' => '🇻🇳 Đã chuyển sang Tiếng Việt.',
-                'language_updated_en' => '🇺🇸 Switched to English.',
-                'help_title' => '✨ <b>HELP — COMMAND LIST</b>',
-                'help_shop' => '🛍️ /shop    — Open shop',
-                'help_wallet' => '💰 /balance — View wallet',
-                'help_bank' => '🏦 /bank    — Bank top-up (VND)',
-                'help_binance' => '🟡 /binance — Binance Pay top-up (USD)',
-                'help_orders' => '📦 /orders  — Recent orders',
-                'help_menu' => '📋 /menu    — Open quick menu',
-                'help_link' => '🔗 /link    — Link web account',
-                'help_help' => '❓ /help    — Help',
-                'help_admin' => "\n🔐 <b>ADMIN COMMANDS:</b>\n📊 /stats                   — Stats\n📢 /broadcast &lt;content&gt;   — Broadcast\n🚧 /maintenance on|off       — Maintenance\n🏦 /setbank &lt;bank|acc|name&gt; — Update bank info",
-                'deposit_menu_title' => '💳 <b>CHOOSE A TOP-UP METHOD</b>',
-                'deposit_menu_desc' => "1️⃣ <b>Bank (VND)</b> — Domestic transfer via SePay.\n2️⃣ <b>Binance Pay (USDT)</b> — Funding wallet transfer.\n\n👇 Please choose a payment method:",
-                'deposit_menu_bank' => '🏦 Bank',
-                'deposit_menu_bank_off' => '🏦 Bank (Offline)',
-                'deposit_menu_binance' => '🟡 Binance Pay',
-                'deposit_menu_binance_off' => '🟡 Binance (Offline)',
-                'deposit_input_title' => "💳 <b>TOP UP</b>\n\n📌 Minimum deposit: <b>{min}</b>\n👇 Choose a quick amount or enter your deposit value:",
-                'binance_input_title' => "💳 <b>BINANCE PAY (USDT)</b>\n\n📌 Minimum deposit: <b>${min}</b>\n👇 Choose a quick amount or enter your USDT amount:",
-            ],
-        ];
+        require_once __DIR__ . '/Locales/TelegramBotLocaleInterface.php';
+        require_once __DIR__ . '/Locales/TelegramBotLocaleVi.php';
+        require_once __DIR__ . '/Locales/TelegramBotLocaleEn.php';
 
-        $text = $map[$locale][$key] ?? ($map['vi'][$key] ?? $key);
-        if ($vars === []) {
-            return $text;
-        }
-
-        $replace = [];
-        foreach ($vars as $name => $value) {
-            $replace['{' . $name . '}'] = (string) $value;
-        }
-
-        return strtr($text, $replace);
+        $localeClass = $this->isTelegramEnglish($telegramId) ? new TelegramBotLocaleEn() : new TelegramBotLocaleVi();
+        return $localeClass->getMessage($key, $vars);
     }
 
     // =========================================================
@@ -341,7 +258,7 @@ class TelegramBotService
         $this->upsertTelegramUser($message['from']);
         // Only log MESSAGE if it is a command or part of an active flow
         $isCommand = str_starts_with($text, '/');
-        $inFlow = $this->isPurchaseInputMode($telegramId) || $this->isDepositInputMode($telegramId) || $this->getBinanceSession($telegramId);
+        $inFlow = $this->isPurchaseInputMode($telegramId);
         if ($isCommand || $inFlow) {
             $this->writeLog("[MSG] {$fromName} ({$telegramId}): {$text}", 'INFO', 'INCOMING', 'MESSAGE');
         }
@@ -352,10 +269,7 @@ class TelegramBotService
         }
 
         if (!str_starts_with($text, '/')) {
-            if ($this->handleBinanceInput($chatId, $telegramId, $text))
-                return;
-            if ($this->handleDepositAmountInput($chatId, $telegramId, $text))
-                return;
+
             if ($this->handlePurchaseInput($chatId, $telegramId, $text))
                 return;
             $this->handleMenuText($chatId, $telegramId, $text);
@@ -370,14 +284,7 @@ class TelegramBotService
             '/start' => $this->cmdStart($chatId, $telegramId, $fromName),
             '/menu' => $this->cmdMenu($chatId, $telegramId),
             '/shop' => $this->cmdShop($chatId),
-            '/wallet',
-            '/balance' => $this->cmdWallet($chatId, $telegramId),
-            '/deposit',
-            '/bank' => $this->cmdDeposit($chatId, $telegramId, $args),
-            '/binance' => $this->cmdBinance($chatId, $telegramId, $args),
             '/orders' => $this->cmdOrders($chatId, $telegramId),
-            '/link' => $this->cmdLink($chatId, $telegramId, $args, $message['from']),
-            '/unlink' => $this->cmdUnlink($chatId, $telegramId),
             '/help' => $this->cmdHelp($chatId, $telegramId),
             // Admin
             '/stats' => $this->cmdStats($chatId, $telegramId),
@@ -402,20 +309,8 @@ class TelegramBotService
             $this->cmdShop($chatId);
             return;
         }
-        if ($text === 'ví' || $text === 'vi' || $text === 'số dư' || $text === 'so du') {
-            $this->cmdWallet($chatId, $telegramId);
-            return;
-        }
-        if ($text === 'nạp tiền' || $text === 'nap tien') {
-            $this->startDepositInputMode($chatId, $telegramId);
-            return;
-        }
         if ($text === 'đơn hàng' || $text === 'don hang') {
             $this->cmdOrders($chatId, $telegramId);
-            return;
-        }
-        if ($text === 'liên kết web' || $text === 'lien ket web') {
-            $this->cmdLink($chatId, $telegramId, [], []);
             return;
         }
         if ($text === 'trợ giúp' || $text === 'tro giup' || $text === 'help') {
@@ -483,81 +378,8 @@ class TelegramBotService
             $this->telegram->answerCallbackQuery($callbackId);
             return;
         }
-        if (preg_match('/^order_pay_bank_(\d+)$/', $data, $m)) {
-            $this->cbOrderPayBank($chatId, $telegramId, (int) $m[1], $messageId);
-            $this->telegram->answerCallbackQuery($callbackId);
-            return;
-        }
-        if (preg_match('/^order_pay_binance_(\d+)$/', $data, $m)) {
-            $this->cbOrderPayBinance($chatId, $telegramId, (int) $m[1], $messageId);
-            $this->telegram->answerCallbackQuery($callbackId);
-            return;
-        }
-        if (preg_match('/^order_check_(\d+)$/', $data, $m)) {
-            $this->cbOrderCheck($chatId, $telegramId, (int) $m[1], $messageId, $callbackId);
-            return;
-        }
-        if (preg_match('/^order_cancel_(\d+)$/', $data, $m)) {
-            $this->cbOrderCancel($chatId, $telegramId, (int) $m[1], $messageId);
-            $this->telegram->answerCallbackQuery($callbackId);
-            return;
-        }
-        if (preg_match('/^do_unlink_(bot|web)$/', $data, $m)) {
-            $this->cbDoUnlink($chatId, $telegramId, (string) $m[1], $messageId);
-            $this->telegram->answerCallbackQuery($callbackId);
-            return;
-        }
-        if ($data === 'deposit_menu') {
-            $this->showDepositMethodMenu($chatId, $telegramId, $messageId);
-            $this->telegram->answerCallbackQuery($callbackId);
-            return;
-        }
-        if ($data === 'deposit_bank') {
-            $this->telegram->answerCallbackQuery($callbackId);
-            $this->startDepositInputMode($chatId, $telegramId, $messageId);
-            return;
-        }
-        if ($data === 'binance_start') {
-            $this->telegram->answerCallbackQuery($callbackId);
-            $this->startBinanceInputMode($chatId, $telegramId, $messageId);
-            return;
-        }
-        if (preg_match('/^bin_amount_([0-9]+(?:\.[0-9]{1,2})?)$/', $data, $m)) {
-            $amount = (float) $m[1];
-            // Sau khi chọn số tiền, hỏi UID
-            $this->setBinanceSession($telegramId, [
-                'step' => 'await_uid',
-                'amount' => $amount,
-                'message_id' => $messageId
-            ], 300);
 
-            $msg = "💵 Số tiền: <b>$" . number_format($amount, 2) . " USDT</b>\n\n" .
-                "👉 Bây giờ hãy nhập <b>Binance UID</b> của bạn để hệ thống tự động cộng tiền.";
 
-            $this->telegram->editOrSend($chatId, $messageId, $msg);
-            $this->telegram->answerCallbackQuery($callbackId);
-            return;
-        }
-        if (preg_match('/^bin_check_([A-Za-z0-9_-]{3,64})$/', $data, $m)) {
-            $this->cbBinanceCheck($chatId, $telegramId, (string) $m[1], $messageId, $callbackId);
-            return;
-        }
-        if (preg_match('/^deposit_(\d+)$/', $data, $m)) {
-            $amount = (int) $m[1];
-            if ($amount >= DepositService::MIN_AMOUNT) {
-                $this->clearDepositInputMode($telegramId);
-                $this->cmdDeposit($chatId, $telegramId, [(string) $amount], $messageId);
-                $this->telegram->answerCallbackQuery($callbackId);
-            } else {
-                $this->telegram->answerCallbackQuery($callbackId, "Số tiền tối thiểu là " . number_format(DepositService::MIN_AMOUNT) . "đ", true);
-            }
-            return;
-        }
-
-        if (preg_match('/^cancel_dep_([A-Za-z0-9_-]{3,64})$/', $data, $m)) {
-            $this->cancelDepositFromCallback($chatId, $telegramId, (string) $m[1], $messageId, $callbackId);
-            return;
-        }
 
         $parts = explode('_', $data);
         $action = $parts[0] ?? '';
@@ -575,30 +397,17 @@ class TelegramBotService
             case 'buy':
                 $this->cbBuyConfirm($chatId, $telegramId, (int) ($parts[1] ?? 0), (int) ($parts[2] ?? 1), null, $messageId);
                 break;
-            case 'wallet':
-                $this->cmdWallet($chatId, $telegramId, $messageId);
-                break;
-            case 'deposit':
-                $this->showDepositMethodMenu($chatId, $telegramId, $messageId);
-                break;
             case 'orders':
                 $this->cmdOrders($chatId, $telegramId, $messageId);
                 break;
-            case 'unlink':
-                $this->cmdUnlink($chatId, $telegramId);
-                break;
             case 'menu':
             case 'back':
-                $this->clearDepositInputMode($telegramId);
-                $this->clearBinanceSession($telegramId);
+
                 $fromName = trim(($query['from']['first_name'] ?? '') . ' ' . ($query['from']['last_name'] ?? ''));
                 $this->showMainMenu($chatId, $telegramId, $fromName, true, $messageId);
                 break;
             case 'help':
                 $this->cmdHelp($chatId, $telegramId, $messageId);
-                break;
-            case 'link':
-                $this->cmdLink($chatId, $telegramId, [], $query['from'] ?? []);
                 break;
             case 'stats':
                 $this->cmdStats($chatId, $telegramId);
@@ -608,59 +417,7 @@ class TelegramBotService
         $this->telegram->answerCallbackQuery($callbackId);
     }
 
-    private function cancelDepositFromCallback(string $chatId, int $telegramId, string $depositCode, int $messageId, string $callbackId): void
-    {
-        $user = $this->resolveLinkedUser($chatId, $telegramId);
-        if (!$user) {
-            $this->telegram->answerCallbackQuery($callbackId, 'Không tìm thấy tài khoản liên kết.', true);
-            return;
-        }
 
-        $depositModel = new PendingDeposit();
-        $deposit = $depositModel->findByCode($depositCode);
-        if (
-            !$deposit
-            || (int) ($deposit['user_id'] ?? 0) !== (int) ($user['id'] ?? 0)
-        ) {
-            $this->telegram->answerCallbackQuery($callbackId, 'Không tìm thấy giao dịch nạp tiền.', true);
-            return;
-        }
-
-        $method = $this->normalizeDepositMethod((string) ($deposit['method'] ?? DepositService::METHOD_BANK_SEPAY));
-        $methodLabel = $method === DepositService::METHOD_BINANCE ? 'Binance' : 'Bank';
-        $status = strtolower(trim((string) ($deposit['status'] ?? '')));
-
-        if ($status === 'pending') {
-            $depositModel->cancelByUser((int) $deposit['id'], (int) ($user['id'] ?? 0));
-            $this->clearDepositInputMode($telegramId);
-            if ($method === DepositService::METHOD_BINANCE) {
-                $this->clearBinanceSession($telegramId);
-            }
-            if ($messageId > 0) {
-                $this->telegram->deleteMessage($chatId, $messageId);
-            }
-            $this->showDepositMethodMenu($chatId, $telegramId);
-            $this->telegram->answerCallbackQuery($callbackId, 'Đã hủy giao dịch ' . $methodLabel . '.');
-            return;
-        }
-
-        $statusText = match ($status) {
-            'completed' => 'đã hoàn tất',
-            'cancelled' => 'đã bị hủy',
-            'expired' => 'đã hết hạn',
-            default => 'không còn hoạt động',
-        };
-
-        $this->telegram->answerCallbackQuery($callbackId, 'Giao dịch ' . $methodLabel . ' ' . $statusText . '.', true);
-    }
-
-    private function normalizeDepositMethod(string $method): string
-    {
-        $method = strtolower(trim($method));
-        return $method === DepositService::METHOD_BINANCE
-            ? DepositService::METHOD_BINANCE
-            : DepositService::METHOD_BANK_SEPAY;
-    }
 
     // =========================================================
     //  User Commands (Core)
@@ -738,39 +495,14 @@ class TelegramBotService
             if ($displayName === '') {
                 $displayName = $this->isTelegramEnglish($telegramId) ? 'friend' : 'bạn';
             }
-            if ($displayName === '')
-                $displayName = 'bạn';
 
-            $money = number_format((int) ($user['money'] ?? 0)) . "đ";
-
-            $msg = "👋 Xin chào <b>" . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') . "</b>!\n";
-            $msg .= "Chào mừng bạn đến với <b>" . htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') . "</b> 🤖.\n";
-            $msg .= "Official Website: 🔗 <a href=\"https://{$domain}\">Here</a>\n\n";
-            $msg .= "👤 Tài khoản: <b>" . htmlspecialchars($username, ENT_QUOTES, 'UTF-8') . "</b>\n";
-            $msg .= "💵 Số dư: <b>{$money}</b>\n\n";
-            $msg .= "━━━━━━━━━━━━━━\n";
-            $msg .= "👇 Chọn chức năng bên dưới để bắt đầu\n\n";
-        } else {
-            $msg = "👇 <b>Chọn chức năng bên dưới để bắt đầu:</b>\n\n";
-        }
-
-        if ($withGreeting) {
-            $username = trim((string) ($user['username'] ?? ''));
-            $displayName = trim($name) !== '' ? trim($name) : $username;
-            if ($displayName === '') {
-                $displayName = $this->isTelegramEnglish($telegramId) ? 'friend' : 'bạn';
-            }
-
-            $money = number_format((int) ($user['money'] ?? 0)) . 'đ';
             $msg = $this->tgText($telegramId, 'greeting', [
                 'name' => htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8'),
                 'site' => htmlspecialchars((string) $siteName, ENT_QUOTES, 'UTF-8'),
                 'domain' => htmlspecialchars((string) $domain, ENT_QUOTES, 'UTF-8'),
-                'username' => htmlspecialchars($username, ENT_QUOTES, 'UTF-8'),
-                'money' => htmlspecialchars($money, ENT_QUOTES, 'UTF-8'),
             ]);
         } else {
-            $msg = '<b>' . $this->tgText($telegramId, 'main_prompt') . '</b>';
+            $msg = $this->tgText($telegramId, 'main_prompt');
         }
 
         if ($messageId > 0) {
@@ -783,42 +515,13 @@ class TelegramBotService
     /** @return array<int,array<int,array<string,string>>> */
     private function buildMainInlineRows(int $telegramId, string $username = ''): array
     {
-        $isLinked = $username !== '' && !str_starts_with($username, 'tg_');
-        $linkText = $isLinked ? '🔗 Hủy liên kết' : '🔗 Liên kết Web';
-        $linkText = $isLinked
-            ? $this->tgText($telegramId, 'menu_unlink')
-            : $this->tgText($telegramId, 'menu_link');
-        $linkCallback = $isLinked ? 'unlink' : 'link_help';
-
-        $inlineRows = [
-            [
-                ['text' => '🛍️ Cửa hàng', 'callback_data' => 'shop'],
-                ['text' => '💰 Ví của tôi', 'callback_data' => 'wallet'],
-            ],
-            [
-                ['text' => '💳 Nạp tiền', 'callback_data' => 'deposit_menu'],
-                ['text' => '📦 Đơn hàng', 'callback_data' => 'orders'],
-            ],
-            [
-                ['text' => $linkText, 'callback_data' => $linkCallback],
-                ['text' => '❓ Trợ giúp', 'callback_data' => 'help'],
-            ],
-        ];
-
         $inlineRows = [
             [
                 ['text' => $this->tgText($telegramId, 'menu_shop'), 'callback_data' => 'shop'],
-                ['text' => $this->tgText($telegramId, 'menu_wallet'), 'callback_data' => 'wallet'],
-            ],
-            [
-                ['text' => $this->tgText($telegramId, 'menu_deposit'), 'callback_data' => 'deposit_menu'],
                 ['text' => $this->tgText($telegramId, 'menu_orders'), 'callback_data' => 'orders'],
             ],
             [
-                ['text' => $linkText, 'callback_data' => $linkCallback],
                 ['text' => $this->tgText($telegramId, 'menu_help'), 'callback_data' => 'help'],
-            ],
-            [
                 ['text' => $this->tgText($telegramId, 'menu_language'), 'callback_data' => 'change_lang'],
             ],
         ];
@@ -902,32 +605,7 @@ class TelegramBotService
         }
     }
 
-    /** /wallet — Xem thông tin ví */
-    private function cmdWallet(string $chatId, int $telegramId, int $messageId = 0): void
-    {
-        $user = $this->resolveLinkedUser($chatId, $telegramId);
-        if (!$user)
-            return;
 
-        $msg = "💰 <b>THÔNG TIN VÍ CỦA BẠN</b>\n\n";
-        $msg .= "👤 Tài khoản: <b>" . htmlspecialchars((string) ($user['username'] ?? ''), ENT_QUOTES, 'UTF-8') . "</b>\n";
-        $msg .= "💵 Số dư: <b>" . number_format((int) ($user['money'] ?? 0)) . "đ</b>\n\n";
-        $msg .= "━━━━━━━━━━━━━━\n";
-        $msg .= "👇 Cần nạp thêm? Chọn Nạp tiền ngay!";
-
-        $markup = TelegramService::buildInlineKeyboard([
-            [
-                ['text' => '💳 Nạp tiền ngay', 'callback_data' => 'deposit_menu'],
-                $this->backHomeButton(),
-            ]
-        ]);
-
-        if ($messageId > 0) {
-            $this->telegram->editOrSend($chatId, $messageId, $msg, $markup);
-        } else {
-            $this->telegram->sendTo($chatId, $msg, ['reply_markup' => $markup]);
-        }
-    }
 
     /** /orders — 5 đơn hàng gần nhất */
     private function cmdOrders(string $chatId, int $telegramId, int $messageId = 0): void
@@ -1001,122 +679,8 @@ class TelegramBotService
     }
 
     // =========================================================
-    //  Link / Unlink Commands
+    //  Help Command
     // =========================================================
-
-    /** /link <otp> — Liên kết tài khoản Web bằng mã OTP */
-    private function cmdLink(string $chatId, int $telegramId, array $args, array $from): void
-    {
-        $code = trim($args[0] ?? '');
-        if ($code === '') {
-            $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
-            if (empty($domain))
-                $domain = 'kaishop.id.vn';
-
-            $this->telegram->sendTo(
-                $chatId,
-                "🔗 <b>LIÊN KẾT TÀI KHOẢN WEB</b>\n\n"
-                . "1️⃣ Đăng nhập 🔗 <a href=\"https://{$domain}\">TRUY CẬP WEBSITE</a> › Hồ sơ › Liên kết Telegram.\n"
-                . "2️⃣ Lấy mã OTP và gửi lệnh: <code>/link 123456</code>.\n\n"
-                . "Sau khi liên kết, tài khoản Web và Telegram sẽ đồng bộ ví!",
-                ['reply_markup' => TelegramService::buildInlineKeyboard([[$this->backHomeButton()]])]
-            );
-            return;
-        }
-
-        $targetUserId = $this->otpModel->verifyCode($code);
-        if (!$targetUserId) {
-            $this->telegram->sendTo($chatId, "❌ Mã OTP không đúng hoặc đã hết hạn. Vui lòng thử mã mới trên web.");
-            return;
-        }
-
-        $targetUser = $this->userModel->findById($targetUserId);
-        if (!$targetUser) {
-            $this->telegram->sendTo($chatId, "❌ Không tìm thấy tài khoản web để liên kết.");
-            return;
-        }
-
-        $currentLink = $this->linkModel->findByTelegramId($telegramId);
-        $currentUserId = (int) ($currentLink['user_id'] ?? 0);
-
-        if ($currentUserId > 0 && $currentUserId !== $targetUserId) {
-            $merge = $this->accountEcosystemService->mergeIntoPrimary($currentUserId, $targetUserId);
-            if (empty($merge['success'])) {
-                $this->telegram->sendTo(
-                    $chatId,
-                    "⚠️ Lỗi hợp nhất dữ liệu: " . htmlspecialchars((string) ($merge['message'] ?? 'Lỗi không xác định.'))
-                );
-                return;
-            }
-        }
-
-        $firstName = trim(($from['first_name'] ?? '') . ' ' . ($from['last_name'] ?? ''));
-        $linked = $this->linkModel->linkUser($targetUserId, $telegramId, $from['username'] ?? null, $firstName);
-
-        if (!$linked) {
-            $this->writeLog("❌ Liên kết thất bại cho User #{$targetUserId}", 'WARN', 'INCOMING', 'AUTH');
-            $this->telegram->sendTo($chatId, "❌ Liên kết thất bại. Vui lòng thử lại sau.");
-            return;
-        }
-
-        $freshUser = $this->userModel->findById($targetUserId) ?: $targetUser;
-        $this->writeLog("🔗 " . ($freshUser['username'] ?? 'User') . " đã liên kết tài khoản Web thành công", 'INFO', 'INCOMING', 'AUTH');
-        $now = TimeService::instance()->formatDisplay('now', 'H:i:s d/m/Y');
-        $this->telegram->sendTo(
-            $chatId,
-            "✅ <b>LIÊN KẾT THÀNH CÔNG</b>\n\n"
-            . "👤 Tài khoản: <b>" . htmlspecialchars((string) ($freshUser['username'] ?? '')) . "</b>\n"
-            . "💰 Số dư ví: <b>" . number_format((int) ($freshUser['money'] ?? 0)) . "đ</b>\n"
-            . "📅 Thời gian: <b>{$now}</b>"
-        );
-
-        $this->cmdMenu($chatId, $telegramId);
-    }
-
-    /** /unlink — Hủy liên kết Telegram (Step 1: Chọn nơi giữ tiền) */
-    private function cmdUnlink(string $chatId, int $telegramId): void
-    {
-        $link = $this->linkModel->findByTelegramId($telegramId);
-        if (!$link) {
-            $this->telegram->sendTo($chatId, "⚠️ Bạn chưa liên kết tài khoản nào.");
-            return;
-        }
-
-        $firstName = htmlspecialchars($link['first_name'] ?? $link['telegram_username'] ?? 'Người dùng');
-        $msg = "❓ <b>HỦY LIÊN KẾT TÀI KHOẢN</b>\n\n"
-            . "Sau khi hủy liên kết, bạn muốn <b>số dư ví hiện tại</b> sẽ nằm ở đâu?\n\n"
-            . "1. <b>🤖 {$firstName}</b>: Tiền sẽ được chuyển sang tài khoản Bot hiện tại.\n"
-            . "2. <b>🌐 Tài khoản WEB</b>: Tiền sẽ ở lại tài khoản Web hiện tại.\n\n"
-            . "⚠️ <i>Lưu ý: Hành động này không thể hoàn tác.</i>";
-
-        $markup = TelegramService::buildInlineKeyboard([
-            [
-                ['text' => '🤖 ' . $firstName, 'callback_data' => 'do_unlink_bot'],
-                ['text' => '🌐 Tài khoản WEB', 'callback_data' => 'do_unlink_web'],
-            ],
-            [['text' => '❌ Hủy bỏ', 'callback_data' => 'menu']]
-        ]);
-
-        $this->telegram->sendTo($chatId, $msg, ['reply_markup' => $markup]);
-    }
-
-    /** Step 2: Thực hiện hủy liên kết */
-    private function cbDoUnlink(string $chatId, int $telegramId, string $dest, int $messageId): void
-    {
-        $res = $this->accService->unlinkWithChoice($telegramId, $dest);
-
-        if ($res['success']) {
-            $this->writeLog("🔓 User {$telegramId} đã hủy liên kết tài khoản", 'INFO', 'INCOMING', 'AUTH');
-            $msg = "✅ <b>ĐÃ HỦY LIÊN KẾT</b>\n\n"
-                . ($dest === 'bot' ? "Tiền đã được chuyển vào tài khoản ví Bot của bạn." : "Tiền vẫn nằm tại tài khoản Web của bạn.")
-                . "\n\nBạn có thể liên kết lại bất cứ lúc nào.";
-            $this->telegram->editMessage($chatId, $messageId, $msg, TelegramService::buildInlineKeyboard([
-                [$this->backHomeButton()]
-            ]));
-        } else {
-            $this->telegram->sendTo($chatId, "❌ " . $res['message']);
-        }
-    }
 
     /** /help — Danh sách lệnh */
     private function cmdHelp(string $chatId, int $telegramId, int $messageId = 0): void
@@ -1130,7 +694,6 @@ class TelegramBotService
         $msg .= "🟡 /binance — Nạp tiền Binance Pay (USD)\n";
         $msg .= "📦 /orders  — Lịch sử đơn hàng\n";
         $msg .= "📋 /menu    — Mở menu nhanh\n";
-        $msg .= "🔗 /link    — Liên kết Web\n";
         $msg .= "❓ /help    — Trợ giúp\n";
 
         if ($isAdmin) {
@@ -1148,7 +711,6 @@ class TelegramBotService
         $msg .= $this->tgText($telegramId, 'help_binance') . "\n";
         $msg .= $this->tgText($telegramId, 'help_orders') . "\n";
         $msg .= $this->tgText($telegramId, 'help_menu') . "\n";
-        $msg .= $this->tgText($telegramId, 'help_link') . "\n";
         $msg .= $this->tgText($telegramId, 'help_help');
         if ($isAdmin) {
             $msg .= $this->tgText($telegramId, 'help_admin');
@@ -1186,7 +748,7 @@ class TelegramBotService
 
         $user = $this->userModel->findById($link['user_id']);
         if (!$user) {
-            $this->telegram->sendTo($chatId, "⚠️ Không tìm thấy tài khoản. Thử /link để liên kết lại.");
+            $this->telegram->sendTo($chatId, "⚠️ Lỗi: Không tìm thấy tài khoản hệ thống.");
             return null;
         }
 
@@ -1418,7 +980,7 @@ class TelegramBotService
             }
 
             if ($telegramId > 0) {
-                if ($this->isPurchaseInputMode($telegramId) || $this->isDepositInputMode($telegramId) || $this->getBinanceSession($telegramId)) {
+                if ($this->isPurchaseInputMode($telegramId)) {
                     return ['name' => 'input_flow', 'weight' => 2];
                 }
             }
@@ -1445,7 +1007,7 @@ class TelegramBotService
             return ['name' => 'binance_action', 'weight' => 2];
         if (in_array($data, ['wallet', 'orders', 'deposit', 'deposit_menu'], true))
             return ['name' => 'account_action', 'weight' => 2];
-        if (in_array($data, ['menu', 'back', 'help', 'link', 'unlink'], true) || str_starts_with($data, 'do_unlink_'))
+        if (in_array($data, ['menu', 'back', 'help'], true))
             return ['name' => 'menu_action', 'weight' => 1];
         return ['name' => 'callback', 'weight' => 1];
     }

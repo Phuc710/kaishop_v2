@@ -25,7 +25,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                     <div class="card-body">
                         <div class="alert bg-soft-info border-info-light mb-4">
                             <i class="fas fa-info-circle mr-2 text-info"></i>
-                            Thông báo sẽ được gửi tới <b>tất cả người dùng đã liên kết Telegram</b> với tài khoản
+                            Thông báo sẽ được gửi tới <b>tất cả người dùng có tài khoản Telegram</b> với hệ thống.
                             KaiShop.
                             Tin nhắn sẽ được đưa vào hàng đợi (Outbox) và gửi đi lần lượt.
                         </div>
@@ -72,7 +72,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
 
             Swal.fire({
                 title: 'Xác nhận gửi?',
-                text: "Bạn có chắc chắn muốn gửi thông báo này tới tất cả người dùng liên kết Telegram?",
+                text: "Bạn có chắc chắn muốn gửi thông báo này tới tất cả người dùng có Telegram?",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',

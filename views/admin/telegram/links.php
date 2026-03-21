@@ -1,14 +1,14 @@
 <?php
 /**
- * View: Telegram Bot - Link History
- * Route: GET /admin/telegram/links
+ * View: Telegram Bot - Users
+ * Route: GET /admin/telegram/links // Keeping route 'links' for compatibility for now
  */
-$pageTitle = 'Lịch sử liên kết Telegram';
+$pageTitle = 'Người dùng Telegram';
 require_once __DIR__ . '/../layout/head.php';
 
 $breadcrumbs = [
     ['label' => 'Telegram Bot', 'url' => url('admin/telegram/settings')],
-    ['label' => 'Lịch sử liên kết'],
+    ['label' => 'Người dùng'],
 ];
 require_once __DIR__ . '/../layout/breadcrumb.php';
 
@@ -40,7 +40,7 @@ $filteredCount = (int) ($stats['filtered_count'] ?? count($links ?? []));
             <div class="col-md-6 col-xl-3 mb-3">
                 <div class="card custom-card shadow-sm border-0 h-100 border-left-success">
                     <div class="card-body">
-                        <div class="small text-muted text-uppercase font-weight-bold">Đã liên kết</div>
+                        <div class="small text-muted text-uppercase font-weight-bold">Có Telegram</div>
                         <div class="h3 mb-0 font-weight-bold text-success" id="statTotalLinked">
                             <?= number_format($totalLinked) ?>
                         </div>
@@ -50,7 +50,7 @@ $filteredCount = (int) ($stats['filtered_count'] ?? count($links ?? []));
             <div class="col-md-6 col-xl-3 mb-3">
                 <div class="card custom-card shadow-sm border-0 h-100 border-left-secondary">
                     <div class="card-body">
-                        <div class="small text-muted text-uppercase font-weight-bold">Chưa liên kết</div>
+                        <div class="small text-muted text-uppercase font-weight-bold">Chưa có TG</div>
                         <div class="h3 mb-0 font-weight-bold text-secondary" id="statTotalUnlinked">
                             <?= number_format($totalUnlinked) ?>
                         </div>
@@ -71,7 +71,7 @@ $filteredCount = (int) ($stats['filtered_count'] ?? count($links ?? []));
 
         <div class="card custom-card">
             <div class="card-header border-0 pb-0">
-                <h3 class="card-title text-uppercase font-weight-bold">LỊCH SỬ LIÊN KẾT TELEGRAM</h3>
+                <h3 class="card-title text-uppercase font-weight-bold">NGƯỜI DÙNG TELEGRAM</h3>
             </div>
 
             <div class="dt-filters">
@@ -85,9 +85,9 @@ $filteredCount = (int) ($stats['filtered_count'] ?? count($links ?? []));
                         <div class="col-md-3 mb-2">
                             <select id="f-unlink" class="form-control form-control-sm">
                                 <option value="all" <?= $unlinkFilter === 'all' ? 'selected' : '' ?>>Tất cả</option>
-                                <option value="unlink" <?= $unlinkFilter === 'unlink' ? 'selected' : '' ?>>Hủy liên kết
+                                <option value="unlink" <?= $unlinkFilter === 'unlink' ? 'selected' : '' ?>>Chưa có TG
                                 </option>
-                                <option value="link" <?= $unlinkFilter === 'link' ? 'selected' : '' ?>>Đã liên kết</option>
+                                <option value="link" <?= $unlinkFilter === 'link' ? 'selected' : '' ?>>Có Telegram</option>
                             </select>
                         </div>
                         <div class="col-md-2 mb-2 text-center">
@@ -134,7 +134,7 @@ $filteredCount = (int) ($stats['filtered_count'] ?? count($links ?? []));
                                 <th class="text-center">Telegram ID</th>
                                 <th>@Username TG</th>
                                 <th class="text-center">Trạng thái</th>
-                                <th class="text-center">Ngày liên kết</th>
+                                <th class="text-center">Ngày tạo</th>
                                 <th class="text-center">Hoạt động cuối</th>
                                 <th class="text-right pr-4">Thao tác</th>
                             </tr>
@@ -170,9 +170,9 @@ $filteredCount = (int) ($stats['filtered_count'] ?? count($links ?? []));
                                         </td>
                                         <td class="text-center">
                                             <?php if ($hasLink): ?>
-                                                <span class="badge badge-success">Link</span>
+                                                <span class="badge badge-success">Có TG</span>
                                             <?php else: ?>
-                                                <span class="badge badge-secondary">Unlink</span>
+                                                <span class="badge badge-secondary">Web</span>
                                             <?php endif; ?>
                                         </td>
                                         <td class="text-center small text-muted">
@@ -188,15 +188,7 @@ $filteredCount = (int) ($stats['filtered_count'] ?? count($links ?? []));
                                             <?php endif; ?>
                                         </td>
                                         <td class="text-right pr-4">
-                                            <?php if ($hasLink): ?>
-                                                <button type="button" class="btn btn-outline-danger btn-sm px-3 btn-unlink-user"
-                                                    data-user-id="<?= (int) ($row['user_id'] ?? 0) ?>"
-                                                    data-username="<?= htmlspecialchars((string) ($row['web_username'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
-                                                    <i class="fas fa-unlink mr-1"></i> Hủy liên kết
-                                                </button>
-                                            <?php else: ?>
-                                                <span class="text-muted small">Không áp dụng</span>
-                                            <?php endif; ?>
+                                            <span class="text-muted small">Không áp dụng</span>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -312,12 +304,10 @@ $filteredCount = (int) ($stats['filtered_count'] ?? count($links ?? []));
                     : '<span class="text-muted small">—</span>';
 
                 const statusHtml = hasLink
-                    ? '<span class="badge badge-success">Link</span>'
-                    : '<span class="badge badge-secondary">Unlink</span>';
+                    ? '<span class="badge badge-success">Có TG</span>'
+                    : '<span class="badge badge-secondary">Web</span>';
 
-                const actionHtml = hasLink
-                    ? '<button type="button" class="btn btn-outline-danger btn-sm px-3 btn-unlink-user" data-user-id="' + userId + '" data-username="' + escapeHtml(row.web_username || '') + '"><i class="fas fa-unlink mr-1"></i> Hủy liên kết</button>'
-                    : '<span class="text-muted small">Không áp dụng</span>';
+                const actionHtml = '<span class="text-muted small">Không áp dụng</span>';
 
                 return '' +
                     '<tr>' +
@@ -368,63 +358,7 @@ $filteredCount = (int) ($stats['filtered_count'] ?? count($links ?? []));
             }
         }
 
-        document.addEventListener('click', async (e) => {
-            const btn = e.target.closest('.btn-unlink-user');
-            if (!btn) return;
-            const userId = Number(btn.getAttribute('data-user-id') || '0');
-            const username = String(btn.getAttribute('data-username') || '');
-            if (!userId) return;
-            await unlinkUser(userId, username);
-        });
-
-        if (qEl) {
-            qEl.addEventListener('input', () => {
-                if (searchTimer) clearTimeout(searchTimer);
-                searchTimer = setTimeout(() => fetchLinks(), 350);
-            });
-        }
-        if (unlinkEl) unlinkEl.addEventListener('change', () => fetchLinks());
-        if (limitEl) limitEl.addEventListener('change', () => fetchLinks());
-        if (periodEl) periodEl.addEventListener('change', () => fetchLinks());
-        if (clearBtn) {
-            clearBtn.addEventListener('click', () => {
-                if (qEl) qEl.value = '';
-                if (unlinkEl) unlinkEl.value = 'all';
-                if (limitEl) limitEl.value = '10';
-                if (periodEl) periodEl.value = 'all';
-                fetchLinks();
-            });
-        }
-
-        window.unlinkUser = async function (userId, username) {
-            const target = username ? ('"' + username + '"') : ('#' + userId);
-            SwalHelper.confirm(
-                'Xác nhận Hủy liên kết?',
-                'Tài khoản ' + target + ' sẽ bị hủy liên kết Telegram.',
-                async () => {
-                    try {
-                        const body = new URLSearchParams({ user_id: String(userId) });
-                        const res = await fetch('<?= url('admin/telegram/links/unlink') ?>', {
-                            method: 'POST',
-                            credentials: 'same-origin',
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                                'Accept': 'application/json'
-                            },
-                            body
-                        });
-
-                        const data = await res.json();
-                        SwalHelper.toast(data.message || 'Không thể xử lý yêu cầu', data.success ? 'success' : 'error');
-                        if (data.success) fetchLinks(false);
-                    } catch (err) {
-                        SwalHelper.toast('Lỗi kết nối máy chủ', 'error');
-                    }
-                }
-            );
-        };
-    })();
+    // Unlink user function explicitly removed
 </script>
 
 <?php require_once __DIR__ . '/../layout/foot.php'; ?>

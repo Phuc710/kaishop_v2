@@ -10,7 +10,6 @@ class ProfileController extends Controller
     private AuthService $authService;
     private UserValidator $validator;
     private DepositService $depositService;
-    private TelegramAccountService $accService;
 
     public function __construct()
     {
@@ -18,7 +17,6 @@ class ProfileController extends Controller
         $this->authService = new AuthService();
         $this->validator = new UserValidator();
         $this->depositService = new DepositService();
-        $this->accService = new TelegramAccountService();
     }
 
     /**
@@ -46,9 +44,6 @@ class ProfileController extends Controller
         $depositMethodCode = (string) ($depositPanel['active_method'] ?? DepositService::METHOD_BANK_SEPAY);
         $depositRouteMethod = $depositMethodCode === DepositService::METHOD_BANK_SEPAY ? 'bank' : $depositMethodCode;
 
-        $otpModel = new TelegramLinkCode();
-        $activeOtp = $otpModel->getActiveCode($user['id']);
-
         $this->view('profile/index', [
             'user' => $user,
             'username' => $user['username'],
@@ -59,7 +54,6 @@ class ProfileController extends Controller
             'profileSection' => $profileSection,
             'depositPanel' => $depositPanel,
             'depositRouteMethod' => $depositRouteMethod,
-            'activeTgOtp' => $activeOtp,
         ]);
     }
 
@@ -116,67 +110,5 @@ class ProfileController extends Controller
             'success' => false,
             'message' => 'Có lỗi xảy ra, vui lòng thử lại'
         ], 500);
-    }
-
-    /**
-     * Generate Telegram Link OTP (AJAX)
-     */
-    public function generateTelegramLink()
-    {
-        if (!$this->authService->isLoggedIn()) {
-            return $this->json(['success' => false, 'message' => 'Bạn chưa đăng nhập'], 401);
-        }
-
-        $userId = (int) $this->authService->getUserId();
-        if ($userId <= 0) {
-            return $this->json(['success' => false, 'message' => 'Phiên đăng nhập không hợp lệ, vui lòng đăng nhập lại.'], 401);
-        }
-        $otpModel = new TelegramLinkCode();
-        $code = $otpModel->createCode($userId);
-
-        // Fetch the actual expiry time just saved
-        $activeOtp = $otpModel->getActiveCode($userId);
-
-        return $this->json([
-            'success' => true,
-            'message' => 'Đã tạo mã liên kết',
-            'code' => $code,
-            'bot_username' => get_setting('telegram_bot_user', 'KaiShopBot'),
-            'expires_at' => $activeOtp['expires_at'] ?? null,
-            'expires_at_ts' => isset($activeOtp['expires_at_ts']) ? (int) $activeOtp['expires_at_ts'] : null,
-            'expires_in_minutes' => 5
-        ]);
-    }
-
-    /**
-     * Unlink Telegram account (AJAX)
-     */
-    public function unlinkTelegram()
-    {
-        if (!$this->authService->isLoggedIn()) {
-            return $this->json(['success' => false, 'message' => 'Bạn chưa đăng nhập'], 401);
-        }
-
-        $userId = (int) $this->authService->getUserId();
-
-        // Find the telegram link for this user
-        $linkModel = new UserTelegramLink();
-        $link = $linkModel->findByUserId($userId);
-        if (!$link) {
-            return $this->json(['success' => false, 'message' => 'Tài khoản của bạn chưa liên kết Telegram nào.']);
-        }
-
-        $dest = trim((string) $this->post('destination', 'web')); // 'web' or 'bot'
-        if (!in_array($dest, ['web', 'bot'], true)) {
-            $dest = 'web';
-        }
-
-        $res = $this->accService->unlinkWithChoice((int) $link['telegram_id'], $dest);
-
-        if ($res['success']) {
-            return $this->json(['success' => true, 'message' => $res['message']]);
-        }
-
-        return $this->json(['success' => false, 'message' => $res['message']]);
     }
 }

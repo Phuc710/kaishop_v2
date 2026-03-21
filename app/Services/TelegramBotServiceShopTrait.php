@@ -544,7 +544,7 @@ trait TelegramBotServiceShopTrait
             }
         }
 
-        $balance = $total;
+
 
         $unitPrice = $price;
         $confirmAction = "do_buy_" . $prodId . "_" . $qty;
@@ -585,24 +585,9 @@ trait TelegramBotServiceShopTrait
             $rows[] = [['text' => '🏷️ Nhập mã giảm giá', 'callback_data' => 'buy_gift_' . $prodId . '_' . $qty]];
         }
 
-        if ($balance < $total) {
-            $shortfall = (int) ceil($total - $balance);
-            $depositAmount = max(DepositService::MIN_AMOUNT, $shortfall);
-            $msg .= "\n⚠️ Còn thiếu: <b>" . number_format($shortfall) . "đ</b>";
-            if ($depositAmount > $shortfall) {
-                $msg .= "\n📌 Mức nạp tối thiểu hiện tại: <b>" . number_format(DepositService::MIN_AMOUNT) . "đ</b>";
-            }
 
-            $rows[] = [
-                ['text' => '💳 Nạp thêm ' . number_format($shortfall) . 'đ', 'callback_data' => 'deposit_' . $depositAmount],
-                ['text' => '◀️ Quay lại sửa', 'callback_data' => 'prod_' . $prodId],
-            ];
 
-            $this->telegram->editOrSend($chatId, $messageId, $msg, TelegramService::buildInlineKeyboard($rows));
-            return;
-        }
-
-        $msg .= "\n✅ Bấm xác nhận để thanh toán bằng số dư ví.";
+        $msg .= "\n✅ Bấm xác nhận để đặt hàng và nhận thông tin thanh toán.";
         $rows[] = [
             ['text' => '◀️ Quay lại sửa', 'callback_data' => 'prod_' . $prodId],
             ['text' => '✅ XÁC NHẬN MUA', 'callback_data' => $confirmAction],
@@ -686,39 +671,11 @@ trait TelegramBotServiceShopTrait
             return;
         }
 
-        $siteConfig = Config::getSiteConfig();
-        $rows = [];
-        $methodRow = [];
-
-        $bankReady = ((int) ($siteConfig['bank_pay_enabled'] ?? 1) === 1)
-            && trim((string) ($siteConfig['bank_account'] ?? '')) !== ''
-            && trim((string) ($siteConfig['bank_owner'] ?? '')) !== '';
-        if ($bankReady) {
-            $methodRow[] = ['text' => '🏦 Bank', 'callback_data' => 'order_pay_bank_' . $orderId];
+        if ($this->isTelegramEnglish($telegramId)) {
+            $this->cbOrderPayBinance($chatId, $telegramId, $orderId, $messageId);
+        } else {
+            $this->cbOrderPayBank($chatId, $telegramId, $orderId, $messageId);
         }
-
-        if ($this->isTelegramBinanceAvailable($siteConfig)) {
-            $methodRow[] = ['text' => '🟡 Binance', 'callback_data' => 'order_pay_binance_' . $orderId];
-        }
-
-        if ($methodRow !== []) {
-            $rows[] = $methodRow;
-        }
-        $rows[] = [
-            ['text' => '❌ Hủy đơn', 'callback_data' => 'order_cancel_' . $orderId],
-            ['text' => '🏠 Menu', 'callback_data' => 'menu'],
-        ];
-
-        $msg = "💳 <b>CHỌN PHƯƠNG THỨC THANH TOÁN</b>\n\n";
-        $msg .= $this->buildTelegramPendingOrderSummary($order);
-
-        $msg .= "\n💳 Bot sẽ tạo đơn chờ thanh toán để bạn chọn Bank hoặc Binance.";
-        if (!empty($rows)) {
-            $rows[count($rows) - 1][1]['text'] = '💳 Chọn thanh toán';
-        }
-        $rows[count($rows) - 1][1]['text'] = '💳 Chọn thanh toán';
-        $msg .= "\n💳 Bot sẽ tạo đơn chờ thanh toán để bạn chọn Bank hoặc Binance.";
-        $this->telegram->editOrSend($chatId, $messageId, $msg, TelegramService::buildInlineKeyboard($rows));
     }
 
     /**
