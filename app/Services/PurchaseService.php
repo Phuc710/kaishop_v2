@@ -129,8 +129,7 @@ class PurchaseService
                     $subtotalPrice
                 );
                 $discountPercent = max(0, min(100, (int) ($giftcodeMeta['giamgia'] ?? 0)));
-                // Chỉ giảm giá trên 1 sản phẩm duy nhất để tránh lạm dụng (User request)
-                $discountAmount = (int) floor(($price * $discountPercent) / 100);
+                $discountAmount = (int) floor(($subtotalPrice * $discountPercent) / 100);
                 if ($discountAmount > $subtotalPrice) {
                     $discountAmount = $subtotalPrice;
                 }
@@ -149,6 +148,10 @@ class PurchaseService
                 'product_id',
                 'product_name',
                 'price',
+                'subtotal_price',
+                'discount_amount',
+                'giftcode_code',
+                'giftcode_percent',
                 'status',
                 'payment_method',
                 'source',
@@ -166,6 +169,10 @@ class PurchaseService
                 $productId,
                 (string) ($product['name'] ?? ('Product #' . $productId)),
                 $totalPrice,
+                $subtotalPrice,
+                $discountAmount,
+                $giftcodeMeta ? $giftcodeInput : null,
+                $giftcodeMeta ? (int) ($giftcodeMeta['giamgia'] ?? 0) : 0,
                 $orderStatus,
                 'wallet',
                 $sourceName,
@@ -1268,8 +1275,7 @@ class PurchaseService
             if ($giftcodeInput !== '') {
                 $giftcodeMeta = $this->validateGiftCodeGeneric($giftcodeInput, $productId, $subtotalPrice, false);
                 $discountPercent = max(0, min(100, (int) ($giftcodeMeta['giamgia'] ?? 0)));
-                // Chỉ giảm giá trên 1 sản phẩm duy nhất để tránh lạm dụng (User request)
-                $discountAmount = (int) floor(($price * $discountPercent) / 100);
+                $discountAmount = (int) floor(($subtotalPrice * $discountPercent) / 100);
                 if ($discountAmount > $subtotalPrice) {
                     $discountAmount = $subtotalPrice;
                 }

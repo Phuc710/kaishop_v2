@@ -220,8 +220,26 @@ if (!headers_sent()) {
 }
 
 // CSRF token helpers (shared across legacy + MVC views)
+$csrfCookieName = 'ks_csrf';
+$csrfCookieToken = trim((string) ($_COOKIE[$csrfCookieName] ?? ''));
+$csrfCookieSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443);
+if ($csrfCookieToken === '' || !preg_match('/^[a-f0-9]{64}$/', $csrfCookieToken)) {
+    $csrfCookieToken = bin2hex(random_bytes(32));
+    $_COOKIE[$csrfCookieName] = $csrfCookieToken;
+    setcookie($csrfCookieName, $csrfCookieToken, [
+        'expires' => time() + 31536000,
+        'path' => '/',
+        'domain' => '',
+        'secure' => $csrfCookieSecure,
+        'httponly' => false,
+        'samesite' => 'Lax',
+    ]);
+}
+$GLOBALS['__ks_csrf_token'] = $csrfCookieToken;
+
 if (empty($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token']) || strlen($_SESSION['csrf_token']) < 32) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    $_SESSION['csrf_token'] = $csrfCookieToken;
 }
 if (empty($_SESSION['csrf_token_created_at'])) {
     $_SESSION['csrf_token_created_at'] = class_exists('TimeService') ? TimeService::instance()->nowTs() : time();
@@ -230,7 +248,7 @@ if (empty($_SESSION['csrf_token_created_at'])) {
 if (!function_exists('csrf_token')) {
     function csrf_token(): string
     {
-        return (string) ($_SESSION['csrf_token'] ?? '');
+        return (string) ($GLOBALS['__ks_csrf_token'] ?? $_COOKIE['ks_csrf'] ?? $_SESSION['csrf_token'] ?? '');
     }
 }
 
@@ -244,9 +262,22 @@ if (!function_exists('csrf_field')) {
 if (!function_exists('csrf_regenerate')) {
     function csrf_regenerate(): string
     {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        $token = bin2hex(random_bytes(32));
+        $GLOBALS['__ks_csrf_token'] = $token;
+        $_COOKIE['ks_csrf'] = $token;
+        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443);
+        setcookie('ks_csrf', $token, [
+            'expires' => time() + 31536000,
+            'path' => '/',
+            'domain' => '',
+            'secure' => $isHttps,
+            'httponly' => false,
+            'samesite' => 'Lax',
+        ]);
+        $_SESSION['csrf_token'] = $token;
         $_SESSION['csrf_token_created_at'] = class_exists('TimeService') ? TimeService::instance()->nowTs() : time();
-        return (string) $_SESSION['csrf_token'];
+        return $token;
     }
 }
 
@@ -254,7 +285,8 @@ if (!function_exists('csrf_validate_request')) {
     function csrf_validate_request(): bool
     {
         $sessionToken = (string) ($_SESSION['csrf_token'] ?? '');
-        if ($sessionToken === '') {
+        $cookieToken = (string) ($GLOBALS['__ks_csrf_token'] ?? $_COOKIE['ks_csrf'] ?? '');
+        if ($sessionToken === '' && $cookieToken === '') {
             return false;
         }
 
@@ -265,7 +297,15 @@ if (!function_exists('csrf_validate_request')) {
             $provided = (string) $_POST['csrf_token'];
         }
 
-        return $provided !== '' && hash_equals($sessionToken, $provided);
+        if ($provided === '') {
+            return false;
+        }
+
+        if ($cookieToken !== '' && hash_equals($cookieToken, $provided)) {
+            return true;
+        }
+
+        return $sessionToken !== '' && hash_equals($sessionToken, $provided);
     }
 }
 

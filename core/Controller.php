@@ -117,56 +117,6 @@ class Controller
     }
 
     /**
-     * Allow trusted same-origin browser requests as a fallback when CSRF token
-     * is missing or stale, while still rejecting cross-site posts.
-     */
-    protected function isSameOriginRequest(): bool
-    {
-        $host = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
-        if ($host === '') {
-            return false;
-        }
-
-        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-            || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443);
-        $currentOrigin = ($isHttps ? 'https://' : 'http://') . $host;
-        $current = parse_url($currentOrigin);
-        if (!is_array($current)) {
-            return false;
-        }
-
-        foreach (['HTTP_ORIGIN', 'HTTP_REFERER'] as $headerName) {
-            $value = trim((string) ($_SERVER[$headerName] ?? ''));
-            if ($value === '') {
-                continue;
-            }
-
-            $parts = parse_url($value);
-            if (!is_array($parts) || empty($parts['host'])) {
-                continue;
-            }
-
-            $requestScheme = strtolower((string) ($parts['scheme'] ?? ($current['scheme'] ?? 'http')));
-            $currentScheme = strtolower((string) ($current['scheme'] ?? 'http'));
-            $requestHost = strtolower((string) ($parts['host'] ?? ''));
-            $currentHost = strtolower((string) ($current['host'] ?? ''));
-            $requestPort = (int) ($parts['port'] ?? ($requestScheme === 'https' ? 443 : 80));
-            $currentPort = (int) ($current['port'] ?? ($currentScheme === 'https' ? 443 : 80));
-
-            if ($requestScheme === $currentScheme && $requestHost === $currentHost && $requestPort === $currentPort) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    protected function validateCsrfOrSameOrigin(): bool
-    {
-        return $this->validateCsrf() || $this->isSameOriginRequest();
-    }
-
-    /**
      * Check if request is AJAX
      * @return bool
      */

@@ -831,9 +831,25 @@ if ($rawDescHtml !== '') {
                         <?php endif; ?>
 
                         <div class="pd-summary mb-3">
+                            <div class="pd-summary-row">
+                                <div class="pd-note">Giá đơn vị</div>
+                                <div id="sumUnitPrice"><?= number_format($priceVnd) ?>đ</div>
+                            </div>
+                            <div class="pd-summary-row">
+                                <div class="pd-note">Số lượng</div>
+                                <div id="sumQty"><?= $purchaseMinQty ?></div>
+                            </div>
+                            <div class="pd-summary-row">
+                                <div class="pd-note">Tạm tính</div>
+                                <div id="sumSubtotal"><?= number_format($priceVnd * $purchaseMinQty) ?>đ</div>
+                            </div>
+                            <div class="pd-summary-row discount" id="sumDiscountRow" style="display: none;">
+                                <div class="pd-note">Giảm giá</div>
+                                <div id="sumDiscount">0đ</div>
+                            </div>
                             <div class="pd-summary-row total">
-                                <span>Tổng tiền: </span>
-                            <strong id="sumTotal" data-price-vnd="<?= $priceVnd * $purchaseMinQty ?>"><?= number_format($priceVnd * $purchaseMinQty) ?>đ</strong>
+                                <span>Tổng thanh toán: </span>
+                                <strong id="sumTotal" data-price-vnd="<?= $priceVnd * $purchaseMinQty ?>"><?= number_format($priceVnd * $purchaseMinQty) ?>đ</strong>
                             </div>
                         </div>
 
@@ -1104,12 +1120,21 @@ if ($rawDescHtml !== '') {
             const subtotalEl = document.getElementById('sumSubtotal');
             const totalEl = document.getElementById('sumTotal');
             const discountEl = document.getElementById('sumDiscount');
+            const discountRow = document.getElementById('sumDiscountRow');
 
             if (unitEl) unitEl.textContent = fmtMoney(PRODUCT_DETAIL.price);
             if (qtyEl) qtyEl.textContent = String(qty);
             if (subtotalEl) subtotalEl.textContent = fmtMoney(subtotal);
-            if (discountEl) discountEl.textContent = fmtMoney(discount);
             if (totalEl) totalEl.textContent = fmtMoney(total);
+
+            if (discountRow) {
+                if (discount > 0) {
+                    discountRow.style.display = 'flex';
+                    if (discountEl) discountEl.textContent = '-' + fmtMoney(discount);
+                } else {
+                    discountRow.style.display = 'none';
+                }
+            }
         }
 
         function applyGiftcode() {
