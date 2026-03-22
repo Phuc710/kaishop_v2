@@ -34,6 +34,7 @@ class DepositService
         $bankAccount = (string) ($siteConfig['bank_account'] ?? '');
         $bankOwner = (string) ($siteConfig['bank_owner'] ?? '');
         $bonusTiers = $this->getBonusTiers($siteConfig);
+        $binanceBonusTiers = $this->getBinanceBonusTiers($siteConfig);
         $ttlSeconds = $this->pendingDepositModel->getPendingTtlSeconds();
 
         $methods = $this->getAvailableMethods($siteConfig);
@@ -93,6 +94,7 @@ class DepositService
             'bankShortName' => $this->resolveQrBankName($bankName),
             'binanceRateVnd' => max(1, (int) ($siteConfig['binance_rate_vnd'] ?? 25000)),
             'bonusTiers' => $bonusTiers,
+            'binanceBonusTiers' => $binanceBonusTiers,
             'activeDeposit' => $activeDeposit,
             'activeDepositPayload' => $activeDepositPayload,
             'ttlSeconds' => $ttlSeconds,
@@ -200,8 +202,8 @@ class DepositService
             return ['success' => false, 'message' => 'Converted value is below minimum wallet deposit'];
         }
 
-        $bonusTiers = $this->getBonusTiers($siteConfig);
-        $bonusPercent = ($sourceChannel === SourceChannelHelper::BOTTELE) ? 0 : $this->resolveBonusPercent($baseVnd, $bonusTiers);
+        $binanceBonusTiers = $this->getBinanceBonusTiers($siteConfig);
+        $bonusPercent = ($sourceChannel === SourceChannelHelper::BOTTELE) ? 0 : $this->resolveBinanceBonusPercent($usdAmount, $binanceBonusTiers);
 
         $result = $this->pendingDepositModel->createBinanceDeposit(
             (int) ($user['id'] ?? 0),
@@ -335,6 +337,39 @@ class DepositService
         }
 
         return array_values($dedup);
+    }
+
+    /**
+     * @param array<string,mixed> $siteConfig
+     * @return array<int,array{amount:float,percent:int}>
+     */
+    public function getBinanceBonusTiers(array $siteConfig): array
+    {
+        $tiers = [];
+        for ($i = 1; $i <= 3; $i++) {
+            $amt = (float) ($siteConfig["binance_bonus_{$i}_amount"] ?? 0);
+            $pct = (int) ($siteConfig["binance_bonus_{$i}_percent"] ?? 0);
+            if ($amt > 0) {
+                $tiers[] = ['amount' => $amt, 'percent' => $pct];
+            }
+        }
+        usort($tiers, static fn($a, $b) => ((float) $a['amount']) <=> ((float) $b['amount']));
+        return $tiers;
+    }
+
+    /**
+     * @param float $usdAmount
+     * @param array<int,array{amount:float,percent:int}> $tiers
+     */
+    public function resolveBinanceBonusPercent(float $usdAmount, array $tiers): int
+    {
+        usort($tiers, static fn($a, $b) => ((float) $b['amount']) <=> ((float) $a['amount']));
+        foreach ($tiers as $tier) {
+            if ((float) $tier['amount'] > 0 && $usdAmount >= (float) $tier['amount']) {
+                return max(0, (int) $tier['percent']);
+            }
+        }
+        return 0;
     }
 
     /**

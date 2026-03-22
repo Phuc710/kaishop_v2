@@ -2,13 +2,15 @@
 $binanceRateVnd = max(1, (int) ($depositPanel['binanceRateVnd'] ?? 25000));
 $isBinanceEnabled = ((int) ($chungapi['binance_pay_enabled'] ?? 0) === 1);
 
-// Hardcoded $1.00 standard + 3 tiers from DB
+// Hardcoded $1.00 standard + 3 tiers from panel data
 $quickButtons = [['usd' => 1.0, 'percent' => 0]];
-for ($i = 1; $i <= 3; $i++) {
-    $amt = (float) ($chungapi["binance_bonus_{$i}_amount"] ?? 0);
-    $pct = (int) ($chungapi["binance_bonus_{$i}_percent"] ?? 0);
-    if ($amt > 0) {
-        $quickButtons[] = ['usd' => $amt, 'percent' => $pct];
+$panelTiers = $depositPanel['binanceBonusTiers'] ?? [];
+foreach ($panelTiers as $tier) {
+    if ((float) ($tier['amount'] ?? 0) > 0) {
+        $quickButtons[] = [
+            'usd' => (float) $tier['amount'],
+            'percent' => (int) ($tier['percent'] ?? 0)
+        ];
     }
 }
 ?>

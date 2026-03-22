@@ -460,6 +460,11 @@ class TelegramBotService
             $this->telegram->answerCallbackQuery($callbackId);
             return;
         }
+        if ($data === 'link_binance_uid_order') {
+            $this->cbLinkBinanceUid($chatId, $telegramId, $messageId, 'order_payment', 0);
+            $this->telegram->answerCallbackQuery($callbackId);
+            return;
+        }
         if (preg_match('/^cat_refresh_(\d+)$/', $data, $m)) {
             $this->telegram->answerCallbackQuery($callbackId, $this->tgChoice($telegramId, '✅ Đã cập nhật.', '✅ Updated.'), false);
             $this->cbCategory($chatId, $telegramId, (int) $m[1], $messageId);

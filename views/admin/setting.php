@@ -535,6 +535,53 @@ require_once __DIR__ . '/layout/breadcrumb.php';
                     </div>
                 </form>
 
+                <form id="form-binance-bonus" method="post" action="<?= url('admin/setting/update') ?>">
+                    <div class="card custom-card mt-3">
+                        <div class="card-header border-0">
+                            <h3 class="card-title text-uppercase font-weight-bold">
+                                <i class="fas fa-gift mr-1"></i> KHUYẾN MÃI NẠP BINANCE (USD)
+                            </h3>
+                        </div>
+                        <div class="card-body pt-0">
+                            <div class="row">
+                                <?php for ($i = 1; $i <= 3; $i++): ?>
+                                    <div class="col-6">
+                                        <div class="form-group mb-2">
+                                            <label class="small text-muted font-weight-bold">Mốc <?= $i ?> (Số USD)</label>
+                                            <div class="input-group input-group-sm">
+                                                <div class="input-group-prepend"><span class="input-group-text">$</span>
+                                                </div>
+                                                <input type="number" step="0.01" name="binance_bonus_<?= $i ?>_amount"
+                                                    class="form-control"
+                                                    value="<?= htmlspecialchars((string) ($chungapi["binance_bonus_{$i}_amount"] ?? '')) ?>">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="form-group mb-2">
+                                            <label class="small text-muted font-weight-bold">Khuyến mãi %</label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" name="binance_bonus_<?= $i ?>_percent"
+                                                    class="form-control"
+                                                    value="<?= htmlspecialchars((string) ($chungapi["binance_bonus_{$i}_percent"] ?? '0')) ?>">
+                                                <div class="input-group-append"><span class="input-group-text">%</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endfor; ?>
+                            </div>
+                            <small class="text-muted">Áp dụng cho nạp qua Web. Mốc $1.00 mặc định 0%.</small>
+                        </div>
+                        <div class="card-footer bg-transparent border-0 text-right">
+                            <button type="submit" class="btn btn-primary shadow-sm px-4 font-weight-bold"
+                                style="border-radius: 8px;">
+                                <i class="fas fa-save mr-1"></i> LƯU BINANCE BONUS
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
                 <form id="form-binance" method="post" action="<?= url('admin/setting/update') ?>">
                     <div class="card custom-card mt-3">
                         <div class="card-header border-0 d-flex justify-content-between align-items-center">
@@ -596,44 +643,16 @@ require_once __DIR__ . '/layout/breadcrumb.php';
                                 <input type="text" name="binance_owner" class="form-control"
                                     value="<?= htmlspecialchars((string) ($chungapi['binance_owner'] ?? '')) ?>"
                                     placeholder="Ví dụ: KaiHub hoặc tên chủ tài khoản Binance">
-                                <small class="text-muted">Tên này sẽ hiển thị trong bot để user biết đang chuyển cho ai.</small>
-                            </div>
-
-                            <div class="form-group border-top pt-3 mt-3">
-                                <label class="font-weight-bold text-muted small text-uppercase">CẤU HÌNH BONUS TIER (WEB ONLY)</label>
-                                <div class="row">
-                                    <?php for ($i = 1; $i <= 3; $i++): ?>
-                                        <div class="col-6">
-                                            <div class="form-group mb-2">
-                                                <label class="small text-muted font-weight-bold">Mốc <?= $i ?> (Số USD)</label>
-                                                <div class="input-group input-group-sm">
-                                                    <div class="input-group-prepend"><span class="input-group-text">$</span></div>
-                                                    <input type="number" step="0.01" name="binance_bonus_<?= $i ?>_amount"
-                                                        class="form-control"
-                                                        value="<?= htmlspecialchars((string) ($chungapi["binance_bonus_{$i}_amount"] ?? '')) ?>">
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="form-group mb-2">
-                                                <label class="small text-muted font-weight-bold">Khuyến mãi %</label>
-                                                <div class="input-group input-group-sm">
-                                                    <input type="number" name="binance_bonus_<?= $i ?>_percent" class="form-control"
-                                                        value="<?= htmlspecialchars((string) ($chungapi["binance_bonus_{$i}_percent"] ?? '0')) ?>">
-                                                    <div class="input-group-append"><span class="input-group-text">%</span></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    <?php endfor; ?>
-                                </div>
-                                <small class="text-muted">Các mốc này sẽ hiển thị thành nút chọn nhanh trên trang nạp Binance (Web). Mốc $1.00 luôn được mặc định (0% bonus).</small>
+                                <small class="text-muted">Tên này sẽ hiển thị trong bot để user biết đang chuyển cho
+                                    ai.</small>
                             </div>
 
                             <div class="form-group">
                                 <label class="font-weight-bold small text-uppercase">Ghi chú nạp tiền (Binance)</label>
                                 <textarea name="deposit_warning_binance" class="form-control" rows="3"
                                     placeholder="Cảnh báo hiển thị khi người dùng nạp tiền qua Binance..."><?= htmlspecialchars((string) ($chungapi['deposit_warning_binance'] ?? '')) ?></textarea>
-                                <small class="text-muted">Sử dụng <code>{amount}</code>, <code>{uid}</code> và <code>{owner}</code> để hiển
+                                <small class="text-muted">Sử dụng <code>{amount}</code>, <code>{uid}</code> và
+                                    <code>{owner}</code> để hiển
                                     thị động số tiền, UID nhận và tên owner.</small>
                             </div>
 
@@ -829,6 +848,7 @@ require_once __DIR__ . '/layout/breadcrumb.php';
 
         handleFormSubmit('form-bank', 'update_bank');
         handleFormSubmit('form-bonus', 'update_bonus');
+        handleFormSubmit('form-binance-bonus', 'update_binance');
         handleFormSubmit('form-binance', 'update_binance');
         handleFormSubmit('form-maintenance', 'update_maintenance', () => setTimeout(() => location.reload(), 700));
 
