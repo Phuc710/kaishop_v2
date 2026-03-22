@@ -108,6 +108,10 @@ class Controller
      */
     protected function validateCsrf()
     {
+        if (function_exists('csrf_validate_request')) {
+            return csrf_validate_request();
+        }
+
         $token = $this->post('csrf_token');
         return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
     }

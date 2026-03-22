@@ -179,6 +179,21 @@ class TelegramBotService
         'Đơn hàng chưa đạt mức tối thiểu để dùng mã giảm giá.' => 'The order does not meet the minimum amount for this discount code.',
         'Đơn hàng vượt quá giá trị áp dụng của mã giảm giá.' => 'The order exceeds the applicable amount for this discount code.',
         'Mã giảm giá vừa hết lượt. Vui lòng thử lại.' => 'The discount code has just run out. Please try again.',
+        'Giá trị đơn hàng không đủ điều kiện dùng mã này.' => 'Order value does not qualify for this code.',
+        'Áp dụng mã giảm giá thành công.' => 'Discount code applied successfully.',
+        'Đã cập nhật thành tiền.' => 'Total price updated.',
+        '✅ Đã cập nhật.' => '✅ Updated.',
+        '❌ Hủy bỏ' => '❌ Cancel',
+        '🔗 Chưa liên kết tài khoản.' => '🔗 Your account is not linked yet.',
+        '❌ Không tìm thấy đơn hàng.' => '❌ Order not found.',
+        '✅ Đơn hàng đã hoàn tất! Sản phẩm của bạn bên dưới.' => '✅ Order completed! Your product is below.',
+        '✅ Sản phẩm đã được gửi!' => '✅ Product has been sent!',
+        '✅ Thanh toán thành công!' => '✅ Payment successful!',
+        '✅ Đã nhận thanh toán.' => '✅ Payment received.',
+        '⌛ Đơn này không còn hiệu lực thanh toán.' => '⌛ This order is no longer payable.',
+        '❌ Chưa tìm thấy giao dịch khớp.' => '❌ No matching payment yet.',
+        '⌛ Đơn hàng đã hết hạn thanh toán.' => '⌛ Payment expired.',
+        '🚫 Binance tạm dừng, thử lại sau.' => '🚫 Binance Pay is unavailable right now.',
         'User not found' => 'Could not identify your Telegram account. Please send /start and try again.',
         ];
 
@@ -438,20 +453,6 @@ class TelegramBotService
             $name = trim((string) (($query['from']['first_name'] ?? '') . ' ' . ($query['from']['last_name'] ?? '')));
             $this->setTelegramLocale($telegramId, $locale);
             $this->showMainMenu($chatId, $telegramId, $name, true, $messageId);
-            $this->telegram->answerCallbackQuery($callbackId, $this->tgText($telegramId, $locale === 'en' ? 'language_updated_en' : 'language_updated_vi'));
-            return;
-        }
-
-        if ($data === 'link_binance_uid') {
-            $this->cbLinkBinanceUid($chatId, $telegramId, $messageId);
-            $this->telegram->answerCallbackQuery($callbackId);
-            return;
-        }
-
-        // Composite callbacks must be parsed before generic split('_')
-        if (preg_match('/^buy_gift_(\d+)_(\d+)$/', $data, $m)) {
-            $this->startGiftCodeInputMode($chatId, $telegramId, (int) $m[1], (int) $m[2], $messageId);
-            $this->telegram->answerCallbackQuery($callbackId);
             return;
         }
         if (preg_match('/^do_buy_(\d+)_(\d+)$/', $data, $m)) {

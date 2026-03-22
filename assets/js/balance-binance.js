@@ -624,7 +624,22 @@
                 + '&payer_uid=' + encodeURIComponent(payerUid)
                 + '&csrf_token=' + encodeURIComponent(this.csrfToken)
         }).then(function (response) {
-            return response.json();
+            return response.text().then(function (text) {
+                var payload = null;
+                try {
+                    payload = JSON.parse(text || '{}');
+                } catch (e) {
+                    payload = null;
+                }
+
+                if (!response.ok) {
+                    var error = new Error((payload && payload.message) ? payload.message : ('Request failed with status ' + response.status + '.'));
+                    error.payload = payload;
+                    throw error;
+                }
+
+                return payload || {};
+            });
         }).then(function (res) {
             button.disabled = false;
             button.innerHTML = originalHtml;
@@ -664,10 +679,10 @@
 
             self.startCountdownByExpiry(expiresAtTs, totalTtl, self.state.activeCreatedAtTs);
             self.startPolling(self.state.activeCode);
-        }).catch(function () {
+        }).catch(function (error) {
             button.disabled = false;
             button.innerHTML = originalHtml;
-            alertError('Could not connect to server.');
+            alertError((error && error.message) ? error.message : 'Could not connect to server.');
         });
     };
 

@@ -322,7 +322,18 @@ trait TelegramBotServiceShopTrait
             if ($purpose === 'order_payment') {
                 $orderId = (int) ($session['order_id'] ?? 0);
                 $this->clearBinanceSession($telegramId);
-                $this->cbOrderPayBinance($chatId, $telegramId, $orderId, $messageId, $uid);
+
+                if ($orderId > 0) {
+                    $this->cbOrderPayBinance($chatId, $telegramId, $orderId, $messageId, $uid);
+                } else {
+                    // If order doesn't exist yet, proceed to create it
+                    $buySession = $this->getPurchaseSession($telegramId);
+                    if ($buySession && isset($buySession['prod_id'], $buySession['qty'])) {
+                        $this->cbDoBuy($chatId, $telegramId, (int) $buySession['prod_id'], (int) $buySession['qty'], $messageId);
+                    } else {
+                        $this->showMainMenu($chatId, $telegramId, '✅ Linked successfully!', false, $messageId);
+                    }
+                }
                 return true;
             }
 
@@ -837,7 +848,7 @@ trait TelegramBotServiceShopTrait
         $binanceUid = $isEnglish ? $linkModel->getBinanceUidByUserId((int) ($user['id'] ?? 0)) : 'skip';
 
         if ($isEnglish && $binanceUid === '') {
-            $rows[] = [['text' => '🔗 Enter Binance UID', 'callback_data' => 'link_binance_uid']];
+            $rows[] = [['text' => '🔗 Enter Binance UID', 'callback_data' => 'link_binance_uid_order']];
             $msg .= "\n\n⚠️ <b>Binance UID required.</b>";
         } else {
             $rows[] = [['text' => $this->tgText($telegramId, 'confirm_button'), 'callback_data' => $confirmAction]];
@@ -1078,16 +1089,16 @@ trait TelegramBotServiceShopTrait
             'message_id' => $messageId,
         ]);
 
-        $prompt = "🟡 <b>BINANCE UID</b>\n\n";
-        $prompt .= "How to find your UID:\n\n";
-        $prompt .= "Open the Binance app\n";
-        $prompt .= "Tap the Profile icon in the top-left corner\n";
-        $prompt .= "Copy the UID shown below your nickname\n\n";
-        $prompt .= "Send your Binance UID to continue.";
-        $prompt .= "\n\n⚠️ <b>Invalid Binance UID. Enter 4-20 digits.</b>";
+        $prompt = $this->tgChoice($telegramId, "🟡 <b>BINANCE UID</b>\n\n", "🟡 <b>BINANCE UID</b>\n\n");
+        $prompt .= $this->tgChoice($telegramId, "Hướng dẫn tìm UID của bạn:\n\n", "How to find your UID:\n\n");
+        $prompt .= $this->tgChoice($telegramId, "Mở ứng dụng Binance\n", "Open the Binance app\n");
+        $prompt .= $this->tgChoice($telegramId, "Nhấn vào biểu tượng Profile ở góc trên bên trái\n", "Tap the Profile icon in the top-left corner\n");
+        $prompt .= $this->tgChoice($telegramId, "Sao chép UID nằm dưới tên người dùng\n\n", "Copy the UID shown below your nickname\n\n");
+        $prompt .= $this->tgChoice($telegramId, "Gửi UID Binance của bạn để tiếp tục.", "Send your Binance UID to continue.");
+        $prompt .= "\n\n⚠️ " . $this->tgChoice($telegramId, "<b>UID Binance không hợp lệ. Vui lòng nhập từ 4-20 chữ số.</b>", "<b>Invalid Binance UID. Enter 4-20 digits.</b>");
 
         $markup = TelegramService::buildInlineKeyboard([
-            [['text' => '❌ Cancel', 'callback_data' => 'menu']]
+            [['text' => $this->tgChoice($telegramId, '❌ Hủy bỏ', '❌ Cancel'), 'callback_data' => 'menu']]
         ]);
 
         $this->telegram->editOrSend($chatId, $messageId, $prompt, $markup);
@@ -1111,25 +1122,25 @@ trait TelegramBotServiceShopTrait
         $discountAmount = (int) ($order['discount_amount'] ?? 0);
         $giftcode = htmlspecialchars(trim((string) ($order['giftcode_code'] ?? '')), ENT_QUOTES, 'UTF-8');
 
-        $msg = "🏦 <b>THANH TOÁN ĐƠN HÀNG</b>\n\n";
-        $msg .= "🧾 Mã đơn: <code>{$orderCode}</code>\n";
-        $msg .= "📦 Sản phẩm: <b>{$productName}</b>\n";
-        $msg .= "🔢 Số lượng: <b>{$quantity}</b>\n";
+        $msg = $this->tgChoice($telegramId, "🏦 <b>THANH TOÁN ĐƠN HÀNG</b>\n\n", "🏦 <b>ORDER PAYMENT</b>\n\n");
+        $msg .= $this->tgChoice($telegramId, "🧾 Mã đơn: ", "🧾 Order ID: ") . "<code>{$orderCode}</code>\n";
+        $msg .= $this->tgChoice($telegramId, "📦 Sản phẩm: ", "📦 Product: ") . "<b>{$productName}</b>\n";
+        $msg .= $this->tgChoice($telegramId, "🔢 Số lượng: ", "🔢 Quantity: ") . "<b>{$quantity}</b>\n";
         if ($discountAmount > 0 && $giftcode !== '') {
-            $msg .= "🏷️ Giảm giá: -<b>" . number_format($discountAmount, 0, ',', '.') . "đ</b> (<i>{$giftcode}</i>)\n";
+            $msg .= $this->tgChoice($telegramId, "🏷️ Giảm giá: ", "🏷️ Discount: ") . "-<b>" . number_format($discountAmount, 0, ',', '.') . "đ</b> (<i>{$giftcode}</i>)\n";
         }
-        $msg .= "💎 Tổng cần trả: <b>{$amount}</b>\n";
+        $msg .= $this->tgChoice($telegramId, "💎 Tổng cần trả: ", "💎 Total Due: ") . "<b>{$amount}</b>\n";
         $msg .= "━━━━━━━━━━━━━━\n";
-        $msg .= "🏛 Ngân hàng: <b>{$bankName}</b>\n";
-        $msg .= "👤 Chủ TK: <b>{$bankOwner}</b>\n";
-        $msg .= "💳 Số TK: <code>{$bankAccount}</code>\n";
-        $msg .= "📝 Nội dung: <code>{$depositCode}</code>\n";
+        $msg .= $this->tgChoice($telegramId, "🏛 Ngân hàng: ", "🏛 Bank: ") . "<b>{$bankName}</b>\n";
+        $msg .= $this->tgChoice($telegramId, "👤 Chủ TK: ", "👤 Name: ") . "<b>{$bankOwner}</b>\n";
+        $msg .= $this->tgChoice($telegramId, "💳 Số TK: ", "💳 Acc No: ") . "<code>{$bankAccount}</code>\n";
+        $msg .= $this->tgChoice($telegramId, "📝 Nội dung: ", "📝 Content: ") . "<code>{$depositCode}</code>\n";
         if ($expiresAt !== '') {
-            $msg .= "⏰ Hết hạn: <b>{$expiresAt}</b>\n";
+            $msg .= $this->tgChoice($telegramId, "⏰ Hết hạn: ", "⏰ Expires: ") . "<b>{$expiresAt}</b>\n";
         }
 
-        $msg .= "\n🚫 <b>QUAN TRỌNG:</b> Nội dung CK và số tiền phải chính xác.\n";
-        $msg .= "\n✅ Quét QR để thanh toán | Auto Banking\n";
+        $msg .= "\n" . $this->tgChoice($telegramId, "🚫 <b>QUAN TRỌNG:</b> Nội dung CK và số tiền phải chính xác.\n", "🚫 <b>IMPORTANT:</b> Content and amount must be 100% correct.\n");
+        $msg .= "\n" . $this->tgChoice($telegramId, "✅ Quét QR để thanh toán | Auto Banking\n", "✅ Scan QR to pay | Auto Banking\n");
         return $msg;
     }
 
