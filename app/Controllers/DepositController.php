@@ -301,7 +301,7 @@ class DepositController extends Controller
 
         $user = $this->requireUser();
         if (!$this->validateCsrf()) {
-            return $this->json(['success' => false, 'message' => 'Phiên làm việc hết hạn, vui lòng tải lại trang.'], 403);
+            return $this->json(['success' => false, 'message' => 'Session expired. Please reload and try again.'], 403);
         }
 
         $siteConfig = Config::getSiteConfig();
@@ -334,7 +334,7 @@ class DepositController extends Controller
     public function createBinance()
     {
         if (!$this->isEnglishStorefront()) {
-            return $this->json(['success' => false, 'message' => 'Binance Pay chỉ khả dụng trên storefront quốc tế.'], 403);
+            return $this->json(['success' => false, 'message' => 'Binance Pay is available only on the international storefront.'], 403);
         }
 
         $user = $this->requireUser();
@@ -344,7 +344,7 @@ class DepositController extends Controller
 
         $siteConfig = Config::getSiteConfig();
         if (((int) ($siteConfig['binance_pay_enabled'] ?? 0) !== 1)) {
-            return $this->json(['success' => false, 'message' => 'Binance Pay is currently under maintenance. Please try again later.']);
+            return $this->json(['success' => false, 'message' => 'Binance Pay is unavailable right now.']);
         }
 
         // Rate limit: max 1 deposit creation per 3 seconds per user
@@ -356,7 +356,7 @@ class DepositController extends Controller
         ");
         $rlStmt->execute([(int) ($user['id'] ?? 0)]);
         if ((int) $rlStmt->fetchColumn() > 0) {
-            return $this->json(['success' => false, 'message' => 'Vui lòng đợi vài giây trước khi tạo giao dịch mới.']);
+            return $this->json(['success' => false, 'message' => 'Please wait a few seconds before creating a new payment.']);
         }
 
         $amountRaw = trim((string) $this->post('amount', '0'));
@@ -367,12 +367,12 @@ class DepositController extends Controller
         if (empty($result['success'])) {
             return $this->json([
                 'success' => false,
-                'message' => (string) ($result['message'] ?? 'Không thể tạo giao dịch Binance Pay, vui lòng thử lại'),
+                'message' => (string) ($result['message'] ?? 'Could not create a Binance Pay payment.'),
             ]);
         }
 
         $payload = (array) ($result['data'] ?? []);
-        Logger::info('Billing', 'deposit_created', "User {$user['username']} tạo giao dịch nạp Binance", [
+        Logger::info('Billing', 'deposit_created', "Binance deposit created: {$user['username']}", [
             'amount_usd' => $amount,
             'usdt_amount' => (float) ($payload['usdt_amount'] ?? 0),
             'payer_uid' => $payerUid,

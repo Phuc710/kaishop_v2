@@ -442,6 +442,12 @@ class TelegramBotService
             return;
         }
 
+        if ($data === 'link_binance_uid') {
+            $this->cbLinkBinanceUid($chatId, $telegramId, $messageId);
+            $this->telegram->answerCallbackQuery($callbackId);
+            return;
+        }
+
         // Composite callbacks must be parsed before generic split('_')
         if (preg_match('/^buy_gift_(\d+)_(\d+)$/', $data, $m)) {
             $this->startGiftCodeInputMode($chatId, $telegramId, (int) $m[1], (int) $m[2], $messageId);

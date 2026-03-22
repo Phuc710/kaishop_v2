@@ -129,7 +129,7 @@ class DepositService
         }
 
         $bonusTiers = $this->getBonusTiers($siteConfig);
-        $bonusPercent = $this->resolveBonusPercent($amount, $bonusTiers);
+        $bonusPercent = ($sourceChannel === SourceChannelHelper::BOTTELE) ? 0 : $this->resolveBonusPercent($amount, $bonusTiers);
 
         $result = $this->pendingDepositModel->createDeposit(
             (int) ($user['id'] ?? 0),
@@ -210,7 +210,7 @@ class DepositService
         }
 
         $bonusTiers = $this->getBonusTiers($siteConfig);
-        $bonusPercent = $this->resolveBonusPercent($baseVnd, $bonusTiers);
+        $bonusPercent = ($sourceChannel === SourceChannelHelper::BOTTELE) ? 0 : $this->resolveBonusPercent($baseVnd, $bonusTiers);
 
         $result = $this->pendingDepositModel->createBinanceDeposit(
             (int) ($user['id'] ?? 0),

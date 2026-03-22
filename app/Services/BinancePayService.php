@@ -263,26 +263,26 @@ class BinancePayService
             || $userId <= 0
             || $username === ''
         ) {
-            return ['success' => false, 'message' => 'Dữ liệu giao dịch không hợp lệ'];
+            return ['success' => false, 'message' => 'Invalid transaction data'];
         }
         if ($currency !== 'USDT') {
-            return ['success' => false, 'message' => 'Đơn vị tiền tệ không hợp lệ (yêu cầu USDT)'];
+            return ['success' => false, 'message' => 'Invalid currency. USDT required.'];
         }
         // Payer UID check: only enforce when API provides a payer UID.
         // Binance C2C transactions do NOT include payerInfo.binanceId on the receiver side.
         if ($payerUid !== '' && $expectedPayerUid !== '') {
             if (!hash_equals($expectedPayerUid, $payerUid)) {
-                return ['success' => false, 'message' => 'UID người gửi không khớp với yêu cầu'];
+                return ['success' => false, 'message' => 'Payer UID does not match.'];
             }
         }
         if ($receiverUid === '' || !hash_equals($this->normalizeUid($this->binanceUid), $receiverUid)) {
-            return ['success' => false, 'message' => 'UID người nhận không khớp với hệ thống'];
+            return ['success' => false, 'message' => 'Receiver UID does not match.'];
         }
         if ($usdtAmountRaw !== $expectedAmountRaw) {
-            return ['success' => false, 'message' => 'Số tiền chuyển không khớp với yêu cầu'];
+            return ['success' => false, 'message' => 'Amount does not match.'];
         }
         if ($txTimestamp === null) {
-            return ['success' => false, 'message' => 'Thiếu thông tin thời gian giao dịch'];
+            return ['success' => false, 'message' => 'Missing transaction time.'];
         }
 
         try {
@@ -319,7 +319,7 @@ class BinancePayService
 
             $sourceChannel = (int) ($locked['source_channel'] ?? $sourceChannel);
             $orderId = (int) ($locked['order_id'] ?? 0);
-            $bonusPercent = $orderId > 0 ? 0 : (int) ($locked['bonus_percent'] ?? 0);
+            $bonusPercent = ($orderId > 0 || $sourceChannel === SourceChannelHelper::BOTTELE) ? 0 : (int) ($locked['bonus_percent'] ?? 0);
             $usdtAmount = (float) $expectedAmountRaw;
             $baseVnd = $this->usdtToVnd($usdtAmount);
             $bonusVnd = (int) floor($baseVnd * max(0, $bonusPercent) / 100);
@@ -394,7 +394,7 @@ class BinancePayService
                     $totalCredit
                 );
 
-                Logger::info('BinancePay', 'order_payment_completed', "Thanh toan don Telegram qua Binance thanh cong: {$username}", [
+                Logger::info('BinancePay', 'order_payment_completed', "Binance order paid: {$username}", [
                     'tx_id' => $txId,
                     'order_id' => $orderId,
                     'usdt' => $usdtAmount,
@@ -418,7 +418,7 @@ class BinancePayService
                 'Binance',
                 'Binance Pay (USDT) | Payer UID: ' . ($payerUid !== '' ? $payerUid : 'unknown') . ' | Receiver UID: ' . ($receiverUid !== '' ? $receiverUid : 'unknown'),
                 $totalCredit,
-                'hoantat',
+                'completed',
                 $nowTs,
                 $nowSql,
             ];
@@ -448,7 +448,7 @@ class BinancePayService
                     $beforeBalance,
                     $totalCredit,
                     $afterBalance,
-                    'Nap tien Binance Pay: ' . rtrim(rtrim(number_format($usdtAmount, 8, '.', ''), '0'), '.') . ' USDT',
+                    'Binance Pay deposit: ' . rtrim(rtrim(number_format($usdtAmount, 8, '.', ''), '0'), '.') . ' USDT',
                     $sourceChannel
                 );
             }
@@ -465,13 +465,11 @@ class BinancePayService
                 $userId,
                 $username,
                 $usdtAmount,
-                $baseVnd,
                 $totalCredit,
-                $bonusVnd,
                 $txId
             );
 
-            Logger::info('BinancePay', 'deposit_credited', "Nap Binance Pay thanh cong: {$username}", [
+            Logger::info('BinancePay', 'deposit_credited', "Binance deposit credited: {$username}", [
                 'tx_id' => $txId,
                 'usdt' => $usdtAmount,
                 'vnd' => $totalCredit,
@@ -485,14 +483,14 @@ class BinancePayService
 
             return [
                 'success' => true,
-                'message' => 'Credited ' . number_format($totalCredit, 0, ',', '.') . 'đ',
+                'message' => 'Deposit credited',
                 'tx_id' => $txId,
             ];
         } catch (Throwable $e) {
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }
-            Logger::warning('BinancePay', 'process_error', 'Loi xu ly Binance tx: ' . $e->getMessage(), [
+            Logger::warning('BinancePay', 'process_error', 'Binance processing failed: ' . $e->getMessage(), [
                 'tx_id' => $txId,
                 'deposit_id' => $depositId,
             ]);
@@ -685,9 +683,19 @@ class BinancePayService
                 ]
             ];
 
-            $message = $this->buildTelegramOrderPaidMessage($order, $txId, $usdt, $amountVnd);
+            $message = $this->buildTelegramOrderPaidMessage($order, $usdt);
             if (!$this->sendTelegramDirectTo((string) $telegramId, $message, $replyMarkup) && class_exists('TelegramOutbox')) {
                 (new TelegramOutbox())->enqueue($telegramId, $message, 'HTML');
+            }
+
+            // Immediately deliver product as .txt file if completed
+            $status = (string) ($order['status'] ?? '');
+            $deliveryContent = trim((string) ($order['delivery_content'] ?? $order['stock_content_plain'] ?? ''));
+            if ($status === 'completed' && $deliveryContent !== '' && class_exists('TelegramService')) {
+                $orderId = (int) ($order['id'] ?? 0);
+                $filename = "order_{$orderId}.txt";
+                $telegram = new TelegramService(null, null, 5);
+                $telegram->sendDocumentFromContent((string) $telegramId, $deliveryContent, $filename);
             }
         } catch (Throwable $e) {
             // Non-blocking
@@ -697,31 +705,28 @@ class BinancePayService
     /**
      * @param array<string,mixed> $order
      */
-    private function buildTelegramOrderPaidMessage(array $order, string $txId, float $usdt, int $amountVnd): string
+    private function buildTelegramOrderPaidMessage(array $order, float $usdt): string
     {
         $orderCode = htmlspecialchars((string) ($order['order_code_short'] ?? $order['order_code'] ?? ''), ENT_QUOTES, 'UTF-8');
-        $productName = htmlspecialchars((string) ($order['product_name'] ?? 'Sản phẩm'), ENT_QUOTES, 'UTF-8');
+        $productName = htmlspecialchars((string) ($order['product_name'] ?? 'Product'), ENT_QUOTES, 'UTF-8');
         $quantity = max(1, (int) ($order['quantity'] ?? 1));
         $status = (string) ($order['status'] ?? '');
         $deliveryContent = trim((string) ($order['delivery_content'] ?? $order['stock_content_plain'] ?? ''));
         $usdtText = rtrim(rtrim(number_format($usdt, 8, '.', ''), '0'), '.');
 
-        $msg = "🎉 <b>PAYMENT SUCCESSFUL</b>\n\n";
+        $msg = "🎉 <b>BINANCE PAYMENT SUCCESSFUL</b>\n\n";
         $msg .= "🧾 Order ID: <code>{$orderCode}</code>\n";
         $msg .= "📦 Product: <b>{$productName}</b>\n";
         $msg .= "🔢 Quantity: <b>{$quantity}</b>\n";
-        $msg .= "💳 Method: <b>Binance Pay</b>\n";
         $msg .= "💵 Received: <b>{$usdtText} USDT</b>\n";
-        $msg .= "💰 Exchange: <b>$" . number_format($amountVnd / TelegramConfig::binanceRate(), 2, '.', ',') . "</b>\n";
-        $msg .= "🔖 Transaction: <code>" . htmlspecialchars($txId, ENT_QUOTES, 'UTF-8') . "</code>\n";
-        $msg .= "━━━━━━━━━━━━━━";
 
         if ($status === 'completed' && $deliveryContent !== '') {
-            $msg .= "\n\n🔑 <b>DELIVERY CONTENT</b>\n<code>" . htmlspecialchars($deliveryContent, ENT_QUOTES, 'UTF-8') . "</code>";
+            $msg .= "\n\n🔑 <b>DELIVERY</b>\n<code>" . htmlspecialchars($deliveryContent, ENT_QUOTES, 'UTF-8') . "</code>";
+            $msg .= "\n\n📄 <i>Your product is also attached as a .txt file below.</i>";
         } elseif ($status === 'processing') {
-            $msg .= "\n\n🛠️ Your order is being processed. The administrator will deliver it soon.";
+            $msg .= "\n\n🛠️ Your order is being processed. If it takes too long, contact admin and send the Order ID above.";
         } else {
-            $msg .= "\n\n📦 Your order has been recorded. You can view it in the Orders section.";
+            $msg .= "\n\n📩 Payment recorded. If there is any issue, contact admin and send the Order ID above.";
         }
 
         return $msg;
@@ -731,9 +736,7 @@ class BinancePayService
         int $userId,
         string $username,
         float $usdt,
-        int $baseVnd,
         int $totalVnd,
-        int $bonusVnd,
         string $txId
     ): void {
         if (!class_exists('TelegramOutbox')) {
@@ -746,12 +749,10 @@ class BinancePayService
 
             $adminChatId = $this->resolveAdminChatId();
             if ($adminChatId !== 0) {
-                $adminMsg = "✅ <b>Binance Pay Deposit</b>\n"
+                $adminMsg = "✅ <b>BINANCE DEPOSIT</b>\n"
                     . "👤 User: <code>{$username}</code>\n"
-                    . "💰 USDT: <b>{$usdtText}</b>\n"
-                    . "💵 Base Exchange: <b>" . number_format($baseVnd, 0, ',', '.') . "đ</b>\n"
-                    . "🎁 Bonus: <b>" . number_format($bonusVnd, 0, ',', '.') . "đ</b>\n"
-                    . "🏦 Net Received: <b>" . number_format($totalVnd, 0, ',', '.') . "đ</b>\n"
+                    . "💵 Received: <b>{$usdtText} USDT</b>\n"
+                    . "💰 Credited: <b>$" . number_format($totalVnd / TelegramConfig::binanceRate(), 2, '.', ',') . "</b>\n"
                     . "🔖 TX: <code>{$txId}</code>";
                 $outbox->enqueue($adminChatId, $adminMsg, 'HTML');
             }
@@ -761,10 +762,8 @@ class BinancePayService
                 if ($link && (int) ($link['telegram_id'] ?? 0) > 0) {
                     $telegramId = (int) $link['telegram_id'];
                     $userMsg = "🎉 <b>DEPOSIT SUCCESSFUL</b>\n\n"
-                        . "💳 Method: <b>Binance Pay</b>\n"
                         . "💵 Received: <b>{$usdtText} USDT</b>\n"
-                        . "💰 Credited: <b>$" . number_format($totalVnd / TelegramConfig::binanceRate(), 2, '.', ',') . "</b>\n"
-                        . "🔖 Transaction ID: <code>{$txId}</code>";
+                        . "💰 Credited: <b>$" . number_format($totalVnd / TelegramConfig::binanceRate(), 2, '.', ',') . "</b>";
 
                     $menuMarkup = ['inline_keyboard' => [[['text' => '🏠 Menu', 'callback_data' => 'menu']]]];
                     if (!$this->sendTelegramDirectTo((string) $telegramId, $userMsg, $menuMarkup)) {
@@ -853,33 +852,33 @@ class BinancePayService
         $txPayerUid = $this->normalizeUid($this->extractPayerUid($tx));
         if ($txPayerUid !== '' && $expectedPayerUid !== '') {
             if (!hash_equals($expectedPayerUid, $txPayerUid)) {
-                $error = 'UID ng\u01b0\u1eddi g\u1eedi kh\u00f4ng kh\u1edbp v\u1edbi y\u00eau c\u1ea7u';
+                $error = 'Payer UID does not match.';
                 return false;
             }
         }
 
         $txReceiverUid = $this->normalizeUid($this->extractReceiverUid($tx));
         if ($txReceiverUid === '' || !hash_equals($expectedReceiverUid, $txReceiverUid)) {
-            $error = 'UID ng\u01b0\u1eddi nh\u1eadn kh\u00f4ng kh\u1edbp v\u1edbi h\u1ec7 th\u1ed1ng';
+            $error = 'Receiver UID does not match.';
             return false;
         }
 
         $txCurrency = strtoupper(trim((string) ($tx['currency'] ?? '')));
         if ($txCurrency !== $expectedCurrency) {
-            $error = '\u0110\u01a1n v\u1ecb ti\u1ec1n t\u1ec7 kh\u00f4ng h\u1ee3p l\u1ec7 (y\u00eau c\u1ea7u USDT)';
+            $error = 'Invalid currency. USDT required.';
             return false;
         }
 
         $txAmount = $this->normalizeAmount($tx['amount'] ?? 0);
         if ($txAmount === null || $txAmount !== $expectedAmount) {
-            $error = 'S\u1ed1 ti\u1ec1n chuy\u1ec3n kh\u00f4ng kh\u1edbp v\u1edbi y\u00eau c\u1ea7u';
+            $error = 'Amount does not match.';
             return false;
         }
 
         $createdTs = $this->toTimestamp($pendingDeposit['created_at'] ?? '');
         $txTs = $this->extractTxTimestamp($tx);
         if ($createdTs === null || $txTs === null) {
-            $error = 'Thi\u1ebfu th\u00f4ng tin th\u1eddi gian giao d\u1ecbch';
+            $error = 'Missing transaction time.';
             return false;
         }
 
@@ -887,7 +886,7 @@ class BinancePayService
         $earliestTs = $createdTs - self::TX_TIME_SKEW_SECONDS;
         $latestTs = $createdTs + $ttlSeconds + self::TX_TIME_SKEW_SECONDS;
         if ($txTs < $earliestTs || $txTs > $latestTs) {
-            $error = 'Th\u1eddi gian giao d\u1ecbch v\u01b0\u1ee3t ngo\u00e0i c\u1eeda s\u1ed5 cho ph\u00e9p';
+            $error = 'Transaction time is outside the allowed window.';
             return false;
         }
 
@@ -946,7 +945,7 @@ class BinancePayService
         if ($this->timeService) {
             return $this->timeService->nowSql($this->timeService->getDbTimezone());
         }
-        return date('Y-m-d H:i:s');
+        return date('Y-m-d H:i:s', $this->nowTs());
     }
 
     private function toTimestamp($value): ?int

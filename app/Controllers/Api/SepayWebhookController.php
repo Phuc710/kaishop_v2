@@ -235,6 +235,17 @@ class SepayWebhookController extends Controller
                             ),
                             $replyMarkup
                         );
+
+                        // Immediately deliver product as .txt file if completed
+                        $order = (array) ($finalize['order'] ?? []);
+                        $status = (string) ($order['status'] ?? '');
+                        $deliveryContent = trim((string) ($order['delivery_content'] ?? $order['stock_content_plain'] ?? ''));
+                        if ($status === 'completed' && $deliveryContent !== '' && class_exists('TelegramService')) {
+                            $orderId = (int) ($order['id'] ?? 0);
+                            $filename = "order_{$orderId}.txt";
+                            $telegram = new TelegramService(null, null, 5);
+                            $telegram->sendDocumentFromContent($link['telegram_id'], $deliveryContent, $filename);
+                        }
                     }
                 }
             } catch (Throwable $teleErr) {
@@ -252,8 +263,8 @@ class SepayWebhookController extends Controller
             return $this->json(['success' => true, 'message' => 'Order payment completed']);
         }
 
-        // 8. Calculate bonus
-        $bonusPercent = (int) $deposit['bonus_percent'];
+        // 8. Calculate bonus (Force 0 for Telegram bot transactions)
+        $bonusPercent = ($sourceChannel === SourceChannelHelper::BOTTELE) ? 0 : (int) $deposit['bonus_percent'];
         $bonusAmount = (int) ($transferAmount * $bonusPercent / 100);
         $totalCredit = $transferAmount + $bonusAmount;
 
@@ -284,7 +295,8 @@ class SepayWebhookController extends Controller
                     $notifMsg = "🎉 <b>NẠP TIỀN THÀNH CÔNG</b>\n\n";
                     $notifMsg .= "💳 Phương thức: <b>Chuyển khoản ngân hàng</b>\n";
                     $notifMsg .= "💵 Đã nhận: <b>" . number_format($transferAmount) . "đ</b>\n";
-                    if ($bonusAmount > 0) {
+                    // Only show bonus if not from Telegram bot
+                    if ($bonusAmount > 0 && $sourceChannel !== SourceChannelHelper::BOTTELE) {
                         $notifMsg .= "🎁 Khuyến mãi: <b>" . number_format($bonusAmount) . "đ</b>\n";
                     }
                     $notifMsg .= "💰 Đã cộng: <b>" . number_format($totalCredit) . "đ</b>\n";
@@ -405,6 +417,7 @@ class SepayWebhookController extends Controller
 
         if ($status === 'completed' && $deliveryContent !== '') {
             $msg .= "\n\n🔑 <b>NỘI DUNG GIAO HÀNG</b>\n<code>" . htmlspecialchars($deliveryContent, ENT_QUOTES, 'UTF-8') . "</code>";
+            $msg .= "\n\n📄 <i>Sản phẩm đã được đính kèm dưới dạng file .txt bên dưới.</i>";
         } elseif ($status === 'processing') {
             $msg .= "\n\n🛠️ Đơn đã vào hàng chờ xử lý. Admin sẽ giao sớm cho bạn.";
         } else {

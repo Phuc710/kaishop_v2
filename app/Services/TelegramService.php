@@ -155,6 +155,50 @@ class TelegramService
     }
 
     /**
+     * Send document to a specific chat.
+     */
+    public function sendDocumentTo(string $chatId, string $filePath, ?string $caption = null, array $options = []): bool
+    {
+        if (!file_exists($filePath)) {
+            return false;
+        }
+
+        $payload = [
+            'chat_id' => $chatId,
+            'document' => new CURLFile(realpath($filePath)),
+            'parse_mode' => $options['parse_mode'] ?? 'HTML',
+        ];
+
+        if ($caption !== null && trim($caption) !== '') {
+            $payload['caption'] = trim($caption);
+        }
+
+        if (!empty($options['reply_markup'])) {
+            $payload['reply_markup'] = is_string($options['reply_markup'])
+                ? $options['reply_markup']
+                : json_encode($options['reply_markup'], JSON_UNESCAPED_UNICODE);
+        }
+
+        $result = $this->apiCall('sendDocument', $payload);
+        return !empty($result['ok']);
+    }
+
+    /**
+     * Generate a temporary text file from content and send it.
+     */
+    public function sendDocumentFromContent(string $chatId, string $content, string $filename, ?string $caption = null, array $options = []): bool
+    {
+        $tmpDir = sys_get_temp_dir();
+        $tmpFile = $tmpDir . DIRECTORY_SEPARATOR . $filename;
+        @file_put_contents($tmpFile, $content);
+
+        $success = $this->sendDocumentTo($chatId, $tmpFile, $caption, $options);
+
+        @unlink($tmpFile);
+        return $success;
+    }
+
+    /**
      * Edit an existing message.
      *
      * @param mixed $keyboard

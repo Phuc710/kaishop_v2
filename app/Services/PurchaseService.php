@@ -140,7 +140,8 @@ class PurchaseService
             $orderCode = $this->orderModel->generateOrderCode();
 
             $orderStatus = $requiresInfo ? 'pending' : 'processing';
-            $orderCreatedAtSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+            $nowTs = $this->timeService ? $this->timeService->nowTs() : time();
+            $orderCreatedAtSql = $this->timeService ? $this->timeService->formatDb($nowTs) : date('Y-m-d H:i:s', $nowTs);
             $orderColumns = [
                 'order_code',
                 'user_id',
@@ -259,7 +260,7 @@ class PurchaseService
             $nowTs = (string) ($this->timeService ? $this->timeService->nowTs() : time());
             $nowSql = $this->timeService
                 ? $this->timeService->nowSql($this->timeService->getDbTimezone())
-                : date('Y-m-d H:i:s');
+                : date('Y-m-d H:i:s', $nowTs);
 
             // Write to activity table — created_at is explicit (not relying on MySQL DEFAULT)
             // to ensure timezone consistency with the rest of the system (via TimeService::nowSql).
@@ -479,10 +480,12 @@ class PurchaseService
 
             $totalPrice = max(0, $subtotalPrice - $discountAmount);
             $orderCode = $this->orderModel->generateOrderCode();
-            $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+            $nowTs = $this->timeService ? $this->timeService->nowTs() : time();
+            $nowSql = $this->timeService ? $this->timeService->formatDb($nowTs) : date('Y-m-d H:i:s', $nowTs);
+            $ttl = (int) (new PendingDeposit())->getPendingTtlSeconds();
             $paymentExpiresAt = $this->timeService
-                ? $this->timeService->formatDb($this->timeService->nowTs() + (new PendingDeposit())->getPendingTtlSeconds())
-                : date('Y-m-d H:i:s', time() + (new PendingDeposit())->getPendingTtlSeconds());
+                ? $this->timeService->formatDb($nowTs + $ttl)
+                : date('Y-m-d H:i:s', $nowTs + $ttl);
 
             $orderColumns = [
                 'order_code',
@@ -627,8 +630,13 @@ class PurchaseService
         }
 
         $expiresAt = trim((string) ($order['payment_expires_at'] ?? ''));
-        $expiresTs = $expiresAt !== '' ? ($this->timeService ? ($this->timeService->toTimestamp($expiresAt, $this->timeService->getDbTimezone()) ?? 0) : (strtotime($expiresAt) ?: 0)) : 0;
         $nowTs = $this->timeService ? $this->timeService->nowTs() : time();
+        $expiresTs = 0;
+        if ($expiresAt !== '') {
+            $assumeTz = $this->timeService ? $this->timeService->getDbTimezone() : 'Asia/Ho_Chi_Minh';
+            $expiresTs = $this->timeService ? ($this->timeService->toTimestamp($expiresAt, $assumeTz) ?? 0) : (strtotime($expiresAt) ?: 0);
+        }
+
         if ($expiresTs > 0 && $nowTs >= $expiresTs) {
             $this->cancelTelegramPendingOrder($orderId, $userId, 'Đơn hàng hết hạn thanh toán.', true);
             return ['success' => false, 'message' => 'Đơn hàng đã hết hạn thanh toán.'];
@@ -740,7 +748,8 @@ class PurchaseService
             $deliveryMode = (string) ($product['delivery_mode'] ?? Product::resolveDeliveryMode($product));
             $stockManaged = Product::isStockManagedProduct($product);
 
-            $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+            $nowTs = $this->timeService ? $this->timeService->nowTs() : time();
+            $nowSql = $this->timeService ? $this->timeService->formatDb($nowTs) : date('Y-m-d H:i:s', $nowTs);
             $finalStatus = $requiresInfo ? 'processing' : 'completed';
 
             $updCols = [
@@ -830,7 +839,8 @@ class PurchaseService
             $deliveryMode = (string) ($product['delivery_mode'] ?? '');
 
             $nextPaymentStatus = $markExpired ? 'expired' : 'cancelled';
-            $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+            $nowTs = $this->timeService ? $this->timeService->nowTs() : time();
+            $nowSql = $this->timeService ? $this->timeService->formatDb($nowTs) : date('Y-m-d H:i:s', $nowTs);
             $stmt = $this->db->prepare("
                 UPDATE `orders`
                 SET `status` = 'cancelled', `payment_status` = ?, `cancel_reason` = ?, `fulfilled_at` = ?
@@ -871,7 +881,8 @@ class PurchaseService
             return [];
         }
 
-        $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+        $nowTs = $this->timeService ? $this->timeService->nowTs() : time();
+        $nowSql = $this->timeService ? $this->timeService->formatDb($nowTs) : date('Y-m-d H:i:s', $nowTs);
         $stmt = $this->db->prepare("
             SELECT `id`, `user_id`, `telegram_id`, `order_code`, `product_name`, `price`, `quantity`, `payment_method`
             FROM `orders`
@@ -1011,7 +1022,8 @@ class PurchaseService
         }
 
         $nextPaymentStatus = $markExpired ? 'expired' : 'cancelled';
-        $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+        $nowTs = $this->timeService ? $this->timeService->nowTs() : time();
+        $nowSql = $this->timeService ? $this->timeService->formatDb($nowTs) : date('Y-m-d H:i:s', $nowTs);
         $this->db->prepare("
             UPDATE `orders`
             SET `status` = 'cancelled', `payment_status` = ?, `cancel_reason` = ?, `fulfilled_at` = ?
@@ -1108,16 +1120,16 @@ class PurchaseService
     {
         $payerUid = trim($payerUid);
         if (!preg_match('/^\d{4,20}$/', $payerUid)) {
-            return ['success' => false, 'message' => 'UID Binance khÃ´ng há»£p lá»‡.'];
+            return ['success' => false, 'message' => 'Invalid Binance UID.'];
         }
 
         if (!class_exists('BinancePayService')) {
-            return ['success' => false, 'message' => 'Binance Pay chÆ°a sáºµn sÃ ng.'];
+            return ['success' => false, 'message' => 'Binance Pay is not ready.'];
         }
 
         $binanceService = new BinancePayService($siteConfig, $this->db);
         if (!$binanceService->isEnabled()) {
-            return ['success' => false, 'message' => 'Binance Pay chÆ°a Ä‘Æ°á»£c cáº¥u hÃ¬nh.'];
+            return ['success' => false, 'message' => 'Binance Pay is not configured.'];
         }
 
         $rawUsdt = isset($paymentContext['usdt_amount'])
@@ -1139,7 +1151,7 @@ class PurchaseService
         );
 
         if (!$depositResult) {
-            return ['success' => false, 'message' => 'KhÃ´ng thá»ƒ táº¡o phiÃªn thanh toÃ¡n Binance.'];
+            return ['success' => false, 'message' => 'Could not create a Binance payment session.'];
         }
 
         $expiresAt = (string) ($depositResult['expires_at'] ?? '');
@@ -1160,18 +1172,18 @@ class PurchaseService
                 'binance_uid' => $binanceService->getUid(),
                 'binance_owner' => trim((string) ($siteConfig['binance_owner'] ?? get_setting('ten_web', 'KaiShop'))),
                 'transfer_note' => $transferNote,
-                'note_text' => 'Chuyá»ƒn Ä‘Ãºng UID nháº­n, UID gá»­i vÃ  sá»‘ USDT Ä‘á»ƒ auto xÃ¡c nháº­n.',
+                'note_text' => 'Send the exact amount from the correct payer UID for auto matching.',
                 'warning_rules' => [
-                    'Chá»‰ chuyá»ƒn USDT tá»« Funding/Binance Pay.',
-                    'UID gá»­i, UID nháº­n vÃ  sá»‘ tiá»n pháº£i trÃ¹ng khá»›p.',
-                    'PhiÃªn thanh toÃ¡n chá»‰ giá»¯ trong 5 phÃºt.',
+                    'Send USDT only from Binance Funding.',
+                    'Payer UID, receiver UID, and amount must match.',
+                    'This payment session expires in 5 minutes.',
                 ],
                 'bonus_percent' => 0,
                 'bonus_vnd' => 0,
                 'total_receive' => $amount,
                 'source_channel' => SourceChannelHelper::BOTTELE,
                 'status' => 'pending',
-                'status_text' => 'Äang chá» xá»­ lÃ½',
+                'status_text' => 'Pending',
                 'expires_at' => $expiresAt,
                 'expires_at_ts' => $this->timeService
                     ? (int) ($this->timeService->toTimestamp($expiresAt, $this->timeService->getDbTimezone()) ?? 0)
@@ -1292,7 +1304,8 @@ class PurchaseService
         $stored = ($this->crypto instanceof CryptoService && $this->crypto->isEnabled())
             ? $this->crypto->encryptString($deliveryContentPlain)
             : $deliveryContentPlain;
-        $fulfilledAt = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+        $nowTs = $this->timeService ? $this->timeService->nowTs() : time();
+        $fulfilledAt = $this->timeService ? $this->timeService->formatDb($nowTs) : date('Y-m-d H:i:s', $nowTs);
 
         if ($stockId !== null && $stockId > 0) {
             $stmt = $this->db->prepare("
@@ -1488,4 +1501,3 @@ class PurchaseService
         }
     }
 }
-
