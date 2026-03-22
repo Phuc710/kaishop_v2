@@ -6,20 +6,20 @@
  */
 class TimeService
 {
-    private static ?self $instance = null;
+    private static $instance = null;
 
-    private DateTimeZone $appTz;
-    private DateTimeZone $displayTz;
-    private DateTimeZone $dbTz;
+    private $appTz;
+    private $displayTz;
+    private $dbTz;
 
-    public function __construct(?string $appTimezone = null, ?string $displayTimezone = null, ?string $dbTimezone = null)
+    public function __construct($appTimezone = null, $displayTimezone = null, $dbTimezone = null)
     {
         $this->appTz = $this->makeTimezone($appTimezone ?: (function_exists('app_timezone') ? app_timezone() : date_default_timezone_get()));
         $this->displayTz = $this->makeTimezone($displayTimezone ?: (function_exists('app_display_timezone') ? app_display_timezone() : $this->appTz->getName()));
         $this->dbTz = $this->makeTimezone($dbTimezone ?: (function_exists('app_db_timezone') ? app_db_timezone() : $this->appTz->getName()));
     }
 
-    public static function instance(): self
+    public static function instance()
     {
         if (self::$instance === null) {
             self::$instance = new self();
@@ -27,32 +27,32 @@ class TimeService
         return self::$instance;
     }
 
-    public function getAppTimezone(): string
+    public function getAppTimezone()
     {
         return $this->appTz->getName();
     }
 
-    public function getDisplayTimezone(): string
+    public function getDisplayTimezone()
     {
         return $this->displayTz->getName();
     }
 
-    public function getDbTimezone(): string
+    public function getDbTimezone()
     {
         return $this->dbTz->getName();
     }
 
-    public function nowTs(): int
+    public function nowTs()
     {
         return time();
     }
 
-    public function nowSql(?string $timezone = null): string
+    public function nowSql($timezone = null)
     {
         return $this->nowDateTime($timezone)->format('Y-m-d H:i:s');
     }
 
-    public function nowDateTime(?string $timezone = null): DateTimeImmutable
+    public function nowDateTime($timezone = null)
     {
         return new DateTimeImmutable('now', $this->resolveTimezone($timezone, $this->appTz));
     }
@@ -61,7 +61,7 @@ class TimeService
      * Parse mixed input to unix timestamp.
      * If string has no timezone offset, it is interpreted in $assumeTimezone (defaults to DB timezone).
      */
-    public function toTimestamp($value, ?string $assumeTimezone = null): ?int
+    public function toTimestamp($value, $assumeTimezone = null)
     {
         if ($value instanceof DateTimeInterface) {
             return $value->getTimestamp();
@@ -115,7 +115,7 @@ class TimeService
         }
     }
 
-    public function format($value, string $format = 'd/m/Y H:i', ?string $targetTimezone = null, ?string $assumeTimezone = null): string
+    public function format($value, $format = 'd/m/Y H:i', $targetTimezone = null, $assumeTimezone = null)
     {
         $ts = $this->toTimestamp($value, $assumeTimezone);
         if ($ts === null) {
@@ -127,22 +127,22 @@ class TimeService
             ->format($format);
     }
 
-    public function formatDisplay($value, string $format = 'd/m/Y H:i', ?string $assumeTimezone = null): string
+    public function formatDisplay($value, $format = 'd/m/Y H:i', $assumeTimezone = null)
     {
         return $this->format($value, $format, $this->displayTz->getName(), $assumeTimezone);
     }
 
-    public function formatApp($value, string $format = 'Y-m-d H:i:s', ?string $assumeTimezone = null): string
+    public function formatApp($value, $format = 'Y-m-d H:i:s', $assumeTimezone = null)
     {
         return $this->format($value, $format, $this->appTz->getName(), $assumeTimezone);
     }
 
-    public function formatDb($value, string $format = 'Y-m-d H:i:s', ?string $assumeTimezone = null): string
+    public function formatDb($value, $format = 'Y-m-d H:i:s', $assumeTimezone = null)
     {
         return $this->format($value, $format, $this->dbTz->getName(), $assumeTimezone);
     }
 
-    public function toIso8601($value, ?string $targetTimezone = null, ?string $assumeTimezone = null): string
+    public function toIso8601($value, $targetTimezone = null, $assumeTimezone = null)
     {
         $ts = $this->toTimestamp($value, $assumeTimezone);
         if ($ts === null) {
@@ -154,7 +154,7 @@ class TimeService
             ->format(DateTimeInterface::ATOM);
     }
 
-    public function toIso8601Utc($value, ?string $assumeTimezone = null): string
+    public function toIso8601Utc($value, $assumeTimezone = null)
     {
         $ts = $this->toTimestamp($value, $assumeTimezone);
         if ($ts === null) {
@@ -168,7 +168,7 @@ class TimeService
      *
      * @return array{ts:int|null,iso:string,iso_utc:string,display:string}
      */
-    public function normalizeApiTime($value, ?string $assumeTimezone = null, string $displayFormat = 'd/m/Y H:i'): array
+    public function normalizeApiTime($value, $assumeTimezone = null, $displayFormat = 'd/m/Y H:i')
     {
         $ts = $this->toTimestamp($value, $assumeTimezone);
         if ($ts === null) {
@@ -188,7 +188,7 @@ class TimeService
         ];
     }
 
-    public function diffForHumans($value, ?string $assumeTimezone = null): string
+    public function diffForHumans($value, $assumeTimezone = null)
     {
         $ts = $this->toTimestamp($value, $assumeTimezone);
         if ($ts === null) {
@@ -208,7 +208,9 @@ class TimeService
             ['giây', 1],
         ];
 
-        foreach ($units as [$label, $seconds]) {
+        foreach ($units as $unit) {
+            $label = $unit[0];
+            $seconds = $unit[1];
             $n = (int) floor($diff / $seconds);
             if ($n > 0) {
                 return $n . ' ' . $label . ($isFuture ? ' tới' : ' trước');
@@ -218,7 +220,7 @@ class TimeService
         return $isFuture ? 'sắp tới' : 'vừa xong';
     }
 
-    private function makeTimezone(string $name): DateTimeZone
+    private function makeTimezone($name)
     {
         try {
             return new DateTimeZone($name);
@@ -227,7 +229,7 @@ class TimeService
         }
     }
 
-    private function resolveTimezone(?string $name, DateTimeZone $fallback): DateTimeZone
+    private function resolveTimezone($name, $fallback)
     {
         if ($name === null || trim($name) === '') {
             return $fallback;

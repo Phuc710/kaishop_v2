@@ -79,7 +79,7 @@ class OrderNotificationService
         $qty = max(1, (int) ($order['quantity'] ?? 1));
         $total = (int) ($order['total_price'] ?? ($price * $qty));
         $createdAt = $order['ordered_at'] ?? date('H:i:s d/m/Y');
-        $source = $order['source_label'] ?? 'Web';
+        $source = !empty($order['source_label']) ? $order['source_label'] : SourceChannelHelper::label(SourceChannelHelper::fromOrderRow($order));
         $delivery = trim((string) ($order['delivery_content'] ?? ''));
 
         $msg = "💰 <b>CÓ ĐƠN HÀNG MỚI</b>\n\n";

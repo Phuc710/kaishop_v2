@@ -12,7 +12,7 @@ class ChatGptAdminViewService
      * @param array<string, mixed> $orderStats
      * @return array<string, mixed>
      */
-    public function buildFarmPageData(array $farms, array $stats, array $orderStats): array
+    public function buildFarmPageData($farms, $stats, $orderStats)
     {
         return [
             'farms' => $this->decorateFarms($farms),
@@ -53,7 +53,7 @@ class ChatGptAdminViewService
      * @param array<string, mixed> $stats
      * @return array<string, mixed>
      */
-    public function buildOrdersPageData(array $orders, array $stats): array
+    public function buildOrdersPageData($orders, $stats)
     {
         return [
             'orders' => $this->decorateOrders($orders),
@@ -72,7 +72,7 @@ class ChatGptAdminViewService
      * @param array<int, array<string, mixed>> $members
      * @return array<string, mixed>
      */
-    public function buildMembersPageData(array $members): array
+    public function buildMembersPageData($members)
     {
         $approved = 0;
         $unknown = 0;
@@ -106,7 +106,7 @@ class ChatGptAdminViewService
      * @param array<int, string> $actionTypes
      * @return array<string, mixed>
      */
-    public function buildLogsPageData(array $logs, array $actionTypes): array
+    public function buildLogsPageData($logs, $actionTypes)
     {
         $okCount = 0;
         $failCount = 0;
@@ -132,7 +132,7 @@ class ChatGptAdminViewService
     /**
      * @return array<string, string>
      */
-    public function getOrderStatusOptions(): array
+    public function getOrderStatusOptions()
     {
         return [
             'pending' => 'Chờ xử lý',
@@ -146,7 +146,7 @@ class ChatGptAdminViewService
     /**
      * @return array<string, string>
      */
-    public function getMemberSourceOptions(): array
+    public function getMemberSourceOptions()
     {
         return [
             'approved' => 'Approved',
@@ -158,7 +158,7 @@ class ChatGptAdminViewService
      * @param array<int, array<string, mixed>> $farms
      * @return array<int, array<string, mixed>>
      */
-    private function decorateFarms(array $farms): array
+    private function decorateFarms($farms)
     {
         $output = [];
         foreach ($farms as $farm) {
@@ -184,7 +184,7 @@ class ChatGptAdminViewService
      * @param array<int, array<string, mixed>> $orders
      * @return array<int, array<string, mixed>>
      */
-    private function decorateOrders(array $orders): array
+    private function decorateOrders($orders)
     {
         $statusMap = [
             'pending' => ['label' => 'Chờ xử lý', 'tone' => 'warning'],
@@ -213,7 +213,7 @@ class ChatGptAdminViewService
      * @param array<int, array<string, mixed>> $members
      * @return array<int, array<string, mixed>>
      */
-    private function decorateMembers(array $members): array
+    private function decorateMembers($members)
     {
         $output = [];
         foreach ($members as $member) {
@@ -237,7 +237,7 @@ class ChatGptAdminViewService
      * @param array<int, array<string, mixed>> $logs
      * @return array<int, array<string, mixed>>
      */
-    private function decorateLogs(array $logs): array
+    private function decorateLogs($logs)
     {
         $output = [];
         foreach ($logs as $log) {
@@ -258,7 +258,7 @@ class ChatGptAdminViewService
     /**
      * @return array<string, mixed>
      */
-    private function makeSummaryCard(string $label, int $value, string $icon, string $tone, string $hint): array
+    private function makeSummaryCard($label, $value, $icon, $tone, $hint)
     {
         return [
             'label' => $label,
@@ -269,7 +269,7 @@ class ChatGptAdminViewService
         ];
     }
 
-    private function resolveFarmStatusTone(string $status): string
+    private function resolveFarmStatusTone($status)
     {
         switch ($status) {
             case 'full':
@@ -281,7 +281,7 @@ class ChatGptAdminViewService
         }
     }
 
-    private function resolveAuditActionTone(string $action): string
+    private function resolveAuditActionTone($action)
     {
         switch ($action) {
             case 'ORDER_ACTIVATED':
@@ -300,7 +300,7 @@ class ChatGptAdminViewService
         }
     }
 
-    private function titleize(string $value): string
+    private function titleize($value)
     {
         $value = trim(str_replace('_', ' ', $value));
         return $value !== '' ? ucfirst($value) : '--';
@@ -309,7 +309,7 @@ class ChatGptAdminViewService
     /**
      * @param mixed $value
      */
-    private function formatDateTime($value, string $format): string
+    private function formatDateTime($value, $format)
     {
         $raw = trim((string) ($value ?? ''));
         if ($raw === '' || $raw === '0000-00-00 00:00:00') {

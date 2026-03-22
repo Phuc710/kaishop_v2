@@ -6,8 +6,8 @@
  */
 class TelegramAdminController extends Controller
 {
-    private TelegramService $telegram;
-    private AuthService $authService;
+    private $telegram;
+    private $authService;
 
     public function __construct()
     {
@@ -31,7 +31,7 @@ class TelegramAdminController extends Controller
 
     // ——— Settings ———————————————————————————————————————————
 
-    public function settings(): void
+    public function settings()
     {
         $this->requireAdmin();
         if (
@@ -89,7 +89,7 @@ class TelegramAdminController extends Controller
         ]);
     }
 
-    public function updateSettings(): void
+    public function updateSettings()
     {
         $this->requireAdmin();
 
@@ -176,7 +176,7 @@ class TelegramAdminController extends Controller
 
     // ——— Webhook Actions ————————————————————————————————————
 
-    public function setWebhookAction(): void
+    public function setWebhookAction()
     {
         $this->requireAdmin();
         $db = (new UserTelegramLink())->getConnection();
@@ -212,7 +212,7 @@ class TelegramAdminController extends Controller
     /**
      * KÍCH HOẠT WEBHOOK — đăng ký ngay path hiện có trong DB, không cần nhập path mới.
      */
-    public function activateWebhookAction(): void
+    public function activateWebhookAction()
     {
         $this->requireAdmin();
 
@@ -237,7 +237,7 @@ class TelegramAdminController extends Controller
         ]);
     }
 
-    public function deleteWebhookAction(): void
+    public function deleteWebhookAction()
     {
         $this->requireAdmin();
         $result = $this->telegram->deleteWebhook();
@@ -247,7 +247,7 @@ class TelegramAdminController extends Controller
         ]);
     }
 
-    public function testNotification(): void
+    public function testNotification()
     {
         $this->requireAdmin();
         $chatId = (string) TelegramConfig::primaryAdminId();
@@ -266,7 +266,7 @@ class TelegramAdminController extends Controller
         ]);
     }
 
-    public function syncBotAction(): void
+    public function syncBotAction()
     {
         $this->requireAdmin();
         $botLogic = new TelegramBotService($this->telegram);
@@ -277,7 +277,7 @@ class TelegramAdminController extends Controller
         ]);
     }
 
-    public function terminal(): void
+    public function terminal()
     {
         $this->requireAdmin();
         $allowed = ['all', 'today', 'week', 'month'];
@@ -301,7 +301,7 @@ class TelegramAdminController extends Controller
         ]);
     }
 
-    public function terminalPoll(): void
+    public function terminalPoll()
     {
         $this->requireAdmin();
         $allowed = ['all', 'today', 'week', 'month'];
@@ -329,14 +329,14 @@ class TelegramAdminController extends Controller
 
     // ——— Notification Channels ——————————————————————————————
 
-    public function notificationChannels(): void
+    public function notificationChannels()
     {
         $this->requireAdmin();
         $channels = (new TelegramNotificationChannel())->fetchAll();
         $this->json(['success' => true, 'channels' => $channels]);
     }
 
-    public function addChannelAction(): void
+    public function addChannelAction()
     {
         $this->requireAdmin();
         $chatId = trim((string) $this->post('chat_id', ''));
@@ -356,7 +356,7 @@ class TelegramAdminController extends Controller
         ]);
     }
 
-    public function toggleChannelAction(): void
+    public function toggleChannelAction()
     {
         $this->requireAdmin();
         $id = (int) $this->post('id', 0);
@@ -370,7 +370,7 @@ class TelegramAdminController extends Controller
         $this->json(['success' => $success]);
     }
 
-    public function updateChannelAction(): void
+    public function updateChannelAction()
     {
         $this->requireAdmin();
 
@@ -408,7 +408,7 @@ class TelegramAdminController extends Controller
         }
     }
 
-    public function deleteChannelAction(): void
+    public function deleteChannelAction()
     {
         $this->requireAdmin();
         $id = (int) $this->post('id', 0);
@@ -424,7 +424,7 @@ class TelegramAdminController extends Controller
 
     // ——— Orders —————————————————————————————————————————————
 
-    public function orders(): void
+    public function orders()
     {
         $this->requireAdmin();
         $db = (new UserTelegramLink())->getConnection();
@@ -459,7 +459,7 @@ class TelegramAdminController extends Controller
 
     // ——— User Links —————————————————————————————————————————
 
-    public function sendMainChannelAlertAction(): void
+    public function sendMainChannelAlertAction()
     {
         $this->requireAdmin();
 
@@ -495,7 +495,7 @@ class TelegramAdminController extends Controller
         ]);
     }
 
-    public function links(): void
+    public function links()
     {
         $this->requireAdmin();
 
@@ -618,7 +618,7 @@ class TelegramAdminController extends Controller
 
     // ——— Outbox —————————————————————————————————————————————
 
-    public function outbox(): void
+    public function outbox()
     {
         $this->requireAdmin();
 
@@ -706,7 +706,7 @@ class TelegramAdminController extends Controller
         ]);
     }
 
-    public function outboxRetry(): void
+    public function outboxRetry()
     {
         $this->requireAdmin();
         $ids = $this->post('ids', '');
@@ -728,7 +728,7 @@ class TelegramAdminController extends Controller
         $this->json(['success' => true, 'message' => 'Đã đặt lại trạng thái để gửi lại']);
     }
 
-    public function outboxDelete(): void
+    public function outboxDelete()
     {
         $this->requireAdmin();
         $idsRaw = $this->post('ids', '');
@@ -757,7 +757,7 @@ class TelegramAdminController extends Controller
 
     // ——— Broadcast ——————————————————————————————————————————
 
-    public function broadcastAction(): void
+    public function broadcastAction()
     {
         $this->requireAdmin();
         $message = trim((string) $this->post('message', ''));
@@ -787,7 +787,7 @@ class TelegramAdminController extends Controller
     /**
      * @param array<int,string> $keys
      */
-    private function hasSensitiveQueryParams(array $keys): bool
+    private function hasSensitiveQueryParams($keys)
     {
         foreach ($keys as $key) {
             if (array_key_exists($key, $_GET)) {
@@ -797,7 +797,7 @@ class TelegramAdminController extends Controller
         return false;
     }
 
-    private function hasSettingColumn(PDO $db, string $column): bool
+    private function hasSettingColumn($db, $column)
     {
         $stmt = $db->prepare("
             SELECT COUNT(*)
@@ -810,7 +810,7 @@ class TelegramAdminController extends Controller
         return (int) $stmt->fetchColumn() > 0;
     }
 
-    private function ensureSettingColumn(PDO $db, string $column, string $definition): void
+    private function ensureSettingColumn($db, $column, $definition)
     {
         if ($this->hasSettingColumn($db, $column)) {
             return;

@@ -12,15 +12,15 @@
  */
 class MailService
 {
-    private string $smtpHost;
-    private int $smtpPort;
-    private string $smtpUser;
-    private string $smtpPass;
-    private int $smtpTimeout;
-    private string $fromEmail;
-    private string $fromName;
-    private string $siteUrl;
-    private string $siteName;
+    private $smtpHost;
+    private $smtpPort;
+    private $smtpUser;
+    private $smtpPass;
+    private $smtpTimeout;
+    private $fromEmail;
+    private $fromName;
+    private $siteUrl;
+    private $siteName;
 
     public function __construct()
     {
@@ -37,7 +37,7 @@ class MailService
         $this->siteName = $cfg['site_name'];
     }
 
-    public function sendWelcomeRegister(array $user): bool
+    public function sendWelcomeRegister($user)
     {
         $email = trim((string) ($user['email'] ?? ''));
         if ($email === '') {
@@ -55,7 +55,7 @@ class MailService
         return $this->send($email, $username, $subject, $body);
     }
 
-    public function sendPasswordReset(array $user, string $otpcode): bool
+    public function sendPasswordReset($user, $otpcode)
     {
         $email = trim((string) ($user['email'] ?? ''));
         $recipientName = $this->resolveRecipientName($user);
@@ -77,12 +77,12 @@ class MailService
     }
 
     public function sendOtp(
-        string $email,
-        string $username,
-        string $otpCode,
-        string $purpose = 'login_2fa',
-        int $ttlSeconds = 300
-    ): void {
+        $email,
+        $username,
+        $otpCode,
+        $purpose = 'login_2fa',
+        $ttlSeconds = 300
+    ) {
         $email = trim($email);
         if ($email === '') {
             return;
@@ -110,7 +110,7 @@ class MailService
      * @param array<string,mixed> $order
      * @param array<string,mixed> $product
      */
-    public function sendOrderSuccess(array $user, array $order, array $product = []): bool
+    public function sendOrderSuccess($user, $order, $product = [])
     {
         $email = trim((string) ($user['email'] ?? ''));
         if ($email === '') {
@@ -125,12 +125,21 @@ class MailService
         $orderedAt = trim((string) ($order['ordered_at'] ?? $order['created_at'] ?? date('Y-m-d H:i:s')));
         $productName = trim((string) ($order['product_name'] ?? $product['name'] ?? 'Sản phẩm'));
         $statusRaw = strtolower(trim((string) ($order['status'] ?? 'completed')));
-        $statusLabel = match ($statusRaw) {
-            'completed' => 'HOÀN TẤT',
-            'pending', 'processing' => 'ĐANG XỬ LÝ',
-            'cancelled', 'canceled', 'failed' => 'ĐÃ HỦY',
-            default => 'HOÀN TẤT',
-        };
+        switch ($statusRaw) {
+            case 'pending':
+            case 'processing':
+                $statusLabel = 'ĐANG XỬ LÝ';
+                break;
+            case 'cancelled':
+            case 'canceled':
+            case 'failed':
+                $statusLabel = 'ĐÃ HỦY';
+                break;
+            case 'completed':
+            default:
+                $statusLabel = 'HOÀN TẤT';
+                break;
+        }
         $deliveryMode = $this->resolveDeliveryMode($order, $product);
 
         $baseData = [
@@ -164,7 +173,7 @@ class MailService
         return $this->send($email, $recipientName, $subject, $body);
     }
 
-    public function buildLayout(string $subject, string $headline, string $content): string
+    public function buildLayout($subject, $headline, $content)
     {
         $safeSubject = $this->e($subject);
         $safeSiteName = $this->e($this->siteName);
@@ -225,7 +234,7 @@ body,table,td,div,p,span,a,h1,h2,h3{-webkit-text-size-adjust:100%;-ms-text-size-
 HTML;
     }
 
-    private function tplWelcomeRegister(string $username): string
+    private function tplWelcomeRegister($username)
     {
         $safeUser = $this->e($username !== '' ? $username : 'bạn');
         $safeHome = $this->e($this->siteUrl !== '' ? $this->siteUrl : '#');
@@ -241,7 +250,7 @@ HTML;
 HTML;
     }
 
-    private function tplPasswordReset(string $username, string $resetUrl): string
+    private function tplPasswordReset($username, $resetUrl)
     {
         $safeUser = $this->e($username !== '' ? $username : 'bạn');
         $safeReset = $this->e($resetUrl);
@@ -257,7 +266,7 @@ HTML;
 HTML;
     }
 
-    private function tplOtp(string $username, string $otpCode, string $purposeText, int $minutes): string
+    private function tplOtp($username, $otpCode, $purposeText, $minutes)
     {
         $safeUser = $this->e($username !== '' ? $username : 'bạn');
         $safeCode = $this->e(trim($otpCode));
@@ -279,7 +288,7 @@ HTML;
     /**
      * @param array<string,mixed> $data
      */
-    private function tplOrderAccount(array $data): string
+    private function tplOrderAccount($data)
     {
         $delivery = trim((string) ($data['delivery_content'] ?? ''));
         $deliveryHtml = $delivery !== ''
@@ -292,7 +301,7 @@ HTML;
     /**
      * @param array<string,mixed> $data
      */
-    private function tplOrderSource(array $data): string
+    private function tplOrderSource($data)
     {
         $link = trim((string) ($data['delivery_content'] ?? ''));
         if ($link === '') {
@@ -314,7 +323,7 @@ HTML;
     /**
      * @param array<string,mixed> $data
      */
-    private function tplOrderManual(array $data, string $statusRaw): string
+    private function tplOrderManual($data, $statusRaw)
     {
         $isPending = $statusRaw === 'pending';
         $intro = $isPending
@@ -342,7 +351,7 @@ HTML;
     /**
      * @param array<string,mixed> $data
      */
-    private function tplOrderBase(array $data, string $extraContent): string
+    private function tplOrderBase($data, $extraContent)
     {
         $username = $this->e((string) ($data['username'] ?? 'Khách hàng'));
         $orderCode = $this->e((string) ($data['order_code'] ?? ''));
@@ -368,7 +377,7 @@ HTML;
     /**
      * @param array<string,mixed> $data
      */
-    private function renderOrderSummaryTable(array $data): string
+    private function renderOrderSummaryTable($data)
     {
         $orderCode = $this->e((string) ($data['order_code'] ?? ''));
         $orderedAt = $this->e((string) ($data['ordered_at'] ?? ''));
@@ -404,7 +413,7 @@ HTML;
             . '</table>';
     }
 
-    private function renderInfoBox(string $title, string $content): string
+    private function renderInfoBox($title, $content)
     {
         $safeTitle = $this->e($title);
         $safeContent = nl2br($this->e($content));
@@ -414,7 +423,7 @@ HTML;
             . '</div>';
     }
 
-    public function send(string $toEmail, string $toName, string $subject, string $body): bool
+    public function send($toEmail, $toName, $subject, $body)
     {
         $toEmail = trim($toEmail);
         if ($toEmail === '') {
@@ -477,7 +486,7 @@ HTML;
      *   site_name:string
      * }
      */
-    private function loadConfig(): array
+    private function loadConfig()
     {
         $host = class_exists('EnvHelper') ? (string) EnvHelper::get('SMTP_HOST', 'smtp.gmail.com') : 'smtp.gmail.com';
         $port = class_exists('EnvHelper') ? (int) EnvHelper::get('SMTP_PORT', 587) : 587;
@@ -532,7 +541,7 @@ HTML;
         ];
     }
 
-    private function normalizeAssetUrl(string $value): string
+    private function normalizeAssetUrl($value)
     {
         $value = trim($value);
         if ($value === '') {
@@ -551,7 +560,7 @@ HTML;
      * @param array<string,mixed> $order
      * @param array<string,mixed> $product
      */
-    private function resolveDeliveryMode(array $order, array $product): string
+    private function resolveDeliveryMode($order, $product)
     {
         $mode = trim((string) ($order['delivery_mode'] ?? $product['delivery_mode'] ?? ''));
         if ($mode !== '') {
@@ -571,17 +580,17 @@ HTML;
         return 'account_stock';
     }
 
-    private function formatMoney(int $amount): string
+    private function formatMoney($amount)
     {
         return number_format($amount, 0, ',', '.') . ' VND';
     }
 
-    private function e(string $value): string
+    private function e($value)
     {
         return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
     }
 
-    private function resolveRecipientName(array $user): string
+    private function resolveRecipientName($user)
     {
         $fullName = trim((string) ($user['full_name'] ?? ''));
         if ($fullName !== '') {

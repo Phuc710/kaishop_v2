@@ -170,17 +170,17 @@ class TelegramBotService
         'Binance Pay chưa sẵn sàng.' => 'Binance Pay is not ready yet.',
         'Binance Pay chưa được cấu hình.' => 'Binance Pay is not configured.',
         'Không thể tạo phiên thanh toán Binance.' => 'Could not create a Binance payment session.',
-        'Hệ thống mã giảm giá chưa sẵn sàng.' => 'The discount-code system is not ready yet.',
-        'Mã giảm giá không tồn tại.' => 'Discount code does not exist.',
-        'Mã giảm giá đã bị tắt.' => 'Discount code has been disabled.',
-        'Mã giảm giá đã hết lượt sử dụng.' => 'Discount code has no remaining uses.',
-        'Mã giảm giá đã hết hạn.' => 'Discount code has expired.',
-        'Mã giảm giá không áp dụng cho sản phẩm này.' => 'This discount code does not apply to this product.',
-        'Đơn hàng chưa đạt mức tối thiểu để dùng mã giảm giá.' => 'The order does not meet the minimum amount for this discount code.',
-        'Đơn hàng vượt quá giá trị áp dụng của mã giảm giá.' => 'The order exceeds the applicable amount for this discount code.',
-        'Mã giảm giá vừa hết lượt. Vui lòng thử lại.' => 'The discount code has just run out. Please try again.',
+        'Hệ thống Giftcode chưa sẵn sàng.' => 'The Giftcode system is not ready yet.',
+        'Giftcode không tồn tại.' => 'Giftcode does not exist.',
+        'Giftcode đã bị tắt.' => 'Giftcode has been disabled.',
+        'Giftcode đã hết lượt sử dụng.' => 'Giftcode has no remaining uses.',
+        'Giftcode đã hết hạn.' => 'Giftcode has expired.',
+        'Giftcode không áp dụng cho sản phẩm này.' => 'This Giftcode does not apply to this product.',
+        'Đơn hàng chưa đạt mức tối thiểu để dùng Giftcode.' => 'The order does not meet the minimum amount for this Giftcode.',
+        'Đơn hàng vượt quá giá trị áp dụng của Giftcode.' => 'The order exceeds the applicable amount for this Giftcode.',
+        'Giftcode vừa hết lượt. Vui lòng thử lại.' => 'The Giftcode has just run out. Please try again.',
         'Giá trị đơn hàng không đủ điều kiện dùng mã này.' => 'Order value does not qualify for this code.',
-        'Áp dụng mã giảm giá thành công.' => 'Discount code applied successfully.',
+        'Áp dụng Giftcode thành công.' => 'Giftcode applied successfully.',
         'Đã cập nhật thành tiền.' => 'Total price updated.',
         '✅ Đã cập nhật.' => '✅ Updated.',
         '❌ Hủy bỏ' => '❌ Cancel',
@@ -440,6 +440,12 @@ class TelegramBotService
 
         if (TelegramConfig::isMaintenanceEnabled() && !TelegramConfig::isAdmin($telegramId)) {
             $this->telegram->answerCallbackQuery($callbackId, $this->tgChoice($telegramId, 'Hệ thống đang bảo trì, vui lòng thử lại sau.', 'The system is under maintenance. Please try again later.'), true);
+            return;
+        }
+
+        if ($data === 'oos') {
+            $msg = $this->tgChoice($telegramId, '❌ Sản phẩm này hiện đang hết hàng. Vui lòng quay lại sau!', '❌ This product is currently out of stock. Please check back later!');
+            $this->telegram->answerCallbackQuery($callbackId, $msg, true);
             return;
         }
 

@@ -7,15 +7,15 @@
 class AuthService {
     private $userModel;
     private $authSecurity = null;
-    private static bool $userCacheLoaded = false;
-    private static ?array $cachedUser = null;
-    private static ?string $cachedSessionToken = null;
+    private static $userCacheLoaded = false;
+    private static $cachedUser = null;
+    private static $cachedSessionToken = null;
     
     public function __construct() {
         $this->userModel = new User();
     }
 
-    private function authSecurity(): ?AuthSecurityService
+    private function authSecurity()
     {
         if ($this->authSecurity !== null) {
             return $this->authSecurity;
@@ -29,12 +29,12 @@ class AuthService {
         return $this->authSecurity;
     }
 
-    private function currentSessionToken(): string
+    private function currentSessionToken()
     {
         return (string) ($_SESSION['session'] ?? '');
     }
 
-    private function enforceActiveUser(?array $user): ?array
+    private function enforceActiveUser($user)
     {
         if (!is_array($user) || $user === []) {
             return null;
@@ -53,7 +53,7 @@ class AuthService {
         return $validatedUser;
     }
 
-    private function loadUserFromSessionCache(): ?array
+    private function loadUserFromSessionCache()
     {
         $session = $this->currentSessionToken();
         if ($session === '') {
@@ -75,14 +75,14 @@ class AuthService {
         return self::$cachedUser;
     }
 
-    private function storeUserCache(?array $user): void
+    private function storeUserCache($user)
     {
         self::$userCacheLoaded = true;
         self::$cachedSessionToken = $this->currentSessionToken();
         self::$cachedUser = $user;
     }
 
-    private function clearUserCache(): void
+    private function clearUserCache()
     {
         self::$userCacheLoaded = true;
         self::$cachedSessionToken = '';
@@ -158,7 +158,7 @@ class AuthService {
         }
     }
 
-    public function logout(): void
+    public function logout()
     {
         $authSecurity = $this->authSecurity();
         if ($authSecurity) {

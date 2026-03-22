@@ -12,9 +12,9 @@ use App\Helpers\UserAgentParser;
  */
 class AuthSecurityService
 {
-    private PDO $db;
-    private BanService $banService;
-    private ?TimeService $timeService = null;
+    private $db;
+    private $banService;
+    private $timeService = null;
 
     private const ACCESS_COOKIE = 'ks_at';
     private const REFRESH_COOKIE = 'ks_rt';
@@ -31,7 +31,7 @@ class AuthSecurityService
     private const DEFAULT_FAIL_LIMIT = 5;
     private const DEFAULT_FAIL_WINDOW_MINUTES = 15;
 
-    private static bool $pruneAttempted = false;
+    private static $pruneAttempted = false;
 
     public function __construct()
     {
@@ -43,12 +43,12 @@ class AuthSecurityService
         $this->maybePruneExpiredAuthData();
     }
 
-    public function hashPassword(string $plain): string
+    public function hashPassword($plain)
     {
         return password_hash($plain, PASSWORD_BCRYPT);
     }
 
-    public function verifyPassword(array $user, string $plain): bool
+    public function verifyPassword($user, $plain)
     {
         $hash = (string) ($user['password'] ?? '');
         if ($hash === '') {
@@ -63,13 +63,13 @@ class AuthSecurityService
         return hash_equals($hash, sha1(md5($plain)));
     }
 
-    public function needsPasswordRehash(array $user): bool
+    public function needsPasswordRehash($user)
     {
         $hash = (string) ($user['password'] ?? '');
         return !($hash !== '' && (strpos($hash, '$2y$') === 0 || strpos($hash, '$2a$') === 0 || strpos($hash, '$2b$') === 0));
     }
 
-    public function recordLoginAttempt(string $action, string $usernameOrEmail, bool $success, string $reason = ''): void
+    public function recordLoginAttempt($action, $usernameOrEmail, $success, $reason = '')
     {
         try {
             $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
@@ -88,7 +88,7 @@ class AuthSecurityService
         }
     }
 
-    public function checkRateLimit(string $action, string $usernameOrEmail = ''): ?array
+    public function checkRateLimit($action, $usernameOrEmail = '')
     {
         $ip = $this->clientIp();
         $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
@@ -144,7 +144,7 @@ class AuthSecurityService
         return null;
     }
 
-    public function getFailedAttemptStatus(string $action, string $usernameOrEmail): array
+    public function getFailedAttemptStatus($action, $usernameOrEmail)
     {
         $policy = $this->getFailPolicy($action);
         $limit = (int) ($policy['limit'] ?? self::DEFAULT_FAIL_LIMIT);
@@ -178,7 +178,7 @@ class AuthSecurityService
         ];
     }
 
-    private function getFailPolicy(string $action): array
+    private function getFailPolicy($action)
     {
         if ($action === 'login') {
             return [
@@ -193,7 +193,7 @@ class AuthSecurityService
         ];
     }
 
-    private function getFailedAttemptCount(string $action, string $normalizedUsername, string $ip, string $nowSql, int $windowMinutes): int
+    private function getFailedAttemptCount($action, $normalizedUsername, $ip, $nowSql, $windowMinutes)
     {
         $stmt = $this->db->prepare(
             "SELECT COUNT(*) c
@@ -209,14 +209,14 @@ class AuthSecurityService
     }
 
     private function calculateFailedAttemptRetryAfterSeconds(
-        string $action,
-        string $normalizedUsername,
-        string $ip,
-        string $nowSql,
-        int $windowMinutes,
-        int $failCount,
-        int $limit
-    ): int {
+        $action,
+        $normalizedUsername,
+        $ip,
+        $nowSql,
+        $windowMinutes,
+        $failCount,
+        $limit
+    ) {
         if ($failCount < $limit) {
             return 0;
         }
@@ -238,13 +238,13 @@ class AuthSecurityService
     }
 
     private function calculateIpBurstRetryAfterSeconds(
-        string $action,
-        string $ip,
-        string $nowSql,
-        int $windowMinutes,
-        int $ipCount,
-        int $limit
-    ): int {
+        $action,
+        $ip,
+        $nowSql,
+        $windowMinutes,
+        $ipCount,
+        $limit
+    ) {
         if ($ipCount < $limit) {
             return 0;
         }
@@ -266,7 +266,7 @@ class AuthSecurityService
     /**
      * Send a security warning email when a user account is locked out due to too many failed login attempts.
      */
-    private function sendLockoutWarningEmail(string $usernameOrEmail, string $ip, int $attemptCount, int $lockMinutes): void
+    private function sendLockoutWarningEmail($usernameOrEmail, $ip, $attemptCount, $lockMinutes)
     {
         try {
             // Avoid sending duplicate lockout emails within the same lockout window
@@ -320,7 +320,7 @@ class AuthSecurityService
         }
     }
 
-    public function getDeviceContext(string $fingerprintHash = ''): array
+    public function getDeviceContext($fingerprintHash = '')
     {
         if (!class_exists('App\\Helpers\\UserAgentParser')) {
             require_once __DIR__ . '/../Helpers/UserAgentParser.php';
@@ -350,13 +350,13 @@ class AuthSecurityService
         ];
     }
 
-    public function shouldRequireTwoFactor(array $user, array $device): bool
+    public function shouldRequireTwoFactor($user, $device)
     {
         // Latest business rule: only accounts that explicitly enable 2FA require OTP at login.
         return (int) ($user['twofa_enabled'] ?? 0) === 1;
     }
 
-    public function createOtpChallenge(array $user, string $purpose, array $device, array $meta = [], int $ttlSeconds = 300): array
+    public function createOtpChallenge($user, $purpose, $device, $meta = [], $ttlSeconds = 300)
     {
         $challengeId = bin2hex(random_bytes(16));
         $otpCode = (string) random_int(100000, 999999);
@@ -390,7 +390,7 @@ class AuthSecurityService
         ];
     }
 
-    public function verifyOtpChallenge(string $challengeId, string $otpCode, string $purpose): array
+    public function verifyOtpChallenge($challengeId, $otpCode, $purpose)
     {
         $stmt = $this->db->prepare("SELECT * FROM auth_otp_codes WHERE challenge_id = ? AND purpose = ? LIMIT 1");
         $stmt->execute([$challengeId, $purpose]);
@@ -428,7 +428,7 @@ class AuthSecurityService
         return ['ok' => true, 'row' => $row, 'meta' => $meta];
     }
 
-    public function issueLoginTokens(array $user, array $device, bool $rememberMe = false): array
+    public function issueLoginTokens($user, $device, $rememberMe = false)
     {
         $this->revokeAllSessionsForUser((int) $user['id']);
 
@@ -503,7 +503,7 @@ class AuthSecurityService
         ];
     }
 
-    public function bootstrapFromCookies(): ?array
+    public function bootstrapFromCookies()
     {
         // Session already present -> return current user if valid
         if (!empty($_SESSION['session'])) {
@@ -566,14 +566,14 @@ class AuthSecurityService
         return $this->resumeLegacySessionFromAuthRow($row);
     }
 
-    public function clearAuthCookies(): void
+    public function clearAuthCookies()
     {
         $this->setCookie(self::ACCESS_COOKIE, '', time() - 3600, true);
         $this->setCookie(self::REFRESH_COOKIE, '', time() - 3600, true);
         $this->setCookie(self::DEVICE_COOKIE, '', time() - 3600, false);
     }
 
-    public function revokeCurrentAuthSessionFromCookies(): void
+    public function revokeCurrentAuthSessionFromCookies()
     {
         foreach ([self::ACCESS_COOKIE, self::REFRESH_COOKIE] as $cookieName) {
             $parsed = $this->parseCookieToken((string) ($_COOKIE[$cookieName] ?? ''));
@@ -588,7 +588,7 @@ class AuthSecurityService
         $this->clearAuthCookies();
     }
 
-    public function trustDevice(int $userId, array $device, int $days = self::TRUSTED_DEVICE_DAYS): void
+    public function trustDevice($userId, $device, $days = self::TRUSTED_DEVICE_DAYS)
     {
         $deviceHash = (string) ($device['device_hash'] ?? '');
         if ($deviceHash === '') {
@@ -633,7 +633,7 @@ class AuthSecurityService
         }
     }
 
-    public function isTrustedDevice(int $userId, string $deviceHash): bool
+    public function isTrustedDevice($userId, $deviceHash)
     {
         if ($deviceHash === '') {
             return false;
@@ -643,18 +643,18 @@ class AuthSecurityService
         return ((int) $stmt->fetchColumn()) > 0;
     }
 
-    public function sendPasswordResetMail(array $user, string $otpcode): bool
+    public function sendPasswordResetMail($user, $otpcode)
     {
         return $this->mailService()->sendPasswordReset($user, $otpcode);
     }
 
-    private function sendOtpEmail(string $email, string $username, string $otpCode, string $purpose, int $ttlSeconds): void
+    private function sendOtpEmail($email, $username, $otpCode, $purpose, $ttlSeconds)
     {
         $this->mailService()->sendOtp($email, $username, $otpCode, $purpose, $ttlSeconds);
     }
 
     /** @return MailService */
-    private function mailService(): MailService
+    private function mailService()
     {
         static $svc = null;
         if ($svc === null) {
@@ -666,7 +666,7 @@ class AuthSecurityService
         return $svc;
     }
 
-    private function resumeLegacySessionFromAuthRow(array $row): ?array
+    private function resumeLegacySessionFromAuthRow($row)
     {
         $stmt = $this->db->prepare("SELECT * FROM users WHERE id = ? LIMIT 1");
         $stmt->execute([(int) $row['user_id']]);
@@ -699,7 +699,7 @@ class AuthSecurityService
         return $user;
     }
 
-    public function enforceActiveUser(?array $user): ?array
+    public function enforceActiveUser($user)
     {
         if (!is_array($user) || $user === []) {
             return null;
@@ -715,7 +715,7 @@ class AuthSecurityService
         return null;
     }
 
-    private function rotateSessionTokens(int $sessionId, bool $rememberMe): void
+    private function rotateSessionTokens($sessionId, $rememberMe)
     {
         $accessToken = bin2hex(random_bytes(32));
         $refreshToken = bin2hex(random_bytes(48));
@@ -739,35 +739,35 @@ class AuthSecurityService
         }
     }
 
-    private function revokeAllSessionsForUser(int $userId): void
+    private function revokeAllSessionsForUser($userId)
     {
         $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
         $stmt = $this->db->prepare("UPDATE auth_sessions SET status = 'revoked', revoked_at = ?, revoke_reason = 'new_login', updated_at = ? WHERE user_id = ? AND status = 'active'");
         $stmt->execute([$nowSql, $nowSql, $userId]);
     }
 
-    private function revokeSessionById(int $id, string $reason): void
+    private function revokeSessionById($id, $reason)
     {
         $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
         $stmt = $this->db->prepare("UPDATE auth_sessions SET status = 'revoked', revoked_at = ?, revoke_reason = ?, updated_at = ? WHERE id = ?");
         $stmt->execute([$nowSql, $reason, $nowSql, $id]);
     }
 
-    private function findSessionBySelector(string $selector): ?array
+    private function findSessionBySelector($selector)
     {
         $stmt = $this->db->prepare("SELECT * FROM auth_sessions WHERE session_selector = ? LIMIT 1");
         $stmt->execute([$selector]);
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    private function findSessionById(int $id): ?array
+    private function findSessionById($id)
     {
         $stmt = $this->db->prepare("SELECT * FROM auth_sessions WHERE id = ? LIMIT 1");
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    private function sessionUsable(array $row, array $device): bool
+    private function sessionUsable($row, $device)
     {
         if (($row['status'] ?? '') !== 'active') {
             return false;
@@ -781,13 +781,13 @@ class AuthSecurityService
         return true;
     }
 
-    private function parseCookieToken(string $value): ?array
+    private function parseCookieToken($value)
     {
         $value = trim($value);
         if ($value === '' || strpos($value, '.') === false) {
             return null;
         }
-        [$selector, $token] = explode('.', $value, 2);
+        list($selector, $token) = explode('.', $value, 2);
         if (!preg_match('/^[a-f0-9]{24}$/', $selector)) {
             return null;
         }
@@ -797,7 +797,7 @@ class AuthSecurityService
         return ['selector' => $selector, 'token' => $token];
     }
 
-    private function setAuthCookies(string $selector, string $accessToken, string $refreshToken, int $refreshTtl): void
+    private function setAuthCookies($selector, $accessToken, $refreshToken, $refreshTtl)
     {
         $this->setCookie(self::ACCESS_COOKIE, $selector . '.' . $accessToken, time() + self::ACCESS_TTL, true);
         $this->setCookie(self::REFRESH_COOKIE, $selector . '.' . $refreshToken, time() + $refreshTtl, true);
@@ -806,7 +806,7 @@ class AuthSecurityService
         }
     }
 
-    private function setCookie(string $name, string $value, int $expiresAt, bool $httpOnly): void
+    private function setCookie($name, $value, $expiresAt, $httpOnly)
     {
         $isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
         $path = trim((string) EnvHelper::get('APP_DIR', ''));
@@ -829,17 +829,17 @@ class AuthSecurityService
         }
     }
 
-    private function clientIp(): string
+    private function clientIp()
     {
         return ClientIpHelper::detect($_SERVER);
     }
 
-    private function userAgent(): string
+    private function userAgent()
     {
         return (string) ($_SERVER['HTTP_USER_AGENT'] ?? 'Unknown');
     }
 
-    private function generateLegacySessionToken(): string
+    private function generateLegacySessionToken()
     {
         return bin2hex(random_bytes(24));
     }
@@ -847,7 +847,7 @@ class AuthSecurityService
     /**
      * Check if a user is banned (account ban or device fingerprint ban)
      */
-    private function isUserBanned(array $user): bool
+    private function isUserBanned($user)
     {
         $accountBan = $this->banService->getActiveAccountBanByUserId((int) ($user['id'] ?? 0));
         if ($accountBan) {
@@ -869,7 +869,7 @@ class AuthSecurityService
         return false;
     }
 
-    private function enrichUserBanContext(array $user): array
+    private function enrichUserBanContext($user)
     {
         $userId = (int) ($user['id'] ?? 0);
         if ($userId <= 0) {
@@ -912,7 +912,7 @@ class AuthSecurityService
         return $user;
     }
 
-    private function findLatestFingerprintForUser(int $userId): string
+    private function findLatestFingerprintForUser($userId)
     {
         $stmt = $this->db->prepare("SELECT fingerprint_hash FROM user_fingerprints WHERE user_id = ? AND fingerprint_hash <> '' ORDER BY id DESC LIMIT 1");
         $stmt->execute([$userId]);
@@ -935,7 +935,7 @@ class AuthSecurityService
      * Clear all auth state for a banned user.
      * Does NOT redirect â€” that is handled by SecurityMiddleware or the caller.
      */
-    private function kickBannedUser(array $user): void
+    private function kickBannedUser($user)
     {
         $banReason = (string) ($user['ban_reason'] ?? 'TÃ i khoáº£n/thiáº¿t bá»‹ bá»‹ khoÃ¡');
         $_SESSION['banned_reason'] = $banReason;
@@ -966,7 +966,7 @@ class AuthSecurityService
         ]);
     }
 
-    private function renderBannedResponse(array $user): void
+    private function renderBannedResponse($user)
     {
         $reason = (string) ($_SESSION['banned_reason'] ?? $user['ban_reason'] ?? 'Tai khoan/thiet bi bi khoa');
         if (empty($_SESSION['banned_meta'])) {
@@ -995,7 +995,7 @@ class AuthSecurityService
         exit;
     }
 
-    private function maybePruneExpiredAuthData(): void
+    private function maybePruneExpiredAuthData()
     {
         if (self::$pruneAttempted) {
             return;

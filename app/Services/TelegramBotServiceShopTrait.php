@@ -307,8 +307,10 @@ trait TelegramBotServiceShopTrait
         if ($step === 'await_uid') {
             $uid = preg_replace('/\D/', '', $text);
             if (!preg_match('/^\d{4,20}$/', (string) $uid)) {
-                $messageId = (int) ($session['message_id'] ?? 0);
-                $this->telegram->editOrSend($chatId, $messageId, $this->buildBinanceUidPrompt(true), $this->buildBinanceUidMarkup());
+                // User typed invalid UID -> send NEW message (No edit per user request)
+                $this->telegram->sendTo($chatId, $this->buildBinanceUidPrompt(true), [
+                    'reply_markup' => $this->buildBinanceUidMarkup()
+                ]);
                 return true;
             }
 
@@ -324,9 +326,10 @@ trait TelegramBotServiceShopTrait
                 // Retrieve purchase session to know where to redirect back
                 $buySession = $this->getPurchaseSession($telegramId);
                 if ($buySession && isset($buySession['prod_id'], $buySession['qty'])) {
-                    $this->cbBuyConfirm($chatId, $telegramId, (int) $buySession['prod_id'], (int) $buySession['qty'], $buySession['info'] ?? null, $messageId, $uid);
+                    // Pass 0 to force new message after text input
+                    $this->cbBuyConfirm($chatId, $telegramId, (int) $buySession['prod_id'], (int) $buySession['qty'], $buySession['info'] ?? null, 0, $uid);
                 } else {
-                    $this->showMainMenu($chatId, $telegramId, '✅ Linked successfully!', false, $messageId);
+                    $this->showMainMenu($chatId, $telegramId, '✅ Linked successfully!', false, 0);
                 }
                 return true;
             }
@@ -336,14 +339,14 @@ trait TelegramBotServiceShopTrait
                 $this->clearBinanceSession($telegramId);
 
                 if ($orderId > 0) {
-                    $this->cbOrderPayBinance($chatId, $telegramId, $orderId, $messageId, $uid);
+                    $this->cbOrderPayBinance($chatId, $telegramId, $orderId, 0, $uid);
                 } else {
                     // If order doesn't exist yet, proceed to create it
                     $buySession = $this->getPurchaseSession($telegramId);
                     if ($buySession && isset($buySession['prod_id'], $buySession['qty'])) {
-                        $this->cbDoBuy($chatId, $telegramId, (int) $buySession['prod_id'], (int) $buySession['qty'], $messageId, $uid);
+                        $this->cbDoBuy($chatId, $telegramId, (int) $buySession['prod_id'], (int) $buySession['qty'], 0, $uid);
                     } else {
-                        $this->showMainMenu($chatId, $telegramId, '✅ Linked successfully!', false, $messageId);
+                        $this->showMainMenu($chatId, $telegramId, '✅ Linked successfully!', false, 0);
                     }
                 }
                 return true;
@@ -644,16 +647,20 @@ trait TelegramBotServiceShopTrait
             $priceText = $this->formatCurrency((int) $p['price_vnd'], $telegramId);
 
             if ($isOutOfStock) {
+                // Trigger a popup alert instead of navigating (as requested)
                 $btnText = "{$p['name']} | {$priceText} | " . $this->tgChoice($telegramId, '❌ Hết hàng', '❌ Out of stock');
+                $rows[] = [['text' => $btnText, 'callback_data' => 'oos']];
             } else {
+                // Directly link to purchase (no intermediate detail step as requested)
                 $btnText = "{$p['name']} | {$priceText} | 📦 {$stockText}";
+                $rows[] = [['text' => $btnText, 'callback_data' => 'buy_' . $p['id'] . '_1']];
             }
-
-            $rows[] = [['text' => $btnText, 'callback_data' => 'prod_' . $p['id']]];
         }
 
-        $rows[] = [['text' => $this->tgText($telegramId, 'button_refresh'), 'callback_data' => 'cat_refresh_' . $catId]];
-        $rows[] = [['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'shop']];
+        $rows[] = [
+            ['text' => $this->tgText($telegramId, 'button_refresh'), 'callback_data' => 'cat_refresh_' . $catId],
+            ['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'shop']
+        ];
 
         $msg = $this->tgChoice($telegramId, "🛍️ <b>DANH SÁCH SẢN PHẨM</b>\n\n👇 Chọn sản phẩm bên dưới:", "🛍️ <b>PRODUCT LIST</b>\n\n👇 Choose a product below:");
         $markup = TelegramService::buildInlineKeyboard($rows);
@@ -710,10 +717,10 @@ trait TelegramBotServiceShopTrait
         }
 
         $rows = [];
-        if ($stock === null || $stock > 0) {
-            $rows[] = [['text' => $this->tgText($telegramId, 'buy_now'), 'callback_data' => 'buy_' . $p['id'] . '_1']];
-        }
-        $rows[] = [['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'cat_' . ($p['category_id'] ?? 0)]];
+        $rows[] = [
+            ['text' => $this->tgText($telegramId, 'buy_now'), 'callback_data' => "buy_{$prodId}_1"],
+            ['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'cat_' . ($p['category_id'] ?? 0)]
+        ];
 
         $markup = TelegramService::buildInlineKeyboard($rows);
 
@@ -752,7 +759,13 @@ trait TelegramBotServiceShopTrait
             return;
 
         $session = $this->getPurchaseSession($telegramId);
-        $messageId = $this->resolvePurchaseMessageId($messageId, $session ?? []);
+        // If messageId is strictly 0, it means we are responding to user text input (like qty or info)
+        // Per user request: "cái nào mà user input nhập vào á là No edit message nha hiện ra cái mới"
+        if ($messageId <= 0) {
+            $messageId = 0;
+        } else {
+            $messageId = $this->resolvePurchaseMessageId($messageId, $session ?? []);
+        }
         $hasActiveSessionForProduct = is_array($session) && (int) ($session['prod_id'] ?? 0) === $prodId;
         $binanceUid = trim($binanceUid !== '' ? $binanceUid : (string) ($session['binance_uid'] ?? ''));
 
@@ -843,7 +856,7 @@ trait TelegramBotServiceShopTrait
 
         $msg = $this->tgText($telegramId, 'confirm_order_title') . "\n\n";
         if ($giftError) {
-            $msg .= $this->tgChoice($telegramId, '⚠️ Lỗi mã giảm giá: ', '⚠️ Discount code error: ') . htmlspecialchars($giftError) . "\n\n";
+            $msg .= $this->tgChoice($telegramId, '⚠️ Lỗi Giftcode: ', '⚠️ Giftcode error: ') . htmlspecialchars($giftError) . "\n\n";
         }
         $msg .= $this->tgChoice($telegramId, '📦 Sản phẩm', '📦 Product') . ": <b>" . htmlspecialchars($p['name']) . "</b>\n";
         $msg .= $this->tgChoice($telegramId, '🔢 Số lượng', '🔢 Quantity') . ": <b>{$qty}</b>\n";
@@ -911,7 +924,12 @@ trait TelegramBotServiceShopTrait
         $remaining = $this->getCooldownRemaining("buy_{$telegramId}", $cooldownSec);
 
         $session = $this->getPurchaseSession($telegramId);
-        $messageId = $this->resolvePurchaseMessageId($messageId, $session ?? []);
+        // If messageId is strictly 0, we strictly send a new message (per user request: no edit on input)
+        if ($messageId <= 0) {
+            $messageId = 0;
+        } else {
+            $messageId = $this->resolvePurchaseMessageId($messageId, $session ?? []);
+        }
 
         if (!$session) {
             if ($remaining > 0) {
@@ -986,7 +1004,11 @@ trait TelegramBotServiceShopTrait
             ]);
 
             if ($finalizeResult['success']) {
-                $this->cbOrderCheck($chatId, $telegramId, (int) $order['id'], $messageId);
+                // Delete the "processing" message so the success document appears cleanly
+                if ($messageId > 0) {
+                    $this->telegram->deleteMessage($chatId, $messageId);
+                }
+                $this->cbOrderCheck($chatId, $telegramId, (int) $order['id'], 0);
             } else {
                 $this->telegram->editOrSend($chatId, $messageId, '❌ ' . $this->tgChoice($telegramId, 'Lỗi xử lý đơn hàng miễn phí.', 'Error processing free order.'));
             }

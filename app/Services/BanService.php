@@ -2,9 +2,9 @@
 
 class BanService
 {
-    private PDO $db;
-    private ?TimeService $timeService = null;
-    private static bool $expiredStateSynced = false;
+    private $db;
+    private $timeService = null;
+    private static $expiredStateSynced = false;
 
     public function __construct()
     {
@@ -15,7 +15,7 @@ class BanService
         $this->syncExpiredState();
     }
 
-    public function syncExpiredState(): void
+    public function syncExpiredState()
     {
         if (self::$expiredStateSynced) {
             return;
@@ -47,7 +47,7 @@ class BanService
         $this->backfillActiveStateToHistory();
     }
 
-    public function normalizeDuration(?string $durationKey): array
+    public function normalizeDuration($durationKey)
     {
         $key = strtolower(trim((string) $durationKey));
         $map = [
@@ -78,7 +78,7 @@ class BanService
         ];
     }
 
-    public function applyAccountBan(array $user, string $reason, ?string $durationKey, string $adminName): bool
+    public function applyAccountBan($user, $reason, $durationKey, $adminName)
     {
         $userId = (int) ($user['id'] ?? 0);
         $username = (string) ($user['username'] ?? '');
@@ -116,7 +116,7 @@ class BanService
         return $ok;
     }
 
-    public function applyDeviceBan(array $user, string $fingerprintHash, string $reason, ?string $durationKey, string $adminName): bool
+    public function applyDeviceBan($user, $fingerprintHash, $reason, $durationKey, $adminName)
     {
         $userId = (int) ($user['id'] ?? 0);
         $username = (string) ($user['username'] ?? '');
@@ -168,7 +168,7 @@ class BanService
         return $ok;
     }
 
-    public function releaseAccountBan(string $username, string $endedBy): bool
+    public function releaseAccountBan($username, $endedBy)
     {
         $stmt = $this->db->prepare("UPDATE `users` SET `bannd` = 0, `ban_reason` = NULL, `banned_at` = NULL, `ban_expires_at` = NULL, `ban_source` = NULL, `banned_by` = NULL WHERE `username` = ?");
         $ok = $stmt->execute([$username]);
@@ -178,7 +178,7 @@ class BanService
         return $ok;
     }
 
-    public function releaseDeviceBan(string $fingerprintHash, string $endedBy): bool
+    public function releaseDeviceBan($fingerprintHash, $endedBy)
     {
         $stmt = $this->db->prepare("DELETE FROM `banned_fingerprints` WHERE `fingerprint_hash` = ?");
         $ok = $stmt->execute([$fingerprintHash]);
@@ -188,17 +188,17 @@ class BanService
         return $ok;
     }
 
-    public function closeIpBanHistoryByIp(string $ip, string $endedBy): void
+    public function closeIpBanHistoryByIp($ip, $endedBy)
     {
         $this->closeActiveHistory('ip', ['target_ip' => $ip], 'released', $endedBy);
     }
 
-    public function closeIpBanHistoryByRef(string $refHash, string $endedBy): void
+    public function closeIpBanHistoryByRef($refHash, $endedBy)
     {
         $this->closeActiveHistory('ip', ['ref_hash' => $refHash], 'released', $endedBy);
     }
 
-    public function recordAutoIpBan(string $ip, string $reason, ?string $expiresAt, string $refHash, string $userAgent): void
+    public function recordAutoIpBan($ip, $reason, $expiresAt, $refHash, $userAgent)
     {
         $startedAt = $this->dbNow()->format('Y-m-d H:i:s');
         $this->closeActiveHistory('ip', ['target_ip' => $ip], 'replaced', 'antiflood_system');
@@ -215,7 +215,7 @@ class BanService
         ]);
     }
 
-    public function recordAutoDeviceBan(string $fingerprintHash, string $reason): void
+    public function recordAutoDeviceBan($fingerprintHash, $reason)
     {
         $startedAt = $this->dbNow()->format('Y-m-d H:i:s');
         $this->closeActiveHistory('device', ['target_fingerprint' => $fingerprintHash], 'replaced', 'antiflood_system');
@@ -231,7 +231,7 @@ class BanService
         ]);
     }
 
-    public function getActiveIpBan(string $ip): ?array
+    public function getActiveIpBan($ip)
     {
         $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
         $stmt = $this->db->prepare("SELECT * FROM `ip_blacklist` WHERE `ip_address` = ? AND (`expires_at` IS NULL OR `expires_at` > ?) ORDER BY `id` DESC LIMIT 1");
@@ -239,7 +239,7 @@ class BanService
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    public function getActiveDeviceBan(string $fingerprintHash): ?array
+    public function getActiveDeviceBan($fingerprintHash)
     {
         $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
         $stmt = $this->db->prepare("SELECT * FROM `banned_fingerprints` WHERE `fingerprint_hash` = ? AND (`expires_at` IS NULL OR `expires_at` > ?) ORDER BY `id` DESC LIMIT 1");
@@ -247,7 +247,7 @@ class BanService
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    public function getActiveAccountBanByUserId(int $userId): ?array
+    public function getActiveAccountBanByUserId($userId)
     {
         if ($userId <= 0) {
             return null;
@@ -258,7 +258,7 @@ class BanService
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    public function isAccountBanned(string $username): bool
+    public function isAccountBanned($username)
     {
         $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
         $stmt = $this->db->prepare("SELECT COUNT(*) FROM `users` WHERE `username` = ? AND `bannd` = 1 AND (`ban_expires_at` IS NULL OR `ban_expires_at` > ?)");
@@ -266,7 +266,7 @@ class BanService
         return (int) $stmt->fetchColumn() > 0;
     }
 
-    public function isDeviceBanned(string $fingerprintHash): bool
+    public function isDeviceBanned($fingerprintHash)
     {
         $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
         $stmt = $this->db->prepare("SELECT COUNT(*) FROM `banned_fingerprints` WHERE `fingerprint_hash` = ? AND (`expires_at` IS NULL OR `expires_at` > ?)");
@@ -274,7 +274,7 @@ class BanService
         return (int) $stmt->fetchColumn() > 0;
     }
 
-    public function getAdminHistory(string $search = ''): array
+    public function getAdminHistory($search = '')
     {
         if ($search !== '') {
             $like = '%' . $search . '%';
@@ -293,7 +293,7 @@ class BanService
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
-    private function backfillActiveStateToHistory(): void
+    private function backfillActiveStateToHistory()
     {
         try {
             $rows = $this->db->query("SELECT `id`, `username`, `ban_reason`, `banned_at`, `ban_expires_at`, `ban_source`, `banned_by`, `created_at` FROM `users` WHERE `bannd` = 1")->fetchAll(PDO::FETCH_ASSOC) ?: [];
@@ -374,7 +374,7 @@ class BanService
         }
     }
 
-    private function insertHistory(array $data): void
+    private function insertHistory($data)
     {
         $columns = array_keys($data);
         $placeholders = implode(', ', array_fill(0, count($columns), '?'));
@@ -383,7 +383,7 @@ class BanService
         $stmt->execute(array_values($data));
     }
 
-    private function hasActiveHistory(string $scope, array $filters): bool
+    private function hasActiveHistory($scope, $filters)
     {
         $where = ["`scope` = ?", "`status` = 'active'"];
         $params = [$scope];
@@ -401,7 +401,7 @@ class BanService
         return (bool) $stmt->fetchColumn();
     }
 
-    private function closeActiveHistory(string $scope, array $filters, string $status, string $endedBy): void
+    private function closeActiveHistory($scope, $filters, $status, $endedBy)
     {
         $where = ["`scope` = ?", "`status` = 'active'"];
         $params = [$scope];
@@ -421,7 +421,7 @@ class BanService
         $stmt->execute($params);
     }
 
-    private function dbNow(): DateTimeImmutable
+    private function dbNow()
     {
         if ($this->timeService) {
             return $this->timeService->nowDateTime();
