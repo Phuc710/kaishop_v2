@@ -131,7 +131,7 @@ trait TelegramBotServiceShopTrait
 
     private function setBinanceSession(int $telegramId, array $data, int $ttl = 300): void
     {
-        $this->clearPurchaseSession($telegramId);
+        // Don't clear purchase session! We need it for UID-before-Order flow.
 
         $dir = $this->binanceSessionDir();
         if (!is_dir($dir)) {
@@ -721,6 +721,11 @@ trait TelegramBotServiceShopTrait
         if (!$user)
             return;
 
+        if ($binanceUid === '') {
+            $this->clearPurchaseSession($telegramId);
+            $this->clearBinanceSession($telegramId);
+        }
+
         $p = $this->productModel->find($prodId);
         if (!$p)
             return;
@@ -1093,13 +1098,12 @@ trait TelegramBotServiceShopTrait
             'message_id' => $messageId,
         ]);
 
-        $prompt = $this->tgChoice($telegramId, "🟡 <b>BINANCE UID</b>\n\n", "🟡 <b>BINANCE UID</b>\n\n");
-        $prompt .= $this->tgChoice($telegramId, "Hướng dẫn tìm UID của bạn:\n\n", "How to find your UID:\n\n");
-        $prompt .= $this->tgChoice($telegramId, "Mở ứng dụng Binance\n", "Open the Binance app\n");
-        $prompt .= $this->tgChoice($telegramId, "Nhấn vào biểu tượng Profile ở góc trên bên trái\n", "Tap the Profile icon in the top-left corner\n");
-        $prompt .= $this->tgChoice($telegramId, "Sao chép UID nằm dưới tên người dùng\n\n", "Copy the UID shown below your nickname\n\n");
-        $prompt .= $this->tgChoice($telegramId, "Gửi UID Binance của bạn để tiếp tục.", "Send your Binance UID to continue.");
-        $prompt .= "\n\n⚠️ " . $this->tgChoice($telegramId, "<b>UID Binance không hợp lệ. Vui lòng nhập từ 4-20 chữ số.</b>", "<b>Invalid Binance UID. Enter 4-20 digits.</b>");
+        $prompt = $this->tgChoice($telegramId, "🟡 <b>BINANCE UID</b>\n\n", "🟡 How to find your Binance UID:\n\n");
+        $prompt .= $this->tgChoice($telegramId, "Hướng dẫn tìm UID của bạn:\n\n", "1. Open the Binance app\n");
+        $prompt .= $this->tgChoice($telegramId, "Mở ứng dụng Binance\n", "2. Tap the Profile icon in the top-left corner\n");
+        $prompt .= $this->tgChoice($telegramId, "Nhấn vào biểu tượng Profile ở góc trên bên trái\n", "3. Copy the UID shown below your nickname\n\n");
+        $prompt .= $this->tgChoice($telegramId, "Sao chép UID nằm dưới tên người dùng\n\n", "👉 Please enter your Binance UID to continue.");
+        $prompt .= "\n\n⚠️ " . $this->tgChoice($telegramId, "<b>UID Binance không hợp lệ. Vui lòng nhập từ 4-20 chữ số.</b>", "<b>Invalid Binance UID. Please enter 4-20 digits only.</b>");
 
         $markup = TelegramService::buildInlineKeyboard([
             [['text' => $this->tgChoice($telegramId, '❌ Hủy bỏ', '❌ Cancel'), 'callback_data' => 'menu']]

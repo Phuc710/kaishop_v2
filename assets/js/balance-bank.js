@@ -9,6 +9,22 @@
         }
     }
 
+    function readCsrfToken(fallback) {
+        var token = '';
+        try {
+            token = String(window.KS_CSRF_TOKEN || '').trim();
+        } catch (e) {
+            token = '';
+        }
+
+        if (!token) {
+            var meta = document.querySelector('meta[name="csrf-token"]');
+            token = meta ? String(meta.getAttribute('content') || '').trim() : '';
+        }
+
+        return token || String(fallback || '');
+    }
+
     function formatVnd(value) {
         var num = Number(value || 0);
         if (!Number.isFinite(num)) num = 0;
@@ -104,6 +120,31 @@
             + '-qr_only.png?amount=' + encodeURIComponent(String(amount || 0))
             + '&addInfo=' + encodeURIComponent(content || '')
             + '&accountName=' + encodeURIComponent(owner || '');
+    }
+
+    function parseApiResponse(response) {
+        return response.text().then(function (text) {
+            var payload = null;
+            try {
+                payload = JSON.parse(text || '{}');
+            } catch (e) {
+                payload = null;
+            }
+
+            if (!response.ok) {
+                var message = (payload && payload.message)
+                    ? payload.message
+                    : ((response.status === 403)
+                        ? 'Phiên làm việc hết hạn, vui lòng tải lại trang.'
+                        : ('Yêu cầu thất bại với mã ' + response.status + '.'));
+                var error = new Error(message);
+                error.payload = payload;
+                error.status = response.status;
+                throw error;
+            }
+
+            return payload || {};
+        });
     }
 
     function BankDepositPage(root, config) {
@@ -498,6 +539,8 @@
     BankDepositPage.prototype.createDeposit = function () {
         var self = this;
         var amount = Number(this.elements.amountInput ? this.elements.amountInput.value : 0) || 0;
+        var csrfToken = readCsrfToken(this.csrfToken);
+        this.csrfToken = csrfToken;
         if (amount < 10000) {
             alertError('Số tiền nạp tối thiểu là ' + formatVnd(10000));
             return;
@@ -521,13 +564,13 @@
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                 'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-Token': this.csrfToken
+                'X-CSRF-Token': csrfToken
             },
             credentials: 'same-origin',
             body: 'amount=' + encodeURIComponent(String(amount))
-                + '&csrf_token=' + encodeURIComponent(this.csrfToken)
+                + '&csrf_token=' + encodeURIComponent(csrfToken)
         }).then(function (response) {
-            return response.json();
+            return parseApiResponse(response);
         }).then(function (res) {
             button.disabled = false;
             button.innerHTML = originalHtml;
@@ -568,10 +611,10 @@
 
             self.startCountdownByExpiry(expiresAtTs, totalTtl, self.state.activeCreatedAtTs);
             self.startPolling(self.state.activeCode);
-        }).catch(function () {
+        }).catch(function (error) {
             button.disabled = false;
             button.innerHTML = originalHtml;
-            alertError('Không thể kết nối máy chủ');
+            alertError((error && error.message) ? error.message : 'Could not connect to server.');
         });
     };
 
@@ -587,18 +630,21 @@
         }).then(function (confirmed) {
             if (!confirmed) return;
 
+            var csrfToken = readCsrfToken(self.csrfToken);
+            self.csrfToken = csrfToken;
+
             fetch(self.endpoints.cancel, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-Token': self.csrfToken
+                    'X-CSRF-Token': csrfToken
                 },
                 credentials: 'same-origin',
                 body: 'deposit_code=' + encodeURIComponent(self.state.activeCode)
-                    + '&csrf_token=' + encodeURIComponent(self.csrfToken)
+                    + '&csrf_token=' + encodeURIComponent(csrfToken)
             }).then(function (response) {
-                return response.json();
+                return parseApiResponse(response);
             }).then(function (res) {
                 if (res && res.success) {
                     self.stopAll();
@@ -607,8 +653,8 @@
                     return;
                 }
                 alertError((res && res.message) ? res.message : 'Không thể hủy giao dịch');
-            }).catch(function () {
-                alertError('Không thể kết nối máy chủ');
+            }).catch(function (error) {
+                alertError((error && error.message) ? error.message : 'Could not connect to server.');
             });
         });
     };

@@ -112,6 +112,7 @@ $ogLocale = $isEnglishPage ? 'en_US' : 'vi_VN';
 <meta name="robots" content="<?= htmlspecialchars($seoRobotsValue, ENT_QUOTES, 'UTF-8') ?>">
 <meta name="theme-color" content="#ff6900">
 <meta name="author" content="<?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?>">
+<meta name="csrf-token" content="<?= htmlspecialchars(function_exists('csrf_token') ? csrf_token() : '', ENT_QUOTES, 'UTF-8') ?>">
 <meta name="revisit-after" content="3 days">
 <meta name="geo.region" content="<?= htmlspecialchars($geoRegion, ENT_QUOTES, 'UTF-8') ?>">
 <meta name="geo.placename" content="Việt Nam">
@@ -254,6 +255,7 @@ $fallbackFaviconHref = asset('assets/images/kaishop_favicon.png');
     const BASE_URL = '<?= rtrim(url(''), '/') ?>';
     const ASSET_URL = '<?= rtrim(asset(''), '/') ?>';
     const AJAX_URL = '<?= rtrim(ajax_url(''), '/') ?>';
+    window.KS_CSRF_TOKEN = <?= json_encode(function_exists('csrf_token') ? csrf_token() : '', JSON_UNESCAPED_UNICODE) ?>;
     window.KAI_ASSET_URL = ASSET_URL;
     window.KAI_EXCHANGE_RATE = <?= (int) max(1, (int) get_setting('binance_rate_vnd', 25000)) ?>;
     window.KS_TIME_CONFIG = Object.assign({}, window.KS_TIME_CONFIG || {}, {

@@ -296,7 +296,7 @@ class DepositController extends Controller
     public function create()
     {
         $user = $this->requireUser();
-        if (!$this->validateCsrf()) {
+        if (!$this->validateCsrfOrSameOrigin()) {
             return $this->json(['success' => false, 'message' => 'Session expired. Please reload and try again.'], 403);
         }
 
@@ -330,7 +330,7 @@ class DepositController extends Controller
     public function createBinance()
     {
         $user = $this->requireUser();
-        if (!$this->validateCsrf()) {
+        if (!$this->validateCsrfOrSameOrigin()) {
             return $this->json(['success' => false, 'message' => 'Session expired. Please reload and try again.'], 403);
         }
 
@@ -452,7 +452,7 @@ class DepositController extends Controller
     public function cancel()
     {
         $user = $this->requireUser();
-        if (!$this->validateCsrf()) {
+        if (!$this->validateCsrfOrSameOrigin()) {
             return $this->json(['success' => false, 'message' => 'Phiên làm việc hết hạn, vui lòng tải lại trang.'], 403);
         }
 
