@@ -309,7 +309,7 @@ trait TelegramBotServiceShopTrait
                 // Retrieve purchase session to know where to redirect back
                 $buySession = $this->getPurchaseSession($telegramId);
                 if ($buySession && isset($buySession['prod_id'], $buySession['qty'])) {
-                    $this->cbBuyConfirm($chatId, $telegramId, (int) $buySession['prod_id'], (int) $buySession['qty'], $buySession['info'] ?? null, $messageId);
+                    $this->cbBuyConfirm($chatId, $telegramId, (int) $buySession['prod_id'], (int) $buySession['qty'], $buySession['info'] ?? null, $messageId, $uid);
                 } else {
                     $this->showMainMenu($chatId, $telegramId, '✅ Linked successfully!', false, $messageId);
                 }
@@ -721,11 +721,6 @@ trait TelegramBotServiceShopTrait
         if (!$user)
             return;
 
-        if ($binanceUid === '') {
-            $this->clearPurchaseSession($telegramId);
-            $this->clearBinanceSession($telegramId);
-        }
-
         $p = $this->productModel->find($prodId);
         if (!$p)
             return;
@@ -733,6 +728,7 @@ trait TelegramBotServiceShopTrait
         $session = $this->getPurchaseSession($telegramId);
         $messageId = $this->resolvePurchaseMessageId($messageId, $session ?? []);
         $hasActiveSessionForProduct = is_array($session) && (int) ($session['prod_id'] ?? 0) === $prodId;
+        $binanceUid = trim($binanceUid !== '' ? $binanceUid : (string) ($session['binance_uid'] ?? ''));
 
         $productType = (string) ($p['product_type'] ?? 'account');
         $requiresInfo = (int) ($p['requires_info'] ?? 0) === 1;
@@ -813,6 +809,7 @@ trait TelegramBotServiceShopTrait
             'qty' => $qty,
             'info' => $customerInfo,
             'giftcode' => $giftcode,
+            'binance_uid' => $binanceUid,
             'step' => 'confirm',
             'message_id' => $messageId,
         ]);
@@ -835,6 +832,9 @@ trait TelegramBotServiceShopTrait
 
         $msg .= "\n────────────\n\n";
         $msg .= $this->tgText($telegramId, 'confirm_total') . ": <b>" . $this->formatCurrency((int) $total, $telegramId) . "</b>";
+        if ($binanceUid !== '') {
+            $msg .= "\n" . $this->tgChoice($telegramId, 'ðŸ‘¤ UID Binance', 'ðŸ‘¤ Binance UID') . ": <code>" . htmlspecialchars($binanceUid, ENT_QUOTES, 'UTF-8') . "</code>";
+        }
 
         $rows = [];
         $row1 = [];
@@ -847,7 +847,7 @@ trait TelegramBotServiceShopTrait
         // NEW: Auto-jump to UID entry for English Binance flow
         $isEnglish = $this->isTelegramEnglish($telegramId);
 
-        if ($isEnglish) {
+        if (false && $isEnglish) {
             if ($binanceUid === '') {
                 // Auto-jump to prompt
                 $this->cbLinkBinanceUid($chatId, $telegramId, $messageId, 'link_uid_before_buy');
@@ -899,8 +899,14 @@ trait TelegramBotServiceShopTrait
 
         $customerInput = ((int) ($session['prod_id'] ?? 0) === $prodId) ? ($session['info'] ?? null) : null;
         $giftcode = ((int) ($session['prod_id'] ?? 0) === $prodId) ? ($session['giftcode'] ?? null) : null;
+        $savedBinanceUid = trim((string) ($session['binance_uid'] ?? ''));
+        $effectiveBinanceUid = trim($forcedBinanceUid !== '' ? $forcedBinanceUid : $savedBinanceUid);
 
-        $this->clearPurchaseSession($telegramId);
+        if ($this->isTelegramEnglish($telegramId) && !preg_match('/^\d{4,20}$/', $effectiveBinanceUid)) {
+            $this->setPurchaseSession($telegramId, $this->attachPurchaseMessageId($session, $messageId));
+            $this->cbLinkBinanceUid($chatId, $telegramId, $messageId, 'order_payment', 0);
+            return;
+        }
 
         $result = $this->purchaseService->createTelegramPendingOrder($prodId, $user, [
             'quantity' => $qty,
@@ -920,9 +926,10 @@ trait TelegramBotServiceShopTrait
             return;
         }
 
+        $this->clearPurchaseSession($telegramId);
+
         $order = (array) ($result['order'] ?? []);
-        $totalPrice = (int) ($order['total_price'] ?? 0);
-        $this->renderTelegramOrderPaymentMenu($chatId, $telegramId, $order, $messageId, $forcedBinanceUid);
+        $this->renderTelegramOrderPaymentMenu($chatId, $telegramId, $order, $messageId, $effectiveBinanceUid);
     }
 
     /**

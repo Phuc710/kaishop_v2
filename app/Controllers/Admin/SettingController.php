@@ -132,6 +132,12 @@ class SettingController extends Controller
 
             case 'update_binance':
                 $this->ensureSettingColumn('binance_owner', "VARCHAR(150) NULL AFTER `binance_uid`");
+                $this->ensureSettingColumn('binance_bonus_1_amount', "DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER `binance_rate_vnd`");
+                $this->ensureSettingColumn('binance_bonus_1_percent', "INT NOT NULL DEFAULT 0 AFTER `binance_bonus_1_amount`");
+                $this->ensureSettingColumn('binance_bonus_2_amount', "DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER `binance_bonus_1_percent`");
+                $this->ensureSettingColumn('binance_bonus_2_percent', "INT NOT NULL DEFAULT 0 AFTER `binance_bonus_2_amount`");
+                $this->ensureSettingColumn('binance_bonus_3_amount', "DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER `binance_bonus_2_percent`");
+                $this->ensureSettingColumn('binance_bonus_3_percent', "INT NOT NULL DEFAULT 0 AFTER `binance_bonus_3_amount`");
                 return $this->updateSettings([
                     'binance_api_key',
                     'binance_api_secret',
@@ -141,6 +147,12 @@ class SettingController extends Controller
                     'binance_pay_enabled',
                     'deposit_warning_binance',
                     'binance_qr_image',
+                    'binance_bonus_1_amount',
+                    'binance_bonus_1_percent',
+                    'binance_bonus_2_amount',
+                    'binance_bonus_2_percent',
+                    'binance_bonus_3_amount',
+                    'binance_bonus_3_percent',
                 ]);
 
             case 'update_maintenance':

@@ -599,6 +599,36 @@ require_once __DIR__ . '/layout/breadcrumb.php';
                                 <small class="text-muted">Tên này sẽ hiển thị trong bot để user biết đang chuyển cho ai.</small>
                             </div>
 
+                            <div class="form-group border-top pt-3 mt-3">
+                                <label class="font-weight-bold text-muted small text-uppercase">CẤU HÌNH BONUS TIER (WEB ONLY)</label>
+                                <div class="row">
+                                    <?php for ($i = 1; $i <= 3; $i++): ?>
+                                        <div class="col-6">
+                                            <div class="form-group mb-2">
+                                                <label class="small text-muted font-weight-bold">Mốc <?= $i ?> (Số USD)</label>
+                                                <div class="input-group input-group-sm">
+                                                    <div class="input-group-prepend"><span class="input-group-text">$</span></div>
+                                                    <input type="number" step="0.01" name="binance_bonus_<?= $i ?>_amount"
+                                                        class="form-control"
+                                                        value="<?= htmlspecialchars((string) ($chungapi["binance_bonus_{$i}_amount"] ?? '')) ?>">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-group mb-2">
+                                                <label class="small text-muted font-weight-bold">Khuyến mãi %</label>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="number" name="binance_bonus_<?= $i ?>_percent" class="form-control"
+                                                        value="<?= htmlspecialchars((string) ($chungapi["binance_bonus_{$i}_percent"] ?? '0')) ?>">
+                                                    <div class="input-group-append"><span class="input-group-text">%</span></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endfor; ?>
+                                </div>
+                                <small class="text-muted">Các mốc này sẽ hiển thị thành nút chọn nhanh trên trang nạp Binance (Web). Mốc $1.00 luôn được mặc định (0% bonus).</small>
+                            </div>
+
                             <div class="form-group">
                                 <label class="font-weight-bold small text-uppercase">Ghi chú nạp tiền (Binance)</label>
                                 <textarea name="deposit_warning_binance" class="form-control" rows="3"

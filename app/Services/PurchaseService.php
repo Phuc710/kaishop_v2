@@ -129,7 +129,8 @@ class PurchaseService
                     $subtotalPrice
                 );
                 $discountPercent = max(0, min(100, (int) ($giftcodeMeta['giamgia'] ?? 0)));
-                $discountAmount = (int) floor(($subtotalPrice * $discountPercent) / 100);
+                // Chỉ giảm giá trên 1 sản phẩm duy nhất để tránh lạm dụng (User request)
+                $discountAmount = (int) floor(($price * $discountPercent) / 100);
                 if ($discountAmount > $subtotalPrice) {
                     $discountAmount = $subtotalPrice;
                 }
@@ -1275,7 +1276,8 @@ class PurchaseService
             if ($giftcodeInput !== '') {
                 $giftcodeMeta = $this->validateGiftCodeGeneric($giftcodeInput, $productId, $subtotalPrice, false);
                 $discountPercent = max(0, min(100, (int) ($giftcodeMeta['giamgia'] ?? 0)));
-                $discountAmount = (int) floor(($subtotalPrice * $discountPercent) / 100);
+                // Chỉ giảm giá trên 1 sản phẩm duy nhất để tránh lạm dụng (User request)
+                $discountAmount = (int) floor(($price * $discountPercent) / 100);
                 if ($discountAmount > $subtotalPrice) {
                     $discountAmount = $subtotalPrice;
                 }

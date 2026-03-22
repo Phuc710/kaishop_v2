@@ -2,13 +2,15 @@
 $binanceRateVnd = max(1, (int) ($depositPanel['binanceRateVnd'] ?? 25000));
 $isBinanceEnabled = ((int) ($chungapi['binance_pay_enabled'] ?? 0) === 1);
 
-// Hardcoded tiers requested by user
-$quickButtons = [
-    ['usd' => 1.0, 'percent' => 0],
-    ['usd' => 4.0, 'percent' => 10],
-    ['usd' => 8.0, 'percent' => 15],
-    ['usd' => 20.0, 'percent' => 20],
-];
+// Hardcoded $1.00 standard + 3 tiers from DB
+$quickButtons = [['usd' => 1.0, 'percent' => 0]];
+for ($i = 1; $i <= 3; $i++) {
+    $amt = (float) ($chungapi["binance_bonus_{$i}_amount"] ?? 0);
+    $pct = (int) ($chungapi["binance_bonus_{$i}_percent"] ?? 0);
+    if ($amt > 0) {
+        $quickButtons[] = ['usd' => $amt, 'percent' => $pct];
+    }
+}
 ?>
 
 <?php if (!$isBinanceEnabled && !$activeDepositExists): ?>
@@ -111,7 +113,6 @@ $binanceExpiresAtDisplay = $binanceExpiresAtTs > 0
     <div class="row align-items-start g-3 mt-2">
         <div class="col-lg-5">
             <div class="deposit-qr-card h-100 mb-0">
-                <div class="text-center fw-bold mb-2">QR</div>
                 <div class="deposit-qr-box text-center">
                     <img src="<?= htmlspecialchars($binanceQrUrl, ENT_QUOTES, 'UTF-8') ?>" alt="Binance QR UID"
                         class="img-fluid rounded shadow-sm" style="max-width: 220px; border: 1px solid #eee;">
@@ -126,15 +127,6 @@ $binanceExpiresAtDisplay = $binanceExpiresAtTs > 0
                         <strong class="deposit-info-value is-highlight"
                             data-tf-binance-uid><?= htmlspecialchars($binanceReceiverUid, ENT_QUOTES, 'UTF-8') ?></strong>
                         <button type="button" class="btn-copy" data-copy-target="uid"><i
-                                class="fas fa-copy"></i></button>
-                    </div>
-                </div>
-                <div class="deposit-info-row">
-                    <span class="deposit-info-label">Transaction Code</span>
-                    <div class="deposit-info-actions">
-                        <span class="deposit-info-value is-uppercase"
-                            data-tf-code><?= htmlspecialchars($binanceDepositCode, ENT_QUOTES, 'UTF-8') ?></span>
-                        <button type="button" class="btn-copy" data-copy-target="code"><i
                                 class="fas fa-copy"></i></button>
                     </div>
                 </div>
@@ -183,7 +175,7 @@ $binanceExpiresAtDisplay = $binanceExpiresAtTs > 0
         </div>
         <div class="col-md-6">
             <button type="button" class="btn btn-clear-custom w-100" data-deposit-action="cancel">
-                <i class="fas fa-times me-1"></i> Cancel Transaction
+                <i class="fas fa-times me-1"></i> Cancel
             </button>
         </div>
     </div>
