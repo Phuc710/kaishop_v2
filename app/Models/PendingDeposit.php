@@ -19,6 +19,7 @@ class PendingDeposit extends Model
         }
         $this->ensureSourceChannelSchema();
         $this->ensureOrderLinkSchema();
+        $this->ensureTelegramMessageSchema();
     }
 
     /**
@@ -194,6 +195,53 @@ class PendingDeposit extends Model
         $stmt->execute(['order_id' => $orderId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
+    }
+
+    public function findTelegramMessageIdByOrderId(int $orderId): int
+    {
+        if (
+            $orderId <= 0
+            || !$this->hasColumnCached($this->table, 'order_id')
+            || !$this->hasColumnCached($this->table, 'telegram_message_id')
+        ) {
+            return 0;
+        }
+
+        $stmt = $this->db->prepare("
+            SELECT `telegram_message_id`
+            FROM `{$this->table}`
+            WHERE `order_id` = :order_id
+              AND `telegram_message_id` IS NOT NULL
+              AND `telegram_message_id` > 0
+            ORDER BY `id` DESC
+            LIMIT 1
+        ");
+        $stmt->execute(['order_id' => $orderId]);
+        return (int) ($stmt->fetchColumn() ?: 0);
+    }
+
+    public function updateTelegramMessageIdByOrderId(int $orderId, int $messageId): void
+    {
+        if (
+            $orderId <= 0
+            || $messageId <= 0
+            || !$this->hasColumnCached($this->table, 'order_id')
+            || !$this->hasColumnCached($this->table, 'telegram_message_id')
+        ) {
+            return;
+        }
+
+        $stmt = $this->db->prepare("
+            UPDATE `{$this->table}`
+            SET `telegram_message_id` = :message_id
+            WHERE `order_id` = :order_id
+            ORDER BY `id` DESC
+            LIMIT 1
+        ");
+        $stmt->execute([
+            'message_id' => $messageId,
+            'order_id' => $orderId,
+        ]);
     }
 
     /**
@@ -444,6 +492,20 @@ class PendingDeposit extends Model
             $this->db->exec("ALTER TABLE `{$this->table}` ADD KEY `idx_pd_order_status_created` (`order_id`, `status`, `created_at`)");
         } catch (Throwable $e) {
             // ignore if key exists or ALTER is restricted
+        }
+    }
+
+    private function ensureTelegramMessageSchema(): void
+    {
+        if (!$this->tableExists() || $this->hasColumnCached($this->table, 'telegram_message_id')) {
+            return;
+        }
+
+        try {
+            $anchor = $this->hasColumnCached($this->table, 'order_id') ? ' AFTER `order_id`' : '';
+            $this->db->exec("ALTER TABLE `{$this->table}` ADD COLUMN `telegram_message_id` BIGINT(20) NULL{$anchor}");
+        } catch (Throwable $e) {
+            // ignore if ALTER is restricted
         }
     }
 

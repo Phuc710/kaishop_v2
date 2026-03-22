@@ -301,15 +301,21 @@ class TelegramBotService
         if ($telegramId > 0) {
             $rateState = $this->checkUserRateLimit($telegramId, $update);
             if (empty($rateState['allowed'])) {
-                if ($chatId !== '' && $this->checkAndSetCooldown("rl_warn_{$telegramId}", 5)) {
+                $checkKey = "rl_warn_{$telegramId}";
+                if ($this->checkAndSetCooldown($checkKey, 5)) {
                     $retryAfter = max(1, (int) ($rateState['retry_after'] ?? 1));
-                    $actionName = (string) ($rateState['action'] ?? 'request');
                     $message = $this->tgChoice(
                         $telegramId,
-                        "⚠️ <b>Bạn đang thao tác quá nhanh!</b>\nVui lòng đợi <b>{$retryAfter} giây</b> trước khi thực hiện hành động tiếp theo.",
-                        "⚠️ <b>You're acting too quickly.</b>\nPlease wait <b>{$retryAfter} seconds</b> before your next action."
+                        "⚠️ Bạn thao tác quá nhanh! Vui lòng đợi {$retryAfter} giây.",
+                        "⚠️ You're acting too quickly. Please wait {$retryAfter} seconds."
                     );
-                    $this->telegram->sendTo($chatId, $message);
+
+                    $callbackId = (string) ($update['callback_query']['id'] ?? '');
+                    if ($callbackId !== '') {
+                        $this->telegram->answerCallbackQuery($callbackId, $message, true);
+                    } elseif ($chatId !== '') {
+                        $this->telegram->sendTo($chatId, "<b>" . $message . "</b>");
+                    }
                 }
                 return;
             }
@@ -346,14 +352,12 @@ class TelegramBotService
         }
 
         if (TelegramConfig::isMaintenanceEnabled() && !TelegramConfig::isAdmin($telegramId)) {
-            $this->telegram->sendTo(
-                $chatId,
-                $this->tgChoice(
-                    $telegramId,
-                    TelegramConfig::maintenanceMessage(),
-                    '🛠 The system is under maintenance. Please try again later.'
-                )
-            );
+            $this->writeLog("[MAINTENANCE] Blocked MSG from {$fromName} ({$telegramId}): {$text}", 'WARN', 'INCOMING', 'MAINTENANCE');
+            $this->telegram->sendTo($chatId, $this->tgChoice(
+                $telegramId,
+                TelegramConfig::maintenanceMessage(),
+                '🛠 The system is currently under maintenance. Please try again in a few minutes. Thank you for your patience! 🙏'
+            ));
             return;
         }
 
@@ -439,7 +443,13 @@ class TelegramBotService
         $this->upsertTelegramUser($query['from']);
 
         if (TelegramConfig::isMaintenanceEnabled() && !TelegramConfig::isAdmin($telegramId)) {
-            $this->telegram->answerCallbackQuery($callbackId, $this->tgChoice($telegramId, 'Hệ thống đang bảo trì, vui lòng thử lại sau.', 'The system is under maintenance. Please try again later.'), true);
+            $fromName = trim(($query['from']['first_name'] ?? '') . ' ' . ($query['from']['last_name'] ?? ''));
+            $this->writeLog("[MAINTENANCE] Blocked CB from {$fromName} ({$telegramId}): {$data}", 'WARN', 'INCOMING', 'MAINTENANCE');
+            $this->telegram->answerCallbackQuery($callbackId, $this->tgChoice(
+                $telegramId,
+                TelegramConfig::maintenanceShortMessage(),
+                '🛠 System is under maintenance. Please try again later.'
+            ), true);
             return;
         }
 

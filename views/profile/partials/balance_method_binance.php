@@ -86,10 +86,7 @@ $binanceExpiresAtDisplay = $binanceExpiresAtTs > 0
     </div>
 
     <div class="deposit-preview" data-deposit-preview hidden>
-        <div class="deposit-preview-row">
-            <span>Amount</span>
-            <strong data-preview-amount>$0.00</strong>
-        </div>
+
         <div class="deposit-preview-row" data-preview-bonus-row hidden>
             <span>Bonus</span>
             <strong class="text-success" data-preview-bonus>+$0.00</strong>

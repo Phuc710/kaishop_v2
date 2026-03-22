@@ -708,6 +708,49 @@ class PurchaseService
         ];
     }
 
+    public function storeTelegramPaymentMessageId(int $orderId, int $messageId): void
+    {
+        if ($orderId <= 0 || $messageId <= 0) {
+            return;
+        }
+
+        try {
+            if ($this->hasColumn('orders', 'telegram_message_id')) {
+                $stmt = $this->db->prepare("UPDATE `orders` SET `telegram_message_id` = ? WHERE `id` = ? LIMIT 1");
+                $stmt->execute([$messageId, $orderId]);
+            }
+        } catch (Throwable $e) {
+            // non-blocking
+        }
+
+        try {
+            if (class_exists('PendingDeposit')) {
+                (new PendingDeposit())->updateTelegramMessageIdByOrderId($orderId, $messageId);
+            }
+        } catch (Throwable $e) {
+            // non-blocking
+        }
+    }
+
+    public function resolveTelegramPaymentMessageId(array $order, array $deposit = []): int
+    {
+        $messageId = (int) ($order['telegram_message_id'] ?? $deposit['telegram_message_id'] ?? 0);
+        if ($messageId > 0) {
+            return $messageId;
+        }
+
+        $orderId = (int) ($order['id'] ?? $deposit['order_id'] ?? 0);
+        if ($orderId <= 0 || !class_exists('PendingDeposit')) {
+            return 0;
+        }
+
+        try {
+            return (new PendingDeposit())->findTelegramMessageIdByOrderId($orderId);
+        } catch (Throwable $e) {
+            return 0;
+        }
+    }
+
     /**
      * @param array<string,mixed> $deposit
      * @param array<string,mixed> $paymentMeta
@@ -797,6 +840,9 @@ class PurchaseService
             $freshOrder['delivery_content'] = $deliveredPlain;
             $freshOrder['total_price'] = (int) ($freshOrder['price'] ?? 0);
             $freshOrder['unit_price'] = (int) floor(((int) ($freshOrder['price'] ?? 0)) / max(1, (int) ($freshOrder['quantity'] ?? 1)));
+            if ((int) ($freshOrder['telegram_message_id'] ?? 0) <= 0 && (int) ($deposit['telegram_message_id'] ?? 0) > 0) {
+                $freshOrder['telegram_message_id'] = (int) $deposit['telegram_message_id'];
+            }
 
             try {
                 if (class_exists('OrderNotificationService')) {
@@ -934,6 +980,14 @@ class PurchaseService
         }
 
         try {
+            if (!$this->hasColumn('orders', 'telegram_message_id')) {
+                $this->db->exec("ALTER TABLE `orders` ADD COLUMN `telegram_message_id` BIGINT(20) NULL AFTER `payment_expires_at`");
+            }
+        } catch (Throwable $e) {
+            // ignore if ALTER is restricted
+        }
+
+        try {
             if (!$this->hasColumn('orders', 'subtotal_price')) {
                 $this->db->exec("ALTER TABLE `orders` ADD COLUMN `subtotal_price` BIGINT(20) NOT NULL DEFAULT 0 AFTER `price`");
             }
@@ -974,6 +1028,7 @@ class PurchaseService
         unset(
             $this->schemaColumnCache['orders.payment_status'],
             $this->schemaColumnCache['orders.payment_expires_at'],
+            $this->schemaColumnCache['orders.telegram_message_id'],
             $this->schemaColumnCache['orders.subtotal_price'],
             $this->schemaColumnCache['orders.discount_amount'],
             $this->schemaColumnCache['orders.giftcode_code'],

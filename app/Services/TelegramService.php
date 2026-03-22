@@ -155,6 +155,35 @@ class TelegramService
     }
 
     /**
+     * Send a photo and return the message_id (0 on failure).
+     */
+    public function sendPhotoToWithResult(string $chatId, $photo, ?string $caption = null, array $options = []): int
+    {
+        $payload = [
+            'chat_id' => $chatId,
+            'photo' => trim($photo),
+            'parse_mode' => $options['parse_mode'] ?? 'HTML',
+        ];
+
+        if ($caption !== null && trim($caption) !== '') {
+            $payload['caption'] = trim($caption);
+        }
+
+        if (!empty($options['reply_markup'])) {
+            $payload['reply_markup'] = is_string($options['reply_markup'])
+                ? $options['reply_markup']
+                : json_encode($options['reply_markup'], JSON_UNESCAPED_UNICODE);
+        }
+
+        $result = $this->apiCall('sendPhoto', $payload);
+        if (empty($result['ok'])) {
+            return 0;
+        }
+
+        return isset($result['result']['message_id']) ? (int) $result['result']['message_id'] : 0;
+    }
+
+    /**
      * Send document to a specific chat.
      */
     public function sendDocumentTo(string $chatId, string $filePath, ?string $caption = null, array $options = []): bool
@@ -233,6 +262,79 @@ class TelegramService
     }
 
     /**
+     * Edit caption of an existing media message.
+     *
+     * @param mixed $keyboard
+     */
+    public function editMessageCaption(string $chatId, int $messageId, string $caption, $keyboard = null, array $options = []): bool
+    {
+        $payload = [
+            'chat_id' => $chatId,
+            'message_id' => $messageId,
+            'caption' => trim($caption),
+            'parse_mode' => $options['parse_mode'] ?? 'HTML',
+        ];
+
+        if ($keyboard !== null) {
+            $payload['reply_markup'] = is_string($keyboard)
+                ? $keyboard
+                : json_encode($keyboard, JSON_UNESCAPED_UNICODE);
+        }
+
+        $result = $this->apiCall('editMessageCaption', $payload);
+
+        if (empty($result['ok'])) {
+            $desc = (string) ($result['description'] ?? '');
+            if (str_contains($desc, 'message is not modified')) {
+                return true;
+            }
+        }
+
+        return !empty($result['ok']);
+    }
+
+    /**
+     * Edit an existing message into a photo with caption.
+     *
+     * @param mixed $keyboard
+     */
+    public function editMessagePhoto(string $chatId, int $messageId, string $photo, ?string $caption = null, $keyboard = null, array $options = []): bool
+    {
+        $media = [
+            'type' => 'photo',
+            'media' => trim($photo),
+            'parse_mode' => $options['parse_mode'] ?? 'HTML',
+        ];
+
+        if ($caption !== null && trim($caption) !== '') {
+            $media['caption'] = trim($caption);
+        }
+
+        $payload = [
+            'chat_id' => $chatId,
+            'message_id' => $messageId,
+            'media' => json_encode($media, JSON_UNESCAPED_UNICODE),
+        ];
+
+        if ($keyboard !== null) {
+            $payload['reply_markup'] = is_string($keyboard)
+                ? $keyboard
+                : json_encode($keyboard, JSON_UNESCAPED_UNICODE);
+        }
+
+        $result = $this->apiCall('editMessageMedia', $payload);
+
+        if (empty($result['ok'])) {
+            $desc = (string) ($result['description'] ?? '');
+            if (str_contains($desc, 'message is not modified')) {
+                return true;
+            }
+        }
+
+        return !empty($result['ok']);
+    }
+
+    /**
      * Edit existing message if messageId > 0, otherwise send new message.
      * If editMessage fails, falls back to sendTo so user always sees the response.
      *
@@ -245,7 +347,11 @@ class TelegramService
             if ($edited) {
                 return true;
             }
-            // Edit failed — fallback to sendTo
+
+            $editedCaption = $this->editMessageCaption($chatId, $messageId, $text, $keyboard, $options);
+            if ($editedCaption) {
+                return true;
+            }
         }
 
         $options = [];
@@ -253,6 +359,31 @@ class TelegramService
             $options['reply_markup'] = $keyboard;
         }
         return $this->sendTo($chatId, $text, $options);
+    }
+
+    /**
+     * Edit an existing message if possible, otherwise send a new one and return its message_id.
+     */
+    public function editOrSendWithResult(string $chatId, int $messageId, string $text, ?array $keyboard = null, array $options = []): int
+    {
+        if ($messageId > 0) {
+            $edited = $this->editMessage($chatId, $messageId, $text, $keyboard, $options);
+            if ($edited) {
+                return $messageId;
+            }
+
+            $editedCaption = $this->editMessageCaption($chatId, $messageId, $text, $keyboard, $options);
+            if ($editedCaption) {
+                return $messageId;
+            }
+        }
+
+        $sendOptions = $options;
+        if ($keyboard !== null) {
+            $sendOptions['reply_markup'] = $keyboard;
+        }
+
+        return $this->sendToWithResult($chatId, $text, $sendOptions);
     }
 
     /**

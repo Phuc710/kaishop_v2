@@ -220,31 +220,44 @@ class SepayWebhookController extends Controller
                         $replyMarkup = [
                             'inline_keyboard' => [
                                 [
-                                    ['text' => '📦 Đơn hàng', 'callback_data' => 'orders'],
-                                    ['text' => '🏠 Menu', 'callback_data' => 'menu'],
+                                    ['text' => html_entity_decode('&#128230; Orders', ENT_QUOTES, 'UTF-8'), 'callback_data' => 'orders'],
+                                    ['text' => html_entity_decode('&#127968; Menu', ENT_QUOTES, 'UTF-8'), 'callback_data' => 'menu'],
                                 ]
                             ]
                         ];
-                        $messageSent = $this->sendTelegramDirect(
-                            (int) $link['telegram_id'],
-                            $this->buildTelegramOrderPaidMessage(
-                                (array) ($finalize['order'] ?? []),
-                                'Bank',
-                                ($referenceCode !== '' ? $referenceCode : (string) $sepayId),
-                                $transferAmount
-                            ),
-                            $replyMarkup
+                        $order = (array) ($finalize['order'] ?? []);
+                        $message = $this->buildTelegramOrderPaidMessage(
+                            $order,
+                            'Bank',
+                            ($referenceCode !== '' ? $referenceCode : (string) $sepayId),
+                            $transferAmount
                         );
+                        $messageEdited = false;
+                        $messageId = $purchaseService->resolveTelegramPaymentMessageId($order, $deposit);
+
+                        if ($messageId > 0 && class_exists('TelegramService')) {
+                            $telegram = new TelegramService(null, null, 5);
+                            $messageEdited = $telegram->editOrSend((string) $link['telegram_id'], $messageId, $message, $replyMarkup);
+                        }
+
+                        $messageSent = false;
+                        if (!$messageEdited) {
+                            $messageSent = $this->sendTelegramDirect(
+                                (int) $link['telegram_id'],
+                                $message,
+                                $replyMarkup
+                            );
+                        }
 
                         Logger::info('Billing', 'telegram_order_paid_notice', 'Sent Telegram bank order payment notice', [
                             'telegram_id' => (int) $link['telegram_id'],
-                            'order_id' => (int) (($finalize['order']['id'] ?? 0)),
+                            'order_id' => (int) ($order['id'] ?? 0),
+                            'edited_existing_message' => $messageEdited,
                             'sent_direct' => $messageSent,
                             'gateway' => 'sepay',
                         ]);
 
                         // Immediately deliver product as .txt file if completed
-                        $order = (array) ($finalize['order'] ?? []);
                         $status = (string) ($order['status'] ?? '');
                         $deliveryContent = trim((string) ($order['delivery_content'] ?? $order['stock_content_plain'] ?? ''));
                         if ($status === 'completed' && $deliveryContent !== '' && class_exists('TelegramService')) {

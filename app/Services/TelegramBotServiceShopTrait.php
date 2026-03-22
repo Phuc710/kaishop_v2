@@ -202,10 +202,9 @@ trait TelegramBotServiceShopTrait
         return number_format($vnd, 0, ',', '.') . 'đ';
     }
 
-    private function sendTelegramMediaOrText(string $chatId, int $messageId, string $mediaPath, string $message, ?array $markup = null): void
+    private function sendTelegramMediaOrText(string $chatId, int $messageId, string $mediaPath, string $message, ?array $markup = null): int
     {
         $mediaPath = trim($mediaPath);
-        $sent = false;
 
         if ($mediaPath !== '') {
             $photo = $mediaPath;
@@ -214,22 +213,41 @@ trait TelegramBotServiceShopTrait
             }
 
             if (!str_contains($photo, 'localhost') && !str_contains($photo, '127.0.0.1')) {
+                if ($messageId > 0) {
+                    $edited = $this->telegram->editMessagePhoto($chatId, $messageId, $photo, $message, $markup);
+                    if ($edited) {
+                        return $messageId;
+                    }
+                }
+
                 $options = [];
                 if ($markup !== null) {
                     $options['reply_markup'] = $markup;
                 }
-                $sent = $this->telegram->sendPhotoTo($chatId, $photo, $message, $options);
+                $sentMessageId = $this->telegram->sendPhotoToWithResult($chatId, $photo, $message, $options);
+                if ($sentMessageId > 0) {
+                    if ($messageId > 0) {
+                        $this->telegram->deleteMessage($chatId, $messageId);
+                    }
+                    return $sentMessageId;
+                }
             }
         }
 
-        if ($sent) {
-            if ($messageId > 0) {
-                $this->telegram->deleteMessage($chatId, $messageId);
-            }
+        return $this->telegram->editOrSendWithResult($chatId, $messageId, $message, $markup);
+    }
+
+    private function persistTelegramPaymentMessageId(int $orderId, int $messageId): void
+    {
+        if ($orderId <= 0 || $messageId <= 0) {
             return;
         }
 
-        $this->telegram->editOrSend($chatId, $messageId, $message, $markup);
+        try {
+            $this->purchaseService->storeTelegramPaymentMessageId($orderId, $messageId);
+        } catch (Throwable $e) {
+            // non-blocking
+        }
     }
 
     private function findLatestPendingTelegramOrderId(int $userId): int
@@ -971,7 +989,16 @@ trait TelegramBotServiceShopTrait
             return;
         }
 
-        $this->telegram->editOrSend($chatId, $messageId, $this->tgChoice($telegramId, '⏳ Đang xử lý giao dịch và tạo QR Code.', '⏳ Processing your order and generating the QR code.'));
+        $processingText = $this->tgChoice($telegramId, '⏳ Đang xử lý giao dịch và tạo QR Code.', '⏳ Processing your order and generating the QR code.');
+        if ($messageId > 0) {
+            $this->telegram->editOrSend($chatId, $messageId, $processingText);
+        } else {
+            $messageId = $this->telegram->sendToWithResult($chatId, $processingText);
+            if ($messageId <= 0) {
+                $this->telegram->sendTo($chatId, $processingText);
+                $messageId = 0;
+            }
+        }
 
         $result = $this->purchaseService->createTelegramPendingOrder($prodId, $user, [
             'quantity' => $qty,
@@ -1106,20 +1133,14 @@ trait TelegramBotServiceShopTrait
             ]
         ]);
 
-        $qrUrl = trim((string) ($payment['qr_url'] ?? ''));
-        $sent = false;
-        if ($qrUrl !== '' && str_starts_with($qrUrl, 'http')) {
-            $sent = $this->telegram->sendPhotoTo($chatId, $qrUrl, $message, ['reply_markup' => $markup]);
-        }
-
-        if ($sent) {
-            if ($messageId > 0) {
-                $this->telegram->deleteMessage($chatId, $messageId);
-            }
-            return;
-        }
-
-        $this->telegram->editOrSend($chatId, $messageId, $message, $markup);
+        $paymentMessageId = $this->sendTelegramMediaOrText(
+            $chatId,
+            $messageId,
+            trim((string) ($payment['qr_url'] ?? '')),
+            $message,
+            $markup
+        );
+        $this->persistTelegramPaymentMessageId($orderId, $paymentMessageId);
     }
 
     private function cbOrderPayBinance(string $chatId, int $telegramId, int $orderId, int $messageId = 0, string $payerUid = ''): void
@@ -1160,13 +1181,14 @@ trait TelegramBotServiceShopTrait
             ]
         ]);
 
-        $this->sendTelegramMediaOrText(
+        $paymentMessageId = $this->sendTelegramMediaOrText(
             $chatId,
             $messageId,
             (string) get_setting('binance_qr_image', 'assets/images/qr_binane.jpg'),
             $message,
             $markup
         );
+        $this->persistTelegramPaymentMessageId($orderId, $paymentMessageId);
     }
 
     private function buildBinanceUidPrompt(bool $includeError = false): string
@@ -1175,7 +1197,7 @@ trait TelegramBotServiceShopTrait
         $prompt .= "Send your Binance UID to continue.";
 
         if ($includeError) {
-            $prompt .= "\n\n⚠️ Invalid Binance UID. Enter 4-20 digits.";
+            $prompt .= "\n\nInvalid Binance UID. Send 4-20 digits only.";
         }
 
         return $prompt;
@@ -1268,6 +1290,7 @@ trait TelegramBotServiceShopTrait
         $productName = htmlspecialchars((string) ($order['product_name'] ?? 'Product'), ENT_QUOTES, 'UTF-8');
         $quantity = max(1, (int) ($order['quantity'] ?? 1));
         $receiverUid = htmlspecialchars((string) ($payment['binance_uid'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $ownerName = htmlspecialchars(trim((string) ($payment['binance_owner'] ?? get_setting('binance_owner', get_setting('ten_web', 'KaiShop')))), ENT_QUOTES, 'UTF-8');
         $payerUid = htmlspecialchars((string) ($payment['payer_uid'] ?? ''), ENT_QUOTES, 'UTF-8');
         $usdtText = rtrim(rtrim(number_format((float) ($payment['usdt_amount'] ?? 0), 8, '.', ''), '0'), '.');
         $expiresAt = htmlspecialchars((string) ($payment['expires_at'] ?? ''), ENT_QUOTES, 'UTF-8');
@@ -1289,6 +1312,9 @@ trait TelegramBotServiceShopTrait
         $msg .= "💎 Total to pay: <b>{$usdtText} USDT</b>\n";
         $msg .= "━━━━━━━━━━━━━━\n";
         $msg .= "🆔 Receiver UID: <code>{$receiverUid}</code>\n";
+        if ($ownerName !== '') {
+            $msg .= "👤 Nick Name: <b>{$ownerName}</b>\n";
+        }
         $msg .= "👤 Your (Payer) UID: <code>{$payerUid}</code>\n";
         if ($expiresAt !== '') {
             $msg .= "⏰ Expires at: <b>{$expiresAt}</b>\n";
@@ -1304,7 +1330,58 @@ trait TelegramBotServiceShopTrait
             );
             $msg .= "\n⚠️ " . $warning;
         } else {
-            $msg .= "\n⚠️ <b>IMPORTANT:</b> Send the EXACT amount from the payer UID above. Wrong UID or amount will NOT be matched.";
+            $msg .= "\n⚠️ <b>AUTO MATCHING:</b> Payment is confirmed automatically. Send the EXACT amount from the payer UID above. Wrong UID or amount will NOT be matched.";
+        }
+
+        return $msg;
+    }
+
+    private function resolveTelegramOrderTotalText(array $order, int $telegramId = 0, array $deposit = []): string
+    {
+        $method = strtolower(trim((string) ($order['payment_method'] ?? $deposit['method'] ?? '')));
+        $isBinance = strpos($method, 'binance') !== false || $method === DepositService::METHOD_BINANCE;
+
+        if ($isBinance) {
+            $usdtAmount = (float) ($deposit['usdt_amount'] ?? 0);
+            if ($usdtAmount <= 0) {
+                $usdtAmount = (float) ($order['usdt_amount'] ?? 0);
+            }
+            if ($usdtAmount <= 0) {
+                $totalVnd = (int) ($order['total_price'] ?? $order['price'] ?? 0);
+                $rate = (float) TelegramConfig::binanceRate();
+                if ($totalVnd > 0 && $rate > 0) {
+                    $usdtAmount = $totalVnd / $rate;
+                }
+            }
+
+            return '$' . number_format(max(0, $usdtAmount), 2, '.', ',');
+        }
+
+        return $this->formatCurrency((int) ($order['total_price'] ?? 0), $telegramId);
+    }
+
+    private function buildTelegramOrderSuccessSummary(array $order, int $telegramId = 0, array $deposit = []): string
+    {
+        $orderCode = htmlspecialchars((string) ($order['order_code_short'] ?? $order['order_code'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $productName = htmlspecialchars((string) ($order['product_name'] ?? $this->tgChoice($telegramId, 'Sản phẩm', 'Product')), ENT_QUOTES, 'UTF-8');
+        $quantity = max(1, (int) ($order['quantity'] ?? 1));
+        $status = strtolower(trim((string) ($order['status'] ?? '')));
+        $deliveryContent = trim((string) ($order['delivery_content'] ?? $order['stock_content_plain'] ?? ''));
+        $totalText = $this->resolveTelegramOrderTotalText($order, $telegramId, $deposit);
+
+        $msg = "{$this->tgText($telegramId, 'success_title')}\n";
+        $msg .= "━━━━━━━━━━━━━━━━━\n\n";
+        $msg .= $this->tgChoice($telegramId, "📦 Mã đơn: <code>{$orderCode}</code>\n", "📦 Order Code: <code>{$orderCode}</code>\n");
+        $msg .= "🛒 {$productName}\n";
+        $msg .= $this->tgChoice($telegramId, "🔢 Số lượng: <b>x{$quantity}</b>\n", "🔢 Quantity: <b>x{$quantity}</b>\n");
+        $msg .= $this->tgChoice($telegramId, "💰 Tổng: <b>{$totalText}</b>\n\n", "💰 Total: <b>{$totalText}</b>\n\n");
+
+        if ($status === 'completed' && $deliveryContent !== '') {
+            $msg .= $this->tgText($telegramId, 'product_sent_caption');
+        } elseif ($status === 'completed') {
+            $msg .= $this->tgChoice($telegramId, '✅ Đơn hàng đã hoàn tất.', '✅ Your order has been completed.');
+        } else {
+            $msg .= $this->tgChoice($telegramId, '⚙️ Thanh toán đã được xác nhận tự động. Đơn hàng đang được xử lý.', '⚙️ Payment was confirmed automatically. Your order is being processed.');
         }
 
         return $msg;
@@ -1332,30 +1409,33 @@ trait TelegramBotServiceShopTrait
         $status = strtolower(trim((string) ($order['status'] ?? '')));
         $method = strtolower(trim((string) ($order['payment_method'] ?? '')));
         $isBinance = (strpos($method, 'binance') !== false);
+        $depositModel = new PendingDeposit();
+        $deposit = $depositModel->findLatestByOrderId($orderId, true) ?: [];
 
         if ($paymentStatus === 'paid') {
+            if ($messageId > 0) {
+                $this->telegram->editOrSend(
+                    $chatId,
+                    $messageId,
+                    $this->buildTelegramOrderSuccessSummary($order, $telegramId, is_array($deposit) ? $deposit : [])
+                );
+            }
+
             if ($status === 'completed') {
                 $deliveryContent = trim((string) ($order['delivery_content'] ?? $order['stock_content_plain'] ?? ''));
                 if ($deliveryContent !== '') {
                     $orderIdForFile = (int) ($order['id'] ?? 0);
                     $filename = "order_{$orderIdForFile}.txt";
 
-                    $orderCode = $order['order_code_short'] ?? $order['order_code'] ?? "#{$orderIdForFile}";
-                    $prodName = (string) ($order['product_name'] ?? 'Sản phẩm');
-                    $orderQty = max(1, (int) ($order['quantity'] ?? 1));
-                    $totalText = $this->formatCurrency((int) ($order['total_price'] ?? 0), $telegramId);
+                    if (!$isBinance || $messageId <= 0) {
+                        $caption = $this->buildTelegramOrderSuccessSummary($order, $telegramId, is_array($deposit) ? $deposit : []);
+                        $this->telegram->sendDocumentFromContent($chatId, $deliveryContent, $filename, $caption);
+                    }
 
-                    $caption = "{$this->tgText($telegramId, 'success_title')}\n";
-                    $caption .= "━━━━━━━━━━━━━━━━━\n\n";
-                    $caption .= $this->tgChoice($telegramId, "📦 Mã đơn: <code>{$orderCode}</code>\n", "📦 Order Code: <code>{$orderCode}</code>\n");
-                    $caption .= "🛒 {$prodName}\n";
-                    $caption .= $this->tgChoice($telegramId, "🔢 Số lượng: <b>x{$orderQty}</b>\n", "🔢 Quantity: <b>x{$orderQty}</b>\n");
-                    $caption .= $this->tgChoice($telegramId, "💰 Tổng: <b>{$totalText}</b>\n\n", "💰 Total: <b>{$totalText}</b>\n\n");
-                    $caption .= $this->tgText($telegramId, 'product_sent_caption');
-
-                    $this->telegram->sendDocumentFromContent($chatId, $deliveryContent, $filename, $caption);
                     if ($callbackId !== '') {
-                        $popup = $isBinance ? '🎉 Product sent!' : '🎉 Sản phẩm đã được gửi!';
+                        $popup = $isBinance
+                            ? '🎉 Payment confirmed automatically! Product sent.'
+                            : '🎉 Sản phẩm đã được gửi!';
                         $this->telegram->answerCallbackQuery($callbackId, $popup, false);
                     }
                     return;
@@ -1363,8 +1443,8 @@ trait TelegramBotServiceShopTrait
             }
 
             $message = $status === 'completed'
-                ? ($isBinance ? '🎉 Payment successful!' : '🎉 Thanh toán thành công!')
-                : ($isBinance ? '✅ Payment received.' : '✅ Đã nhận thanh toán.');
+                ? ($isBinance ? '🎉 Payment confirmed automatically!' : '🎉 Thanh toán thành công!')
+                : ($isBinance ? '✅ Payment received automatically.' : '✅ Đã nhận thanh toán.');
             if ($callbackId !== '') {
                 $this->telegram->answerCallbackQuery($callbackId, $message, true);
             }
@@ -1379,8 +1459,6 @@ trait TelegramBotServiceShopTrait
             return;
         }
 
-        $depositModel = new PendingDeposit();
-        $deposit = $depositModel->findLatestByOrderId($orderId, true);
         if (!$deposit) {
             if ($callbackId !== '') {
                 $this->telegram->answerCallbackQuery($callbackId, $this->tgChoice($telegramId, '❌ Chưa tìm thấy giao dịch khớp.', '❌ No matching payment yet.'), true);
@@ -1422,13 +1500,26 @@ trait TelegramBotServiceShopTrait
         }
 
         $result = $binanceService->processTransaction($tx, $deposit, $user);
+        if (!empty($result['success'])) {
+            $order = $this->orderModel->getByIdForUser($orderId, (int) ($user['id'] ?? 0)) ?: $order;
+            $deposit = $depositModel->findLatestByOrderId($orderId, true) ?: $deposit;
+
+            if ($messageId > 0) {
+                $this->telegram->editOrSend(
+                    $chatId,
+                    $messageId,
+                    $this->buildTelegramOrderSuccessSummary($order, $telegramId, $deposit)
+                );
+            }
+        }
+
         if ($callbackId !== '') {
             $this->telegram->answerCallbackQuery(
                 $callbackId,
                 !empty($result['success'])
-                ? $this->tgChoice($telegramId, '🎉 Thanh toán thành công! Đơn hàng đang được xử lý.', '🎉 Payment successful. Your order is being processed.')
+                ? $this->tgChoice($telegramId, '🎉 Thanh toán tự động thành công!', '🎉 Payment confirmed automatically!')
                 : $this->tgChoice($telegramId, '❌ Chưa tìm thấy giao dịch khớp.', '❌ No matching payment yet.'),
-                true
+                !empty($result['success']) ? false : true
             );
         }
     }

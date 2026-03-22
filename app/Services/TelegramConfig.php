@@ -20,7 +20,7 @@ final class TelegramConfig
     // ================================================================
 
     /** Số lệnh tối đa / user / phút */
-    public const RATE_LIMIT_DEFAULT = 30;
+    public const RATE_LIMIT_DEFAULT = 15;
 
     /** Cửa sổ rate-limit tính bằng giây */
     public const RATE_LIMIT_WINDOW = 60;
@@ -248,15 +248,26 @@ final class TelegramConfig
     }
 
     /**
-     * Nội dung tin nhắn khi Bot đang bảo trì
+     * Nội dung tin nhắn đầy đủ khi Bot đang bảo trì (dùng cho message text)
+     * Nếu admin chưa cấu hình, dùng tin nhắn mặc định.
      */
     public static function maintenanceMessage(): string
     {
+        $siteName = function_exists('get_setting') ? trim((string) get_setting('ten_web', 'KaiShop')) : 'KaiShop';
         $msg = trim((string) get_setting('telegram_maintenance_message', ''));
-        if ($msg === '') {
-            return "🛠 <b>HỆ THỐNG ĐANG BẢO TRÌ</b>\nChúng tôi đang nâng cấp dịch vụ, vui lòng quay lại sau.";
+        if ($msg !== '') {
+            return $msg;
         }
-        return $msg;
+        return "🛠 <b>{$siteName} đang bảo trì</b>\n\nChúng tôi đang nâng cấp hệ thống để phục vụ bạn tốt hơn.\nVui lòng quay lại sau vài phút.\n\nCảm ơn bạn đã kiên nhẫn! 🙏";
+    }
+
+    /**
+     * Phiên bản ngắn gọn cho answerCallbackQuery popup (tối đa ~200 ký tự)
+     */
+    public static function maintenanceShortMessage(): string
+    {
+        $siteName = function_exists('get_setting') ? trim((string) get_setting('ten_web', 'KaiShop')) : 'KaiShop';
+        return "🛠 {$siteName} đang bảo trì. Vui lòng thử lại sau.";
     }
 
     /**

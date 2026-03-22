@@ -54,10 +54,7 @@ $isBankEnabled = ((int) ($chungapi['bank_pay_enabled'] ?? 1) === 1);
     </div>
 
     <div class="deposit-preview" data-deposit-preview hidden>
-        <div class="deposit-preview-row">
-            <span>Số tiền nạp</span>
-            <strong data-preview-amount>0đ</strong>
-        </div>
+
         <div class="deposit-preview-row" data-preview-bonus-row hidden>
             <span>Bonus</span>
             <strong class="text-success" data-preview-bonus>+0đ</strong>

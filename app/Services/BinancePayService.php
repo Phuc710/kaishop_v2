@@ -674,28 +674,50 @@ class BinancePayService
             }
 
             $telegramId = (int) $link['telegram_id'];
+            $isBotTeleOrder = class_exists('SourceChannelHelper')
+                && SourceChannelHelper::fromOrderRow($order) === SourceChannelHelper::BOTTELE;
+
             $replyMarkup = [
                 'inline_keyboard' => [
                     [
-                        ['text' => '📦 Đơn hàng', 'callback_data' => 'orders'],
-                        ['text' => '🏠 Menu', 'callback_data' => 'menu'],
+                        ['text' => html_entity_decode('&#128230; Orders', ENT_QUOTES, 'UTF-8'), 'callback_data' => 'orders'],
+                        ['text' => html_entity_decode('&#127968; Menu', ENT_QUOTES, 'UTF-8'), 'callback_data' => 'menu'],
                     ]
                 ]
             ];
+            $message = $this->buildTelegramOrderSuccessSummaryAuto($order, $usdt);
+            $messageEdited = false;
 
-            $message = $this->buildTelegramOrderPaidMessage($order, $usdt);
-            $messageSent = $this->sendTelegramDirectTo((string) $telegramId, $message, $replyMarkup);
-            if (!$messageSent && class_exists('TelegramOutbox')) {
-                (new TelegramOutbox())->enqueue($telegramId, $message, 'HTML');
+            if ($isBotTeleOrder && class_exists('PurchaseService') && class_exists('TelegramService')) {
+                $messageId = (new PurchaseService())->resolveTelegramPaymentMessageId($order);
+                if ($messageId > 0) {
+                    $telegram = new TelegramService(null, null, 5);
+                    $messageEdited = $telegram->editOrSend((string) $telegramId, $messageId, $message, $replyMarkup);
+                }
             }
 
-            Logger::info('BinancePay', 'telegram_order_paid_notice', 'Sent Telegram order payment notice', [
-                'user_id' => $userId,
-                'telegram_id' => $telegramId,
-                'order_id' => (int) ($order['id'] ?? 0),
-                'sent_direct' => $messageSent,
-                'queued_outbox' => !$messageSent,
-            ]);
+            if (!$isBotTeleOrder || !$messageEdited) {
+                $messageSent = $this->sendTelegramDirectTo((string) $telegramId, $message, $replyMarkup);
+                if (!$messageSent && class_exists('TelegramOutbox')) {
+                    (new TelegramOutbox())->enqueue($telegramId, $message, 'HTML');
+                }
+
+                Logger::info('BinancePay', 'telegram_order_paid_notice', 'Sent Telegram order payment notice', [
+                    'user_id' => $userId,
+                    'telegram_id' => $telegramId,
+                    'order_id' => (int) ($order['id'] ?? 0),
+                    'edited_existing_message' => $messageEdited,
+                    'sent_direct' => $messageSent,
+                    'queued_outbox' => !$messageSent,
+                ]);
+            } else {
+                Logger::info('BinancePay', 'telegram_order_paid_notice', 'Edited Telegram order payment message', [
+                    'user_id' => $userId,
+                    'telegram_id' => $telegramId,
+                    'order_id' => (int) ($order['id'] ?? 0),
+                    'edited_existing_message' => true,
+                ]);
+            }
 
             // Immediately deliver product as .txt file if completed
             $status = (string) ($order['status'] ?? '');
@@ -745,6 +767,35 @@ class BinancePayService
             $msg .= "\n\n🛠️ Your order is being processed. It will be delivered soon.";
         } else {
             $msg .= "\n\n📩 Order recorded successfully.";
+        }
+
+        return $msg;
+    }
+
+    /**
+     * @param array<string,mixed> $order
+     */
+    private function buildTelegramOrderSuccessSummaryAuto(array $order, float $usdt): string
+    {
+        $orderCode = htmlspecialchars((string) ($order['order_code_short'] ?? $order['order_code'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $productName = htmlspecialchars((string) ($order['product_name'] ?? 'Product'), ENT_QUOTES, 'UTF-8');
+        $quantity = max(1, (int) ($order['quantity'] ?? 1));
+        $status = strtolower(trim((string) ($order['status'] ?? '')));
+        $deliveryContent = trim((string) ($order['delivery_content'] ?? $order['stock_content_plain'] ?? ''));
+
+        $msg = "&#127881; <b>PAYMENT SUCCESSFUL</b> &#127881;\n";
+        $msg .= "-----------------\n\n";
+        $msg .= "&#128230; Order Code: <code>{$orderCode}</code>\n";
+        $msg .= "&#128722; {$productName}\n";
+        $msg .= "&#128290; Quantity: <b>x{$quantity}</b>\n";
+        $msg .= "&#128176; Total: <b>$" . number_format(max(0, $usdt), 2, '.', ',') . "</b>\n\n";
+
+        if ($status === 'completed' && $deliveryContent !== '') {
+            $msg .= "&#127873; Your product is attached below.";
+        } elseif ($status === 'completed') {
+            $msg .= "Your order has been completed.";
+        } else {
+            $msg .= "Payment was confirmed automatically. Your order is being processed.";
         }
 
         return $msg;

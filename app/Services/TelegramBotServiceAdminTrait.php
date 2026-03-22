@@ -116,7 +116,7 @@ trait TelegramBotServiceAdminTrait
             $status = TelegramConfig::isMaintenanceEnabled()
                 ? $this->tgChoice($telegramId, '🔴 Đang BẬT', '🔴 ENABLED')
                 : $this->tgChoice($telegramId, '🟢 Đang TẮT', '🟢 DISABLED');
-            $this->telegram->sendTo($chatId, $this->tgChoice($telegramId, "🛠 <b>BẢO TRÌ HỆ THỐNG</b>\nTrạng thái hiện tại: {$status}\n\nSử dụng:\n<code>/maintenance on</code> — Bật bảo trì toàn hệ thống\n<code>/maintenance off</code> — Tắt bảo trì toàn hệ thống", "🛠 <b>SYSTEM MAINTENANCE</b>\nCurrent status: {$status}\n\nUsage:\n<code>/maintenance on</code> — Enable system-wide maintenance\n<code>/maintenance off</code> — Disable system-wide maintenance"));
+            $this->telegram->sendTo($chatId, $this->tgChoice($telegramId, "🛠 <b>CÀI ĐẶT BẢO TRÌ</b>\n\nSử dụng:\n<code>/maintenance bot on|off</code> — Chỉ Bot\n<code>/maintenance web on|off</code> — Chỉ Web\n<code>/maintenance all on|off</code> — Cả hai", "🛠 <b>MAINTENANCE SETTINGS</b>\n\nUsage:\n<code>/maintenance bot on|off</code>\n<code>/maintenance web on|off</code>\n<code>/maintenance all on|off</code>"));
             return;
         }
 

@@ -407,7 +407,7 @@ class DepositController extends Controller
         $timeoutSeconds = max(5, min(30, (int) $this->get('timeout', 25)));
         $startedAt = microtime(true);
         $deadline = $startedAt + $timeoutSeconds;
-        $pollIntervalUs = 800000;
+        $pollIntervalUs = 500000;
         $payload = $this->buildDepositStatusResponseData($deposit, $user);
 
         if (function_exists('session_status') && session_status() === PHP_SESSION_ACTIVE) {
