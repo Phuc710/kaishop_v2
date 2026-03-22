@@ -684,9 +684,18 @@ class BinancePayService
             ];
 
             $message = $this->buildTelegramOrderPaidMessage($order, $usdt);
-            if (!$this->sendTelegramDirectTo((string) $telegramId, $message, $replyMarkup) && class_exists('TelegramOutbox')) {
+            $messageSent = $this->sendTelegramDirectTo((string) $telegramId, $message, $replyMarkup);
+            if (!$messageSent && class_exists('TelegramOutbox')) {
                 (new TelegramOutbox())->enqueue($telegramId, $message, 'HTML');
             }
+
+            Logger::info('BinancePay', 'telegram_order_paid_notice', 'Sent Telegram order payment notice', [
+                'user_id' => $userId,
+                'telegram_id' => $telegramId,
+                'order_id' => (int) ($order['id'] ?? 0),
+                'sent_direct' => $messageSent,
+                'queued_outbox' => !$messageSent,
+            ]);
 
             // Immediately deliver product as .txt file if completed
             $status = (string) ($order['status'] ?? '');
@@ -695,7 +704,15 @@ class BinancePayService
                 $orderId = (int) ($order['id'] ?? 0);
                 $filename = "order_{$orderId}.txt";
                 $telegram = new TelegramService(null, null, 5);
-                $telegram->sendDocumentFromContent((string) $telegramId, $deliveryContent, $filename);
+                $documentSent = $telegram->sendDocumentFromContent((string) $telegramId, $deliveryContent, $filename);
+
+                Logger::info('BinancePay', 'telegram_order_delivery_sent', 'Auto-delivered Telegram order content', [
+                    'user_id' => $userId,
+                    'telegram_id' => $telegramId,
+                    'order_id' => $orderId,
+                    'filename' => $filename,
+                    'sent' => $documentSent,
+                ]);
             }
         } catch (Throwable $e) {
             // Non-blocking

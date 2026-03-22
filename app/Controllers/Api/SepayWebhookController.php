@@ -225,7 +225,7 @@ class SepayWebhookController extends Controller
                                 ]
                             ]
                         ];
-                        $this->sendTelegramDirect(
+                        $messageSent = $this->sendTelegramDirect(
                             (int) $link['telegram_id'],
                             $this->buildTelegramOrderPaidMessage(
                                 (array) ($finalize['order'] ?? []),
@@ -236,6 +236,13 @@ class SepayWebhookController extends Controller
                             $replyMarkup
                         );
 
+                        Logger::info('Billing', 'telegram_order_paid_notice', 'Sent Telegram bank order payment notice', [
+                            'telegram_id' => (int) $link['telegram_id'],
+                            'order_id' => (int) (($finalize['order']['id'] ?? 0)),
+                            'sent_direct' => $messageSent,
+                            'gateway' => 'sepay',
+                        ]);
+
                         // Immediately deliver product as .txt file if completed
                         $order = (array) ($finalize['order'] ?? []);
                         $status = (string) ($order['status'] ?? '');
@@ -244,7 +251,15 @@ class SepayWebhookController extends Controller
                             $orderId = (int) ($order['id'] ?? 0);
                             $filename = "order_{$orderId}.txt";
                             $telegram = new TelegramService(null, null, 5);
-                            $telegram->sendDocumentFromContent($link['telegram_id'], $deliveryContent, $filename);
+                            $documentSent = $telegram->sendDocumentFromContent($link['telegram_id'], $deliveryContent, $filename);
+
+                            Logger::info('Billing', 'telegram_order_delivery_sent', 'Auto-delivered Telegram bank order content', [
+                                'telegram_id' => (int) $link['telegram_id'],
+                                'order_id' => $orderId,
+                                'filename' => $filename,
+                                'sent' => $documentSent,
+                                'gateway' => 'sepay',
+                            ]);
                         }
                     }
                 }
