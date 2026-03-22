@@ -231,6 +231,15 @@ final class TelegramConfig
     }
 
     /**
+     * Binance USDT/VND Rate
+     */
+    public static function binanceRate(): int
+    {
+        $rate = (int) get_setting('binance_rate_vnd', 25000);
+        return $rate > 0 ? $rate : 25000;
+    }
+
+    /**
      * Kiểm tra trạng thái bảo trì riêng của Bot Telegram
      */
     public static function isMaintenanceEnabled(): bool

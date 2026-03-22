@@ -215,7 +215,7 @@ function cleanupOldData(TelegramOutbox $outboxModel): void
     }
 }
 
-function notifyExpiredDeposits(PendingDeposit $depositModel, TelegramOutbox $outboxModel, string $botToken): void
+function notifyExpiredDeposits(PendingDeposit $depositModel, TelegramOutbox $outboxModel, string $botToken, TelegramBotService $botLogic): void
 {
     $justExpired = $depositModel->markExpired();
     if (empty($justExpired)) {
@@ -249,14 +249,15 @@ function notifyExpiredDeposits(PendingDeposit $depositModel, TelegramOutbox $out
         if ($method === DepositService::METHOD_BINANCE) {
             $usdtAmount = number_format((float) ($dep['usdt_amount'] ?? 0), 2, '.', '');
             $payerUid = htmlspecialchars(trim((string) ($dep['payer_uid'] ?? '')), ENT_QUOTES, 'UTF-8');
-            $msg = "⌛ <b>BINANCE PAY ĐÃ HẾT HẠN</b>\n\n";
-            $msg .= "📋 Mã giao dịch: <code>{$code}</code>\n";
-            $msg .= "💵 Số tiền: <b>$" . $usdtAmount . " USDT</b>\n";
+
+            $msg = $botLogic->tgChoice($telegramId, "⌛ <b>BINANCE PAY ĐÃ HẾT HẠN</b>\n\n", "⌛ <b>BINANCE PAY EXPIRED</b>\n\n");
+            $msg .= $botLogic->tgChoice($telegramId, "📋 Mã giao dịch: <code>{$code}</code>\n", "📋 Note / Ref: <code>{$code}</code>\n");
+            $msg .= $botLogic->tgChoice($telegramId, "💵 Số tiền: <b>$" . $usdtAmount . " USDT</b>\n", "💵 Amount: <b>$" . $usdtAmount . " USDT</b>\n");
             if ($payerUid !== '') {
-                $msg .= "👤 UID Binance: <code>{$payerUid}</code>\n";
+                $msg .= $botLogic->tgChoice($telegramId, "👤 UID Binance: <code>{$payerUid}</code>\n", "👤 Binance UID: <code>{$payerUid}</code>\n");
             }
-            $msg .= "\n⚠️ Lệnh đã quá <b>5 phút</b> nên hệ thống tự hủy.\n";
-            $msg .= "Nếu bạn đã chuyển tiền, vui lòng liên hệ hỗ trợ kèm <b>TXID</b>.";
+            $msg .= "\n" . $botLogic->tgChoice($telegramId, "⚠️ Lệnh đã quá <b>5 phút</b> nên hệ thống tự hủy.\n", "\n⚠️ Order expired (5+ mins) and was automatically cancelled.\n");
+            $msg .= $botLogic->tgChoice($telegramId, "Nếu bạn đã chuyển tiền, vui lòng liên hệ hỗ trợ kèm <b>TXID</b>.", "If you have already sent funds, please contact support with your <b>TXID</b>.");
         } else {
             $msg = "⌛ <b>GIAO DỊCH NẠP BANK ĐÃ HẾT HẠN</b>\n\n";
             $msg .= "💵 Số tiền: <b>{$amount}đ</b>\n";
@@ -268,8 +269,8 @@ function notifyExpiredDeposits(PendingDeposit $depositModel, TelegramOutbox $out
         $retryCallback = ($method === DepositService::METHOD_BINANCE) ? 'binance_start' : 'deposit';
         $keyboard = [
             [
-                ['text' => '💳 Nạp lại', 'callback_data' => $retryCallback],
-                ['text' => '🏠 Menu', 'callback_data' => 'menu'],
+                ['text' => $botLogic->tgChoice($telegramId, '💳 Nạp lại', '💳 Retry'), 'callback_data' => $retryCallback],
+                ['text' => $botLogic->tgChoice($telegramId, '🏠 Menu', '🏠 Menu'), 'callback_data' => 'menu'],
             ]
         ];
 
@@ -284,7 +285,7 @@ function notifyExpiredDeposits(PendingDeposit $depositModel, TelegramOutbox $out
     }
 }
 
-function notifyExpiredTelegramOrders(TelegramOutbox $outboxModel, string $botToken): void
+function notifyExpiredTelegramOrders(TelegramOutbox $outboxModel, string $botToken, TelegramBotService $botLogic): void
 {
     if (!class_exists('PurchaseService')) {
         return;
@@ -315,19 +316,19 @@ function notifyExpiredTelegramOrders(TelegramOutbox $outboxModel, string $botTok
         $orderCode = htmlspecialchars((string) ($order['order_code'] ?? ''), ENT_QUOTES, 'UTF-8');
         $productName = htmlspecialchars((string) ($order['product_name'] ?? 'Sản phẩm'), ENT_QUOTES, 'UTF-8');
         $quantity = max(1, (int) ($order['quantity'] ?? 1));
-        $amount = number_format((int) ($order['price'] ?? 0), 0, ',', '.');
+        $price = (int) ($order['price'] ?? 0);
 
-        $msg = "⌛ <b>ĐƠN HÀNG ĐÃ HẾT HẠN</b>\n\n";
-        $msg .= "🧾 Mã đơn: <code>{$orderCode}</code>\n";
-        $msg .= "📦 Sản phẩm: <b>{$productName}</b>\n";
-        $msg .= "🔢 Số lượng: <b>{$quantity}</b>\n";
-        $msg .= "💎 Tổng thanh toán: <b>{$amount}đ</b>\n\n";
-        $msg .= "⚠️ Đơn đã quá thời gian thanh toán nên hệ thống tự hủy.";
+        $msg = $botLogic->tgChoice($telegramId, "⌛ <b>ĐƠN HÀNG ĐÃ HẾT HẠN</b>\n\n", "⌛ <b>ORDER EXPIRED</b>\n\n");
+        $msg .= $botLogic->tgChoice($telegramId, "🧾 Mã đơn: <code>{$orderCode}</code>\n", "🧾 Order ID: <code>{$orderCode}</code>\n");
+        $msg .= $botLogic->tgChoice($telegramId, "📦 Sản phẩm: <b>{$productName}</b>\n", "📦 Product: <b>{$productName}</b>\n");
+        $msg .= $botLogic->tgChoice($telegramId, "🔢 Số lượng: <b>{$quantity}</b>\n", "🔢 Quantity: <b>{$quantity}</b>\n");
+        $msg .= $botLogic->tgChoice($telegramId, "💎 Tổng thanh toán: ", "💎 Total: ") . "<b>" . $botLogic->formatCurrency($price, $telegramId) . "</b>\n\n";
+        $msg .= $botLogic->tgChoice($telegramId, "⚠️ Đơn đã quá thời gian thanh toán nên hệ thống tự hủy.", "⚠️ Order expired due to inactivity and was automatically cancelled.");
 
         $keyboard = [
             [
-                ['text' => '📦 Đơn hàng', 'callback_data' => 'orders'],
-                ['text' => '🏠 Menu', 'callback_data' => 'menu'],
+                ['text' => $botLogic->tgChoice($telegramId, '📦 Đơn hàng', '📦 Orders'), 'callback_data' => 'orders'],
+                ['text' => $botLogic->tgChoice($telegramId, '🏠 Menu', '🏠 Menu'), 'callback_data' => 'menu'],
             ]
         ];
 
@@ -468,6 +469,7 @@ function runCronSweepWindow(
     PendingDeposit $depositModel,
     TelegramOutbox $outboxModel,
     string $botToken,
+    TelegramBotService $botLogic,
     int $windowSeconds,
     int $intervalSeconds
 ): void {
@@ -479,8 +481,8 @@ function runCronSweepWindow(
 
     do {
         processPendingBinanceDeposits($depositModel);
-        notifyExpiredTelegramOrders($outboxModel, $botToken);
-        notifyExpiredDeposits($depositModel, $outboxModel, $botToken);
+        notifyExpiredTelegramOrders($outboxModel, $botToken, $botLogic);
+        notifyExpiredDeposits($depositModel, $outboxModel, $botToken, $botLogic);
         processOutboxParallel($outboxModel, $botToken);
 
         if ($windowSeconds <= 0) {
@@ -513,8 +515,8 @@ if ($isPollMode) {
 
             processOutboxParallel($outboxModel, $botToken);
             processPendingBinanceDeposits($depositModel);
-            notifyExpiredTelegramOrders($outboxModel, $botToken);
-            notifyExpiredDeposits($depositModel, $outboxModel, $botToken);
+            notifyExpiredTelegramOrders($outboxModel, $botToken, $botLogic);
+            notifyExpiredDeposits($depositModel, $outboxModel, $botToken, $botLogic);
             runPolling($telegram, $botLogic);
             saveLastCronRun($db);
             cleanupOldData($outboxModel);
@@ -539,7 +541,7 @@ if ($isPollMode) {
 
         $sweepWindowSeconds = (int) EnvHelper::get('BINANCE_SWEEP_WINDOW_SECONDS', 50);
         $sweepIntervalSeconds = (int) EnvHelper::get('BINANCE_SWEEP_INTERVAL_SECONDS', 10);
-        runCronSweepWindow($depositModel, $outboxModel, $botToken, $sweepWindowSeconds, $sweepIntervalSeconds);
+        runCronSweepWindow($depositModel, $outboxModel, $botToken, $botLogic, $sweepWindowSeconds, $sweepIntervalSeconds);
 
         cleanupOldData($outboxModel);
 

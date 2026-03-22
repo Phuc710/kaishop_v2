@@ -103,7 +103,7 @@ class TelegramBotService
         @file_put_contents($this->telegramLocaleFile($telegramId), $locale, LOCK_EX);
     }
 
-    private function isTelegramEnglish(int $telegramId): bool
+    public function isTelegramEnglish(int $telegramId): bool
     {
         return $this->getTelegramLocale($telegramId) === 'en';
     }
@@ -118,7 +118,7 @@ class TelegramBotService
         return $localeClass->getMessage($key, $vars);
     }
 
-    private function tgChoice(int $telegramId, string $vi, string $en): string
+    public function tgChoice(int $telegramId, string $vi, string $en): string
     {
         return $this->isTelegramEnglish($telegramId) ? $en : $vi;
     }
@@ -736,7 +736,7 @@ class TelegramBotService
             $statusIcon = ((string) ($o['status'] ?? '') === 'completed') ? '✅' : '⏳';
             $orderCode = htmlspecialchars((string) ($o['order_code_short'] ?? $o['order_code'] ?? ''), ENT_QUOTES, 'UTF-8');
             $productName = htmlspecialchars((string) ($o['product_name'] ?? ''), ENT_QUOTES, 'UTF-8');
-            $price = number_format((int) ($o['price'] ?? 0)) . "đ";
+            $price = $this->formatCurrency((int) ($o['price'] ?? 0), $telegramId);
             $quantity = max(1, (int) ($o['quantity'] ?? 1));
 
             $rawContent = trim((string) ($o['stock_content_plain'] ?? ''));

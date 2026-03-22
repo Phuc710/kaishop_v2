@@ -706,22 +706,22 @@ class BinancePayService
         $deliveryContent = trim((string) ($order['delivery_content'] ?? $order['stock_content_plain'] ?? ''));
         $usdtText = rtrim(rtrim(number_format($usdt, 8, '.', ''), '0'), '.');
 
-        $msg = "🎉 <b>THANH TOÁN THÀNH CÔNG</b>\n\n";
-        $msg .= "🧾 Mã đơn: <code>{$orderCode}</code>\n";
-        $msg .= "📦 Sản phẩm: <b>{$productName}</b>\n";
-        $msg .= "🔢 Số lượng: <b>{$quantity}</b>\n";
-        $msg .= "💳 Phương thức: <b>Binance Pay</b>\n";
-        $msg .= "💵 Đã nhận: <b>{$usdtText} USDT</b>\n";
-        $msg .= "💰 Quy đổi: <b>" . number_format($amountVnd, 0, ',', '.') . "đ</b>\n";
-        $msg .= "🔖 Giao dịch: <code>" . htmlspecialchars($txId, ENT_QUOTES, 'UTF-8') . "</code>\n";
+        $msg = "🎉 <b>PAYMENT SUCCESSFUL</b>\n\n";
+        $msg .= "🧾 Order ID: <code>{$orderCode}</code>\n";
+        $msg .= "📦 Product: <b>{$productName}</b>\n";
+        $msg .= "🔢 Quantity: <b>{$quantity}</b>\n";
+        $msg .= "💳 Method: <b>Binance Pay</b>\n";
+        $msg .= "💵 Received: <b>{$usdtText} USDT</b>\n";
+        $msg .= "💰 Exchange: <b>$" . number_format($amountVnd / TelegramConfig::binanceRate(), 2, '.', ',') . "</b>\n";
+        $msg .= "🔖 Transaction: <code>" . htmlspecialchars($txId, ENT_QUOTES, 'UTF-8') . "</code>\n";
         $msg .= "━━━━━━━━━━━━━━";
 
         if ($status === 'completed' && $deliveryContent !== '') {
-            $msg .= "\n\n🔑 <b>NỘI DUNG GIAO HÀNG</b>\n<code>" . htmlspecialchars($deliveryContent, ENT_QUOTES, 'UTF-8') . "</code>";
+            $msg .= "\n\n🔑 <b>DELIVERY CONTENT</b>\n<code>" . htmlspecialchars($deliveryContent, ENT_QUOTES, 'UTF-8') . "</code>";
         } elseif ($status === 'processing') {
-            $msg .= "\n\n🛠️ Đơn đã vào hàng chờ xử lý. Admin sẽ giao sớm cho bạn.";
+            $msg .= "\n\n🛠️ Your order is being processed. The administrator will deliver it soon.";
         } else {
-            $msg .= "\n\n📦 Đơn đã được ghi nhận. Bạn có thể xem lại trong mục Đơn hàng.";
+            $msg .= "\n\n📦 Your order has been recorded. You can view it in the Orders section.";
         }
 
         return $msg;
@@ -760,11 +760,11 @@ class BinancePayService
                 $link = (new UserTelegramLink())->findByUserId($userId);
                 if ($link && (int) ($link['telegram_id'] ?? 0) > 0) {
                     $telegramId = (int) $link['telegram_id'];
-                    $userMsg = "🎉 <b>NẠP TIỀN THÀNH CÔNG</b>\n\n"
-                        . "💳 Phương thức: <b>Binance Pay</b>\n"
-                        . "💵 Đã nhận: <b>{$usdtText} USDT</b>\n"
-                        . "💰 Đã cộng: <b>" . number_format($totalVnd, 0, ',', '.') . "đ</b>\n"
-                        . "🔖 Mã giao dịch: <code>{$txId}</code>";
+                    $userMsg = "🎉 <b>DEPOSIT SUCCESSFUL</b>\n\n"
+                        . "💳 Method: <b>Binance Pay</b>\n"
+                        . "💵 Received: <b>{$usdtText} USDT</b>\n"
+                        . "💰 Credited: <b>$" . number_format($totalVnd / TelegramConfig::binanceRate(), 2, '.', ',') . "</b>\n"
+                        . "🔖 Transaction ID: <code>{$txId}</code>";
 
                     $menuMarkup = ['inline_keyboard' => [[['text' => '🏠 Menu', 'callback_data' => 'menu']]]];
                     if (!$this->sendTelegramDirectTo((string) $telegramId, $userMsg, $menuMarkup)) {

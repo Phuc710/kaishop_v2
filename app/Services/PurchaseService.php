@@ -873,7 +873,7 @@ class PurchaseService
 
         $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
         $stmt = $this->db->prepare("
-            SELECT `id`, `user_id`, `telegram_id`, `order_code`, `product_name`, `price`, `quantity`
+            SELECT `id`, `user_id`, `telegram_id`, `order_code`, `product_name`, `price`, `quantity`, `payment_method`
             FROM `orders`
             WHERE `status` = 'pending' AND `payment_status` = 'pending' AND `payment_expires_at` IS NOT NULL AND `payment_expires_at` <= ?
             ORDER BY `id` ASC
