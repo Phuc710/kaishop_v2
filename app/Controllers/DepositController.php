@@ -64,11 +64,11 @@ class DepositController extends Controller
 
     private function isMethodAllowedForStorefront(string $methodCode): bool
     {
-        if ($this->isEnglishStorefront()) {
-            return $methodCode === DepositService::METHOD_BINANCE;
-        }
-
-        return $methodCode === DepositService::METHOD_BANK_SEPAY;
+        return in_array($methodCode, [
+            DepositService::METHOD_BANK_SEPAY,
+            DepositService::METHOD_BINANCE,
+            'momo',
+        ], true);
     }
 
     /**
@@ -295,10 +295,6 @@ class DepositController extends Controller
 
     public function create()
     {
-        if ($this->isEnglishStorefront()) {
-            return $this->json(['success' => false, 'message' => 'Bank transfer is only available on the Vietnamese storefront.'], 403);
-        }
-
         $user = $this->requireUser();
         if (!$this->validateCsrf()) {
             return $this->json(['success' => false, 'message' => 'Session expired. Please reload and try again.'], 403);
@@ -333,13 +329,9 @@ class DepositController extends Controller
 
     public function createBinance()
     {
-        if (!$this->isEnglishStorefront()) {
-            return $this->json(['success' => false, 'message' => 'Binance Pay is available only on the international storefront.'], 403);
-        }
-
         $user = $this->requireUser();
         if (!$this->validateCsrf()) {
-            return $this->json(['success' => false, 'message' => 'Phiên làm việc hết hạn, vui lòng tải lại trang.'], 403);
+            return $this->json(['success' => false, 'message' => 'Session expired. Please reload and try again.'], 403);
         }
 
         $siteConfig = Config::getSiteConfig();

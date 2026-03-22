@@ -1065,8 +1065,7 @@ trait TelegramBotServiceShopTrait
         int $messageId = 0,
         string $purpose = 'link_uid_before_buy',
         int $orderId = 0
-    ): void
-    {
+    ): void {
         $user = $this->resolveLinkedUser($chatId, $telegramId);
         if (!$user) {
             return;
@@ -1160,9 +1159,9 @@ trait TelegramBotServiceShopTrait
             $msg .= "🏷️ Discount: -<b>" . $this->formatCurrency($discountAmount, $telegramId) . "</b> (<i>{$giftcode}</i>)\n";
         }
         $msg .= "💎 Total: <b>" . $usdtText . " USDT</b>\n";
+        $msg .= "━━━━━━━━━━━━━━\n";
         $msg .= "🆔 Receiver UID: <code>{$receiverUid}</code>\n";
         $msg .= "👤 Payer UID: <code>{$payerUid}</code>\n";
-        $msg .= "📋 Note: <code>{$depositCode}</code>\n";
         if ($expiresAt !== '') {
             $msg .= "⏰ Expires: <b>{$expiresAt}</b>\n";
         }
@@ -1177,7 +1176,7 @@ trait TelegramBotServiceShopTrait
             );
             $msg .= "\n⚠️ " . $warning;
         } else {
-            $msg .= "\n⚠️ Send the exact amount from this payer UID. Use the note exactly as shown.";
+            $msg .= "\n⚠️ Send the exact amount from this payer UID.";
         }
 
         return $msg;
