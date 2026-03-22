@@ -27,8 +27,8 @@ class ProductController extends Controller
      */
     public function show($id)
     {
-        $product = $this->productModel->find($id);
-        if (!$product || (string) ($product['status'] ?? '') !== 'ON') {
+        $product = $this->productModel->findVisibleForChannel((int) $id, Product::CHANNEL_WEB);
+        if (!$product) {
             http_response_code(404);
             die('Product not found or unavailable');
         }
@@ -50,7 +50,7 @@ class ProductController extends Controller
         $categorySlug = trim((string) $categorySlug, " /|");
         $productSlug = trim((string) $productSlug, " /|");
 
-        $product = $this->productModel->findByCategoryAndProductSlug($categorySlug, $productSlug);
+        $product = $this->productModel->findByCategoryAndProductSlug($categorySlug, $productSlug, Product::CHANNEL_WEB);
         if (!$product) {
             // Check if productSlug is actually an ID (fallback for old links)
             if (is_numeric($productSlug)) {
@@ -82,6 +82,7 @@ class ProductController extends Controller
         $result = $this->purchaseService->quoteForDisplay((int) $id, [
             'quantity' => (int) ($payload['quantity'] ?? 1),
             'giftcode' => (string) ($payload['giftcode'] ?? ''),
+            'source_channel' => Product::CHANNEL_WEB,
         ]);
 
         return $this->json($result, !empty($result['success']) ? 200 : 400);
@@ -114,6 +115,7 @@ class ProductController extends Controller
             'quantity' => (int) ($payload['quantity'] ?? 1),
             'customer_input' => (string) ($payload['customer_input'] ?? ''),
             'giftcode' => (string) ($payload['giftcode'] ?? ''),
+            'source_channel' => Product::CHANNEL_WEB,
         ]);
         return $this->json($result, !empty($result['success']) ? 200 : 400);
     }

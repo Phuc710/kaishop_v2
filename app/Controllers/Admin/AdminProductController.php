@@ -41,7 +41,7 @@ class AdminProductController extends Controller
 
         $filters = [
             'search' => $this->get('search', ''),
-            'status' => $this->get('status', ''),
+            'visibility_mode' => $this->get('visibility_mode', ''),
             'category_id' => $this->get('category_id', ''),
             'type' => $this->get('type', ''),
         ];
@@ -71,8 +71,12 @@ class AdminProductController extends Controller
     {
         $this->requireAdmin();
         $id = (int) $this->post('id', 0);
+        $mode = trim((string) $this->post('mode', ''));
         if ($id <= 0)
             return $this->json(['success' => false, 'message' => 'Thiếu ID'], 400);
+        if ($mode !== '') {
+            return $this->json($this->productModel->setVisibilityMode($id, $mode));
+        }
         return $this->json($this->productModel->toggleStatus($id));
     }
 
@@ -306,7 +310,7 @@ class AdminProductController extends Controller
         $seoDescription = trim((string) $this->post('seo_description', ''));
         $catId = (int) $this->post('category_id', 0);
         $displayOrder = max(0, (int) $this->post('display_order', 0));
-        $status = $this->post('status', 'ON') === 'OFF' ? 'OFF' : 'ON';
+        $visibilityMode = Product::normalizeVisibilityMode((string) $this->post('visibility_mode', Product::VISIBILITY_BOTH));
         $slug = trim((string) $this->post('slug', ''));
 
         $galleryInput = $this->post('gallery', []);
@@ -362,12 +366,13 @@ class AdminProductController extends Controller
             'badge_text' => $badgeText !== '' ? $badgeText : null,
             'category_id' => $catId > 0 ? $catId : null,
             'display_order' => $displayOrder,
-            'status' => $status,
             'image' => $image !== '' ? $image : null,
             'gallery' => !empty($gallery) ? json_encode($gallery, JSON_UNESCAPED_UNICODE) : null,
             'description' => $description,
             'seo_description' => $seoDescription !== '' ? $seoDescription : null,
         ];
+
+        $data = array_merge($data, Product::buildVisibilityPayload($visibilityMode));
 
         if ($excludeId === null) {
             $data['created_at'] = $this->timeService ? $this->timeService->nowSql() : date('Y-m-d H:i:s');

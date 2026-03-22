@@ -734,16 +734,17 @@ class BinancePayService
         $msg = "🎉 <b>BINANCE PAYMENT SUCCESSFUL</b>\n\n";
         $msg .= "🧾 Order ID: <code>{$orderCode}</code>\n";
         $msg .= "📦 Product: <b>{$productName}</b>\n";
-        $msg .= "🔢 Quantity: <b>{$quantity}</b>\n";
+        $msg .= "🔢 Quantity: <b>x{$quantity}</b>\n";
         $msg .= "💵 Received: <b>{$usdtText} USDT</b>\n";
+        $msg .= "━━━━━━━━━━━━━━";
 
         if ($status === 'completed' && $deliveryContent !== '') {
             $msg .= "\n\n🔑 <b>DELIVERY</b>\n<code>" . htmlspecialchars($deliveryContent, ENT_QUOTES, 'UTF-8') . "</code>";
             $msg .= "\n\n📄 <i>Your product is also attached as a .txt file below.</i>";
         } elseif ($status === 'processing') {
-            $msg .= "\n\n🛠️ Your order is being processed. If it takes too long, contact admin and send the Order ID above.";
+            $msg .= "\n\n🛠️ Your order is being processed. It will be delivered soon.";
         } else {
-            $msg .= "\n\n📩 Payment recorded. If there is any issue, contact admin and send the Order ID above.";
+            $msg .= "\n\n📩 Order recorded successfully.";
         }
 
         return $msg;

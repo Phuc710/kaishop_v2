@@ -11,6 +11,7 @@ $isEdit = !empty($product);
 $productType = $product['product_type'] ?? 'account';
 $requiresInfo = (int) ($product['requires_info'] ?? 0);
 $deliveryMode = (string) ($product['delivery_mode'] ?? 'account_stock');
+$visibilityMode = Product::resolveVisibilityMode($product ?? []);
 $galleryArr = $product['gallery_arr'] ?? [];
 ?>
 
@@ -201,12 +202,14 @@ $galleryArr = $product['gallery_arr'] ?? [];
             </div>
             <div class="col-md-2">
                 <div class="form-group mb-3">
-                    <label class="font-weight-bold">Trạng thái</label>
-                    <select class="form-control font-weight-bold" name="status">
-                        <option value="ON" <?= ($product['status'] ?? 'ON') === 'ON' ? 'selected' : '' ?>>HIỂN THỊ
-                        </option>
-                        <option value="OFF" <?= ($product['status'] ?? '') === 'OFF' ? 'selected' : '' ?>>ẨN</option>
+                    <label class="font-weight-bold">Hiển thị</label>
+                    <select class="form-control font-weight-bold" name="visibility_mode">
+                        <option value="both" <?= $visibilityMode === 'both' ? 'selected' : '' ?>>Web + Telegram</option>
+                        <option value="web" <?= $visibilityMode === 'web' ? 'selected' : '' ?>>Chỉ Web</option>
+                        <option value="telegram" <?= $visibilityMode === 'telegram' ? 'selected' : '' ?>>Chỉ Telegram</option>
+                        <option value="hidden" <?= $visibilityMode === 'hidden' ? 'selected' : '' ?>>Ẩn cả 2</option>
                     </select>
+                    <small class="text-muted d-block mt-1">1/1 = cả 2, 1/0 = web, 0/1 = Telegram, 0/0 = ẩn.</small>
                 </div>
             </div>
             <div class="col-md-3">

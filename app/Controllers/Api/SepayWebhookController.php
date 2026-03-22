@@ -424,19 +424,16 @@ class SepayWebhookController extends Controller
         $msg = "🎉 <b>THANH TOÁN THÀNH CÔNG</b>\n\n";
         $msg .= "🧾 Mã đơn: <code>{$orderCode}</code>\n";
         $msg .= "📦 Sản phẩm: <b>{$productName}</b>\n";
-        $msg .= "🔢 Số lượng: <b>{$quantity}</b>\n";
-        $msg .= "💳 Phương thức: <b>{$methodLabel}</b>\n";
-        $msg .= "💵 Đã nhận: <b>" . number_format($paidAmount, 0, ',', '.') . "đ</b>\n";
-        $msg .= "🔖 Giao dịch: <code>" . htmlspecialchars($transactionId, ENT_QUOTES, 'UTF-8') . "</code>\n";
-        $msg .= "━━━━━━━━━━━━━━";
+        $msg .= "🔢 Số lượng: <b>x{$quantity}</b>\n";
+        $msg .= "━━━━━━━━━━━━━━━━";
 
         if ($status === 'completed' && $deliveryContent !== '') {
             $msg .= "\n\n🔑 <b>NỘI DUNG GIAO HÀNG</b>\n<code>" . htmlspecialchars($deliveryContent, ENT_QUOTES, 'UTF-8') . "</code>";
             $msg .= "\n\n📄 <i>Sản phẩm đã được đính kèm dưới dạng file .txt bên dưới.</i>";
         } elseif ($status === 'processing') {
-            $msg .= "\n\n🛠️ Đơn đã vào hàng chờ xử lý. Admin sẽ giao sớm cho bạn.";
+            $msg .= "\n\n🛠️ Đơn hàng của bạn đang được xử lý. Admin sẽ giao sớm cho bạn.";
         } else {
-            $msg .= "\n\n📦 Đơn đã được ghi nhận. Bạn có thể xem lại trong mục Đơn hàng.";
+            $msg .= "\n\n📦 Đơn hàng đã được ghi nhận thành công.";
         }
 
         return $msg;

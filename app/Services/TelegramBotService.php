@@ -460,6 +460,11 @@ class TelegramBotService
             $this->telegram->answerCallbackQuery($callbackId);
             return;
         }
+        if (preg_match('/^buy_gift_(\d+)_(\d+)$/', $data, $m)) {
+            $this->startGiftCodeInputMode($chatId, $telegramId, (int) $m[1], (int) $m[2], $messageId);
+            $this->telegram->answerCallbackQuery($callbackId);
+            return;
+        }
         if ($data === 'link_binance_uid_order') {
             $this->cbLinkBinanceUid($chatId, $telegramId, $messageId, 'order_payment', 0);
             $this->telegram->answerCallbackQuery($callbackId);
@@ -762,7 +767,7 @@ class TelegramBotService
             $msg .= $this->tgChoice($telegramId, "{$statusIcon} Mã đơn: <code>{$orderCode}</code>\n", "{$statusIcon} Order ID: <code>{$orderCode}</code>\n");
             $msg .= $this->tgChoice($telegramId, "📦 Tên SP: <b>{$productName}</b>\n", "📦 Product: <b>{$productName}</b>\n");
             $msg .= $this->tgChoice($telegramId, "💰 Giá: <b>{$price}</b>\n", "💰 Price: <b>{$price}</b>\n");
-            $msg .= $this->tgChoice($telegramId, "🔢 SL: <b>{$quantity}</b>\n", "🔢 Qty: <b>{$quantity}</b>\n");
+            $msg .= $this->tgChoice($telegramId, "🔢 SL: <b>x{$quantity}</b>\n", "🔢 Qty: <b>x{$quantity}</b>\n");
             $msg .= $this->tgChoice($telegramId, "🔑 Nội dung:\n<code>{$content}</code>\n", "🔑 Content:\n<code>{$content}</code>\n");
             $msg .= "━━━━━━━━━━━━━━\n";
         }

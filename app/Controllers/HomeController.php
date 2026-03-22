@@ -19,7 +19,7 @@ class HomeController extends Controller
         $inventoryService = new ProductInventoryService();
 
         $categories = $categoryModel->getActive();
-        $allProducts = $productModel->getAvailable();
+        $allProducts = $productModel->getAvailable(Product::CHANNEL_WEB);
 
         $stockStats = $inventoryService->getStatsForProducts($allProducts);
 
@@ -81,7 +81,7 @@ class HomeController extends Controller
 
         $allProducts = $productModel->getFiltered([
             'category_id' => (int) $categoryData['id'],
-            'status' => 'ON'
+            'channel' => Product::CHANNEL_WEB,
         ]);
 
         $stockStats = $inventoryService->getStatsForProducts($allProducts);

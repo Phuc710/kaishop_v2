@@ -80,11 +80,10 @@ class PurchaseService
 
             $productStmt = $this->db->prepare("SELECT * FROM `products` WHERE `id` = ? LIMIT 1 FOR UPDATE");
             $productStmt->execute([$productId]);
-            $product = $productStmt->fetch(PDO::FETCH_ASSOC) ?: null;
-            if (!$product || (string) ($product['status'] ?? '') !== 'ON') {
-                throw new RuntimeException('Sản phẩm không khả dụng.');
-            }
-            $product = Product::normalizeRuntimeRow($product);
+            $product = $this->assertProductAvailableForChannel(
+                $productStmt->fetch(PDO::FETCH_ASSOC) ?: null,
+                $this->resolveVisibilityChannel($sourceChannel)
+            );
 
             $productType = (string) ($product['product_type'] ?? 'account');
             $requiresInfo = (int) ($product['requires_info'] ?? 0) === 1;
@@ -431,11 +430,10 @@ class PurchaseService
 
             $productStmt = $this->db->prepare("SELECT * FROM `products` WHERE `id` = ? LIMIT 1 FOR UPDATE");
             $productStmt->execute([$productId]);
-            $product = $productStmt->fetch(PDO::FETCH_ASSOC) ?: null;
-            if (!$product || (string) ($product['status'] ?? '') !== 'ON') {
-                throw new RuntimeException('Sản phẩm không khả dụng.');
-            }
-            $product = Product::normalizeRuntimeRow($product);
+            $product = $this->assertProductAvailableForChannel(
+                $productStmt->fetch(PDO::FETCH_ASSOC) ?: null,
+                Product::CHANNEL_TELEGRAM
+            );
 
             $productType = (string) ($product['product_type'] ?? 'account');
             $requiresInfo = (int) ($product['requires_info'] ?? 0) === 1;
@@ -1226,16 +1224,15 @@ class PurchaseService
     {
         $requestedQty = max(1, (int) ($options['quantity'] ?? 1));
         $giftcodeInput = strtoupper(trim((string) ($options['giftcode'] ?? '')));
+        $visibilityChannel = $this->resolveVisibilityChannel($options['source_channel'] ?? ($options['source'] ?? Product::CHANNEL_WEB));
 
         try {
             $productStmt = $this->db->prepare("SELECT * FROM `products` WHERE `id` = ? LIMIT 1");
             $productStmt->execute([$productId]);
-            $product = $productStmt->fetch(PDO::FETCH_ASSOC) ?: null;
-
-            if (!$product || (string) ($product['status'] ?? '') !== 'ON') {
-                throw new RuntimeException('Sản phẩm không khả dụng.');
-            }
-            $product = Product::normalizeRuntimeRow($product);
+            $product = $this->assertProductAvailableForChannel(
+                $productStmt->fetch(PDO::FETCH_ASSOC) ?: null,
+                $visibilityChannel
+            );
 
             $productType = (string) ($product['product_type'] ?? 'account');
             $requiresInfo = (int) ($product['requires_info'] ?? 0) === 1;
@@ -1305,6 +1302,36 @@ class PurchaseService
                 'message' => $e instanceof RuntimeException ? $e->getMessage() : 'Không thể kiểm tra mã giảm giá lúc này.',
             ];
         }
+    }
+
+    private function assertProductAvailableForChannel(?array $product, string $channel): array
+    {
+        if (!$product) {
+            throw new RuntimeException('Sản phẩm không khả dụng.');
+        }
+
+        $product = Product::normalizeRuntimeRow($product);
+        if (!Product::isVisibleOnChannel($product, $channel)) {
+            throw new RuntimeException('Sản phẩm không khả dụng.');
+        }
+
+        return $product;
+    }
+
+    private function resolveVisibilityChannel($source): string
+    {
+        if (is_int($source) || ctype_digit((string) $source)) {
+            return ((int) $source) === SourceChannelHelper::BOTTELE
+                ? Product::CHANNEL_TELEGRAM
+                : Product::CHANNEL_WEB;
+        }
+
+        $source = strtolower(trim((string) $source));
+        if (in_array($source, ['telegram', 'bottele', Product::CHANNEL_TELEGRAM], true)) {
+            return Product::CHANNEL_TELEGRAM;
+        }
+
+        return Product::CHANNEL_WEB;
     }
 
     private function completeOrderDelivery(int $orderId, ?int $stockId, string $deliveryContentPlain): void
