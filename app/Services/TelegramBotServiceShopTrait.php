@@ -865,15 +865,15 @@ trait TelegramBotServiceShopTrait
 
         $rows = [];
         $row1 = [];
-        $row1[] = ['text' => '🔙 ' . $this->tgText($telegramId, 'back_home'), 'callback_data' => 'prod_' . $prodId];
+        $row1[] = ['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'prod_' . $prodId];
 
         if ((int) $total === 0) {
             // Free flow - single "Claim" button
-            $row1[] = ['text' => '🎁 ' . $this->tgChoice($telegramId, 'Nhận miễn phí', 'Claim for Free'), 'callback_data' => $confirmAction];
+            $row1[] = ['text' => $this->tgText($telegramId, 'confirm_free'), 'callback_data' => $confirmAction];
             $rows[] = $row1;
         } else {
             if (!$giftcode) {
-                $row1[] = ['text' => '🎫 ' . $this->tgText($telegramId, 'gift_button'), 'callback_data' => 'buy_gift_' . $prodId . '_' . $qty];
+                $row1[] = ['text' => $this->tgText($telegramId, 'gift_button'), 'callback_data' => 'buy_gift_' . $prodId . '_' . $qty];
             }
             $rows[] = $row1;
 
@@ -881,16 +881,16 @@ trait TelegramBotServiceShopTrait
             $isEnglish = $this->isTelegramEnglish($telegramId);
             if ($isEnglish) {
                 if ($binanceUid === '') {
-                    $rows[] = [['text' => '🆔 Enter Binance UID', 'callback_data' => 'link_binance_uid_order']];
+                    $rows[] = [['text' => '🆔 Enter UID', 'callback_data' => 'link_binance_uid_order']];
                 } else {
                     $rows[] = [
-                        ['text' => '✅ ' . $this->tgText($telegramId, 'confirm_button'), 'callback_data' => $confirmAction],
+                        ['text' => $this->tgText($telegramId, 'confirm_button'), 'callback_data' => $confirmAction],
                         ['text' => '🔄 Change UID', 'callback_data' => 'link_binance_uid_order']
                     ];
                 }
             } else {
                 $rows[] = [
-                    ['text' => '✅ ' . $this->tgText($telegramId, 'confirm_button'), 'callback_data' => $confirmAction]
+                    ['text' => $this->tgText($telegramId, 'confirm_button'), 'callback_data' => $confirmAction]
                 ];
             }
         }
@@ -932,7 +932,22 @@ trait TelegramBotServiceShopTrait
         $savedBinanceUid = trim((string) ($session['binance_uid'] ?? ''));
         $effectiveBinanceUid = trim($forcedBinanceUid !== '' ? $forcedBinanceUid : $savedBinanceUid);
 
-        if ($this->isTelegramEnglish($telegramId) && !preg_match('/^\d{4,20}$/', $effectiveBinanceUid)) {
+        // FREE FLOW BYPASS UID PROMPT
+        $isFree = false;
+        try {
+            $quote = $this->purchaseService->quoteForDisplay($prodId, [
+                'quantity' => $qty,
+                'giftcode' => $giftcode,
+                'source_channel' => Product::CHANNEL_TELEGRAM
+            ]);
+            if ($quote['success'] && (int) ($quote['pricing']['total_price'] ?? 1) === 0) {
+                $isFree = true;
+            }
+        } catch (Throwable $e) {
+            $isFree = false;
+        }
+
+        if (!$isFree && $this->isTelegramEnglish($telegramId) && !preg_match('/^\d{4,20}$/', $effectiveBinanceUid)) {
             $this->setPurchaseSession($telegramId, $this->attachPurchaseMessageId($session, $messageId));
             $this->cbLinkBinanceUid($chatId, $telegramId, $messageId, 'order_payment', 0);
             return;

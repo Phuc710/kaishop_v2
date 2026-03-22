@@ -1243,7 +1243,7 @@ class PurchaseService
             $requiresInfo = (int) ($product['requires_info'] ?? 0) === 1;
             $stockManaged = Product::isStockManagedProduct($product);
             $price = (int) ($product['price_vnd'] ?? 0);
-            if ($price <= 0) {
+            if ($price < 0) {
                 throw new RuntimeException('Giá sản phẩm không hợp lệ.');
             }
 

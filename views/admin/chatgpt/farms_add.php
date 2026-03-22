@@ -1,77 +1,83 @@
 <?php
-$pageTitle = 'Thêm Farm ChatGPT';
+$pageTitle = 'Thêm Farm GPT';
+$breadcrumbs = [
+    ['label' => 'GPT Business', 'url' => url('admin/chatgpt/farms')],
+    ['label' => 'Quản lý Farm', 'url' => url('admin/chatgpt/farms')],
+    ['label' => 'Thêm farm'],
+];
 require __DIR__ . '/../layout/head.php';
+require __DIR__ . '/../layout/breadcrumb.php';
 $error = $error ?? null;
 ?>
-<section class="content-header">
-    <div class="container-fluid">
-        <div class="row mb-2">
-            <div class="col">
-                <h1 class="m-0" style="font-size:1.3rem">➕ Thêm Farm ChatGPT Pro</h1>
-            </div>
-            <div class="col-auto"><a href="<?= url('admin/chatgpt/farms') ?>" class="btn btn-secondary btn-sm">← Quay
-                    lại</a></div>
-        </div>
-    </div>
-</section>
-<section class="content">
+
+<section class="content pb-4 mt-1 admin-chatgpt-page">
     <div class="container-fluid">
         <div class="row justify-content-center">
-            <div class="col-lg-7">
-
+            <div class="col-lg-8">
                 <?php if ($error): ?>
-                    <div class="alert alert-danger">
-                        <?= htmlspecialchars($error) ?>
-                    </div>
+                    <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
                 <?php endif; ?>
 
-                <div class="card" style="background:#1e293b;border:1px solid #334155;border-radius:14px;">
-                    <div class="card-body p-4">
+                <div class="card custom-card gptb-form-card">
+                    <div class="card-header gptb-card-header">
+                        <h3 class="card-title">THÊM FARM GPT BUSINESS</h3>
+                        <div class="gptb-card-actions">
+                            <a href="<?= url('admin/chatgpt/farms') ?>" class="btn btn-secondary btn-sm">
+                                <i class="fas fa-arrow-left mr-1"></i> Quay lại
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
                         <form method="post" action="<?= url('admin/chatgpt/farms/add') ?>" id="farmAddForm">
-                            <div class="mb-3">
-                                <label class="form-label" style="color:#e2e8f0;font-weight:600">Tên Farm *</label>
-                                <input type="text" name="farm_name" class="form-control"
-                                    style="background:#0f172a;border-color:#334155;color:#f1f5f9"
-                                    placeholder="VD: GPT Business Farm 01" required>
+                            <div class="form-section">
+                                <div class="form-section-title">Thông tin farm</div>
+                                <div class="form-group">
+                                    <label class="form-label-req">Tên Farm</label>
+                                    <input type="text" name="farm_name" class="form-control"
+                                        placeholder="VD: GPT Business Farm 01" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label-req">Gmail admin của farm</label>
+                                    <input type="email" name="admin_email" class="form-control"
+                                        placeholder="admin@gmail.com" required>
+                                    <small class="form-text text-muted">Email tài khoản OpenAI Business đang vận hành farm này.</small>
+                                </div>
+                                <div class="form-group mb-0">
+                                    <label class="form-label-req">Admin API Key</label>
+                                    <div class="input-group">
+                                        <input type="password" name="admin_api_key" class="form-control gptb-mono-input"
+                                            id="apiKeyInput" placeholder="sk-admin-..." required autocomplete="off">
+                                        <div class="input-group-append">
+                                            <button type="button" class="btn btn-outline-secondary" id="toggleApiKeyBtn">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <small class="form-text text-muted">Key sẽ được mã hóa trước khi lưu trong cơ sở dữ liệu.</small>
+                                </div>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label" style="color:#e2e8f0;font-weight:600">Gmail của Admin (chủ
-                                    farm) *</label>
-                                <input type="email" name="admin_email" class="form-control"
-                                    style="background:#0f172a;border-color:#334155;color:#f1f5f9"
-                                    placeholder="admin@gmail.com" required>
-                                <div class="form-text" style="color:#64748b">Email của tài khoản OpenAI Business đang
-                                    chạy farm này</div>
+
+                            <div class="form-section">
+                                <div class="form-section-title">Cấu hình slot</div>
+                                <div class="form-row">
+                                    <div class="col-md-4">
+                                        <div class="form-group mb-md-0">
+                                            <label>Số slot user</label>
+                                            <input type="number" name="seat_total" class="form-control" value="4" min="1" max="20">
+                                        </div>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted mt-2">Mặc định 4 slot user, không tính tài khoản admin của farm.</small>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label" style="color:#e2e8f0;font-weight:600">Admin API Key *</label>
-                                <input type="password" name="admin_api_key" class="form-control" id="apiKeyInput"
-                                    style="background:#0f172a;border-color:#334155;color:#f1f5f9;font-family:monospace"
-                                    placeholder="sk-admin-..." required autocomplete="off">
-                                <div class="form-text" style="color:#64748b;">Lấy từ platform.openai.com → Settings →
-                                    Admin Keys. Key sẽ được mã hóa trước khi lưu DB.</div>
-                                <button type="button" onclick="toggleKey()"
-                                    class="btn btn-sm btn-outline-secondary mt-1" style="font-size:.75rem">👁 Hiện/Ẩn
-                                    Key</button>
+
+                            <div class="alert alert-warning mb-4">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                Hệ thống sẽ kiểm tra API key trước khi lưu. Nếu key không hợp lệ thì farm sẽ không được tạo.
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label" style="color:#e2e8f0;font-weight:600">Số slot user (không tính
-                                    admin)</label>
-                                <input type="number" name="seat_total" class="form-control"
-                                    style="background:#0f172a;border-color:#334155;color:#f1f5f9;width:120px" value="4"
-                                    min="1" max="20">
-                                <div class="form-text" style="color:#64748b">Mặc định 4 (1 admin + 4 user = Business
-                                    plan)</div>
-                            </div>
-                            <div class="alert"
-                                style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:10px;color:#fbbf24;font-size:.85rem;">
-                                ⚠️ Hệ thống sẽ <strong>test API key</strong> trước khi lưu. Nếu key không hợp lệ, farm
-                                sẽ không được tạo.
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-primary" id="submitBtn"
-                                    onclick="this.disabled=true;this.textContent='⏳ Đang kiểm tra key...';this.form.submit()">
-                                    ✅ Xác nhận thêm Farm
+
+                            <div class="gptb-form-actions">
+                                <button type="submit" class="btn btn-primary" id="submitBtn">
+                                    <i class="fas fa-plus-circle mr-1"></i> Xác nhận thêm farm
                                 </button>
                                 <a href="<?= url('admin/chatgpt/farms') ?>" class="btn btn-secondary">Hủy</a>
                             </div>
@@ -82,10 +88,29 @@ $error = $error ?? null;
         </div>
     </div>
 </section>
+
 <?php require __DIR__ . '/../layout/foot.php'; ?>
 <script>
-    function toggleKey() {
-        const inp = document.getElementById('apiKeyInput');
-        inp.type = inp.type === 'password' ? 'text' : 'password';
-    }
+    (function () {
+        var input = document.getElementById('apiKeyInput');
+        var toggleButton = document.getElementById('toggleApiKeyBtn');
+        var form = document.getElementById('farmAddForm');
+        var submitButton = document.getElementById('submitBtn');
+
+        if (toggleButton && input) {
+            toggleButton.addEventListener('click', function () {
+                input.type = input.type === 'password' ? 'text' : 'password';
+                toggleButton.innerHTML = input.type === 'password'
+                    ? '<i class="fas fa-eye"></i>'
+                    : '<i class="fas fa-eye-slash"></i>';
+            });
+        }
+
+        if (form && submitButton) {
+            form.addEventListener('submit', function () {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Đang kiểm tra key...';
+            });
+        }
+    })();
 </script>

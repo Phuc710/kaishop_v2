@@ -14,6 +14,7 @@ class ChatGptAdminController extends Controller
     private $snapModel;
     private $auditLog;
     private $farmService;
+    private $viewService;
 
     public function __construct()
     {
@@ -24,6 +25,7 @@ class ChatGptAdminController extends Controller
         $this->snapModel = new ChatGptSnapshot();
         $this->auditLog = new ChatGptAuditLog();
         $this->farmService = new ChatGptFarmService();
+        $this->viewService = new ChatGptAdminViewService();
     }
 
     private function requireAdmin()
@@ -44,11 +46,7 @@ class ChatGptAdminController extends Controller
         $farms = $this->farmModel->getAll();
         $stats = $this->farmModel->getStats();
         $orderStats = $this->orderModel->getStats();
-        $this->view('admin/chatgpt/farms', [
-            'farms' => $farms,
-            'stats' => $stats,
-            'orderStats' => $orderStats,
-        ]);
+        $this->view('admin/chatgpt/farms', $this->viewService->buildFarmPageData($farms, $stats, $orderStats));
     }
 
     public function farmAdd()
@@ -178,12 +176,13 @@ class ChatGptAdminController extends Controller
         $farms = $this->farmModel->getAll();
         $stats = $this->orderModel->getStats();
 
-        $this->view('admin/chatgpt/orders', [
-            'orders' => $orders,
+        $this->view('admin/chatgpt/orders', array_merge(
+            $this->viewService->buildOrdersPageData($orders, $stats),
+            [
             'farms' => $farms,
-            'stats' => $stats,
             'filters' => $filters,
-        ]);
+            ]
+        ));
     }
 
     // ==================== MEMBERS ====================
@@ -198,11 +197,13 @@ class ChatGptAdminController extends Controller
         $members = $this->snapModel->getAllMembers($filters);
         $farms = $this->farmModel->getAll();
 
-        $this->view('admin/chatgpt/members', [
-            'members' => $members,
+        $this->view('admin/chatgpt/members', array_merge(
+            $this->viewService->buildMembersPageData($members),
+            [
             'farms' => $farms,
             'filters' => $filters,
-        ]);
+            ]
+        ));
     }
 
     // ==================== INVITES ====================
@@ -242,12 +243,14 @@ class ChatGptAdminController extends Controller
         $farms = $this->farmModel->getAll();
         $actionTypes = $this->auditLog->getActionTypes();
 
-        $this->view('admin/chatgpt/logs', [
-            'logs' => $logs,
+        $this->view('admin/chatgpt/logs', array_merge(
+            $this->viewService->buildLogsPageData($logs, $actionTypes),
+            [
             'farms' => $farms,
             'actionTypes' => $actionTypes,
             'filters' => $filters,
-        ]);
+            ]
+        ));
     }
 
     // ==================== QUICK ACTIONS ====================

@@ -1,95 +1,133 @@
 <?php
-$pageTitle = 'ChatGPT Members';
+$pageTitle = 'Thành viên Farm';
+$breadcrumbs = [
+    ['label' => 'GPT Business', 'url' => url('admin/chatgpt/farms')],
+    ['label' => 'Thành viên Farm'],
+];
 require __DIR__ . '/../layout/head.php';
+require __DIR__ . '/../layout/breadcrumb.php';
+
 $members = $members ?? [];
 $farms = $farms ?? [];
 $filters = $filters ?? [];
+$summaryCards = $summaryCards ?? [];
+$memberSourceOptions = $memberSourceOptions ?? [];
 ?>
-<section class="content-header">
+
+<section class="content pb-4 mt-1 admin-chatgpt-page">
     <div class="container-fluid">
-        <div class="row mb-2 align-items-center">
-            <div class="col">
-                <h1 class="m-0" style="font-size:1.3rem">👥 Thành viên Farm (Snapshot)</h1>
-            </div>
-            <div class="col-auto"><a href="<?= url('admin/chatgpt/farms') ?>" class="btn btn-secondary btn-sm">←
-                    Farms</a></div>
+        <div class="row mb-3">
+            <?php foreach ($summaryCards as $card): ?>
+                <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="gptb-stat-card gptb-stat-card--<?= htmlspecialchars($card['tone']) ?>">
+                        <div class="gptb-stat-icon">
+                            <i class="<?= htmlspecialchars($card['icon']) ?>"></i>
+                        </div>
+                        <div class="gptb-stat-body">
+                            <div class="gptb-stat-label"><?= htmlspecialchars($card['label']) ?></div>
+                            <div class="gptb-stat-value"><?= (int) ($card['value'] ?? 0) ?></div>
+                            <div class="gptb-stat-hint"><?= htmlspecialchars($card['hint']) ?></div>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
         </div>
-    </div>
-</section>
-<section class="content">
-    <div class="container-fluid">
 
-        <form method="get" class="row g-2 mb-3">
-            <div class="col-auto">
-                <select name="farm_id" class="form-select form-select-sm"
-                    style="background:#1e293b;border-color:#334155;color:#e2e8f0">
-                    <option value="">Tất cả farm</option>
-                    <?php foreach ($farms as $f): ?>
-                        <option value="<?= $f['id'] ?>" <?= (int) ($filters['farm_id'] ?? 0) === (int) $f['id'] ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($f['farm_name']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+        <div class="card custom-card">
+            <div class="card-header gptb-card-header">
+                <h3 class="card-title">THÀNH VIÊN FARM</h3>
+                <div class="gptb-card-actions">
+                    <a href="<?= url('admin/chatgpt/farms') ?>" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-arrow-left mr-1"></i> Về farms
+                    </a>
+                </div>
             </div>
-            <div class="col-auto">
-                <select name="source" class="form-select form-select-sm"
-                    style="background:#1e293b;border-color:#334155;color:#e2e8f0">
-                    <option value="">Tất cả nguồn</option>
-                    <option value="approved" <?= ($filters['source'] ?? '') === 'approved' ? 'selected' : '' ?>>✅ Approved
-                    </option>
-                    <option value="detected_unknown" <?= ($filters['source'] ?? '') === 'detected_unknown' ? 'selected' : '' ?>
-                        >⚠️ Unknown</option>
-                </select>
-            </div>
-            <div class="col-auto"><button type="submit" class="btn btn-outline-primary btn-sm">Lọc</button></div>
-        </form>
 
-        <div class="card" style="background:#1e293b;border:1px solid #334155;border-radius:14px;">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0" style="color:#e2e8f0;font-size:.85rem;">
-                        <thead style="border-bottom:1px solid #334155;">
-                            <tr style="font-size:.72rem;color:#64748b;text-transform:uppercase;">
-                                <th class="ps-3">Email</th>
-                                <th>Farm</th>
-                                <th>Role</th>
-                                <th>Nguồn</th>
-                                <th>Lần đầu</th>
-                                <th>Lần cuối</th>
+            <div class="dt-filters">
+                <form method="get" class="row align-items-end">
+                    <div class="col-lg-4 col-md-6 mb-2">
+                        <label class="gptb-filter-label">Farm</label>
+                        <select name="farm_id" class="form-control form-control-sm">
+                            <option value="0">Tất cả farm</option>
+                            <?php foreach ($farms as $farm): ?>
+                                <option value="<?= (int) ($farm['id'] ?? 0) ?>" <?= (int) ($filters['farm_id'] ?? 0) === (int) ($farm['id'] ?? 0) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($farm['farm_name'] ?? '--') ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-lg-4 col-md-6 mb-2">
+                        <label class="gptb-filter-label">Nguồn</label>
+                        <select name="source" class="form-control form-control-sm">
+                            <option value="">Tất cả nguồn</option>
+                            <?php foreach ($memberSourceOptions as $value => $label): ?>
+                                <option value="<?= htmlspecialchars($value) ?>" <?= ($filters['source'] ?? '') === $value ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($label) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-lg-4 col-md-12 mb-2">
+                        <div class="gptb-filter-actions">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="fas fa-search mr-1"></i> Lọc
+                            </button>
+                            <a href="<?= url('admin/chatgpt/members') ?>" class="btn btn-danger btn-sm">
+                                <i class="fas fa-trash-alt mr-1"></i> Xóa lọc
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card-body pt-3">
+                <div class="table-responsive table-wrapper mb-0">
+                    <table class="table table-hover table-bordered admin-table gptb-table mb-0">
+                        <thead>
+                            <tr>
+                                <th class="text-center">Email</th>
+                                <th class="text-center">Farm</th>
+                                <th class="text-center">Role</th>
+                                <th class="text-center">Nguồn</th>
+                                <th class="text-center">Trạng thái</th>
+                                <th class="text-center">Lần đầu</th>
+                                <th class="text-center">Lần cuối</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($members)): ?>
                                 <tr>
-                                    <td colspan="6" class="text-center py-4" style="color:#475569">Chưa có snapshot nào.
-                                        Chạy cron sync trước.</td>
+                                    <td colspan="7" class="text-center py-4 text-muted">Chưa có snapshot thành viên nào.</td>
                                 </tr>
                             <?php else: ?>
-                                <?php foreach ($members as $m): ?>
-                                    <?php $isApproved = ($m['source'] ?? '') === 'approved'; ?>
+                                <?php foreach ($members as $member): ?>
                                     <tr>
-                                        <td class="ps-3">
-                                            <?= htmlspecialchars($m['email']) ?>
+                                        <td class="text-center">
+                                            <span class="gptb-email"><?= htmlspecialchars($member['email'] ?? '--') ?></span>
                                         </td>
-                                        <td style="color:#94a3b8;font-size:.8rem">
-                                            <?= htmlspecialchars($m['farm_name'] ?? '—') ?>
+                                        <td class="text-center">
+                                            <span class="cat-badge"><?= htmlspecialchars($member['farm_name'] ?? '--') ?></span>
                                         </td>
-                                        <td><span
-                                                style="font-size:.72rem;background:#06406622;color:#38bdf8;padding:2px 7px;border-radius:4px">
-                                                <?= htmlspecialchars($m['role'] ?? 'reader') ?>
-                                            </span></td>
-                                        <td>
-                                            <?php if ($isApproved): ?>
-                                                <span style="color:#34d399;font-size:.8rem">✅ Approved</span>
-                                            <?php else: ?>
-                                                <span style="color:#f87171;font-size:.8rem">⚠️ Unknown</span>
-                                            <?php endif; ?>
+                                        <td class="text-center">
+                                            <span class="<?= htmlspecialchars($member['role_badge_class'] ?? 'gptb-badge gptb-badge--primary') ?>">
+                                                <?= htmlspecialchars($member['role'] ?? 'reader') ?>
+                                            </span>
                                         </td>
-                                        <td style="color:#64748b;font-size:.75rem">
-                                            <?= $m['first_seen_at'] ? date('d/m H:i', strtotime($m['first_seen_at'])) : '—' ?>
+                                        <td class="text-center">
+                                            <span class="<?= htmlspecialchars($member['source_badge_class'] ?? 'gptb-badge gptb-badge--muted') ?>">
+                                                <?= htmlspecialchars($member['source_label'] ?? '--') ?>
+                                            </span>
                                         </td>
-                                        <td style="color:#64748b;font-size:.75rem">
-                                            <?= $m['last_seen_at'] ? date('d/m H:i', strtotime($m['last_seen_at'])) : '—' ?>
+                                        <td class="text-center">
+                                            <span class="<?= htmlspecialchars($member['status_badge_class'] ?? 'gptb-badge gptb-badge--muted') ?>">
+                                                <?= htmlspecialchars($member['status_label'] ?? '--') ?>
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="date-badge"><?= htmlspecialchars($member['first_seen_display'] ?? '--') ?></span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="date-badge"><?= htmlspecialchars($member['last_seen_display'] ?? '--') ?></span>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -101,4 +139,5 @@ $filters = $filters ?? [];
         </div>
     </div>
 </section>
+
 <?php require __DIR__ . '/../layout/foot.php'; ?>

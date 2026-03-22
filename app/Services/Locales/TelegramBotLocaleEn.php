@@ -28,13 +28,14 @@ class TelegramBotLocaleEn implements TelegramBotLocaleInterface
         'gift_input_prompt' => '👇 Please enter your discount code:',
         'gift_invalid_title' => '❌ <b>INVALID DISCOUNT CODE</b>',
         'gift_invalid_msg' => 'Please enter another code or click Back.',
-        'gift_button' => '🎟 Enter discount code',
+        'gift_button' => '🎟️ Discount',
         'confirm_order_title' => '🧾 <b>Confirm order</b>',
         'confirm_unit_price' => '💵 Unit price',
         'confirm_total' => '💎 Total payment',
         'confirm_discount' => '🏷️ Discount',
         'confirm_info' => '📝 Information',
-        'confirm_button' => '✅ Confirm Order',
+        'confirm_button' => '✅ Confirm',
+        'confirm_free' => '🎁 Claim for Free',
     ];
 
     public function getLocaleCode(): string

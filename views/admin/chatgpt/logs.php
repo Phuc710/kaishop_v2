@@ -1,126 +1,146 @@
 <?php
-$pageTitle = 'ChatGPT Audit Logs';
+$pageTitle = 'Audit Logs';
+$breadcrumbs = [
+    ['label' => 'GPT Business', 'url' => url('admin/chatgpt/farms')],
+    ['label' => 'Audit Logs'],
+];
 require __DIR__ . '/../layout/head.php';
+require __DIR__ . '/../layout/breadcrumb.php';
+
 $logs = $logs ?? [];
 $farms = $farms ?? [];
 $actionTypes = $actionTypes ?? [];
 $filters = $filters ?? [];
-
-$actionColors = [
-    'SYSTEM_INVITE_CREATED' => ['bg' => '#06406622', 'c' => '#38bdf8'],
-    'SYSTEM_INVITE_FAILED' => ['bg' => '#78350f22', 'c' => '#f97316'],
-    'INVITE_REVOKED_UNAUTHORIZED' => ['bg' => '#78350f22', 'c' => '#fbbf24'],
-    'MEMBER_REMOVED_UNAUTHORIZED' => ['bg' => '#3b082222', 'c' => '#f87171'],
-    'MEMBER_REMOVED_POLICY' => ['bg' => '#3b082222', 'c' => '#ef4444'],
-    'ORDER_ACTIVATED' => ['bg' => '#06402822', 'c' => '#34d399'],
-    'FARM_ADDED' => ['bg' => '#1e3a5f22', 'c' => '#60a5fa'],
-];
+$summaryCards = $summaryCards ?? [];
 ?>
-<section class="content-header">
+
+<section class="content pb-4 mt-1 admin-chatgpt-page">
     <div class="container-fluid">
-        <div class="row mb-2 align-items-center">
-            <div class="col">
-                <h1 class="m-0" style="font-size:1.3rem">📋 Audit Logs</h1>
-            </div>
-            <div class="col-auto"><a href="<?= url('admin/chatgpt/farms') ?>" class="btn btn-secondary btn-sm">←
-                    Farms</a></div>
+        <div class="row mb-3">
+            <?php foreach ($summaryCards as $card): ?>
+                <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="gptb-stat-card gptb-stat-card--<?= htmlspecialchars($card['tone']) ?>">
+                        <div class="gptb-stat-icon">
+                            <i class="<?= htmlspecialchars($card['icon']) ?>"></i>
+                        </div>
+                        <div class="gptb-stat-body">
+                            <div class="gptb-stat-label"><?= htmlspecialchars($card['label']) ?></div>
+                            <div class="gptb-stat-value"><?= (int) ($card['value'] ?? 0) ?></div>
+                            <div class="gptb-stat-hint"><?= htmlspecialchars($card['hint']) ?></div>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
         </div>
-    </div>
-</section>
-<section class="content">
-    <div class="container-fluid">
 
-        <form method="get" class="row g-2 mb-3">
-            <div class="col-auto">
-                <select name="farm_id" class="form-select form-select-sm"
-                    style="background:#1e293b;border-color:#334155;color:#e2e8f0">
-                    <option value="">Tất cả farm</option>
-                    <?php foreach ($farms as $f): ?>
-                        <option value="<?= $f['id'] ?>" <?= (int) ($filters['farm_id'] ?? 0) === (int) $f['id'] ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($f['farm_name']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+        <div class="card custom-card">
+            <div class="card-header gptb-card-header">
+                <h3 class="card-title">GPT BUSINESS AUDIT LOGS</h3>
+                <div class="gptb-card-actions">
+                    <a href="<?= url('admin/chatgpt/farms') ?>" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-arrow-left mr-1"></i> Về farms
+                    </a>
+                </div>
             </div>
-            <div class="col-auto">
-                <select name="action" class="form-select form-select-sm"
-                    style="background:#1e293b;border-color:#334155;color:#e2e8f0">
-                    <option value="">Tất cả action</option>
-                    <?php foreach ($actionTypes as $at): ?>
-                        <option value="<?= $at ?>" <?= ($filters['action'] ?? '') === $at ? 'selected' : '' ?>>
-                            <?= $at ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="col-auto">
-                <input type="text" name="target_email" class="form-control form-control-sm" placeholder="Email..."
-                    style="background:#1e293b;border-color:#334155;color:#e2e8f0"
-                    value="<?= htmlspecialchars($filters['target_email'] ?? '') ?>">
-            </div>
-            <div class="col-auto">
-                <input type="date" name="date_from" class="form-control form-control-sm"
-                    style="background:#1e293b;border-color:#334155;color:#e2e8f0"
-                    value="<?= htmlspecialchars($filters['date_from'] ?? '') ?>">
-            </div>
-            <div class="col-auto">
-                <input type="date" name="date_to" class="form-control form-control-sm"
-                    style="background:#1e293b;border-color:#334155;color:#e2e8f0"
-                    value="<?= htmlspecialchars($filters['date_to'] ?? '') ?>">
-            </div>
-            <div class="col-auto"><button type="submit" class="btn btn-outline-primary btn-sm">🔍 Lọc</button></div>
-        </form>
 
-        <div class="card" style="background:#1e293b;border:1px solid #334155;border-radius:14px;">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0" style="color:#e2e8f0;font-size:.82rem;">
-                        <thead style="border-bottom:1px solid #334155;">
-                            <tr style="font-size:.7rem;color:#64748b;text-transform:uppercase;">
-                                <th class="ps-3">Thời gian</th>
-                                <th>Farm</th>
-                                <th>Action</th>
-                                <th>Actor</th>
-                                <th>Target</th>
-                                <th>Result</th>
-                                <th>Reason</th>
+            <div class="dt-filters">
+                <form method="get" class="row align-items-end">
+                    <div class="col-lg-3 col-md-6 mb-2">
+                        <label class="gptb-filter-label">Farm</label>
+                        <select name="farm_id" class="form-control form-control-sm">
+                            <option value="0">Tất cả farm</option>
+                            <?php foreach ($farms as $farm): ?>
+                                <option value="<?= (int) ($farm['id'] ?? 0) ?>" <?= (int) ($filters['farm_id'] ?? 0) === (int) ($farm['id'] ?? 0) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($farm['farm_name'] ?? '--') ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-2">
+                        <label class="gptb-filter-label">Action</label>
+                        <select name="action" class="form-control form-control-sm">
+                            <option value="">Tất cả action</option>
+                            <?php foreach ($actionTypes as $actionType): ?>
+                                <option value="<?= htmlspecialchars($actionType) ?>" <?= ($filters['action'] ?? '') === $actionType ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($actionType) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-lg-2 col-md-6 mb-2">
+                        <label class="gptb-filter-label">Target email</label>
+                        <input type="text" name="target_email" class="form-control form-control-sm"
+                            value="<?= htmlspecialchars($filters['target_email'] ?? '') ?>" placeholder="Email...">
+                    </div>
+                    <div class="col-lg-2 col-md-3 mb-2">
+                        <label class="gptb-filter-label">Từ ngày</label>
+                        <input type="date" name="date_from" class="form-control form-control-sm"
+                            value="<?= htmlspecialchars($filters['date_from'] ?? '') ?>">
+                    </div>
+                    <div class="col-lg-2 col-md-3 mb-2">
+                        <label class="gptb-filter-label">Đến ngày</label>
+                        <input type="date" name="date_to" class="form-control form-control-sm"
+                            value="<?= htmlspecialchars($filters['date_to'] ?? '') ?>">
+                    </div>
+                    <div class="col-12 mb-2">
+                        <div class="gptb-filter-actions">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="fas fa-search mr-1"></i> Lọc
+                            </button>
+                            <a href="<?= url('admin/chatgpt/logs') ?>" class="btn btn-danger btn-sm">
+                                <i class="fas fa-trash-alt mr-1"></i> Xóa lọc
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card-body pt-3">
+                <div class="table-responsive table-wrapper mb-0">
+                    <table class="table table-hover table-bordered admin-table gptb-table mb-0">
+                        <thead>
+                            <tr>
+                                <th class="text-center">Thời gian</th>
+                                <th class="text-center">Farm</th>
+                                <th class="text-center">Action</th>
+                                <th class="text-center">Actor</th>
+                                <th class="text-center">Target</th>
+                                <th class="text-center">Result</th>
+                                <th class="text-center">Reason</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($logs)): ?>
                                 <tr>
-                                    <td colspan="7" class="text-center py-4" style="color:#475569">Chưa có log nào.</td>
+                                    <td colspan="7" class="text-center py-4 text-muted">Chưa có audit log nào.</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($logs as $log): ?>
-                                    <?php
-                                    $action = $log['action'] ?? '';
-                                    $ac = $actionColors[$action] ?? ['bg' => '#33415522', 'c' => '#94a3b8'];
-                                    $resMap = ['OK' => '#34d399', 'FAIL' => '#f87171'];
-                                    $resultColor = $resMap[$log['result'] ?? 'OK'] ?? '#94a3b8';
-                                    ?>
                                     <tr>
-                                        <td class="ps-3" style="white-space:nowrap;color:#64748b">
-                                            <?= $log['created_at'] ? date('d/m H:i:s', strtotime($log['created_at'])) : '—' ?>
+                                        <td class="text-center">
+                                            <span class="date-badge"><?= htmlspecialchars($log['created_at_display'] ?? '--') ?></span>
                                         </td>
-                                        <td style="color:#94a3b8;font-size:.75rem">
-                                            <?= htmlspecialchars($log['farm_name'] ?? '—') ?>
+                                        <td class="text-center">
+                                            <span class="cat-badge"><?= htmlspecialchars($log['farm_name'] ?? '--') ?></span>
                                         </td>
-                                        <td><span
-                                                style="background:<?= $ac['bg'] ?>;color:<?= $ac['c'] ?>;padding:2px 7px;border-radius:4px;font-size:.7rem;font-weight:700;white-space:nowrap">
-                                                <?= htmlspecialchars($action) ?>
-                                            </span></td>
-                                        <td style="color:#94a3b8;font-size:.75rem">
-                                            <?= htmlspecialchars($log['actor_email'] ?? '—') ?>
+                                        <td class="text-center">
+                                            <span class="<?= htmlspecialchars($log['action_badge_class'] ?? 'gptb-badge gptb-badge--muted') ?>">
+                                                <?= htmlspecialchars($log['action'] ?? '--') ?>
+                                            </span>
                                         </td>
-                                        <td style="font-size:.8rem">
-                                            <?= htmlspecialchars($log['target_email'] ?? '—') ?>
+                                        <td class="text-center">
+                                            <span class="gptb-email"><?= htmlspecialchars($log['actor_email'] ?? '--') ?></span>
                                         </td>
-                                        <td><span style="color:<?= $resultColor ?>;font-size:.75rem;font-weight:700">
-                                                <?= htmlspecialchars($log['result'] ?? 'OK') ?>
-                                            </span></td>
-                                        <td style="color:#64748b;font-size:.75rem">
-                                            <?= htmlspecialchars($log['reason'] ?? '—') ?>
+                                        <td class="text-center">
+                                            <span class="gptb-email"><?= htmlspecialchars($log['target_email'] ?? '--') ?></span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="<?= htmlspecialchars($log['result_badge_class'] ?? 'gptb-badge gptb-badge--muted') ?>">
+                                                <?= htmlspecialchars($log['result_label'] ?? '--') ?>
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="gptb-subtext gptb-subtext--dark"><?= htmlspecialchars($log['reason'] ?? '--') ?></span>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -130,11 +150,7 @@ $actionColors = [
                 </div>
             </div>
         </div>
-
-        <div class="text-muted mt-2" style="font-size:.75rem">
-            Format log: <code style="color:#38bdf8">YYYY-MM-DD HH:MM:SS | FARM | ACTION | TARGET | RESULT</code>
-        </div>
-
     </div>
 </section>
+
 <?php require __DIR__ . '/../layout/foot.php'; ?>

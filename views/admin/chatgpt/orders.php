@@ -1,126 +1,130 @@
 <?php
-$pageTitle = 'ChatGPT Orders';
+$pageTitle = 'Đơn hàng GPT';
+$breadcrumbs = [
+    ['label' => 'GPT Business', 'url' => url('admin/chatgpt/farms')],
+    ['label' => 'Đơn hàng GPT'],
+];
 require __DIR__ . '/../layout/head.php';
+require __DIR__ . '/../layout/breadcrumb.php';
+
 $orders = $orders ?? [];
 $farms = $farms ?? [];
-$stats = $stats ?? [];
 $filters = $filters ?? [];
-$statusMap = [
-    'pending' => ['label' => 'Chờ', 'color' => '#94a3b8'],
-    'inviting' => ['label' => 'Đã mời', 'color' => '#fbbf24'],
-    'active' => ['label' => 'Active', 'color' => '#34d399'],
-    'failed' => ['label' => 'Lỗi', 'color' => '#f87171'],
-    'revoked' => ['label' => 'Revoked', 'color' => '#ef4444'],
-];
+$summaryCards = $summaryCards ?? [];
+$orderStatusOptions = $orderStatusOptions ?? [];
 ?>
-<section class="content-header">
-    <div class="container-fluid">
-        <div class="row mb-2 align-items-center">
-            <div class="col">
-                <h1 class="m-0" style="font-size:1.3rem">📦 ChatGPT Pro — Đơn hàng</h1>
-            </div>
-            <div class="col-auto"><a href="<?= url('admin/chatgpt/farms') ?>" class="btn btn-secondary btn-sm">←
-                    Farms</a></div>
-        </div>
-    </div>
-</section>
-<section class="content">
-    <div class="container-fluid">
 
-        <!-- Stats -->
-        <div class="row g-3 mb-3">
-            <?php foreach (['active' => '✅ Active', 'inviting' => '⏳ Inviting', 'pending' => '🔵 Pending', 'failed' => '❌ Lỗi', 'revoked' => '🚫 Revoked'] as $k => $label): ?>
-                <div class="col-6 col-md-2">
-                    <div class="card text-center p-2"
-                        style="background:#1e293b;border:1px solid #334155;border-radius:10px;">
-                        <div style="font-size:.75rem;color:#64748b">
-                            <?= $label ?>
+<section class="content pb-4 mt-1 admin-chatgpt-page">
+    <div class="container-fluid">
+        <div class="row mb-3">
+            <?php foreach ($summaryCards as $card): ?>
+                <div class="col-xl col-md-6 mb-3">
+                    <div class="gptb-stat-card gptb-stat-card--<?= htmlspecialchars($card['tone']) ?>">
+                        <div class="gptb-stat-icon">
+                            <i class="<?= htmlspecialchars($card['icon']) ?>"></i>
                         </div>
-                        <div style="font-size:1.5rem;font-weight:800;color:#e2e8f0">
-                            <?= (int) ($stats[$k . '_count'] ?? 0) ?>
+                        <div class="gptb-stat-body">
+                            <div class="gptb-stat-label"><?= htmlspecialchars($card['label']) ?></div>
+                            <div class="gptb-stat-value"><?= (int) ($card['value'] ?? 0) ?></div>
+                            <div class="gptb-stat-hint"><?= htmlspecialchars($card['hint']) ?></div>
                         </div>
                     </div>
                 </div>
             <?php endforeach; ?>
         </div>
 
-        <!-- Filters -->
-        <form method="get" class="row g-2 mb-3">
-            <div class="col-auto">
-                <select name="status" class="form-select form-select-sm"
-                    style="background:#1e293b;border-color:#334155;color:#e2e8f0">
-                    <option value="">Tất cả status</option>
-                    <?php foreach (array_keys($statusMap) as $s): ?>
-                        <option value="<?= $s ?>" <?= ($filters['status'] ?? '') === $s ? 'selected' : '' ?>>
-                            <?= $statusMap[$s]['label'] ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+        <div class="card custom-card">
+            <div class="card-header gptb-card-header">
+                <h3 class="card-title">ĐƠN HÀNG GPT BUSINESS</h3>
+                <div class="gptb-card-actions">
+                    <a href="<?= url('admin/chatgpt/farms') ?>" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-arrow-left mr-1"></i> Về farms
+                    </a>
+                </div>
             </div>
-            <div class="col-auto">
-                <select name="farm_id" class="form-select form-select-sm"
-                    style="background:#1e293b;border-color:#334155;color:#e2e8f0">
-                    <option value="">Tất cả farm</option>
-                    <?php foreach ($farms as $f): ?>
-                        <option value="<?= $f['id'] ?>" <?= (int) ($filters['farm_id'] ?? 0) === (int) $f['id'] ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($f['farm_name']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="col-auto">
-                <input type="text" name="email" class="form-control form-control-sm" placeholder="Email..."
-                    style="background:#1e293b;border-color:#334155;color:#e2e8f0"
-                    value="<?= htmlspecialchars($filters['email'] ?? '') ?>">
-            </div>
-            <div class="col-auto"><button type="submit" class="btn btn-outline-primary btn-sm">🔍 Lọc</button></div>
-        </form>
 
-        <!-- Table -->
-        <div class="card" style="background:#1e293b;border:1px solid #334155;border-radius:14px;">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0" style="color:#e2e8f0;font-size:.85rem;">
-                        <thead style="border-bottom:1px solid #334155;">
-                            <tr style="font-size:.72rem;color:#64748b;text-transform:uppercase;">
-                                <th class="ps-3">Mã đơn</th>
-                                <th>Gmail</th>
-                                <th>Farm</th>
-                                <th>Trạng thái</th>
-                                <th>Hết hạn</th>
-                                <th>Tạo lúc</th>
+            <div class="dt-filters">
+                <form method="get" class="row align-items-end">
+                    <div class="col-lg-3 col-md-6 mb-2">
+                        <label class="gptb-filter-label">Email khách</label>
+                        <input type="text" name="email" class="form-control form-control-sm"
+                            value="<?= htmlspecialchars($filters['email'] ?? '') ?>" placeholder="Nhập email cần tìm...">
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-2">
+                        <label class="gptb-filter-label">Trạng thái</label>
+                        <select name="status" class="form-control form-control-sm">
+                            <option value="">Tất cả trạng thái</option>
+                            <?php foreach ($orderStatusOptions as $value => $label): ?>
+                                <option value="<?= htmlspecialchars($value) ?>" <?= ($filters['status'] ?? '') === $value ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($label) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-2">
+                        <label class="gptb-filter-label">Farm</label>
+                        <select name="farm_id" class="form-control form-control-sm">
+                            <option value="0">Tất cả farm</option>
+                            <?php foreach ($farms as $farm): ?>
+                                <option value="<?= (int) ($farm['id'] ?? 0) ?>" <?= (int) ($filters['farm_id'] ?? 0) === (int) ($farm['id'] ?? 0) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($farm['farm_name'] ?? '--') ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-2">
+                        <div class="gptb-filter-actions">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="fas fa-search mr-1"></i> Lọc
+                            </button>
+                            <a href="<?= url('admin/chatgpt/orders') ?>" class="btn btn-danger btn-sm">
+                                <i class="fas fa-trash-alt mr-1"></i> Xóa lọc
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card-body pt-3">
+                <div class="table-responsive table-wrapper mb-0">
+                    <table class="table table-hover table-bordered admin-table gptb-table mb-0">
+                        <thead>
+                            <tr>
+                                <th class="text-center">Mã đơn</th>
+                                <th class="text-center">Email khách</th>
+                                <th class="text-center">Farm</th>
+                                <th class="text-center">Trạng thái</th>
+                                <th class="text-center">Hết hạn</th>
+                                <th class="text-center">Tạo lúc</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($orders)): ?>
                                 <tr>
-                                    <td colspan="6" class="text-center py-4" style="color:#475569">Không có đơn nào.</td>
+                                    <td colspan="6" class="text-center py-4 text-muted">Không có đơn hàng nào phù hợp bộ lọc.</td>
                                 </tr>
                             <?php else: ?>
-                                <?php foreach ($orders as $o): ?>
-                                    <?php
-                                    $st = $o['status'] ?? 'pending';
-                                    $stInfo = $statusMap[$st] ?? ['label' => $st, 'color' => '#94a3b8'];
-                                    ?>
+                                <?php foreach ($orders as $order): ?>
                                     <tr>
-                                        <td class="ps-3"><code
-                                                style="color:#38bdf8;font-size:.78rem"><?= htmlspecialchars($o['order_code']) ?></code>
+                                        <td class="text-center">
+                                            <span class="gptb-code"><?= htmlspecialchars($order['order_code'] ?? '--') ?></span>
                                         </td>
-                                        <td>
-                                            <?= htmlspecialchars($o['customer_email']) ?>
+                                        <td class="text-center">
+                                            <span class="gptb-email"><?= htmlspecialchars($order['customer_email'] ?? '--') ?></span>
                                         </td>
-                                        <td style="color:#94a3b8;font-size:.8rem">
-                                            <?= htmlspecialchars($o['farm_name'] ?? '—') ?>
+                                        <td class="text-center">
+                                            <span class="cat-badge"><?= htmlspecialchars($order['farm_display'] ?? '--') ?></span>
                                         </td>
-                                        <td><span
-                                                style="background:<?= $stInfo['color'] ?>22;color:<?= $stInfo['color'] ?>;border:1px solid <?= $stInfo['color'] ?>44;border-radius:5px;padding:2px 8px;font-size:.72rem;font-weight:700">
-                                                <?= $stInfo['label'] ?>
-                                            </span></td>
-                                        <td style="color:#64748b;font-size:.78rem">
-                                            <?= $o['expires_at'] ? date('d/m/Y', strtotime($o['expires_at'])) : '—' ?>
+                                        <td class="text-center">
+                                            <span class="<?= htmlspecialchars($order['status_badge_class'] ?? 'gptb-badge gptb-badge--muted') ?>">
+                                                <?= htmlspecialchars($order['status_label'] ?? '--') ?>
+                                            </span>
                                         </td>
-                                        <td style="color:#64748b;font-size:.78rem">
-                                            <?= $o['created_at'] ? date('d/m H:i', strtotime($o['created_at'])) : '—' ?>
+                                        <td class="text-center">
+                                            <span class="date-badge"><?= htmlspecialchars($order['expires_at_display'] ?? '--') ?></span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="date-badge"><?= htmlspecialchars($order['created_at_display'] ?? '--') ?></span>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -132,4 +136,5 @@ $statusMap = [
         </div>
     </div>
 </section>
+
 <?php require __DIR__ . '/../layout/foot.php'; ?>
