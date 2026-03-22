@@ -837,7 +837,7 @@ trait TelegramBotServiceShopTrait
         $binanceUid = $isEnglish ? $linkModel->getBinanceUidByUserId((int) ($user['id'] ?? 0)) : 'skip';
 
         if ($isEnglish && $binanceUid === '') {
-            $rows[] = [['text' => '🔗 Link Binance UID', 'callback_data' => 'link_binance_uid']];
+            $rows[] = [['text' => '🔗 Enter Binance UID', 'callback_data' => 'link_binance_uid']];
             $msg .= "\n\n⚠️ <b>Binance UID required.</b>";
         } else {
             $rows[] = [['text' => $this->tgText($telegramId, 'confirm_button'), 'callback_data' => $confirmAction]];
@@ -1080,7 +1080,12 @@ trait TelegramBotServiceShopTrait
         ]);
 
         $prompt = "🟡 <b>BINANCE UID</b>\n\n";
+        $prompt .= "How to find your UID:\n\n";
+        $prompt .= "Open the Binance app\n";
+        $prompt .= "Tap the Profile icon in the top-left corner\n";
+        $prompt .= "Copy the UID shown below your nickname\n\n";
         $prompt .= "Send your Binance UID to continue.";
+        $prompt .= "\n\n⚠️ <b>Invalid Binance UID. Enter 4-20 digits.</b>";
 
         $markup = TelegramService::buildInlineKeyboard([
             [['text' => '❌ Cancel', 'callback_data' => 'menu']]
