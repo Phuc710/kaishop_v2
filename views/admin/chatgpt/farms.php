@@ -139,7 +139,15 @@ require __DIR__ . '/../layout/head.php';
                                     $total = (int) $f['seat_total'];
                                     $pct = $total > 0 ? round(($used / $total) * 100) : 0;
                                     $color = $pct >= 100 ? '#ef4444' : ($pct >= 75 ? '#fbbf24' : '#34d399');
-                                    $badgeClass = match ($f['status']) { 'full' => 'badge-full', 'locked' => 'badge-locked', default => 'badge-active'};
+                                    $badgeClass = 'badge-active';
+                                    switch ($f['status']) {
+                                        case 'full':
+                                            $badgeClass = 'badge-full';
+                                            break;
+                                        case 'locked':
+                                            $badgeClass = 'badge-locked';
+                                            break;
+                                    }
                                     ?>
                                     <tr>
                                         <td class="ps-3">

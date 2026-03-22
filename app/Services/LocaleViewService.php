@@ -2,7 +2,7 @@
 
 class LocaleViewService
 {
-    private array $translations = [];
+    private $translations = [];
 
     public function __construct()
     {

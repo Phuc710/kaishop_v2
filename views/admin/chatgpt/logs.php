@@ -96,7 +96,8 @@ $actionColors = [
                                     <?php
                                     $action = $log['action'] ?? '';
                                     $ac = $actionColors[$action] ?? ['bg' => '#33415522', 'c' => '#94a3b8'];
-                                    $resultColor = match ($log['result'] ?? 'OK') { 'OK' => '#34d399', 'FAIL' => '#f87171', default => '#94a3b8'};
+                                    $resMap = ['OK' => '#34d399', 'FAIL' => '#f87171'];
+                                    $resultColor = $resMap[$log['result'] ?? 'OK'] ?? '#94a3b8';
                                     ?>
                                     <tr>
                                         <td class="ps-3" style="white-space:nowrap;color:#64748b">

@@ -865,31 +865,34 @@ trait TelegramBotServiceShopTrait
 
         $rows = [];
         $row1 = [];
-        $row1[] = ['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'prod_' . $prodId];
-        if (!$giftcode) {
-            $row1[] = ['text' => $this->tgText($telegramId, 'gift_button'), 'callback_data' => 'buy_gift_' . $prodId . '_' . $qty];
-        }
-        $rows[] = $row1;
+        $row1[] = ['text' => '🔙 ' . $this->tgText($telegramId, 'back_home'), 'callback_data' => 'prod_' . $prodId];
 
-        // NEW: Auto-jump to UID entry for English Binance flow
-        $isEnglish = $this->isTelegramEnglish($telegramId);
+        if ((int) $total === 0) {
+            // Free flow - single "Claim" button
+            $row1[] = ['text' => '🎁 ' . $this->tgChoice($telegramId, 'Nhận miễn phí', 'Claim for Free'), 'callback_data' => $confirmAction];
+            $rows[] = $row1;
+        } else {
+            if (!$giftcode) {
+                $row1[] = ['text' => '🎫 ' . $this->tgText($telegramId, 'gift_button'), 'callback_data' => 'buy_gift_' . $prodId . '_' . $qty];
+            }
+            $rows[] = $row1;
 
-        if ($isEnglish) {
-            if ($binanceUid === '') {
-                $rows[] = [['text' => 'Enter Binance UID', 'callback_data' => 'link_binance_uid_order']];
+            // NEW: Auto-jump to UID entry for English Binance flow
+            $isEnglish = $this->isTelegramEnglish($telegramId);
+            if ($isEnglish) {
+                if ($binanceUid === '') {
+                    $rows[] = [['text' => '🆔 Enter Binance UID', 'callback_data' => 'link_binance_uid_order']];
+                } else {
+                    $rows[] = [
+                        ['text' => '✅ ' . $this->tgText($telegramId, 'confirm_button'), 'callback_data' => $confirmAction],
+                        ['text' => '🔄 Change UID', 'callback_data' => 'link_binance_uid_order']
+                    ];
+                }
             } else {
                 $rows[] = [
-                    ['text' => $this->tgText($telegramId, 'confirm_button'), 'callback_data' => $confirmAction],
+                    ['text' => '✅ ' . $this->tgText($telegramId, 'confirm_button'), 'callback_data' => $confirmAction]
                 ];
-                $rows[] = [['text' => 'Change Binance UID', 'callback_data' => 'link_binance_uid_order']];
             }
-        } else {
-            $rows[] = [
-                [
-                    'text' => $this->tgText($telegramId, 'confirm_button'),
-                    'callback_data' => $confirmAction
-                ]
-            ];
         }
 
         $this->telegram->editOrSend($chatId, $messageId, $msg, TelegramService::buildInlineKeyboard($rows));
@@ -958,6 +961,23 @@ trait TelegramBotServiceShopTrait
         $this->clearPurchaseSession($telegramId);
 
         $order = (array) ($result['order'] ?? []);
+
+        // Handle Free Flow - Auto Finalize
+        if ((int) ($order['total_price'] ?? 0) === 0) {
+            $this->telegram->editOrSend($chatId, $messageId, $this->tgChoice($telegramId, '⏳ Đang xử lý đơn hàng miễn phí của bạn...', '⏳ Processing your free order...'));
+            $finalizeResult = $this->purchaseService->finalizeTelegramOrderPayment([
+                'order_id' => $order['id'],
+                'method' => 'free'
+            ]);
+
+            if ($finalizeResult['success']) {
+                $this->cbOrderCheck($chatId, $telegramId, (int) $order['id'], $messageId);
+            } else {
+                $this->telegram->editOrSend($chatId, $messageId, '❌ ' . $this->tgChoice($telegramId, 'Lỗi xử lý đơn hàng miễn phí.', 'Error processing free order.'));
+            }
+            return;
+        }
+
         $this->renderTelegramOrderPaymentMenu($chatId, $telegramId, $order, $messageId, $effectiveBinanceUid);
     }
 

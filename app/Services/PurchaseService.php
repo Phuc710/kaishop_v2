@@ -90,7 +90,7 @@ class PurchaseService
             $stockManaged = Product::isStockManagedProduct($product);
 
             $price = (int) ($product['price_vnd'] ?? 0);
-            if ($price <= 0) {
+            if ($price < 0) {
                 throw new RuntimeException('Giá sản phẩm không hợp lệ.');
             }
 
@@ -441,7 +441,7 @@ class PurchaseService
             $deliveryMode = (string) ($product['delivery_mode'] ?? Product::resolveDeliveryMode($product));
 
             $price = (int) ($product['price_vnd'] ?? 0);
-            if ($price <= 0) {
+            if ($price < 0) {
                 throw new RuntimeException('Giá sản phẩm không hợp lệ.');
             }
 
@@ -658,7 +658,7 @@ class PurchaseService
 
         $siteConfig = Config::getSiteConfig();
         $totalPrice = (int) ($order['price'] ?? 0);
-        if ($totalPrice <= 0) {
+        if ($totalPrice < 0) {
             return ['success' => false, 'message' => 'Giá trị đơn hàng không hợp lệ.'];
         }
 
@@ -716,9 +716,14 @@ class PurchaseService
     public function finalizeTelegramOrderPayment(array $deposit, array $paymentMeta = []): array
     {
         $orderId = (int) ($deposit['order_id'] ?? 0);
-        if ($orderId <= 0) {
+        if ($orderId <= 0 && (!isset($deposit['method']) || $deposit['method'] !== 'free')) {
             return ['success' => false, 'message' => 'Deposit không gắn với đơn hàng nào.'];
         }
+
+        if (isset($deposit['method']) && $deposit['method'] === 'free') {
+            $orderId = (int) ($deposit['order_id'] ?? 0);
+        }
+
 
         try {
             $startedTransaction = !$this->db->inTransaction();

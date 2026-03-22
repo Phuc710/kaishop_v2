@@ -146,7 +146,7 @@ class ChatGptFarmService
     /**
      * Decrypt API key if CryptoService is available, otherwise return as-is
      */
-    private function decryptKey(string $key): string
+    private function decryptKey($key)
     {
         if ($key === '') {
             return '';
@@ -167,7 +167,7 @@ class ChatGptFarmService
     /**
      * Encrypt API key before saving to DB
      */
-    public function encryptKey(string $key): string
+    public function encryptKey($key)
     {
         if ($key === '') {
             return '';

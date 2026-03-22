@@ -131,7 +131,10 @@ $allowedEmails = array_column($allowed ?? [], 'target_email');
                                     </tr>
                                 <?php else: ?>
                                     <?php foreach ($allowed as $a): ?>
-                                        <?php $stColor = match ($a['status'] ?? '') { 'accepted' => '#34d399', 'revoked' => '#ef4444', 'expired' => '#94a3b8', default => '#fbbf24'}; ?>
+                                        <?php
+                                        $colors = ['accepted' => '#34d399', 'revoked' => '#ef4444', 'expired' => '#94a3b8'];
+                                        $stColor = $colors[$a['status'] ?? ''] ?? '#fbbf24';
+                                        ?>
                                         <tr>
                                             <td class="ps-3">
                                                 <?= htmlspecialchars($a['target_email']) ?>

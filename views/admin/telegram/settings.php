@@ -495,7 +495,7 @@ $tgCssVersion = (string) @filemtime(dirname(__DIR__, 3) . '/assets/css/telegram_
                                 placeholder="Hỗ trợ HTML: <b>, <i>, <code>..."></textarea>
                         </div>
                         <div class="text-right">
-                            <button class="btn btn-warning btn-block font-weight-bold py-3 shadow-sm" id="btnBroadcast">
+                            <button class="btn btn-warning font-weight-bold px-4 py-2 shadow-sm" id="btnBroadcast">
                                 <i class="fas fa-paper-plane mr-2"></i> GỬI CHO TẤT CẢ NGƯỜI DÙNG
                             </button>
                         </div>
