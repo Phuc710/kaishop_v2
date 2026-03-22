@@ -141,7 +141,7 @@ $binanceExpiresAtDisplay = $binanceExpiresAtTs > 0
                     <span class="deposit-info-label">Send EXACTLY</span>
                     <div class="deposit-info-actions">
                         <span class="deposit-info-value is-highlight"
-                            data-tf-usdt>$<?= htmlspecialchars($binanceUsdtAmount, ENT_QUOTES, 'UTF-8') ?> USDT</span>
+                            data-tf-usdt><?= htmlspecialchars($binanceUsdtAmount, ENT_QUOTES, 'UTF-8') ?> USDT</span>
                         <button type="button" class="btn-copy" data-copy-target="usdt"><i
                                 class="fas fa-copy"></i></button>
                     </div>
@@ -165,7 +165,8 @@ $binanceExpiresAtDisplay = $binanceExpiresAtTs > 0
 
     <div class="alert alert-warning deposit-warning mt-3 mb-0">
         Note: price detection may be inaccurate. Enter your correct <strong>Binance UID</strong> and send the exact
-        <strong><?= htmlspecialchars($binanceUsdtAmount, ENT_QUOTES, 'UTF-8') ?> USDT</strong> shown above so the system
+        <strong data-tf-usdt-note><?= htmlspecialchars($binanceUsdtAmount, ENT_QUOTES, 'UTF-8') ?> USDT</strong> shown
+        above so the system
         can auto-match your payment.
     </div>
 

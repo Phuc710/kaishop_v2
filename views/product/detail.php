@@ -1100,7 +1100,9 @@ if ($rawDescHtml !== '') {
                 Number(APPLIED_GIFTCODE_PREVIEW.quantity || 0) === qty
             ) {
                 discount = Number(APPLIED_GIFTCODE_PREVIEW.discount_amount || 0);
-                total = Number(APPLIED_GIFTCODE_PREVIEW.total_price || (subtotal - discount));
+                total = (APPLIED_GIFTCODE_PREVIEW.total_price !== undefined && APPLIED_GIFTCODE_PREVIEW.total_price !== null)
+                    ? Number(APPLIED_GIFTCODE_PREVIEW.total_price)
+                    : Math.max(0, subtotal - discount);
             }
 
             const totalEl = document.getElementById('sumTotal');
@@ -1163,7 +1165,9 @@ if ($rawDescHtml !== '') {
                         giftcode: pricing.giftcode || giftcode,
                         quantity: Number(pricing.quantity || qty),
                         discount_amount: Number(pricing.discount_amount || 0),
-                        total_price: Number(pricing.total_price || (qty * PRODUCT_DETAIL.price))
+                        total_price: (pricing.total_price !== undefined && pricing.total_price !== null) 
+                            ? Number(pricing.total_price) 
+                            : Math.max(0, (qty * PRODUCT_DETAIL.price) - Number(pricing.discount_amount || 0))
                     };
                     updateSummaryPreview();
                     if (pricing.giftcode) {
@@ -1249,6 +1253,19 @@ if ($rawDescHtml !== '') {
             }
 
             const productNameText = document.querySelector('.pd-title') ? document.querySelector('.pd-title').textContent.trim() : 'sản phẩm';
+            let discountHtml = '';
+            if (APPLIED_GIFTCODE_PREVIEW && Number(APPLIED_GIFTCODE_PREVIEW.quantity) === qty) {
+                const discAmt = Number(APPLIED_GIFTCODE_PREVIEW.discount_amount || 0);
+                if (discAmt > 0) {
+                    discountHtml = `
+                        <div class="d-flex justify-content-between text-success">
+                            <span>Giảm giá:</span>
+                            <span class="fw-bold">-${fmtMoney(discAmt)}</span>
+                        </div>
+                    `;
+                }
+            }
+
             const confirmMsg = `
                 <div class="text-start">
                     <div class="p-2 border rounded bg-light mb-2">
@@ -1260,6 +1277,7 @@ if ($rawDescHtml !== '') {
                             <span>Số lượng:</span>
                             <span class="fw-bold">x${qty}</span>
                         </div>
+                        ${discountHtml}
                     </div>
                     <div class="d-flex justify-content-between align-items-center">
                         <span class="fw-bold">Tổng thanh toán:</span>

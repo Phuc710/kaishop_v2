@@ -276,11 +276,25 @@ trait TelegramBotServiceShopTrait
         // Standard commands for canceling or going back
         if (in_array($normalized, ['hủy', 'huy', 'cancel', 'thoát', 'thoat', 'back', 'quay lại', 'quay lai'], true)) {
             $messageId = (int) ($session['message_id'] ?? 0);
+            $purpose = (string) ($session['purpose'] ?? '');
             $this->clearBinanceSession($telegramId);
 
             // For order payment, go back to order details or main menu
-            if (($session['purpose'] ?? '') === 'order_payment') {
-                $this->showMainMenu($chatId, $telegramId, '', false, 0); // Reset for clean flow
+            if ($purpose === 'order_payment') {
+                $buySession = $this->getPurchaseSession($telegramId);
+                if ($buySession && isset($buySession['prod_id'], $buySession['qty'])) {
+                    $this->cbBuyConfirm(
+                        $chatId,
+                        $telegramId,
+                        (int) $buySession['prod_id'],
+                        (int) $buySession['qty'],
+                        $buySession['info'] ?? null,
+                        $messageId,
+                        (string) ($buySession['binance_uid'] ?? '')
+                    );
+                } else {
+                    $this->showMainMenu($chatId, $telegramId, '', false, 0);
+                }
             } else {
                 $this->showMainMenu($chatId, $telegramId, '', false, 0);
             }
@@ -293,7 +307,8 @@ trait TelegramBotServiceShopTrait
         if ($step === 'await_uid') {
             $uid = preg_replace('/\D/', '', $text);
             if (!preg_match('/^\d{4,20}$/', (string) $uid)) {
-                $this->telegram->sendTo($chatId, '⚠️ Invalid Binance UID. Enter 4-20 digits.');
+                $messageId = (int) ($session['message_id'] ?? 0);
+                $this->telegram->editOrSend($chatId, $messageId, $this->buildBinanceUidPrompt(true), $this->buildBinanceUidMarkup());
                 return true;
             }
 
@@ -833,7 +848,7 @@ trait TelegramBotServiceShopTrait
         $msg .= "\n────────────\n\n";
         $msg .= $this->tgText($telegramId, 'confirm_total') . ": <b>" . $this->formatCurrency((int) $total, $telegramId) . "</b>";
         if ($binanceUid !== '') {
-            $msg .= "\n" . $this->tgChoice($telegramId, 'ðŸ‘¤ UID Binance', 'ðŸ‘¤ Binance UID') . ": <code>" . htmlspecialchars($binanceUid, ENT_QUOTES, 'UTF-8') . "</code>";
+            $msg .= "\nBinance UID: <code>" . htmlspecialchars($binanceUid, ENT_QUOTES, 'UTF-8') . "</code>";
         }
 
         $rows = [];
@@ -847,22 +862,19 @@ trait TelegramBotServiceShopTrait
         // NEW: Auto-jump to UID entry for English Binance flow
         $isEnglish = $this->isTelegramEnglish($telegramId);
 
-        if ($isEnglish && $binanceUid !== '') {
+        if ($isEnglish) {
             if ($binanceUid === '') {
-                // Auto-jump to prompt
-                $this->cbLinkBinanceUid($chatId, $telegramId, $messageId, 'link_uid_before_buy');
-                return;
+                $rows[] = [['text' => 'Enter Binance UID', 'callback_data' => 'link_binance_uid_order']];
             } else {
-                $msg .= "\n👤 <b>Binance UID:</b> <code>{$binanceUid}</code>";
                 $rows[] = [
-                    ['text' => '✅ Confirm & Create Order', 'callback_data' => $confirmAction],
+                    ['text' => $this->tgText($telegramId, 'confirm_button'), 'callback_data' => $confirmAction],
                 ];
-                $rows[] = [['text' => '📝 Change UID', 'callback_data' => 'link_binance_uid_order']];
+                $rows[] = [['text' => 'Change Binance UID', 'callback_data' => 'link_binance_uid_order']];
             }
         } else {
             $rows[] = [
                 [
-                    'text' => ($isEnglish && $binanceUid === '') ? 'Enter Binance UID' : $this->tgText($telegramId, 'confirm_button'),
+                    'text' => $this->tgText($telegramId, 'confirm_button'),
                     'callback_data' => $confirmAction
                 ]
             ];
@@ -900,8 +912,6 @@ trait TelegramBotServiceShopTrait
             return;
         }
 
-        $this->telegram->editOrSend($chatId, $messageId, $this->tgChoice($telegramId, '⏳ Đang xử lý giao dịch và tạo QR Code.', '⏳ Processing your order and generating the QR code.'));
-
         $customerInput = ((int) ($session['prod_id'] ?? 0) === $prodId) ? ($session['info'] ?? null) : null;
         $giftcode = ((int) ($session['prod_id'] ?? 0) === $prodId) ? ($session['giftcode'] ?? null) : null;
         $savedBinanceUid = trim((string) ($session['binance_uid'] ?? ''));
@@ -912,6 +922,8 @@ trait TelegramBotServiceShopTrait
             $this->cbLinkBinanceUid($chatId, $telegramId, $messageId, 'order_payment', 0);
             return;
         }
+
+        $this->telegram->editOrSend($chatId, $messageId, $this->tgChoice($telegramId, '⏳ Đang xử lý giao dịch và tạo QR Code.', '⏳ Processing your order and generating the QR code.'));
 
         $result = $this->purchaseService->createTelegramPendingOrder($prodId, $user, [
             'quantity' => $qty,
@@ -1088,6 +1100,25 @@ trait TelegramBotServiceShopTrait
         );
     }
 
+    private function buildBinanceUidPrompt(bool $includeError = false): string
+    {
+        $prompt = "<b>BINANCE UID</b>\n\n";
+        $prompt .= "Send your Binance UID to continue.";
+
+        if ($includeError) {
+            $prompt .= "\n\n⚠️ Invalid Binance UID. Enter 4-20 digits.";
+        }
+
+        return $prompt;
+    }
+
+    private function buildBinanceUidMarkup(): array
+    {
+        return TelegramService::buildInlineKeyboard([
+            [['text' => 'Cancel', 'callback_data' => 'menu']]
+        ]);
+    }
+
     /**
      * Pre-order Binance UID linking flow
      */
@@ -1110,16 +1141,8 @@ trait TelegramBotServiceShopTrait
             'message_id' => $messageId,
         ]);
 
-        $prompt = $this->tgChoice($telegramId, "🟡 <b>BINANCE UID</b>\n\n", "🟡 How to find your Binance UID:\n\n");
-        $prompt .= $this->tgChoice($telegramId, "Hướng dẫn tìm UID của bạn:\n\n", "1. Open the Binance app\n");
-        $prompt .= $this->tgChoice($telegramId, "Mở ứng dụng Binance\n", "2. Tap the Profile icon in the top-left corner\n");
-        $prompt .= $this->tgChoice($telegramId, "Nhấn vào biểu tượng Profile ở góc trên bên trái\n", "3. Copy the UID shown below your nickname\n\n");
-        $prompt .= $this->tgChoice($telegramId, "Sao chép UID nằm dưới tên người dùng\n\n", "👉 Please enter your Binance UID to continue.");
-        $prompt .= "\n\n⚠️ " . $this->tgChoice($telegramId, "<b>UID Binance không hợp lệ. Vui lòng nhập từ 4-20 chữ số.</b>", "<b>Invalid Binance UID. Please enter 4-20 digits only.</b>");
-
-        $markup = TelegramService::buildInlineKeyboard([
-            [['text' => $this->tgChoice($telegramId, '❌ Hủy bỏ', '❌ Cancel'), 'callback_data' => 'menu']]
-        ]);
+        $prompt = $this->buildBinanceUidPrompt(false);
+        $markup = $this->buildBinanceUidMarkup();
 
         $this->telegram->editOrSend($chatId, $messageId, $prompt, $markup);
     }

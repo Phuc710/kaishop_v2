@@ -174,6 +174,7 @@
             tfBinanceUid: root.querySelector('[data-tf-binance-uid]'),
             tfPayerUid: root.querySelector('[data-tf-payer-uid]'),
             tfUsdt: root.querySelector('[data-tf-usdt]'),
+            tfUsdtNote: root.querySelector('[data-tf-usdt-note]'),
             tfCode: root.querySelector('[data-tf-code]'),
             tfExpires: root.querySelector('[data-tf-expires]'),
             tfStatus: root.querySelector('[data-tf-status]'),
@@ -321,7 +322,11 @@
         if (this.elements.tfUsdt) {
             var usdt = Number(data.usdt_amount || 0);
             this.state.activeUsdtAmount = usdt;
-            this.elements.tfUsdt.textContent = usdt > 0 ? ('$' + usdt.toFixed(2) + ' USDT') : '';
+            var usdtText = usdt.toFixed(2) + ' USDT';
+            this.elements.tfUsdt.textContent = usdt > 0 ? ('$' + usdtText) : '';
+            if (this.elements.tfUsdtNote) {
+                this.elements.tfUsdtNote.textContent = usdt > 0 ? usdtText : '';
+            }
         }
 
         if (this.elements.tfStatus) {
