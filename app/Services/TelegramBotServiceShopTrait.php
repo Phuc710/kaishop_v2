@@ -1020,7 +1020,7 @@ trait TelegramBotServiceShopTrait
         $payerUid = $payerUid !== '' ? $payerUid : $linkModel->getBinanceUidByUserId((int) ($user['id'] ?? 0));
 
         if ($payerUid === '' || !preg_match('/^\d{4,20}$/', $payerUid)) {
-            $this->cbLinkBinanceUid($chatId, $telegramId, $messageId);
+            $this->cbLinkBinanceUid($chatId, $telegramId, $messageId, 'order_payment', $orderId);
             return;
         }
 
@@ -1059,7 +1059,13 @@ trait TelegramBotServiceShopTrait
     /**
      * Pre-order Binance UID linking flow
      */
-    private function cbLinkBinanceUid(string $chatId, int $telegramId, int $messageId = 0): void
+    private function cbLinkBinanceUid(
+        string $chatId,
+        int $telegramId,
+        int $messageId = 0,
+        string $purpose = 'link_uid_before_buy',
+        int $orderId = 0
+    ): void
     {
         $user = $this->resolveLinkedUser($chatId, $telegramId);
         if (!$user) {
@@ -1068,25 +1074,19 @@ trait TelegramBotServiceShopTrait
 
         $this->setBinanceSession($telegramId, [
             'step' => 'await_uid',
-            'purpose' => 'link_uid_before_buy',
+            'purpose' => $purpose,
+            'order_id' => $orderId,
             'message_id' => $messageId,
         ]);
 
-        $prompt = "🟡 <b>BINANCE UID REQUIRED</b>\n\n";
-        $prompt .= "Enter your Binance UID to continue.\n\n";
-        $prompt .= "Find it in the Binance app profile screen.";
+        $prompt = "🟡 <b>BINANCE UID</b>\n\n";
+        $prompt .= "Send your Binance UID to continue.";
 
         $markup = TelegramService::buildInlineKeyboard([
-            [['text' => '❌ Cancel', 'callback_data' => 'shop']]
+            [['text' => '❌ Cancel', 'callback_data' => 'menu']]
         ]);
 
-        $this->sendTelegramMediaOrText(
-            $chatId,
-            $messageId,
-            (string) get_setting('binance_qr_image', 'assets/images/qr_binane.jpg'),
-            $prompt,
-            $markup
-        );
+        $this->telegram->editOrSend($chatId, $messageId, $prompt, $markup);
     }
 
     /**
