@@ -131,6 +131,7 @@ $routes = [
     ['GET', '/deposit', 'DepositController@legacyRedirect'],
     ['POST', '/deposit/create', 'DepositController@create'],
     ['POST', '/deposit/create-binance', 'DepositController@createBinance'],
+    ['POST', '/wallet/binance-session', 'DepositController@createBinance'],
     ['GET', '/deposit/status-wait/{code}', 'DepositController@statusWait'],
     ['GET', '/deposit/status/{code}', 'DepositController@status'],
     ['POST', '/deposit/cancel', 'DepositController@cancel'],

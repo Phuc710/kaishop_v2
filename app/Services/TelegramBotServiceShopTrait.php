@@ -300,11 +300,8 @@ trait TelegramBotServiceShopTrait
             $messageId = (int) ($session['message_id'] ?? 0);
             $purpose = (string) ($session['purpose'] ?? '');
 
-            // Save UID to UserTelegramLink
-            $user = $this->resolveLinkedUser($chatId, $telegramId);
-            if ($user && class_exists('UserTelegramLink')) {
-                (new UserTelegramLink())->saveBinanceUidByUserId((int) $user['id'], $uid);
-            }
+            // No longer saving UID to DB as requested by user. 
+            // We pass it to the next step via temporary variables.
 
             if ($purpose === 'link_uid_before_buy') {
                 $this->clearBinanceSession($telegramId);
@@ -329,7 +326,7 @@ trait TelegramBotServiceShopTrait
                     // If order doesn't exist yet, proceed to create it
                     $buySession = $this->getPurchaseSession($telegramId);
                     if ($buySession && isset($buySession['prod_id'], $buySession['qty'])) {
-                        $this->cbDoBuy($chatId, $telegramId, (int) $buySession['prod_id'], (int) $buySession['qty'], $messageId);
+                        $this->cbDoBuy($chatId, $telegramId, (int) $buySession['prod_id'], (int) $buySession['qty'], $messageId, $uid);
                     } else {
                         $this->showMainMenu($chatId, $telegramId, '✅ Linked successfully!', false, $messageId);
                     }
@@ -842,12 +839,10 @@ trait TelegramBotServiceShopTrait
         }
         $rows[] = $row1;
 
-        // NEW: Check if Binance UID is linked for English users BEFORE allowing confirm
+        // NEW: Forced UID entry for Binance (English users) - No persistence.
         $isEnglish = $this->isTelegramEnglish($telegramId);
-        $linkModel = new UserTelegramLink();
-        $binanceUid = $isEnglish ? $linkModel->getBinanceUidByUserId((int) ($user['id'] ?? 0)) : 'skip';
 
-        if ($isEnglish && $binanceUid === '') {
+        if ($isEnglish) {
             $rows[] = [['text' => '🔗 Enter Binance UID', 'callback_data' => 'link_binance_uid_order']];
             $msg .= "\n\n⚠️ <b>Binance UID required.</b>";
         } else {
@@ -860,7 +855,7 @@ trait TelegramBotServiceShopTrait
     /**
      * do_buy_{prodId}_{qty} — Thực hiện mua hàng
      */
-    private function cbDoBuy(string $chatId, int $telegramId, int $prodId, int $qty, int $messageId = 0): void
+    private function cbDoBuy(string $chatId, int $telegramId, int $prodId, int $qty, int $messageId = 0, string $forcedBinanceUid = ''): void
     {
         $user = $this->resolveLinkedUser($chatId, $telegramId);
         if (!$user)
@@ -913,13 +908,13 @@ trait TelegramBotServiceShopTrait
 
         $order = (array) ($result['order'] ?? []);
         $totalPrice = (int) ($order['total_price'] ?? 0);
-        $this->renderTelegramOrderPaymentMenu($chatId, $telegramId, $order, $messageId);
+        $this->renderTelegramOrderPaymentMenu($chatId, $telegramId, $order, $messageId, $forcedBinanceUid);
     }
 
     /**
      * @param array<string,mixed> $order
      */
-    private function renderTelegramOrderPaymentMenu(string $chatId, int $telegramId, array $order, int $messageId = 0): void
+    private function renderTelegramOrderPaymentMenu(string $chatId, int $telegramId, array $order, int $messageId = 0, string $forcedBinanceUid = ''): void
     {
         $orderId = (int) ($order['id'] ?? 0);
         if ($orderId <= 0) {
@@ -928,7 +923,7 @@ trait TelegramBotServiceShopTrait
         }
 
         if ($this->isTelegramEnglish($telegramId)) {
-            $this->cbOrderPayBinance($chatId, $telegramId, $orderId, $messageId);
+            $this->cbOrderPayBinance($chatId, $telegramId, $orderId, $messageId, $forcedBinanceUid);
         } else {
             $this->cbOrderPayBank($chatId, $telegramId, $orderId, $messageId);
         }

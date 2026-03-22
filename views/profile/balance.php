@@ -135,7 +135,7 @@ if (!is_file($balanceMethodPartialPath)) {
                 'create' => (string) url('deposit/create'),
                 'createByMethod' => [
                     'bank_sepay' => (string) url('deposit/create'),
-                    'binance' => (string) url('deposit/create-binance'),
+                    'binance' => (string) url('wallet/binance-session'),
                 ],
                 'cancel' => (string) url('deposit/cancel'),
                 'statusBase' => (string) url('deposit/status'),
