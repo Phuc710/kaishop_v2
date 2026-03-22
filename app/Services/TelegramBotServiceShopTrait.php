@@ -913,7 +913,8 @@ trait TelegramBotServiceShopTrait
 
         $rows = [];
         $row1 = [];
-        $row1[] = ['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'prod_' . $prodId];
+        $backCallback = ((int) ($p['category_id'] ?? 0) > 0) ? ('cat_' . (int) $p['category_id']) : 'shop';
+        $row1[] = ['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => $backCallback];
 
         if ((int) $total === 0) {
             // Free flow - single "Claim" button
@@ -1194,7 +1195,7 @@ trait TelegramBotServiceShopTrait
         $markup = TelegramService::buildInlineKeyboard([
             [
                 ['text' => $this->tgChoice($telegramId, $this->tgEntity('&#128269;') . ' Kiểm tra', $this->tgEntity('&#128269;') . ' Check'), 'callback_data' => 'order_check_' . $orderId],
-                ['text' => $this->tgChoice($telegramId, '⬅️ ' . $this->tgText($telegramId, 'back_home'), '⬅️ ' . $this->tgText($telegramId, 'back_home')), 'callback_data' => 'order_cancel_' . $orderId],
+                ['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'order_cancel_' . $orderId],
             ]
         ]);
 
@@ -1222,7 +1223,7 @@ trait TelegramBotServiceShopTrait
 
     private function buildBinanceUidMarkup(int $telegramId = 0): array
     {
-        $backText = $this->tgEntity('&#11013;&#65039;') . ' ' . $this->tgText($telegramId, 'back_home');
+        $backText = $this->tgText($telegramId, 'back_home');
         return TelegramService::buildInlineKeyboard([
             [['text' => $backText, 'callback_data' => 'menu']]
         ]);
@@ -1292,8 +1293,8 @@ trait TelegramBotServiceShopTrait
         if ($expiresAt !== '') {
             $msg .= $this->tgEntity('&#9200;') . " Hết hạn: <b>{$expiresAt}</b>\n";
         }
-        $msg .= "\n" . $this->tgEntity('&#128683;') . " <b>QUAN TRỌNG:</b> Nội dung chuyển khoản và số tiền phải chính xác 100%.\n";
-        $msg .= $this->tgEntity('&#9989;') . " Quét QR hoặc chuyển khoản thủ công. Hệ thống tự động xác nhận.\n";
+        $msg .= "\n" . $this->tgEntity('&#128683;') . " <b>QUAN TRỌNG:</b> Nội dung và số tiền phải chính xác 100%.\n";
+        $msg .= $this->tgEntity('&#9989;') . " Quét QR Thanh Toán. Hệ thống tự động xác nhận.\n";
         return $msg;
     }
 

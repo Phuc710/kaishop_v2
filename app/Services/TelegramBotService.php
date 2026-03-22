@@ -583,11 +583,19 @@ class TelegramBotService
         $siteName = get_setting('ten_web', 'KaiShop');
         $displayName = trim($name) !== '' ? trim($name) : ($this->isTelegramEnglish($telegramId) ? 'friend' : 'bạn');
 
+        $domain = defined('BASE_URL') ? parse_url(BASE_URL, PHP_URL_HOST) : ($_SERVER['HTTP_HOST'] ?? 'kaishop.id.vn');
+        if (empty($domain))
+            $domain = 'kaishop.id.vn';
+
+        $otpService = 'tmail.' . $domain;
+
         $message = $this->tgText($telegramId, 'language_picker', [
             'name' => htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8'),
             'site' => htmlspecialchars((string) $siteName, ENT_QUOTES, 'UTF-8'),
-            'channel' => TelegramConfig::supportChannelUrl(),
-            'admin' => TelegramConfig::supportAdminContact(),
+            'domain' => $domain,
+            'otp_service' => $otpService,
+            'channel' => 'https://t.me/kaishop25',
+            'admin' => '@Sam2232',
         ]);
 
         $markup = TelegramService::buildInlineKeyboard([
