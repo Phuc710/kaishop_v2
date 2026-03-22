@@ -715,7 +715,7 @@ trait TelegramBotServiceShopTrait
     /**
      * buy_{prodId}_{qty} — Màn xác nhận mua hàng
      */
-    private function cbBuyConfirm(string $chatId, int $telegramId, int $prodId, int $qty, ?string $customerInfo = null, int $messageId = 0): void
+    private function cbBuyConfirm(string $chatId, int $telegramId, int $prodId, int $qty, ?string $customerInfo = null, int $messageId = 0, string $binanceUid = ''): void
     {
         $user = $this->resolveLinkedUser($chatId, $telegramId);
         if (!$user)
@@ -839,12 +839,21 @@ trait TelegramBotServiceShopTrait
         }
         $rows[] = $row1;
 
-        // NEW: Forced UID entry for Binance (English users) - No persistence.
+        // NEW: Auto-jump to UID entry for English Binance flow
         $isEnglish = $this->isTelegramEnglish($telegramId);
 
         if ($isEnglish) {
-            $rows[] = [['text' => '🔗 Enter Binance UID', 'callback_data' => 'link_binance_uid_order']];
-            $msg .= "\n\n⚠️ <b>Binance UID required.</b>";
+            if ($binanceUid === '') {
+                // Auto-jump to prompt
+                $this->cbLinkBinanceUid($chatId, $telegramId, $messageId, 'link_uid_before_buy');
+                return;
+            } else {
+                $msg .= "\n👤 <b>Binance UID:</b> <code>{$binanceUid}</code>";
+                $rows[] = [
+                    ['text' => '✅ Confirm & Create Order', 'callback_data' => $confirmAction],
+                ];
+                $rows[] = [['text' => '📝 Change UID', 'callback_data' => 'link_binance_uid_order']];
+            }
         } else {
             $rows[] = [['text' => $this->tgText($telegramId, 'confirm_button'), 'callback_data' => $confirmAction]];
         }

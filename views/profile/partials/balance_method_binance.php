@@ -105,7 +105,7 @@ $binanceExpiresAtDisplay = $binanceExpiresAtTs > 0
 
 <div class="deposit-panel-step" data-deposit-step="transfer" <?= $activeDepositExists ? '' : 'hidden' ?>>
     <div class="deposit-panel-title-row deposit-panel-title-row--center">
-        <h6 class="deposit-panel-title">Thông tin thanh toán Binance Pay</h6>
+        <h6 class="deposit-panel-title">Binance Payment Details</h6>
     </div>
 
     <div class="row align-items-start g-3 mt-2">
@@ -121,10 +121,6 @@ $binanceExpiresAtDisplay = $binanceExpiresAtTs > 0
         <div class="col-lg-7">
             <div class="deposit-info-list mt-0">
                 <div class="deposit-info-row">
-                    <span class="deposit-info-label">BINANCE PAY</span>
-                    <span class="deposit-info-value">THÔNG TIN THANH TOÁN</span>
-                </div>
-                <div class="deposit-info-row">
                     <span class="deposit-info-label">Pay to Binance ID</span>
                     <div class="deposit-info-actions">
                         <strong class="deposit-info-value is-highlight"
@@ -134,7 +130,7 @@ $binanceExpiresAtDisplay = $binanceExpiresAtTs > 0
                     </div>
                 </div>
                 <div class="deposit-info-row">
-                    <span class="deposit-info-label">Mã giao dịch</span>
+                    <span class="deposit-info-label">Transaction Code</span>
                     <div class="deposit-info-actions">
                         <span class="deposit-info-value is-uppercase"
                             data-tf-code><?= htmlspecialchars($binanceDepositCode, ENT_QUOTES, 'UTF-8') ?></span>
@@ -157,7 +153,7 @@ $binanceExpiresAtDisplay = $binanceExpiresAtTs > 0
                     </div>
                 </div>
                 <div class="deposit-info-row">
-                    <span class="deposit-info-label">Hết hạn</span>
+                    <span class="deposit-info-label">Expires At</span>
                     <span class="deposit-info-value"
                         data-tf-expires><?= htmlspecialchars($binanceExpiresAtDisplay, ENT_QUOTES, 'UTF-8') ?></span>
                 </div>
@@ -166,41 +162,28 @@ $binanceExpiresAtDisplay = $binanceExpiresAtTs > 0
     </div>
 
     <div class="deposit-countdown-wrap mt-3" data-deposit-countdown-wrap>
-        <div class="deposit-countdown-label">Thời gian còn lại</div>
+        <div class="deposit-countdown-label">Time Remaining</div>
         <div class="deposit-countdown" data-deposit-countdown>05:00</div>
         <div class="deposit-countdown-bar">
             <div class="deposit-countdown-fill" data-deposit-countdown-fill style="width:100%"></div>
         </div>
     </div>
 
-    <?php
-    $binanceWarning = (string) ($chungapi['deposit_warning_binance'] ?? '');
-    if (!empty($binanceWarning)) {
-        $amountToSwap = htmlspecialchars((string) ($activeDepositPayload['usdt_amount'] ?? '0.00'), ENT_QUOTES, 'UTF-8');
-        $uidToSwap = htmlspecialchars((string) ($activeDepositPayload['binance_uid'] ?? ''), ENT_QUOTES, 'UTF-8');
-        $binanceWarning = str_replace(['{amount}', '{uid}'], ["<strong>{$amountToSwap} USDT</strong>", "<strong>{$uidToSwap}</strong>"], $binanceWarning);
-    }
-    ?>
-    <?php if (!empty($binanceWarning)): ?>
-        <div class="alert alert-warning deposit-warning mt-3 mb-0">
-            <?= $binanceWarning ?>
-        </div>
-    <?php else: ?>
-        <div class="alert alert-warning deposit-warning mt-3 mb-0">
-            Lưu ý: nhập chính xác <strong>UID Binance của bạn</strong> và chuyển đúng
-            <strong><?= htmlspecialchars($binanceUsdtAmount, ENT_QUOTES, 'UTF-8') ?> USDT</strong> thì hệ thống mới auto match được.
-        </div>
-    <?php endif; ?>
+    <div class="alert alert-warning deposit-warning mt-3 mb-0">
+        Note: price detection may be inaccurate. Enter your correct <strong>Binance UID</strong> and send the exact
+        <strong><?= htmlspecialchars($binanceUsdtAmount, ENT_QUOTES, 'UTF-8') ?> USDT</strong> shown above so the system
+        can auto-match your payment.
+    </div>
 
     <div class="row g-2 mt-3">
         <div class="col-md-6">
             <button type="button" class="btn btn-search-custom w-100" data-deposit-action="check">
-                <i class="fas fa-search me-1"></i> Kiểm tra thanh toán
+                <i class="fas fa-search me-1"></i> Check Payment
             </button>
         </div>
         <div class="col-md-6">
             <button type="button" class="btn btn-clear-custom w-100" data-deposit-action="cancel">
-                <i class="fas fa-times me-1"></i> Hủy giao dịch
+                <i class="fas fa-times me-1"></i> Cancel Transaction
             </button>
         </div>
     </div>

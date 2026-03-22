@@ -338,30 +338,30 @@
         var usdtAmount = Number(this.state.activeUsdtAmount || 0);
         var html = ''
             + '<div style="text-align:left;line-height:1.7">'
-            + '<div><strong>⏰ YÊU CẦU NẠP BINANCE PAY ĐÃ HẾT HẠN</strong></div>'
+            + '<div><strong>Binance payment request expired</strong></div>'
             + '<br>'
-            + '<div>📋 Mã nạp: <code>' + escapeHtml(depositCode) + '</code></div>'
+            + '<div>Deposit code: <code>' + escapeHtml(depositCode) + '</code></div>'
             + '<br>'
-            + '<div>💰 USDT yêu cầu: <strong>' + escapeHtml(usdtAmount.toFixed(2)) + ' USDT</strong></div>'
+            + '<div>Required amount: <strong>' + escapeHtml(usdtAmount.toFixed(2)) + ' USDT</strong></div>'
             + '<br>'
-            + '<div>Lệnh đã quá 5 phút và tự động hủy.</div>'
-            + '<div>Nếu đã chuyển tiền, vui lòng liên hệ hỗ trợ kèm TXID</div>'
+            + '<div>This request expired after 5 minutes and was cancelled automatically.</div>'
+            + '<div>If you already sent the payment, contact support and include the TXID.</div>'
             + '</div>';
 
         if (window.Swal) {
             return Swal.fire({
                 icon: 'warning',
                 html: html,
-                confirmButtonText: 'Đã hiểu'
+                confirmButtonText: 'Understood'
             });
         }
 
         alert(
-            '⏰ YÊU CẦU NẠP BINANCE PAY ĐÃ HẾT HẠN\n\n'
-            + '📋 Mã nạp: ' + depositCode + '\n\n'
-            + '💰 USDT yêu cầu: ' + usdtAmount.toFixed(2) + ' USDT\n\n'
-            + 'Lệnh đã quá 5 phút và tự động hủy.\n'
-            + 'Nếu đã chuyển tiền, vui lòng liên hệ hỗ trợ kèm TXID'
+            'Binance payment request expired\n\n'
+            + 'Deposit code: ' + depositCode + '\n\n'
+            + 'Required amount: ' + usdtAmount.toFixed(2) + ' USDT\n\n'
+            + 'This request expired after 5 minutes and was cancelled automatically.\n'
+            + 'If you already sent the payment, contact support and include the TXID.'
         );
         return Promise.resolve();
     };
