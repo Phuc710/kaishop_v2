@@ -649,7 +649,7 @@ if ($rawDescHtml !== '') {
             .pd-meta-line {
                 align-items: center;
                 justify-content: space-between;
-                flex-wrap: nowrap;
+                flex-wrap: wrap;
             }
 
             .pd-stock {
@@ -1269,17 +1269,17 @@ if ($rawDescHtml !== '') {
             const confirmMsg = `
                 <div class="text-start">
                     <div class="p-2 border rounded bg-light mb-2">
-                        <div class="d-flex justify-content-between">
-                            <span>Sản phẩm:</span>
-                            <span class="fw-bold text-end">${productNameText}</span>
+                        <div class="mb-2">
+                            <div class="text-muted" style="font-size: 0.8rem;">Sản phẩm:</div>
+                            <div class="fw-bold" style="word-break: break-word; line-height: 1.4;">${productNameText}</div>
                         </div>
-                        <div class="d-flex justify-content-between">
-                            <span>Số lượng:</span>
+                        <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+                            <span class="text-muted" style="font-size: 0.8rem;">Số lượng:</span>
                             <span class="fw-bold">x${qty}</span>
                         </div>
                         ${discountHtml}
                     </div>
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex justify-content-between align-items-center px-1">
                         <span class="fw-bold">Tổng thanh toán:</span>
                         <span class="fs-5 fw-bold text-success">${fmtMoney(totalToPay)}</span>
                     </div>
