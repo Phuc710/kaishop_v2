@@ -979,7 +979,7 @@ trait TelegramBotServiceShopTrait
 
         // Handle Free Flow - Auto Finalize
         if ((int) ($order['total_price'] ?? 0) === 0) {
-            $this->telegram->editOrSend($chatId, $messageId, $this->tgChoice($telegramId, '⏳ Đang xử lý đơn hàng miễn phí của bạn...', '⏳ Processing your free order...'));
+            $this->telegram->editOrSend($chatId, $messageId, $this->tgChoice($telegramId, '⏳ Đang xử lý đơn hàng của bạn...', '⏳ Processing your order...'));
             $finalizeResult = $this->purchaseService->finalizeTelegramOrderPayment([
                 'order_id' => $order['id'],
                 'method' => 'free'
@@ -1317,10 +1317,19 @@ trait TelegramBotServiceShopTrait
                 if ($deliveryContent !== '') {
                     $orderIdForFile = (int) ($order['id'] ?? 0);
                     $filename = "order_{$orderIdForFile}.txt";
-                    // Caption strictly follows payment method language
-                    $caption = $isBinance
-                        ? "🎉 <b>ORDER COMPLETED!</b> Your product is attached below."
-                        : "🎉 <b>ĐƠN HÀNG HOÀN TẤT!</b> Sản phẩm của bạn ở bên dưới.";
+
+                    $orderCode = $order['order_code_short'] ?? $order['order_code'] ?? "#{$orderIdForFile}";
+                    $prodName = (string) ($order['product_name'] ?? 'Sản phẩm');
+                    $orderQty = max(1, (int) ($order['quantity'] ?? 1));
+                    $totalText = $this->formatCurrency((int) ($order['total_price'] ?? 0), $telegramId);
+
+                    $caption = "{$this->tgText($telegramId, 'success_title')}\n";
+                    $caption .= "━━━━━━━━━━━━━━━━━\n\n";
+                    $caption .= $this->tgChoice($telegramId, "📦 Mã đơn: <code>{$orderCode}</code>\n", "📦 Order Code: <code>{$orderCode}</code>\n");
+                    $caption .= "🛒 {$prodName}\n";
+                    $caption .= $this->tgChoice($telegramId, "🔢 Số lượng: <b>x{$orderQty}</b>\n", "🔢 Quantity: <b>x{$orderQty}</b>\n");
+                    $caption .= $this->tgChoice($telegramId, "💰 Tổng: <b>{$totalText}</b>\n\n", "💰 Total: <b>{$totalText}</b>\n\n");
+                    $caption .= $this->tgText($telegramId, 'product_sent_caption');
 
                     $this->telegram->sendDocumentFromContent($chatId, $deliveryContent, $filename, $caption);
                     if ($callbackId !== '') {

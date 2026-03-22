@@ -36,6 +36,8 @@ class TelegramBotLocaleEn implements TelegramBotLocaleInterface
         'confirm_info' => '📝 Information',
         'confirm_button' => '✅ Confirm',
         'confirm_free' => '🎁 Claim for Free',
+        'success_title' => '🎉 PAYMENT SUCCESSFUL 🎉',
+        'product_sent_caption' => '🎁 Your product is attached below.',
     ];
 
     public function getLocaleCode(): string
