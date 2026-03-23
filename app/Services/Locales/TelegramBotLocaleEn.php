@@ -14,7 +14,7 @@ class TelegramBotLocaleEn implements TelegramBotLocaleInterface
         'main_prompt_short' => '👇 Choose an option below to continue',
         'button_refresh' => '🔄 Refresh',
         'greeting' => "👋 Welcome <b>{name}</b> to <b>KaiBot</b>! 🤖\n\n━━━━━━━━━━━━━━━━\n✅ Automated Shopping 24/7\n⚠️ Note: Please backup your data after purchase!\n\n👇 Please choose an option below to start:",
-        'language_picker' => "🌐 Official Website: {domain}\n🔐 OTP Service: {otp_service}\n📢 Channel: {channel}\n👤 Admin: {admin}\n\n──────────────────────\n👇 Please choose your language below to start:",
+        'language_picker' => "🌐 Official Website: {domain}\n🔐 OTP Service: {otp_service}\n📢 Channel: {channel}\n👤 Admin: {admin}\n\n────────────────────\n👇 Please choose your language below to start:",
         'language_updated_vi' => '🇺🇸 Switched to English.',
         'language_updated_en' => '🇺🇸 Switched to English.',
         'help_title' => '✨ <b>COMMAND LIST</b>',
@@ -36,6 +36,7 @@ class TelegramBotLocaleEn implements TelegramBotLocaleInterface
         'confirm_info' => '📝 Information',
         'confirm_button' => '✅ Confirm',
         'confirm_free' => '🎁 Claim for Free',
+        'cancel' => '❌ Cancel',
         'success_title' => '🎉 PAYMENT SUCCESSFUL 🎉',
         'product_sent_caption' => '🎁 Your product is attached below.',
     ];

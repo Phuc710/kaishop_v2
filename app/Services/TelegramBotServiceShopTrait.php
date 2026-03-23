@@ -930,7 +930,7 @@ trait TelegramBotServiceShopTrait
             $isEnglish = $this->isTelegramEnglish($telegramId);
             if ($isEnglish) {
                 if ($binanceUid === '') {
-                    $rows[] = [['text' => $this->tgEntity('&#127380;') . ' Enter UID', 'callback_data' => 'link_binance_uid_order']];
+                    $rows[] = [['text' => $this->tgEntity('&#9989;') . ' Confirm', 'callback_data' => 'link_binance_uid_order']];
                 } else {
                     $rows[] = [
                         ['text' => $this->tgText($telegramId, 'confirm_button'), 'callback_data' => $confirmAction],
@@ -1147,7 +1147,7 @@ trait TelegramBotServiceShopTrait
         $markup = TelegramService::buildInlineKeyboard([
             [
                 ['text' => $this->tgChoice($telegramId, $this->tgEntity('&#128269;') . ' Kiểm tra', $this->tgEntity('&#128269;') . ' Check'), 'callback_data' => 'order_check_' . $orderId],
-                ['text' => $this->tgChoice($telegramId, $this->tgEntity('&#10060;') . ' Hủy đơn', $this->tgEntity('&#10060;') . ' Cancel Order'), 'callback_data' => 'order_cancel_' . $orderId],
+                ['text' => $this->tgText($telegramId, 'cancel'), 'callback_data' => 'order_cancel_' . $orderId],
             ]
         ]);
 
@@ -1195,7 +1195,7 @@ trait TelegramBotServiceShopTrait
         $markup = TelegramService::buildInlineKeyboard([
             [
                 ['text' => $this->tgChoice($telegramId, $this->tgEntity('&#128269;') . ' Kiểm tra', $this->tgEntity('&#128269;') . ' Check'), 'callback_data' => 'order_check_' . $orderId],
-                ['text' => $this->tgText($telegramId, 'back_home'), 'callback_data' => 'order_cancel_' . $orderId],
+                ['text' => $this->tgText($telegramId, 'cancel'), 'callback_data' => 'order_cancel_' . $orderId],
             ]
         ]);
 
@@ -1211,8 +1211,7 @@ trait TelegramBotServiceShopTrait
 
     private function buildBinanceUidPrompt(bool $includeError = false, int $telegramId = 0): string
     {
-        $prompt = $this->tgEntity('&#127380;') . " <b>BINANCE UID</b>\n\n";
-        $prompt .= $this->tgChoice($telegramId, "Vui lòng nhập Binance UID để tiếp tục.", "Please enter your Binance UID to continue.");
+        $prompt = $this->tgChoice($telegramId, $this->tgEntity('&#128073;') . " Vui lòng nhập Binance UID để tiếp tục.", $this->tgEntity('&#128073;') . " Please enter your Binance UID to continue.");
 
         if ($includeError) {
             $prompt .= "\n\n" . $this->tgEntity('&#9888;&#65039;') . " <b>" . $this->tgChoice($telegramId, "Mã UID không hợp lệ. Vui lòng chỉ nhập 4-20 chữ số.", "Invalid Binance UID. Please enter 4-20 digits only.") . "</b>";
@@ -1321,7 +1320,7 @@ trait TelegramBotServiceShopTrait
             : '0';
 
         $lines = [
-            html_entity_decode('&#128993;', ENT_QUOTES, 'UTF-8') . " <b>BINANCE PAY &#8212; ORDER PAYMENT</b>",
+            html_entity_decode('&#128993;', ENT_QUOTES, 'UTF-8') . " <b>BINANCE PAY &#8212; PAYMENT DETAILS</b>",
             "",
             html_entity_decode('&#129534;', ENT_QUOTES, 'UTF-8') . " Order ID: <code>{$orderCode}</code>",
             html_entity_decode('&#128230;', ENT_QUOTES, 'UTF-8') . " Product: <b>{$productName}</b>",
@@ -1332,12 +1331,12 @@ trait TelegramBotServiceShopTrait
             $lines[] = html_entity_decode('&#127991;&#65039;', ENT_QUOTES, 'UTF-8') . " Discount: -<b>{$discountUsdt} USDT</b> (<i>{$giftcode}</i>)";
         }
 
-        $lines[] = html_entity_decode('&#128142;', ENT_QUOTES, 'UTF-8') . " Total to pay: <b>{$usdtText} USDT</b>";
-        $lines[] = str_repeat(html_entity_decode('&#9473;', ENT_QUOTES, 'UTF-8'), 14);
+        $lines[] = html_entity_decode('&#128142;', ENT_QUOTES, 'UTF-8') . " Total: <b>{$usdtText} USDT</b>";
+        $lines[] = "━━━━━━━━━━━━━━";
         $lines[] = html_entity_decode('&#127380;', ENT_QUOTES, 'UTF-8') . " Receiver UID: <code>{$receiverUid}</code>";
 
         if ($ownerName !== '') {
-            $lines[] = html_entity_decode('&#128100;', ENT_QUOTES, 'UTF-8') . " Nick Name: <b>{$ownerName}</b>";
+            $lines[] = html_entity_decode('&#128100;', ENT_QUOTES, 'UTF-8') . " Receiver Name: <b>{$ownerName}</b>";
         }
 
         if ($expiresAt !== '') {
@@ -1358,7 +1357,7 @@ trait TelegramBotServiceShopTrait
                 $lines[] = html_entity_decode('&#9888;&#65039;', ENT_QUOTES, 'UTF-8') . " " . $warning;
             }
         } else {
-            $lines[] = html_entity_decode('&#9888;&#65039;', ENT_QUOTES, 'UTF-8') . " <b>AUTO MATCHING:</b> Send the EXACT amount only.";
+            $lines[] = html_entity_decode('&#9888;&#65039;', ENT_QUOTES, 'UTF-8') . " Auto-matching: Please send the EXACT amount only.";
             $lines[] = html_entity_decode('&#10060;', ENT_QUOTES, 'UTF-8') . " Wrong UID or amount will NOT be matched.";
         }
 

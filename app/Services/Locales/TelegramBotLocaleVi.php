@@ -14,7 +14,7 @@ class TelegramBotLocaleVi implements TelegramBotLocaleInterface
         'main_prompt_short' => '👇 Chọn chức năng bên dưới để bắt đầu',
         'button_refresh' => '🔄 Cập nhật',
         'greeting' => "👋 Chào mừng <b>{name}</b> đến với <b>KaiBot</b>! 🤖\n\n━━━━━━━━━━━━━━━━\n✅ Mua hàng tự động 24/7\n⚠️ Lưu ý: Sau khi mua hàng nhớ backup!\n\n👇 Chọn chức năng bên dưới để bắt đầu:",
-        'language_picker' => "🌐 Official Website: {domain}\n🔐 OTP Service: {otp_service}\n📢 Channel: {channel}\n👤 Admin: {admin}\n\n──────────────────────\n👇 Vui lòng chọn ngôn ngữ bên dưới để bắt đầu:",
+        'language_picker' => "🌐 Official Website: {domain}\n🔐 OTP Service: {otp_service}\n📢 Channel: {channel}\n👤 Admin: {admin}\n\n────────────────────\n👇 Vui lòng chọn ngôn ngữ bên dưới để bắt đầu:",
         'language_updated_vi' => '🇻🇳 Đã chuyển sang Tiếng Việt.',
         'language_updated_en' => '🇻🇳 Đã chuyển sang Tiếng Việt.',
         'help_title' => '✨ <b>DANH SÁCH LỆNH</b>',
@@ -36,6 +36,7 @@ class TelegramBotLocaleVi implements TelegramBotLocaleInterface
         'confirm_info' => '📝 Thông tin',
         'confirm_button' => '✅ Xác nhận',
         'confirm_free' => '🎁 Nhận miễn phí',
+        'cancel' => '❌ Hủy',
         'success_title' => '🎉 THANH TOÁN THÀNH CÔNG 🎉',
         'product_sent_caption' => '🎁 Sản phẩm được gửi ở bên dưới.',
     ];
