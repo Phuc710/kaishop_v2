@@ -292,7 +292,7 @@ foreach ($authNavPaths as $p) {
             <a href="<?= url('') ?>" class="ks-logo-container"
                 aria-label="Trang chủ <?= htmlspecialchars($chungapi['ten_web'] ?? 'KaiShop', ENT_QUOTES, 'UTF-8') ?>">
                 <?php global $chungapi; ?>
-                <img src="<?= asset($chungapi['logo']); ?>" width="180" height="auto"
+                <img src="<?= asset($chungapi['logo']); ?>" width="180" height="110"
                     alt="<?= htmlspecialchars($chungapi['ten_web'] ?? 'KaiShop', ENT_QUOTES, 'UTF-8') ?>"
                     draggable="false" class="ks-img-guard ks-logo-img" decoding="async" fetchpriority="high"
                     loading="eager" />
@@ -355,6 +355,9 @@ foreach ($authNavPaths as $p) {
                             <li class="nav-item">
                                 <a class="nav-link<?= $isActive ? ' active' : '' ?>"
                                     href="<?= htmlspecialchars((string) ($navItem['href'] ?? '#'), ENT_QUOTES, 'UTF-8') ?>">
+                                    <?php if (!empty($navItem['icon'])): ?>
+                                        <i class="<?= htmlspecialchars((string) $navItem['icon'], ENT_QUOTES, 'UTF-8') ?> me-1"></i>
+                                    <?php endif; ?>
                                     <?= $navLabel ?>
                                     <?php if ($embedImg !== ''): ?>
                                         <img src="<?= htmlspecialchars($embedImg, ENT_QUOTES, 'UTF-8') ?>" alt="icon"
@@ -372,7 +375,7 @@ foreach ($authNavPaths as $p) {
             <div class="mobile-sidebar-nav d-xl-none" id="navbarNav">
                 <div class="mobile-sidebar-header justify-content-center">
                     <div class="mobile-sidebar-brand">
-                        <img src="<?= asset($chungapi['logo']); ?>" width="100" height="auto"
+                        <img src="<?= asset($chungapi['logo']); ?>" width="100" height="100"
                             alt="<?= htmlspecialchars($chungapi['ten_web'] ?? 'logo', ENT_QUOTES, 'UTF-8') ?>"
                             draggable="false" class="ks-img-guard ks-mobile-sidebar-logo" decoding="async"
                             loading="eager" fetchpriority="high">
@@ -496,7 +499,8 @@ foreach ($authNavPaths as $p) {
                                 }
                                 ?>
                                 <img src="<?= htmlspecialchars($userAvatar, ENT_QUOTES, 'UTF-8') ?>" decoding="async"
-                                    class="rounded-circle w-40" style="margin-right: 8px;" alt="">
+                                    class="rounded-circle w-40" style="margin-right: 8px;" alt="User Avatar" width="40"
+                                    height="40">
                                 <span style="display:flex; flex-direction:column; align-items:flex-start; line-height:1;">
                                     <span class="text-uppercase"
                                         style="font-weight:bold; color:#333; font-size:13px; line-height:1;"><?= htmlspecialchars($userDisplayName, ENT_QUOTES, 'UTF-8'); ?></span>

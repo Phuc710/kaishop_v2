@@ -573,48 +573,6 @@
 <body> <?php require __DIR__ . '/../../hethong/nav.php'; ?>
     <main>
         <div class="container py-4 home-main-content">
-            <section class="home-seo-intro" aria-labelledby="homeSeoHeading">
-                <?php if (!empty($homeBreadcrumbItems)): ?>
-                    <nav class="home-seo-breadcrumb" aria-label="Breadcrumb">
-                        <a href="<?= url('') ?>">Trang chủ</a>
-                        <span>/</span>
-                        <span><?= htmlspecialchars((string) ($selectedCategory['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
-                    </nav>
-                <?php endif; ?>
-
-                <?php if (!empty($pageKicker)): ?>
-                    <span class="home-seo-kicker"><?= htmlspecialchars((string) $pageKicker, ENT_QUOTES, 'UTF-8') ?></span>
-                <?php endif; ?>
-
-                <h2 id="homeSeoHeading" class="home-seo-title">
-                    <?= htmlspecialchars((string) ($pageHeading ?? $seoTitle), ENT_QUOTES, 'UTF-8') ?>
-                </h2>
-                <p class="home-seo-lead">
-                    <?= htmlspecialchars((string) ($pageIntro ?? $seoDescription), ENT_QUOTES, 'UTF-8') ?>
-                </p>
-                <div class="home-seo-meta">
-                    <span class="home-seo-chip">
-                        <i class="fas fa-layer-group"></i>
-                        <?= number_format(count((array) $homeVisibleCategories)) ?> danh mục
-                    </span>
-                    <span class="home-seo-chip">
-                        <i class="fas fa-box-open"></i>
-                        <?= number_format((int) $homeVisibleProductCount) ?> sản phẩm
-                    </span>
-                    <a href="<?= url('lien-he') ?>" class="home-seo-chip">
-                        <i class="fas fa-headset"></i>
-                        Liên hệ hỗ trợ
-                    </a>
-                    <a href="<?= url('chinh-sach') ?>" class="home-seo-chip">
-                        <i class="fas fa-shield-halved"></i>
-                        Chính sách
-                    </a>
-                    <a href="<?= url('dieu-khoan') ?>" class="home-seo-chip">
-                        <i class="fas fa-file-contract"></i>
-                        Điều khoản
-                    </a>
-                </div>
-            </section>
             <!-- Visually Hidden H1 for SEO -->
             <h1 class="visually-hidden">KaiShop - Hệ thống Nạp tiền Tự động 24/7, Dịch vụ MMO & Source Code</h1>
 

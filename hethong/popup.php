@@ -60,12 +60,12 @@ if ($active_template === '2' && empty($thongbaoContent)) {
                 <div class="lp-content">
                     <!-- Fire GIF Header -->
                     <div class="lp-gifs-row">
-                        <img src="https://media.giphy.com/media/kEhKBVTIMz6c10g3Lz/giphy.gif" alt="fire" class="lp-gif-fire"
-                            width="30" height="30" loading="lazy" decoding="async" fetchpriority="low">
+                        <img src="https://media.giphy.com/media/kEhKBVTIMz6c10g3Lz/giphy.gif" alt="fire notice icon"
+                            class="lp-gif-fire" width="30" height="30" loading="lazy" decoding="async" fetchpriority="low">
                         <span class="lp-text-teal lp-bold lp-uppercase">DỊCH VỤ THIẾT KẾ WEB - TÀI NGUYÊN - TỐI ƯU
                             SEO</span>
-                        <img src="https://media.giphy.com/media/kEhKBVTIMz6c10g3Lz/giphy.gif" alt="fire" class="lp-gif-fire"
-                            width="30" height="30" loading="lazy" decoding="async" fetchpriority="low">
+                        <img src="https://media.giphy.com/media/kEhKBVTIMz6c10g3Lz/giphy.gif" alt="fire notice icon"
+                            class="lp-gif-fire" width="30" height="30" loading="lazy" decoding="async" fetchpriority="low">
                     </div>
 
                     <p class="lp-text-red lp-bold">Chân thành cảm ơn quý khách đã tin tưởng
@@ -75,8 +75,8 @@ if ($active_template === '2' && empty($thongbaoContent)) {
                     </p>
 
                     <p class="lp-mt-2">
-                        Tham gia nhóm Tele: <a href="<?= htmlspecialchars($telegramLink) ?>" target="_blank"
-                            class="lp-link-red">TẠI ĐÂY</a>
+                        Tham gia ngay: <a href="<?= htmlspecialchars($telegramLink) ?>" target="_blank"
+                            class="lp-link-red">Nhóm Telegram KaiShop</a>
                     </p>
                     <strong class="lp-text-blue lp-bold">NHÓM SHARE TOOL, FILE, BOT ZALO, TELE + SOUCER WEB</strong>
 
@@ -92,12 +92,12 @@ if ($active_template === '2' && empty($thongbaoContent)) {
                         style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border: 2px dashed #2980b9;">
                         <div
                             style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
-                            <img src="https://media.giphy.com/media/xje7ITeGqNAFWyvZ7a/giphy.gif" alt="money" width="24"
-                                height="24" loading="lazy" decoding="async" fetchpriority="low"
+                            <img src="https://media.giphy.com/media/xje7ITeGqNAFWyvZ7a/giphy.gif" alt="money promo icon"
+                                width="24" height="24" loading="lazy" decoding="async" fetchpriority="low"
                                 style="width: 24px; height: 24px; object-fit: contain;">
                             <span class="lp-text-blue lp-bold" style="font-size: 1.1em;"> KHUYẾN MÃI NẠP TIỀN </span>
-                            <img src="https://media.giphy.com/media/xje7ITeGqNAFWyvZ7a/giphy.gif" alt="money" width="24"
-                                height="24" loading="lazy" decoding="async" fetchpriority="low"
+                            <img src="https://media.giphy.com/media/xje7ITeGqNAFWyvZ7a/giphy.gif" alt="money promo icon"
+                                width="24" height="24" loading="lazy" decoding="async" fetchpriority="low"
                                 style="width: 24px; height: 24px; object-fit: contain;">
                         </div>
                         <div style="display: grid; gap: 6px; margin: 10px 0;">
@@ -124,12 +124,12 @@ if ($active_template === '2' && empty($thongbaoContent)) {
 
                     <!-- Sale GIF + Policy Link -->
                     <div class="lp-policy-row lp-mt-2">
-                        <img src="https://media.giphy.com/media/KBlX7iF04rYrtuvSHc/giphy.gif" alt="sale" class="lp-gif-sale"
-                            width="28" height="28" loading="lazy" decoding="async" fetchpriority="low">
-                        <span class="lp-text-teal lp-bold">Chính sách mua hàng của website: <a
-                                href="<?= url('chinh-sach') ?>" target="_blank" class="lp-link-red">Tại Đây</a></span>
-                        <img src="https://media.giphy.com/media/KBlX7iF04rYrtuvSHc/giphy.gif" alt="sale" class="lp-gif-sale"
-                            width="28" height="28" loading="lazy" decoding="async" fetchpriority="low">
+                        <img src="https://media.giphy.com/media/KBlX7iF04rYrtuvSHc/giphy.gif" alt="sale icon"
+                            class="lp-gif-sale" width="28" height="28" loading="lazy" decoding="async" fetchpriority="low">
+                        <span class="lp-text-teal lp-bold">Chính sách website: <a href="<?= url('chinh-sach') ?>"
+                                target="_blank" class="lp-link-red">Xem chính sách mua hàng</a></span>
+                        <img src="https://media.giphy.com/media/KBlX7iF04rYrtuvSHc/giphy.gif" alt="sale icon"
+                            class="lp-gif-sale" width="28" height="28" loading="lazy" decoding="async" fetchpriority="low">
                     </div>
                     <p class="lp-text-muted">(Vui lòng đọc kĩ trước khi mua sản phẩm)</p>
                 </div>

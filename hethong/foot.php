@@ -1,3 +1,5 @@
+<script src="<?= asset('assets/js/jquery.js') ?>"></script>
+<script src="<?= asset('assets/js/lazyload.js') ?>"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const filterButtons = document.querySelectorAll('.service-filter-btn');
@@ -116,16 +118,16 @@
                         <?php global $chungapi; ?>
                         <a href="<?= url('') ?>" class="d-block mb-3" aria-label="Trang chủ KaiShop">
                             <img src="<?= asset($chungapi['logo_footer'] ?? $chungapi['logo']); ?>" width="230"
-                                height="auto" alt="KaiShop"
+                                height="29" alt="KaiShop"
                                 style="margin: 0 auto; display: block; max-width: 100%; height: auto;">
                         </a>
                         <p class="mx-auto" style="max-width: 320px;">
                             KaiShop - Chuyên cung cấp Source Code, Dịch vụ giá rẻ và Nạp tiền tự động nhanh chống
                             24/7 uy tín Bảo mật.
                         </p>
-                        <h6 class="mt-3"
-                            style="background-color: rgba(255, 105, 0, 0.05); border-radius: 99px; padding: 8px 16px; display: inline-block; color: #ff6900; font-size: 14px; border: 1px solid rgba(255, 105, 0, 0.2);">
-                            Thanh toán tự động &bull; Hỗ trợ 24/7</h6>
+                        <div class="mt-3"
+                            style="background-color: rgba(255, 105, 0, 0.05); border-radius: 99px; padding: 8px 16px; display: inline-block; color: #ff6900; font-size: 14px; border: 1px solid rgba(255, 105, 0, 0.2); font-weight: 600;">
+                            Thanh toán tự động &bull; Hỗ trợ 24/7</div>
                         <div class="kai-footer-social mt-3">
                             <div class="social-buttons d-flex justify-content-center">
                                 <?php if (!empty($chungapi['fb_admin'])): ?>
@@ -238,8 +240,10 @@
                 <div class="col-lg-6">
                     <div class="footer-bottom-links">
                         <ul>
-                            <li><a href="<?= url('chinh-sach') ?>">Chính sách</a></li>
-                            <li><a href="<?= url('dieu-khoan') ?>">Điều khoản & Điều kiện</a></li>
+                            <li><a href="<?= url('chinh-sach') ?>"><i class="fa-solid fa-shield-halved me-1"></i>Chính
+                                    sách</a></li>
+                            <li><a href="<?= url('dieu-khoan') ?>"><i class="fa-solid fa-file-contract me-1"></i>Điều
+                                    khoản & Điều kiện</a></li>
                         </ul>
                     </div>
                 </div>
@@ -251,7 +255,7 @@
 <div class="back-to-top">
     <a id="toTopBtn" class="back-to-top-icon align-items-center justify-content-center d-flex" href="#top"
         aria-label="Cuộn lên đầu trang">
-        <img src="<?= asset('assets/images/arrow-badge-up.svg') ?>" alt="icon">
+        <img src="<?= asset('assets/images/arrow-badge-up.svg') ?>" alt="icon" width="24" height="24">
     </a>
 </div>
 
@@ -486,6 +490,10 @@ $loadInteractiveBundle = !empty($pageAssetFlagsResolved['interactive_bundle']);
 <?php endif; ?>
 
 <!-- Hidden Google Map for SEO (User Request) -->
-<div style="display:none; visibility:hidden; width:0; height:0; overflow:hidden; position:absolute; pointer-events:none;" aria-hidden="true">
-    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d19186.820390896668!2d106.64489592286598!3d10.833848329042643!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x317529005ce32e29%3A0x92701134ab02bfba!2sTan%20Son%20Nhat%20Driving%20Range!5e0!3m2!1svi!2s!4v1774275991944!5m2!1svi!2s" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+<div style="display:none; visibility:hidden; width:0; height:0; overflow:hidden; position:absolute; pointer-events:none;"
+    aria-hidden="true">
+    <iframe
+        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d19186.820390896668!2d106.64489592286598!3d10.833848329042643!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x317529005ce32e29%3A0x92701134ab02bfba!2sTan%20Son%20Nhat%20Driving%20Range!5e0!3m2!1svi!2s!4v1774275991944!5m2!1svi!2s"
+        width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"></iframe>
 </div>

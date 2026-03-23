@@ -101,9 +101,9 @@ ul {
 }
 
 .btn-primary {
-    background: #ff6900;
+    background: #e65100;
     border-radius: 10px;
-    border: 1px solid #ff6900;
+    border: 1px solid #e65100;
     -webkit-transition: all 0.7s;
     -moz-transition: all 0.7s;
     -o-transition: all 0.7s;
@@ -416,7 +416,7 @@ label {
 }
 
 .text-body {
-    color: #74788d !important;
+    color: #5f6368 !important;
 }
 
 .pagination>ul li.arrow a {
@@ -783,14 +783,14 @@ textarea {
     padding: 15px;
     font-size: 15px;
     border-color: #dcdcdc;
-    color: #74788d;
+    color: #5f6368;
 }
 
 .table tbody td,
 .table th {
     padding: 15px;
     font-size: 15px;
-    color: #74788d;
+    color: #5f6368;
 }
 
 .table td,
@@ -1760,7 +1760,7 @@ html.menu-opened body {
 .submenu-head .product-content p {
     font-weight: 600;
     font-size: 16px;
-    color: #666;
+    color: #555;
     margin-bottom: 0;
     -webkit-transition: 0.7s;
     -moz-transition: 0.7s;

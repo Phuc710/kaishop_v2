@@ -279,6 +279,7 @@ class NavConfig
                 'type' => 'link',
                 'href' => self::buildUrl('lien-he'),
                 'label' => 'Liên hệ',
+                'icon' => 'fa-solid fa-headset',
                 'mobile_icon' => 'fa-solid fa-headset',
             ],
         ];

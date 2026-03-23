@@ -155,7 +155,7 @@ $sitemapUrl = $resolveAbsoluteUrl(url('sitemap.xml'));
 <?php endif; ?>
 <meta name="robots" content="<?= htmlspecialchars($seoRobotsValue, ENT_QUOTES, 'UTF-8') ?>">
 <meta name="googlebot" content="<?= htmlspecialchars($seoRobotsValue, ENT_QUOTES, 'UTF-8') ?>">
-<meta name="theme-color" content="#ff6900">
+<meta name="theme-color" content="#e65100">
 <meta name="author" content="<?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?>">
 <meta name="csrf-token"
     content="<?= htmlspecialchars(function_exists('csrf_token') ? csrf_token() : '', ENT_QUOTES, 'UTF-8') ?>">
@@ -281,11 +281,11 @@ $emitIdentitySchema = $requestPathNoLocale === '/';
 <link rel="shortcut icon" href="<?= htmlspecialchars($faviconHref, ENT_QUOTES, 'UTF-8') ?>">
 <?php if ($emitIdentitySchema): ?>
     <script type="application/ld+json">
-        <?= json_encode($organizationSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
-        </script>
+                <?= json_encode($organizationSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
+                </script>
     <script type="application/ld+json">
-        <?= json_encode($websiteSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
-        </script>
+                <?= json_encode($websiteSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
+                </script>
 <?php endif; ?>
 <script type="application/ld+json">
 <?= json_encode($webPageSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
@@ -355,11 +355,7 @@ $emitIdentitySchema = $requestPathNoLocale === '/';
     <link rel="stylesheet" type="text/css" href="<?= asset('assets/css/datatables.css') ?>">
 <?php endif; ?>
 
-<script src="<?= asset('assets/js/jquery.js') ?>"></script>
-<script src="<?= asset('assets/js/notify.js') ?>" defer></script>
-<script src="<?= asset('assets/js/sweetalert.js') ?>" defer></script>
-<script src="<?= asset('assets/js/swal_helper.js') ?>" defer></script>
-<script src="<?= asset('assets/js/lazyload.js') ?>"></script>
+
 
 <?php if (!empty($resolvedAssetFlags['flatpickr'])): ?>
     <script src="<?= asset('assets/js/flatpickr.js') ?>"></script>
