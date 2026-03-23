@@ -781,7 +781,6 @@ if ($rawDescHtml !== '') {
                             <span><?= htmlspecialchars($productName, ENT_QUOTES, 'UTF-8') ?></span>
                         </nav>
                         <h1 class="pd-title"><?= htmlspecialchars($productName, ENT_QUOTES, 'UTF-8') ?></h1>
-                        <p class="pd-summary-text"><?= htmlspecialchars($productSummaryText, ENT_QUOTES, 'UTF-8') ?></p>
 
                         <div class="pd-meta-line">
                             <div>
@@ -918,20 +917,6 @@ if ($rawDescHtml !== '') {
                 </div>
             </div>
 
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="pd-card p-3 p-md-4">
-                        <h2 class="mb-3" style="font-weight:700; color:#151a2d;">Thông tin nhanh cho người mua</h2>
-                        <p class="pd-summary-text mb-0">
-                            <?= htmlspecialchars($productSummaryText, ENT_QUOTES, 'UTF-8') ?>
-                            <?php if ($categoryUrl !== ''): ?>
-                                Xem thêm các sản phẩm cùng nhóm tại
-                                <a href="<?= htmlspecialchars($categoryUrl, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($categoryName, ENT_QUOTES, 'UTF-8') ?></a>.
-                            <?php endif; ?>
-                        </p>
-                    </div>
-                </div>
-            </div>
         </div>
     </main>
 
