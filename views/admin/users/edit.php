@@ -82,6 +82,39 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                         </div>
                                     </div>
                                 </form>
+
+                                <?php if (isset($toz_user['source']) && $toz_user['source'] === 'telegram'): ?>
+                                    <div class="form-section mt-4 mb-0" style="border-left: 4px solid #38bdf8;">
+                                        <div class="form-section-title text-info"><i
+                                                class="fab fa-telegram-plane mr-2"></i>Tài khoản Telegram</div>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="font-weight-bold text-muted mb-1">Telegram ID</label>
+                                                <div class="input-group">
+                                                    <div class="input-group-prepend">
+                                                        <span class="input-group-text"><i
+                                                                class="fas fa-id-badge text-info"></i></span>
+                                                    </div>
+                                                    <input type="text" class="form-control font-weight-bold"
+                                                        value="<?= htmlspecialchars($toz_user['telegram_id'] ?? '') ?>"
+                                                        readonly>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="font-weight-bold text-muted mb-1">@Username TG</label>
+                                                <div class="input-group">
+                                                    <div class="input-group-prepend">
+                                                        <span class="input-group-text"><i
+                                                                class="fas fa-at text-info"></i></span>
+                                                    </div>
+                                                    <input type="text" class="form-control font-weight-bold"
+                                                        value="<?= $toz_user['telegram_username'] ? htmlspecialchars($toz_user['telegram_username']) : 'Chưa có' ?>"
+                                                        readonly>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
                             </div>
 
                             <!-- Cột Phải: Tài chính -->
@@ -279,7 +312,8 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                         <strong>Tài khoản bị khóa</strong><br>
                                         <span>Lý do: <?= htmlspecialchars($toz_user['ban_reason']) ?></span>
                                         <?php if (!empty($toz_user['ban_expires_at'])): ?>
-                                            <br><span>Hết hạn: <?= htmlspecialchars((string) $toz_user['ban_expires_at']) ?></span>
+                                            <br><span>Hết hạn:
+                                                <?= htmlspecialchars((string) $toz_user['ban_expires_at']) ?></span>
                                         <?php else: ?>
                                             <br><span>Thời hạn: Vĩnh viễn</span>
                                         <?php endif; ?>

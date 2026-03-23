@@ -1,20 +1,20 @@
 <?php
 
 /**
- * View: Danh sach san pham
+ * View: Danh sách sản phẩm
  * Route: GET /admin/products
  * Controller: AdminProductController@index
  */
-$pageTitle = 'Danh sach san pham';
+$pageTitle = 'Danh sách sản phẩm';
 $breadcrumbs = [
-    ['label' => 'San pham', 'url' => url('admin/products')],
-    ['label' => 'Danh sach'],
+    ['label' => 'Sản phẩm', 'url' => url('admin/products')],
+    ['label' => 'Danh sách'],
 ];
 $visibilityLabels = [
     'both' => 'Web + Telegram',
-    'web' => 'Chi Web',
-    'telegram' => 'Chi Telegram',
-    'hidden' => 'An ca 2',
+    'web' => 'Chỉ Web',
+    'telegram' => 'Chỉ Telegram',
+    'hidden' => 'Ẩn cả 2',
 ];
 $visibilityButtonClasses = [
     'both' => 'btn-success',
@@ -35,7 +35,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                 <div class="info-box shadow-sm mb-3" style="border-radius: 8px;">
                     <span class="info-box-icon bg-info elevation-1" style="border-radius: 8px;"><i class="fas fa-box-open"></i></span>
                     <div class="info-box-content">
-                        <span class="info-box-text font-weight-bold text-uppercase">Tong san pham</span>
+                        <span class="info-box-text font-weight-bold text-uppercase">Tổng sản phẩm</span>
                         <span class="info-box-number h4 mb-0"><?= number_format($stats['total'] ?? 0) ?></span>
                     </div>
                 </div>
@@ -44,7 +44,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                 <div class="info-box shadow-sm mb-3" style="border-radius: 8px;">
                     <span class="info-box-icon bg-success elevation-1" style="border-radius: 8px;"><i class="fas fa-globe"></i></span>
                     <div class="info-box-content">
-                        <span class="info-box-text font-weight-bold text-uppercase">Hien tren Web</span>
+                        <span class="info-box-text font-weight-bold text-uppercase">Hiển thị trên Web</span>
                         <span class="info-box-number h4 mb-0"><?= number_format($stats['visible_web'] ?? 0) ?></span>
                     </div>
                 </div>
@@ -53,7 +53,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                 <div class="info-box shadow-sm mb-3" style="border-radius: 8px;">
                     <span class="info-box-icon bg-primary elevation-1" style="border-radius: 8px;"><i class="fab fa-telegram-plane"></i></span>
                     <div class="info-box-content">
-                        <span class="info-box-text font-weight-bold text-uppercase">Hien tren Telegram</span>
+                        <span class="info-box-text font-weight-bold text-uppercase">Hiển thị trên Telegram</span>
                         <span class="info-box-number h4 mb-0"><?= number_format($stats['visible_telegram'] ?? 0) ?></span>
                     </div>
                 </div>
@@ -62,7 +62,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                 <div class="info-box shadow-sm mb-3" style="border-radius: 8px;">
                     <span class="info-box-icon bg-secondary elevation-1" style="border-radius: 8px;"><i class="fas fa-eye-slash"></i></span>
                     <div class="info-box-content">
-                        <span class="info-box-text font-weight-bold text-uppercase">An ca 2</span>
+                        <span class="info-box-text font-weight-bold text-uppercase">Ẩn cả 2</span>
                         <span class="info-box-number h4 mb-0"><?= number_format($stats['hidden'] ?? 0) ?></span>
                     </div>
                 </div>
@@ -71,17 +71,17 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
 
         <div class="card custom-card">
             <div class="card-header border-0 pb-0">
-                <h3 class="card-title text-uppercase font-weight-bold">QUAN LY SAN PHAM</h3>
+                <h3 class="card-title text-uppercase font-weight-bold">QUẢN LÝ SẢN PHẨM</h3>
             </div>
 
             <div class="dt-filters">
                 <div class="row g-2 justify-content-center align-items-center mb-3">
                     <div class="col-md-2 mb-2">
-                        <input id="f-name" class="form-control form-control-sm" placeholder="Tim ten san pham...">
+                        <input id="f-name" class="form-control form-control-sm" placeholder="Tìm tên sản phẩm...">
                     </div>
                     <div class="col-md-2 mb-2">
                         <select id="f-category" class="form-control form-control-sm">
-                            <option value="">-- Tat ca danh muc --</option>
+                            <option value="">-- Tất cả danh mục --</option>
                             <?php foreach ($categories as $cat): ?>
                                 <option value="<?= htmlspecialchars($cat['name']) ?>"><?= htmlspecialchars($cat['name']) ?></option>
                             <?php endforeach; ?>
@@ -89,34 +89,34 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                     </div>
                     <div class="col-md-2 mb-2">
                         <select id="f-status" class="form-control form-control-sm">
-                            <option value="">-- Hien thi --</option>
+                            <option value="">-- Hiển thị --</option>
                             <option value="mode:both">Web + Telegram</option>
-                            <option value="mode:web">Chi Web</option>
-                            <option value="mode:telegram">Chi Telegram</option>
-                            <option value="mode:hidden">An ca 2</option>
+                            <option value="mode:web">Chỉ Web</option>
+                            <option value="mode:telegram">Chỉ Telegram</option>
+                            <option value="mode:hidden">Ẩn cả 2</option>
                         </select>
                     </div>
                     <div class="col-md-2 mb-2">
                         <select id="f-type" class="form-control form-control-sm">
-                            <option value="">-- Loai san pham --</option>
-                            <option value="Tai Khoan">Tai Khoan</option>
-                            <option value="Yeu cau thong tin">Yeu cau thong tin</option>
+                            <option value="">-- Loại sản phẩm --</option>
+                            <option value="Tài khoản">Tài khoản</option>
+                            <option value="Yêu cầu thông tin">Yêu cầu thông tin</option>
                             <option value="Source">Source</option>
                         </select>
                     </div>
                     <div class="col-md-2 mb-2 text-center">
-                        <button type="button" id="btn-clear" class="btn btn-danger btn-sm shadow-sm w-100">Xoa loc</button>
+                        <button type="button" id="btn-clear" class="btn btn-danger btn-sm shadow-sm w-100">Xóa lọc</button>
                     </div>
                     <div class="col-md-2 mb-2 text-right">
                         <a href="<?= url('admin/products/add') ?>" class="btn btn-primary btn-sm shadow-sm w-100">
-                            <i class="fas fa-plus mr-1"></i> Them san pham
+                            <i class="fas fa-plus mr-1"></i> Thêm sản phẩm
                         </a>
                     </div>
                 </div>
 
                 <div class="top-filter mb-2">
                     <div class="filter-show">
-                        <span class="filter-label">Hien thi :</span>
+                        <span class="filter-label">Hiển thị:</span>
                         <select id="f-length" class="filter-select flex-grow-1">
                             <option value="10">10</option>
                             <option value="20">20</option>
@@ -126,12 +126,12 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                     </div>
 
                     <div class="filter-short justify-content-end">
-                        <span class="filter-label">Loc theo ngay:</span>
+                        <span class="filter-label">Lọc theo ngày:</span>
                         <select id="f-sort" class="filter-select flex-grow-1">
-                            <option value="all">Tat ca</option>
-                            <option value="7">7 ngay qua</option>
-                            <option value="15">15 ngay qua</option>
-                            <option value="30">30 ngay qua</option>
+                            <option value="all">Tất cả</option>
+                            <option value="7">7 ngày qua</option>
+                            <option value="15">15 ngày qua</option>
+                            <option value="30">30 ngày qua</option>
                         </select>
                     </div>
                 </div>
@@ -142,15 +142,15 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                     <table id="productTable" class="table table-hover table-bordered admin-table w-100">
                         <thead>
                             <tr>
-                                <th class="text-center font-weight-bold align-middle product-image-col">ANH</th>
-                                <th class="text-center font-weight-bold align-middle">TEN SAN PHAM</th>
-                                <th class="text-center font-weight-bold align-middle">LOAI</th>
-                                <th class="text-center font-weight-bold align-middle">DANH MUC</th>
-                                <th class="text-center font-weight-bold align-middle">GIA BAN</th>
-                                <th class="text-center font-weight-bold align-middle">KHO / BAN</th>
-                                <th class="text-center font-weight-bold align-middle">HIEN THI</th>
-                                <th class="text-center font-weight-bold align-middle">NGAY TAO</th>
-                                <th class="text-center font-weight-bold align-middle" style="width:140px;">THAO TAC</th>
+                                <th class="text-center font-weight-bold align-middle product-image-col">ẢNH</th>
+                                <th class="text-center font-weight-bold align-middle">TÊN SẢN PHẨM</th>
+                                <th class="text-center font-weight-bold align-middle">LOẠI</th>
+                                <th class="text-center font-weight-bold align-middle">DANH MỤC</th>
+                                <th class="text-center font-weight-bold align-middle">GIÁ BÁN</th>
+                                <th class="text-center font-weight-bold align-middle">KHO / BÁN</th>
+                                <th class="text-center font-weight-bold align-middle">HIỂN THỊ</th>
+                                <th class="text-center font-weight-bold align-middle">NGÀY TẠO</th>
+                                <th class="text-center font-weight-bold align-middle" style="width:140px;">THAO TÁC</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -189,9 +189,9 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                         </td>
                                         <td class="text-center align-middle">
                                             <?php if ($isManualRequest): ?>
-                                                <span class="badge badge-warning"><i class="fas fa-keyboard mr-1"></i>Yeu cau thong tin</span>
+                                                <span class="badge badge-warning"><i class="fas fa-keyboard mr-1"></i>Yêu cầu thông tin</span>
                                             <?php elseif ($isAccount): ?>
-                                                <span class="badge badge-info"><i class="fas fa-user mr-1"></i>Tai Khoan</span>
+                                                <span class="badge badge-info"><i class="fas fa-user mr-1"></i>Tài khoản</span>
                                             <?php else: ?>
                                                 <span class="badge badge-purple" style="background:#8b5cf6;color:#fff;"><i class="fas fa-link mr-1"></i>Source</span>
                                             <?php endif; ?>
@@ -212,15 +212,15 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                                 <span class="text-muted"> / </span>
                                                 <span class="text-danger font-weight-bold"><?= (int) ($st['sold'] ?? 0) ?></span>
                                             <?php elseif ($isManualRequest): ?>
-                                                <span class="text-success font-weight-bold" title="Can giao"><?= $st['available'] ?></span>
+                                                <span class="text-success font-weight-bold" title="Cần giao"><?= $st['available'] ?></span>
                                                 <span class="text-muted"> / </span>
-                                                <span class="text-warning font-weight-bold" title="Cho xu ly"><?= $st['pending'] ?? 0 ?></span>
+                                                <span class="text-warning font-weight-bold" title="Chờ xử lý"><?= $st['pending'] ?? 0 ?></span>
                                                 <span class="text-muted"> / </span>
-                                                <span class="text-danger font-weight-bold" title="Da ban"><?= $st['sold'] ?></span>
+                                                <span class="text-danger font-weight-bold" title="Đã bán"><?= $st['sold'] ?></span>
                                             <?php elseif ($isStockManaged): ?>
-                                                <span class="text-success font-weight-bold" title="San co"><?= $st['available'] ?></span>
+                                                <span class="text-success font-weight-bold" title="Sẵn có"><?= $st['available'] ?></span>
                                                 <span class="text-muted"> / </span>
-                                                <span class="text-danger font-weight-bold" title="Da ban"><?= $st['sold'] ?></span>
+                                                <span class="text-danger font-weight-bold" title="Đã bán"><?= $st['sold'] ?></span>
                                             <?php else: ?>
                                                 <span class="badge badge-light text-muted"><i class="fas fa-infinity mr-1"></i>Unlimited</span>
                                             <?php endif; ?>
@@ -233,9 +233,9 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                                 </button>
                                                 <div class="dropdown-menu dropdown-menu-right">
                                                     <button type="button" class="dropdown-item set-visibility-btn<?= $visibilityMode === 'both' ? ' active' : '' ?>" data-id="<?= $pid ?>" data-mode="both">Web + Telegram</button>
-                                                    <button type="button" class="dropdown-item set-visibility-btn<?= $visibilityMode === 'web' ? ' active' : '' ?>" data-id="<?= $pid ?>" data-mode="web">Chi Web</button>
-                                                    <button type="button" class="dropdown-item set-visibility-btn<?= $visibilityMode === 'telegram' ? ' active' : '' ?>" data-id="<?= $pid ?>" data-mode="telegram">Chi Telegram</button>
-                                                    <button type="button" class="dropdown-item set-visibility-btn<?= $visibilityMode === 'hidden' ? ' active' : '' ?>" data-id="<?= $pid ?>" data-mode="hidden">An ca 2</button>
+                                                    <button type="button" class="dropdown-item set-visibility-btn<?= $visibilityMode === 'web' ? ' active' : '' ?>" data-id="<?= $pid ?>" data-mode="web">Chỉ Web</button>
+                                                    <button type="button" class="dropdown-item set-visibility-btn<?= $visibilityMode === 'telegram' ? ' active' : '' ?>" data-id="<?= $pid ?>" data-mode="telegram">Chỉ Telegram</button>
+                                                    <button type="button" class="dropdown-item set-visibility-btn<?= $visibilityMode === 'hidden' ? ' active' : '' ?>" data-id="<?= $pid ?>" data-mode="hidden">Ẩn cả 2</button>
                                                 </div>
                                             </div>
                                         </td>
@@ -247,13 +247,13 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                         </td>
                                         <td class="text-center align-middle">
                                             <div class="d-flex justify-content-center align-items-center" style="gap:5px; width:100%;">
-                                                <a href="<?= url('admin/products/edit/' . $pid) ?>" class="btn btn-xs px-2" style="background-color: #8b5cf6; color: white;" title="Sua san pham">
+                                                <a href="<?= url('admin/products/edit/' . $pid) ?>" class="btn btn-xs px-2" style="background-color: #8b5cf6; color: white;" title="Sửa sản phẩm">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
-                                                <a href="<?= url('admin/products/stock/' . $pid) ?>" class="btn btn-xs px-2" style="background-color: #0ea5e9; color: white;" title="Quan ly kho">
+                                                <a href="<?= url('admin/products/stock/' . $pid) ?>" class="btn btn-xs px-2" style="background-color: #0ea5e9; color: white;" title="Quản lý kho">
                                                     <i class="fas fa-warehouse"></i>
                                                 </a>
-                                                <button class="btn btn-danger btn-xs px-2 delete-btn" data-id="<?= $pid ?>" data-name="<?= htmlspecialchars($p['name']) ?>" title="Xoa san pham">
+                                                <button class="btn btn-danger btn-xs px-2 delete-btn" data-id="<?= $pid ?>" data-name="<?= htmlspecialchars($p['name']) ?>" title="Xóa sản phẩm">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </div>
@@ -278,10 +278,10 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
     let dtProduct;
 
     const visibilityConfig = {
-        both: { label: 'Web + Telegram', buttonClass: 'btn-success', toast: 'Da chuyen sang Web + Telegram' },
-        web: { label: 'Chi Web', buttonClass: 'btn-primary', toast: 'Da chuyen sang chi Web' },
-        telegram: { label: 'Chi Telegram', buttonClass: 'btn-info', toast: 'Da chuyen sang chi Telegram' },
-        hidden: { label: 'An ca 2', buttonClass: 'btn-secondary', toast: 'Da an san pham tren ca 2 kenh' }
+        both: { label: 'Web + Telegram', buttonClass: 'btn-success', toast: 'Đã chuyển sang Web + Telegram' },
+        web: { label: 'Chỉ Web', buttonClass: 'btn-primary', toast: 'Đã chuyển sang chỉ Web' },
+        telegram: { label: 'Chỉ Telegram', buttonClass: 'btn-info', toast: 'Đã chuyển sang chỉ Telegram' },
+        hidden: { label: 'Ẩn cả 2', buttonClass: 'btn-secondary', toast: 'Đã ẩn sản phẩm trên cả 2 kênh' }
     };
 
     function stripHtmlToText(html) {
@@ -329,9 +329,9 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
         const cfg = visibilityConfig[mode] || visibilityConfig.both;
         const options = [
             { key: 'both', label: 'Web + Telegram' },
-            { key: 'web', label: 'Chi Web' },
-            { key: 'telegram', label: 'Chi Telegram' },
-            { key: 'hidden', label: 'An ca 2' }
+            { key: 'web', label: 'Chỉ Web' },
+            { key: 'telegram', label: 'Chỉ Telegram' },
+            { key: 'hidden', label: 'Ẩn cả 2' }
         ];
         const items = options.map(function (option) {
             const activeClass = option.key === mode ? ' active' : '';
@@ -371,12 +371,12 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                 { searchable: false, targets: [0, 4, 5, 8] }
             ],
             language: {
-                sLengthMenu: 'Hien thi _MENU_ san pham',
-                sZeroRecords: '<div class="text-center w-100 font-weight-bold py-3">Khong tim thay san pham nao</div>',
+                sLengthMenu: 'Hiển thị _MENU_ sản phẩm',
+                sZeroRecords: '<div class="text-center w-100 font-weight-bold py-3">Không tìm thấy sản phẩm nào</div>',
                 sInfo: '',
                 sInfoEmpty: '',
                 sInfoFiltered: '',
-                sSearch: 'Tim kiem:',
+                sSearch: 'Tìm kiếm:',
                 oPaginate: {
                     sPrevious: '<i class="fas fa-chevron-left"></i>',
                     sNext: '<i class="fas fa-chevron-right"></i>'
@@ -460,12 +460,12 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                 } else {
                     Toast.fire({
                         icon: 'error',
-                        title: res.message || 'Loi!'
+                        title: res.message || 'Lỗi!'
                     });
                 }
             }, 'json').fail(() => Toast.fire({
                 icon: 'error',
-                title: 'Loi may chu!'
+                title: 'Lỗi máy chủ!'
             }));
         });
 
@@ -474,13 +474,13 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             const id = btn.data('id');
             const name = btn.data('name');
             Swal.fire({
-                title: 'Xoa san pham?',
+                title: 'Xóa sản phẩm?',
                 text: name,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
-                cancelButtonText: 'Huy',
-                confirmButtonText: 'Xoa'
+                cancelButtonText: 'Hủy',
+                confirmButtonText: 'Xóa'
             }).then(r => {
                 if (!r.isConfirmed) return;
                 $.post('<?= url("admin/products/delete") ?>', {
@@ -490,12 +490,12 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                         dtProduct.row(btn.closest('tr')).remove().draw();
                         Toast.fire({
                             icon: 'success',
-                            title: 'Da xoa san pham'
+                            title: 'Đã xóa sản phẩm'
                         });
                     } else {
                         Toast.fire({
                             icon: 'error',
-                            title: res.message || 'Loi!'
+                            title: res.message || 'Lỗi!'
                         });
                     }
                 }, 'json');

@@ -160,8 +160,6 @@ $routes = [
     ['POST', '/admin/telegram/notification-channels/delete', 'Admin\\TelegramAdminController@deleteChannelAction'],
     ['POST', '/admin/telegram/main-channel/alert', 'Admin\\TelegramAdminController@sendMainChannelAlertAction'],
     ['POST', '/admin/telegram/broadcast/send', 'Admin\\TelegramAdminController@broadcastAction'],
-    ['GET', '/admin/telegram/links', 'Admin\\TelegramAdminController@links'],
-    ['POST', '/admin/telegram/links/unlink', 'Admin\\TelegramAdminController@unlinkAction'],
     ['GET', '/admin/telegram/outbox', 'Admin\\TelegramAdminController@outbox'],
     ['POST', '/admin/telegram/outbox/retry', 'Admin\\TelegramAdminController@outboxRetry'],
     ['POST', '/admin/telegram/outbox/delete', 'Admin\\TelegramAdminController@outboxDelete'],
@@ -183,9 +181,13 @@ $routes = [
     ['POST', '/admin/chatgpt/farms/edit/{id}', 'Admin\\ChatGptAdminController@farmUpdate'],
     ['POST', '/admin/chatgpt/farms/sync-now/{id}', 'Admin\\ChatGptAdminController@farmSyncNow'],
     ['GET', '/admin/chatgpt/orders', 'Admin\\ChatGptAdminController@orders'],
+    ['POST', '/admin/chatgpt/orders/retry-invite/{id}', 'Admin\\ChatGptAdminController@orderRetryInvite'],
     ['GET', '/admin/chatgpt/members', 'Admin\\ChatGptAdminController@members'],
+    ['POST', '/admin/chatgpt/members/remove/{id}', 'Admin\\ChatGptAdminController@memberRemove'],
     ['GET', '/admin/chatgpt/invites', 'Admin\\ChatGptAdminController@invites'],
+    ['POST', '/admin/chatgpt/invites/revoke/{id}', 'Admin\\ChatGptAdminController@inviteRevoke'],
     ['GET', '/admin/chatgpt/logs', 'Admin\\ChatGptAdminController@logs'],
+    ['GET', '/admin/chatgpt/violations', 'Admin\\ChatGptAdminController@violations'],
 
     // ========== CANONICAL PRODUCT SLUG ROUTE ==========
     // Keep this near the end to avoid catching admin/api routes like /admin/users

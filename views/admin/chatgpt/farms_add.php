@@ -12,8 +12,8 @@ $error = $error ?? null;
 
 <section class="content pb-4 mt-1 admin-chatgpt-page">
     <div class="container-fluid">
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
+        <div class="row">
+            <div class="col-12">
                 <?php if ($error): ?>
                     <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
                 <?php endif; ?>
@@ -21,11 +21,6 @@ $error = $error ?? null;
                 <div class="card custom-card gptb-form-card">
                     <div class="card-header gptb-card-header">
                         <h3 class="card-title">THÊM FARM GPT BUSINESS</h3>
-                        <div class="gptb-card-actions">
-                            <a href="<?= url('admin/chatgpt/farms') ?>" class="btn btn-secondary btn-sm">
-                                <i class="fas fa-arrow-left mr-1"></i> Quay lại
-                            </a>
-                        </div>
                     </div>
                     <div class="card-body">
                         <form method="post" action="<?= url('admin/chatgpt/farms/add') ?>" id="farmAddForm">
@@ -33,13 +28,11 @@ $error = $error ?? null;
                                 <div class="form-section-title">Thông tin farm</div>
                                 <div class="form-group">
                                     <label class="form-label-req">Tên Farm</label>
-                                    <input type="text" name="farm_name" class="form-control"
-                                        placeholder="VD: GPT Business Farm 01" required>
+                                    <input type="text" name="farm_name" class="form-control" placeholder="VD: GPT Business Farm 01" required>
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label-req">Gmail admin của farm</label>
-                                    <input type="email" name="admin_email" class="form-control"
-                                        placeholder="admin@gmail.com" required>
+                                    <input type="email" name="admin_email" class="form-control" placeholder="admin@gmail.com" required>
                                     <small class="form-text text-muted">Email tài khoản OpenAI Business đang vận hành farm này.</small>
                                 </div>
                                 <div class="form-group mb-0">

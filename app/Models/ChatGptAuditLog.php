@@ -100,7 +100,26 @@ class ChatGptAuditLog extends Model
      */
     public function getActionTypes()
     {
+        $predefined = [
+            'ORDER_ACTIVATED',
+            'ORDER_EXPIRED',
+            'FARM_ADDED',
+            'FARM_UPDATED',
+            'FARM_SYNCED',
+            'SYSTEM_INVITE_CREATED',
+            'SYSTEM_INVITE_FAILED',
+            'INVITE_REVOKED_UNAUTHORIZED',
+            'MEMBER_REMOVED_UNAUTHORIZED',
+            'MEMBER_REMOVED_POLICY',
+            'MEMBER_UPSERTED',
+            'INVITE_UPSERTED'
+        ];
+
         $stmt = $this->db->query("SELECT DISTINCT `action` FROM `{$this->table}` ORDER BY `action` ASC");
-        return array_column($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [], 'action');
+        $dynamic = array_column($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [], 'action');
+
+        $all = array_unique(array_merge($predefined, $dynamic));
+        sort($all);
+        return $all;
     }
 }

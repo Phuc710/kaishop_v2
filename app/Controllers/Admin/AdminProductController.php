@@ -1,5 +1,17 @@
 <?php
 
+namespace Admin;
+
+use Controller;
+use AuthService;
+use Product;
+use ProductStock;
+use ProductInventoryService;
+use Order;
+use FormatHelper;
+use TimeService;
+use Exception;
+
 /**
  * Admin Product Controller
  * Handles product CRUD, stock management, and toggle operations

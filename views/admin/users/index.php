@@ -111,12 +111,9 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                         <thead>
                             <tr>
                                 <th class="text-center font-weight-bold align-middle">USERNAME</th>
-                                <th class="text-center font-weight-bold align-middle">TELEGRAM ID</th>
-                                <th class="text-center font-weight-bold align-middle">@USERNAME TG</th>
                                 <th class="text-center font-weight-bold align-middle">TỔNG NẠP</th>
                                 <th class="text-center font-weight-bold align-middle">TRẠNG THÁI</th>
                                 <th class="text-center font-weight-bold align-middle">NGÀY TẠO</th>
-                                <th class="text-center font-weight-bold align-middle">HOẠT ĐỘNG CUỐI</th>
                                 <th class="text-center font-weight-bold align-middle" style="width:120px">THAO TÁC</th>
                             </tr>
                         </thead>
@@ -126,10 +123,6 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                     <tr data-source="<?= htmlspecialchars($row['source'] ?? '') ?>">
                                         <td class="text-center align-middle font-weight-bold">
                                             <?= htmlspecialchars($row['username']) ?>
-                                        </td>
-                                        <td class="text-center align-middle"><?= htmlspecialchars($row['telegram_id']) ?></td>
-                                        <td class="text-center align-middle">
-                                            <?= $row['telegram_username'] ? '@' . htmlspecialchars($row['telegram_username']) : '-' ?>
                                         </td>
                                         <td class="text-center align-middle font-weight-bold text-success">
                                             <?= number_format($row['tong_nap'] ?? 0) ?>đ
@@ -150,9 +143,6 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                                 $row['list_time_display'] ?? ($row['created_at'] ?? ''),
                                                 $row['time'] ?? ($row['created_at'] ?? '')
                                             ) ?>
-                                        </td>
-                                        <td class="text-center align-middle">
-                                            <?= $row['tg_last_active'] ? FormatHelper::eventTime($row['tg_last_active'], $row['tg_last_active']) : '-' ?>
                                         </td>
                                         <td class="text-center align-middle">
                                             <div class="btn-group">
@@ -183,7 +173,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="8" class="text-center text-muted py-4">Không có dữ liệu</td>
+                                    <td colspan="5" class="text-center text-muted py-4">Không có dữ liệu</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
@@ -205,7 +195,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
         try {
             var rowMeta = settings && settings.aoData ? settings.aoData[dataIndex] : null;
             var rowNode = rowMeta ? rowMeta.nTr : null;
-            var timeCell = rowNode && rowNode.cells ? rowNode.cells[5] : null;
+            var timeCell = rowNode && rowNode.cells ? rowNode.cells[3] : null;
             if (timeCell) {
                 var tsAttr = Number(timeCell.getAttribute('data-time-ts') || '');
                 if (!isNaN(tsAttr) && tsAttr > 0) return tsAttr * 1000;
@@ -238,7 +228,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             order: [[0, "desc"]],
             pageLength: 10,
             columnDefs: [
-                { orderable: false, targets: [7] }  // action
+                { orderable: false, targets: [4] }  // action
             ],
             language: {
                 sLengthMenu: 'Hiển thị _MENU_ mục',
@@ -289,7 +279,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             if (sortVal !== 'all') {
                 var days = parseInt(sortVal);
                 if (!isNaN(days)) {
-                    var rowTime = getUserRowTimestamp(settings, dataIndex, data[5]);
+                    var rowTime = getUserRowTimestamp(settings, dataIndex, data[3]);
                     var pastTime = new Date().getTime() - (days * 24 * 60 * 60 * 1000);
                     if (!isNaN(rowTime) && rowTime < pastTime) return false;
                 }

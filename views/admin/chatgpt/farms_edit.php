@@ -14,8 +14,8 @@ $error = $error ?? null;
 
 <section class="content pb-4 mt-1 admin-chatgpt-page">
     <div class="container-fluid">
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
+        <div class="row">
+            <div class="col-12">
                 <?php if ($error): ?>
                     <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
                 <?php endif; ?>
@@ -23,11 +23,6 @@ $error = $error ?? null;
                 <div class="card custom-card gptb-form-card">
                     <div class="card-header gptb-card-header">
                         <h3 class="card-title">CẬP NHẬT FARM</h3>
-                        <div class="gptb-card-actions">
-                            <a href="<?= url('admin/chatgpt/farms') ?>" class="btn btn-secondary btn-sm">
-                                <i class="fas fa-arrow-left mr-1"></i> Quay lại
-                            </a>
-                        </div>
                     </div>
                     <div class="card-body">
                         <form method="post" action="<?= url('admin/chatgpt/farms/edit/' . (int) ($farm['id'] ?? 0)) ?>" id="farmEditForm">
@@ -74,9 +69,9 @@ $error = $error ?? null;
                                         <div class="form-group">
                                             <label>Trạng thái</label>
                                             <select name="status" class="form-control">
-                                                <option value="active" <?= ($farm['status'] ?? '') === 'active' ? 'selected' : '' ?>>Active</option>
-                                                <option value="locked" <?= ($farm['status'] ?? '') === 'locked' ? 'selected' : '' ?>>Locked</option>
-                                                <option value="full" <?= ($farm['status'] ?? '') === 'full' ? 'selected' : '' ?>>Full</option>
+                                                <option value="active" <?= ($farm['status'] ?? '') === 'active' ? 'selected' : '' ?>>Đang hoạt động</option>
+                                                <option value="locked" <?= ($farm['status'] ?? '') === 'locked' ? 'selected' : '' ?>>Bị khóa</option>
+                                                <option value="full" <?= ($farm['status'] ?? '') === 'full' ? 'selected' : '' ?>>Đã đầy</option>
                                             </select>
                                         </div>
                                     </div>

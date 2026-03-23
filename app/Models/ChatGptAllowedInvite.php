@@ -118,13 +118,60 @@ class ChatGptAllowedInvite extends Model
     /**
      * Mark invite as revoked (when cron or admin revokes it)
      */
-    public function markRevokedByInviteId($inviteId)
+    public function markRevokedByInviteId($inviteId, $status = 'revoked')
     {
         $stmt = $this->db->prepare(
-            "UPDATE `{$this->table}` SET `status` = 'revoked', `updated_at` = NOW()
+            "UPDATE `{$this->table}` SET `status` = ?, `updated_at` = NOW()
              WHERE `invite_id` = ?"
         );
-        $stmt->execute([$inviteId]);
+        $stmt->execute([$status, $inviteId]);
+    }
+
+    public function markExpiredByOrder($orderId)
+    {
+        $stmt = $this->db->prepare(
+            "UPDATE `{$this->table}`
+             SET `status` = 'expired', `updated_at` = NOW()
+             WHERE `order_id` = ? AND `status` IN ('pending', 'accepted')"
+        );
+        $stmt->execute([(int) $orderId]);
+    }
+
+    public function getOpenInvitesByOrder($orderId)
+    {
+        $stmt = $this->db->prepare(
+            "SELECT *
+             FROM `{$this->table}`
+             WHERE `order_id` = ? AND `status` IN ('pending', 'accepted')
+             ORDER BY `id` DESC"
+        );
+        $stmt->execute([(int) $orderId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    public function getSnapshotResolutionMap($farmId)
+    {
+        $stmt = $this->db->prepare(
+            "SELECT `invite_id`, `target_email`, `status`
+             FROM `{$this->table}`
+             WHERE `farm_id` = ?"
+        );
+        $stmt->execute([(int) $farmId]);
+
+        $map = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+            $inviteId = trim((string) ($row['invite_id'] ?? ''));
+            $email = strtolower(trim((string) ($row['target_email'] ?? '')));
+            $status = trim((string) ($row['status'] ?? ''));
+            if ($inviteId !== '') {
+                $map[$inviteId] = $status;
+            }
+            if ($email !== '' && !isset($map[$email])) {
+                $map[$email] = $status;
+            }
+        }
+
+        return $map;
     }
 
     public function getByFarm($farmId, $limit = 100)

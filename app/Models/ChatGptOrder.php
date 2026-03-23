@@ -24,6 +24,7 @@ class ChatGptOrder extends Model
     public function create($data)
     {
         $code = $this->generateOrderCode();
+        $expiresAt = $data['expires_at'] ?? date('Y-m-d H:i:s', strtotime('+30 days'));
         $stmt = $this->db->prepare(
             "INSERT INTO `{$this->table}`
              (`order_code`, `customer_email`, `product_code`, `status`, `assigned_farm_id`, `expires_at`, `created_at`, `updated_at`)
@@ -35,7 +36,7 @@ class ChatGptOrder extends Model
             $data['product_code'] ?? 'chatgpt_pro_add_farm_1_month',
             $data['status'] ?? 'pending',
             $data['assigned_farm_id'] ?? null,
-            $data['expires_at'] ?? null,
+            $expiresAt,
         ]);
         return (int) $this->db->lastInsertId();
     }
@@ -87,6 +88,14 @@ class ChatGptOrder extends Model
         if (!empty($filters['email'])) {
             $where[] = 'o.`customer_email` LIKE ?';
             $params[] = '%' . $filters['email'] . '%';
+        }
+        if (!empty($filters['date_from'])) {
+            $where[] = 'o.`created_at` >= ?';
+            $params[] = $filters['date_from'] . ' 00:00:00';
+        }
+        if (!empty($filters['date_to'])) {
+            $where[] = 'o.`created_at` <= ?';
+            $params[] = $filters['date_to'] . ' 23:59:59';
         }
 
         $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
@@ -143,6 +152,33 @@ class ChatGptOrder extends Model
              WHERE o.`status` = 'inviting'"
         );
         $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    public function getInvitingOrdersByFarm($farmId)
+    {
+        $stmt = $this->db->prepare(
+            "SELECT o.*, f.farm_name, f.admin_api_key, f.admin_email
+             FROM `{$this->table}` o
+             JOIN `chatgpt_farms` f ON f.id = o.assigned_farm_id
+             WHERE o.`status` = 'inviting' AND o.`assigned_farm_id` = ?"
+        );
+        $stmt->execute([(int) $farmId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    public function getExpiredOrders($farmId)
+    {
+        $stmt = $this->db->prepare(
+            "SELECT *
+             FROM `{$this->table}`
+             WHERE `assigned_farm_id` = ?
+               AND `status` IN ('pending', 'inviting', 'active')
+               AND `expires_at` IS NOT NULL
+               AND `expires_at` <= NOW()
+             ORDER BY `expires_at` ASC, `id` ASC"
+        );
+        $stmt->execute([(int) $farmId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 

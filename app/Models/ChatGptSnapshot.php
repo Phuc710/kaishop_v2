@@ -64,6 +64,18 @@ class ChatGptSnapshot extends Model
             $where[] = 'm.`source` = ?';
             $params[] = $filters['source'];
         }
+        if (!empty($filters['email'])) {
+            $where[] = 'm.`email` LIKE ?';
+            $params[] = '%' . $filters['email'] . '%';
+        }
+        if (!empty($filters['date_from'])) {
+            $where[] = 'm.`first_seen_at` >= ?';
+            $params[] = $filters['date_from'] . ' 00:00:00';
+        }
+        if (!empty($filters['date_to'])) {
+            $where[] = 'm.`first_seen_at` <= ?';
+            $params[] = $filters['date_to'] . ' 23:59:59';
+        }
 
         $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
@@ -110,19 +122,20 @@ class ChatGptSnapshot extends Model
     /**
      * Upsert an invite in the snapshot
      */
-    public function upsertInvite($farmId, $inviteId, $email, $status, $source = 'detected_unknown')
+    public function upsertInvite($farmId, $inviteId, $email, $status, $source = 'detected_unknown', $role = 'reader')
     {
         $stmt = $this->db->prepare(
             "INSERT INTO `chatgpt_farm_invites_snapshot`
-             (`farm_id`, `invite_id`, `email`, `status`, `source`, `first_seen_at`, `last_seen_at`)
-             VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+             (`farm_id`, `invite_id`, `email`, `role`, `status`, `source`, `first_seen_at`, `last_seen_at`)
+             VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
              ON DUPLICATE KEY UPDATE
                `email` = VALUES(`email`),
+               `role` = VALUES(`role`),
                `status` = VALUES(`status`),
                `source` = IF(`source` = 'approved', 'approved', VALUES(`source`)),
                `last_seen_at` = NOW()"
         );
-        $stmt->execute([$farmId, $inviteId, strtolower(trim($email)), $status, $source]);
+        $stmt->execute([$farmId, $inviteId, strtolower(trim($email)), $role, $status, $source]);
     }
 
     /**
@@ -153,6 +166,10 @@ class ChatGptSnapshot extends Model
             $where[] = 'i.`source` = ?';
             $params[] = $filters['source'];
         }
+        if (!empty($filters['email'])) {
+            $where[] = 'i.`email` LIKE ?';
+            $params[] = '%' . $filters['email'] . '%';
+        }
 
         $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
@@ -179,5 +196,71 @@ class ChatGptSnapshot extends Model
              WHERE `farm_id` = ? AND `invite_id` = ?"
         );
         $stmt->execute([$farmId, $inviteId]);
+    }
+
+    public function markMissingMembers($farmId, $liveEmails)
+    {
+        $liveEmails = array_values(array_filter(array_map(function ($email) {
+            return strtolower(trim((string) $email));
+        }, (array) $liveEmails)));
+
+        if (empty($liveEmails)) {
+            $stmt = $this->db->prepare(
+                "UPDATE `chatgpt_farm_members_snapshot`
+                 SET `status` = 'removed', `last_seen_at` = NOW()
+                 WHERE `farm_id` = ? AND `status` = 'active'"
+            );
+            $stmt->execute([(int) $farmId]);
+            return;
+        }
+
+        $placeholders = implode(', ', array_fill(0, count($liveEmails), '?'));
+        $params = array_merge([(int) $farmId], $liveEmails);
+        $stmt = $this->db->prepare(
+            "UPDATE `chatgpt_farm_members_snapshot`
+             SET `status` = 'removed', `last_seen_at` = NOW()
+             WHERE `farm_id` = ? AND `status` = 'active' AND `email` NOT IN ({$placeholders})"
+        );
+        $stmt->execute($params);
+    }
+
+    public function markMissingInvites($farmId, $liveInviteIds, $resolutionMap = [])
+    {
+        $currentRows = $this->getInvitesForFarm($farmId);
+        $liveInviteIds = array_fill_keys(array_values(array_filter(array_map('strval', (array) $liveInviteIds))), true);
+
+        foreach ($currentRows as $row) {
+            $inviteId = trim((string) ($row['invite_id'] ?? ''));
+            if ($inviteId === '' || isset($liveInviteIds[$inviteId])) {
+                continue;
+            }
+
+            $email = strtolower(trim((string) ($row['email'] ?? '')));
+            $resolvedStatus = $resolutionMap[$inviteId] ?? $resolutionMap[$email] ?? 'gone';
+            $stmt = $this->db->prepare(
+                "UPDATE `chatgpt_farm_invites_snapshot`
+                 SET `status` = ?, `last_seen_at` = NOW()
+                 WHERE `farm_id` = ? AND `invite_id` = ?"
+            );
+            $stmt->execute([$resolvedStatus, (int) $farmId, $inviteId]);
+        }
+    }
+
+    public function getMemberById($id)
+    {
+        $stmt = $this->db->prepare(
+            "SELECT * FROM `chatgpt_farm_members_snapshot` WHERE `id` = ? LIMIT 1"
+        );
+        $stmt->execute([(int) $id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    public function getInviteById($id)
+    {
+        $stmt = $this->db->prepare(
+            "SELECT * FROM `chatgpt_farm_invites_snapshot` WHERE `id` = ? LIMIT 1"
+        );
+        $stmt->execute([(int) $id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 }

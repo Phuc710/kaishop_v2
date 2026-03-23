@@ -34,7 +34,7 @@ $quickLinks = $quickLinks ?? [];
         <div class="card custom-card">
             <div class="card-header gptb-card-header">
                 <h3 class="card-title">QUẢN LÝ FARM</h3>
-                <div class="gptb-card-actions">
+                <div class="gptb-card-actions ml-auto">
                     <a href="<?= url('admin/chatgpt/farms/add') ?>" class="btn btn-primary btn-sm">
                         <i class="fas fa-plus-circle mr-1"></i> Thêm farm
                     </a>
@@ -46,10 +46,10 @@ $quickLinks = $quickLinks ?? [];
                         <thead>
                             <tr>
                                 <th class="text-left">Farm</th>
-                                <th class="text-center">Admin Email</th>
+                                <th class="text-center">Email quản trị</th>
                                 <th class="text-center">Slot</th>
                                 <th class="text-center">Trạng thái</th>
-                                <th class="text-center">Last Sync</th>
+                                <th class="text-center">Đồng bộ cuối</th>
                                 <th class="text-center">Hành động</th>
                             </tr>
                         </thead>
@@ -93,7 +93,7 @@ $quickLinks = $quickLinks ?? [];
                                                     <i class="fas fa-edit"></i>
                                                 </a>
                                                 <button type="button" class="btn btn-info btn-sm js-sync-farm"
-                                                    data-farm-id="<?= (int) ($farm['id'] ?? 0) ?>" title="Sync ngay">
+                                                    data-farm-id="<?= (int) ($farm['id'] ?? 0) ?>" title="Đồng bộ đầy đủ ngay">
                                                     <i class="fas fa-sync-alt"></i>
                                                 </button>
                                             </div>
@@ -109,7 +109,7 @@ $quickLinks = $quickLinks ?? [];
 
         <div class="row mt-1">
             <?php foreach ($quickLinks as $link): ?>
-                <div class="col-lg-4 mb-3">
+                <div class="col-lg-3 mb-3">
                     <a href="<?= htmlspecialchars($link['href']) ?>" class="gptb-link-card text-decoration-none">
                         <div class="gptb-link-icon">
                             <i class="<?= htmlspecialchars($link['icon']) ?>"></i>
@@ -131,12 +131,12 @@ $quickLinks = $quickLinks ?? [];
     (function () {
         document.addEventListener('click', function (event) {
             var button = event.target.closest('.js-sync-farm');
-            if (!button) {
+            if (!button || button.disabled) {
                 return;
             }
 
             var farmId = Number(button.getAttribute('data-farm-id') || 0);
-            if (!farmId || button.disabled) {
+            if (!farmId) {
                 return;
             }
 
@@ -147,17 +147,13 @@ $quickLinks = $quickLinks ?? [];
                 method: 'POST',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
-                .then(function (response) {
-                    return response.json();
-                })
+                .then(function (response) { return response.json(); })
                 .then(function (data) {
                     if (data && data.success) {
                         button.classList.remove('btn-info');
                         button.classList.add('btn-success');
                         button.innerHTML = '<i class="fas fa-check"></i>';
-                        setTimeout(function () {
-                            window.location.reload();
-                        }, 700);
+                        setTimeout(function () { window.location.reload(); }, 700);
                         return;
                     }
 
@@ -171,9 +167,7 @@ $quickLinks = $quickLinks ?? [];
                     button.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
                 })
                 .finally(function () {
-                    setTimeout(function () {
-                        button.disabled = false;
-                    }, 900);
+                    setTimeout(function () { button.disabled = false; }, 900);
                 });
         });
     })();

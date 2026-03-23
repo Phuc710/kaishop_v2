@@ -1,9 +1,21 @@
 <?php
+namespace Admin;
+
+use AuthService;
+use ChatGptAdminViewService;
+use ChatGptAllowedInvite;
+use ChatGptAuditLog;
+use ChatGptFarm;
+use ChatGptFarmService;
+use ChatGptGuardService;
+use ChatGptOrder;
+use ChatGptSnapshot;
+use ChatGptViolation;
+use Controller;
 
 /**
- * ChatGptAdminController — Admin Panel
- * Manages farms, orders, members, invites, and audit logs
- * Requires admin level 9
+ * ChatGptAdminController
+ * Admin panel for GPT Business farm management.
  */
 class ChatGptAdminController extends Controller
 {
@@ -15,6 +27,8 @@ class ChatGptAdminController extends Controller
     private $auditLog;
     private $farmService;
     private $viewService;
+    private $guardService;
+    private $violationModel;
 
     public function __construct()
     {
@@ -26,6 +40,8 @@ class ChatGptAdminController extends Controller
         $this->auditLog = new ChatGptAuditLog();
         $this->farmService = new ChatGptFarmService();
         $this->viewService = new ChatGptAdminViewService();
+        $this->guardService = new ChatGptGuardService();
+        $this->violationModel = new ChatGptViolation();
     }
 
     private function requireAdmin()
@@ -37,8 +53,6 @@ class ChatGptAdminController extends Controller
             die('Truy cập bị từ chối');
         }
     }
-
-    // ==================== FARMS ====================
 
     public function farms()
     {
@@ -74,36 +88,35 @@ class ChatGptAdminController extends Controller
         }
 
         if (!filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
-            $_SESSION['cgpt_admin_error'] = 'Admin Email không hợp lệ.';
+            $_SESSION['cgpt_admin_error'] = 'Email quản trị không hợp lệ.';
             $this->redirect(url('admin/chatgpt/farms/add'));
             return;
         }
 
-        // Test API key
-        $testFarm = ['id' => 0, 'admin_api_key' => $apiKey];
-        if (!$this->farmService->validateKey($testFarm)) {
-            $_SESSION['cgpt_admin_error'] = 'API Key không hợp lệ hoặc không kết nối được OpenAI. Kiểm tra lại key.';
+        if (!$this->farmService->validateKey(['id' => 0, 'admin_api_key' => $apiKey])) {
+            $_SESSION['cgpt_admin_error'] = 'API key không hợp lệ hoặc không kết nối được OpenAI.';
             $this->redirect(url('admin/chatgpt/farms/add'));
             return;
         }
 
-        // Encrypt API key before saving
-        $encryptedKey = $this->farmService->encryptKey($apiKey);
-
-        $this->farmModel->create([
+        $farmId = $this->farmModel->create([
             'farm_name' => $farmName,
             'admin_email' => $adminEmail,
-            'admin_api_key' => $encryptedKey,
+            'admin_api_key' => $this->farmService->encryptKey($apiKey),
             'seat_total' => $seatTotal,
         ]);
 
         $this->auditLog->log([
-            'farm_id' => null,
+            'farm_id' => $farmId,
             'farm_name' => $farmName,
             'action' => 'FARM_ADDED',
             'actor_email' => $this->authService->getCurrentUser()['email'] ?? 'admin',
             'result' => 'OK',
-            'reason' => 'manual_add',
+            'reason' => 'Quản trị viên thêm farm mới.',
+            'meta' => [
+                'seat_total' => $seatTotal,
+                'admin_email' => $adminEmail,
+            ],
         ]);
 
         $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thành công', 'message' => "Đã thêm farm [{$farmName}] thành công."];
@@ -119,8 +132,8 @@ class ChatGptAdminController extends Controller
             $this->redirect(url('admin/chatgpt/farms'));
             return;
         }
-        // Mask API key for display
-        $farm['admin_api_key_masked'] = substr($farm['admin_api_key'], 0, 10) . '...';
+
+        $farm['admin_api_key_masked'] = substr((string) $farm['admin_api_key'], 0, 10) . '...';
         $this->view('admin/chatgpt/farms_edit', [
             'farm' => $farm,
             'error' => $_SESSION['cgpt_admin_error'] ?? null,
@@ -147,10 +160,8 @@ class ChatGptAdminController extends Controller
 
         $newKey = trim((string) $this->post('admin_api_key', ''));
         if ($newKey !== '') {
-            // Test new key
-            $testFarm = ['id' => $farmId, 'admin_api_key' => $newKey];
-            if (!$this->farmService->validateKey($testFarm)) {
-                $_SESSION['cgpt_admin_error'] = 'API Key mới không hợp lệ.';
+            if (!$this->farmService->validateKey(['id' => $farmId, 'admin_api_key' => $newKey])) {
+                $_SESSION['cgpt_admin_error'] = 'API key mới không hợp lệ.';
                 $this->redirect(url('admin/chatgpt/farms/edit/' . $farmId));
                 return;
             }
@@ -158,11 +169,23 @@ class ChatGptAdminController extends Controller
         }
 
         $this->farmModel->update($farmId, $data);
+        $this->auditLog->log([
+            'farm_id' => $farmId,
+            'farm_name' => $data['farm_name'],
+            'action' => 'FARM_UPDATED',
+            'actor_email' => $this->authService->getCurrentUser()['email'] ?? 'admin',
+            'result' => 'OK',
+            'reason' => 'Quản trị viên cập nhật farm.',
+            'meta' => [
+                'seat_total' => $data['seat_total'],
+                'status' => $data['status'],
+                'admin_email' => $data['admin_email'],
+            ],
+        ]);
+
         $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thành công', 'message' => 'Đã cập nhật farm.'];
         $this->redirect(url('admin/chatgpt/farms'));
     }
-
-    // ==================== ORDERS ====================
 
     public function orders()
     {
@@ -171,6 +194,8 @@ class ChatGptAdminController extends Controller
             'status' => $this->get('status', ''),
             'farm_id' => (int) $this->get('farm_id', 0),
             'email' => $this->get('email', ''),
+            'date_from' => $this->get('date_from', ''),
+            'date_to' => $this->get('date_to', ''),
         ];
         $orders = $this->orderModel->getAll($filters, 200);
         $farms = $this->farmModel->getAll();
@@ -179,13 +204,11 @@ class ChatGptAdminController extends Controller
         $this->view('admin/chatgpt/orders', array_merge(
             $this->viewService->buildOrdersPageData($orders, $stats),
             [
-            'farms' => $farms,
-            'filters' => $filters,
+                'farms' => $farms,
+                'filters' => $filters,
             ]
         ));
     }
-
-    // ==================== MEMBERS ====================
 
     public function members()
     {
@@ -193,6 +216,9 @@ class ChatGptAdminController extends Controller
         $filters = [
             'farm_id' => (int) $this->get('farm_id', 0),
             'source' => $this->get('source', ''),
+            'email' => $this->get('email', ''),
+            'date_from' => $this->get('date_from', ''),
+            'date_to' => $this->get('date_to', ''),
         ];
         $members = $this->snapModel->getAllMembers($filters);
         $farms = $this->farmModel->getAll();
@@ -200,13 +226,11 @@ class ChatGptAdminController extends Controller
         $this->view('admin/chatgpt/members', array_merge(
             $this->viewService->buildMembersPageData($members),
             [
-            'farms' => $farms,
-            'filters' => $filters,
+                'farms' => $farms,
+                'filters' => $filters,
             ]
         ));
     }
-
-    // ==================== INVITES ====================
 
     public function invites()
     {
@@ -214,6 +238,7 @@ class ChatGptAdminController extends Controller
         $filters = [
             'farm_id' => (int) $this->get('farm_id', 0),
             'source' => $this->get('source', ''),
+            'email' => $this->get('email', ''),
         ];
         $invites = $this->snapModel->getAllInvites($filters);
         $allowed = $this->allowModel->getAll([], 200);
@@ -226,8 +251,6 @@ class ChatGptAdminController extends Controller
             'filters' => $filters,
         ]);
     }
-
-    // ==================== LOGS ====================
 
     public function logs()
     {
@@ -246,62 +269,94 @@ class ChatGptAdminController extends Controller
         $this->view('admin/chatgpt/logs', array_merge(
             $this->viewService->buildLogsPageData($logs, $actionTypes),
             [
-            'farms' => $farms,
-            'actionTypes' => $actionTypes,
-            'filters' => $filters,
+                'farms' => $farms,
+                'filters' => $filters,
             ]
         ));
     }
 
-    // ==================== QUICK ACTIONS ====================
+    public function violations()
+    {
+        $this->requireAdmin();
+        $filters = [
+            'farm_id' => (int) $this->get('farm_id', 0),
+            'type' => $this->get('type', ''),
+            'email' => $this->get('email', ''),
+        ];
+        $violations = $this->violationModel->getAll($filters, 300);
+        $stats = $this->violationModel->getStats();
+        $types = $this->violationModel->getTypes();
+        $farms = $this->farmModel->getAll();
 
-    /**
-     * POST /admin/chatgpt/farms/sync-now/{id}
-     * Manually trigger a single farm sync (calls guard logic inline)
-     */
+        $this->view('admin/chatgpt/violations', array_merge(
+            $this->viewService->buildViolationsPageData($violations, $stats, $types),
+            [
+                'farms' => $farms,
+                'filters' => $filters,
+            ]
+        ));
+    }
+
     public function farmSyncNow($id)
     {
         $this->requireAdmin();
-        $farmId = (int) $id;
-        $farm = $this->farmModel->getById($farmId);
-        if (!$farm) {
-            return $this->json(['success' => false, 'message' => 'Farm không tồn tại'], 404);
+        $result = $this->guardService->processFarmById((int) $id, $this->authService->getCurrentUser()['email'] ?? 'admin', 'manual_sync');
+        if (!$result['success']) {
+            return $this->json($result, 404);
         }
-
-        $liveMembers = $this->farmService->listMembers($farm);
-        $liveInvites = $this->farmService->listInvites($farm);
-
-        $allowedEmails = array_column($this->allowModel->getAllowedEmailsForFarm($farmId), 'target_email');
-        $allowedInviteIds = $this->allowModel->getAllowedInviteIdsForFarm($farmId);
-
-        foreach ($liveMembers as $m) {
-            $email = strtolower(trim($m['email'] ?? ''));
-            $userId = $m['id'] ?? '';
-            $role = $m['role'] ?? 'reader';
-            if ($email === '')
-                continue;
-            $source = in_array($email, $allowedEmails, true) ? 'approved' : 'detected_unknown';
-            $this->snapModel->upsertMember($farmId, $userId, $email, $role, $source);
-        }
-
-        foreach ($liveInvites as $inv) {
-            $inviteId = $inv['id'] ?? '';
-            $email = strtolower(trim($inv['email'] ?? ''));
-            $status = $inv['status'] ?? 'pending';
-            if ($inviteId === '' || $email === '')
-                continue;
-            $source = (in_array($inviteId, $allowedInviteIds, true) || in_array($email, $allowedEmails, true))
-                ? 'approved' : 'detected_unknown';
-            $this->snapModel->upsertInvite($farmId, $inviteId, $email, $status, $source);
-        }
-
-        $this->farmModel->touchSyncAt($farmId);
 
         return $this->json([
             'success' => true,
-            'message' => 'Sync thành công',
-            'members' => count($liveMembers),
-            'invites' => count($liveInvites),
+            'message' => 'Đồng bộ farm thành công.',
+            'summary' => $result,
         ]);
+    }
+
+    public function memberRemove($id)
+    {
+        $this->requireAdmin();
+        $result = $this->guardService->removeMemberBySnapshotId((int) $id, $this->authService->getCurrentUser()['email'] ?? 'admin');
+        if ($this->isAjax()) {
+            return $this->json($result, $result['success'] ? 200 : 400);
+        }
+
+        $_SESSION['notify'] = [
+            'type' => $result['success'] ? 'success' : 'error',
+            'title' => $result['success'] ? 'Thành công' : 'Lỗi',
+            'message' => $result['message'],
+        ];
+        $this->redirect(url('admin/chatgpt/members'));
+    }
+
+    public function inviteRevoke($id)
+    {
+        $this->requireAdmin();
+        $result = $this->guardService->revokeInviteBySnapshotId((int) $id, $this->authService->getCurrentUser()['email'] ?? 'admin');
+        if ($this->isAjax()) {
+            return $this->json($result, $result['success'] ? 200 : 400);
+        }
+
+        $_SESSION['notify'] = [
+            'type' => $result['success'] ? 'success' : 'error',
+            'title' => $result['success'] ? 'Thành công' : 'Lỗi',
+            'message' => $result['message'],
+        ];
+        $this->redirect(url('admin/chatgpt/invites'));
+    }
+
+    public function orderRetryInvite($id)
+    {
+        $this->requireAdmin();
+        $result = $this->guardService->retryOrderInvite((int) $id, $this->authService->getCurrentUser()['email'] ?? 'admin');
+        if ($this->isAjax()) {
+            return $this->json($result, $result['success'] ? 200 : 400);
+        }
+
+        $_SESSION['notify'] = [
+            'type' => $result['success'] ? 'success' : 'error',
+            'title' => $result['success'] ? 'Thành công' : 'Lỗi',
+            'message' => $result['message'],
+        ];
+        $this->redirect(url('admin/chatgpt/orders'));
     }
 }

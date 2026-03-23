@@ -31,6 +31,20 @@ class ChatGptFarm extends Model
     }
 
     /**
+     * Get farms that should be monitored by the guard.
+     */
+    public function getGuardableFarms()
+    {
+        $stmt = $this->db->prepare(
+            "SELECT * FROM `{$this->table}`
+             WHERE `status` IN ('active', 'full')
+             ORDER BY `id` ASC"
+        );
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /**
      * Get a single farm by ID
      */
     public function getById($id)
@@ -151,6 +165,47 @@ class ChatGptFarm extends Model
             "UPDATE `{$this->table}` SET `last_sync_at` = NOW() WHERE `id` = ? LIMIT 1"
         );
         $stmt->execute([$farmId]);
+    }
+
+    /**
+     * Sync seat_used to the truth returned by OpenAI and refresh farm status.
+     */
+    public function syncSeatUsageFromLiveData($farmId, $seatTotal, $liveMembers, $liveInvites, $adminEmail)
+    {
+        $seatTotal = max(1, (int) $seatTotal);
+        $adminEmail = strtolower(trim((string) $adminEmail));
+
+        $nonAdminCount = 0;
+        foreach ((array) $liveMembers as $member) {
+            $email = strtolower(trim((string) ($member['email'] ?? '')));
+            $role = trim((string) ($member['role'] ?? ''));
+            if ($email === '' || $email === $adminEmail || $role === 'owner') {
+                continue;
+            }
+            $nonAdminCount++;
+        }
+
+        $pendingInviteCount = 0;
+        foreach ((array) $liveInvites as $invite) {
+            if (trim((string) ($invite['status'] ?? '')) === 'pending') {
+                $pendingInviteCount++;
+            }
+        }
+
+        $totalUsed = $nonAdminCount + $pendingInviteCount;
+        $status = $totalUsed >= $seatTotal ? 'full' : 'active';
+
+        $stmt = $this->db->prepare(
+            "UPDATE `{$this->table}`
+             SET `seat_used` = ?,
+                 `status` = IF(`status` = 'locked', 'locked', ?),
+                 `last_sync_at` = NOW(),
+                 `updated_at` = NOW()
+             WHERE `id` = ? LIMIT 1"
+        );
+        $stmt->execute([$totalUsed, $status, $farmId]);
+
+        return $totalUsed;
     }
 
     /**

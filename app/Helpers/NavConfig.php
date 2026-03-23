@@ -122,11 +122,6 @@ class NavConfig
                         'active_prefixes' => ['admin/telegram/settings'],
                     ],
                     [
-                        'href' => self::buildUrl('admin/telegram/links'),
-                        'label' => 'Người dùng Telegram',
-                        'active_prefixes' => ['admin/telegram/links'],
-                    ],
-                    [
                         'href' => self::buildUrl('admin/telegram/outbox'),
                         'label' => 'Hàng đợi & Outbox',
                         'active_prefixes' => ['admin/telegram/outbox'],

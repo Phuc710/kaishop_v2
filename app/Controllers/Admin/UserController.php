@@ -122,6 +122,12 @@ class UserController extends Controller
             $user['user_agent'] = (string) ($latestFingerprint['user_agent'] ?? ($user['user_agent'] ?? ''));
         }
 
+        $telegramLink = (new UserTelegramLink())->findByUserId((int) ($user['id'] ?? 0));
+        $user['telegram_id'] = (string) ($telegramLink['telegram_id'] ?? '');
+        $user['telegram_username'] = (string) ($telegramLink['telegram_username'] ?? '');
+        $user['tg_last_active'] = (string) ($telegramLink['last_active'] ?? '');
+        $user['source'] = $telegramLink ? 'telegram' : 'web';
+
         $this->view('admin/users/edit', [
             'chungapi' => $chungapi,
             'toz_user' => $user,
