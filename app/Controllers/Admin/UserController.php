@@ -50,6 +50,13 @@ class UserController extends Controller
         $users = $this->userModel->all();
         $fingerprintMap = $this->fingerprintModel->getLatestMapByUserIds(array_column($users, 'id'));
 
+        $telegramLinksModel = new UserTelegramLink();
+        $telegramLinks = $telegramLinksModel->getConnection()->query("SELECT * FROM user_telegram_links")->fetchAll(PDO::FETCH_ASSOC);
+        $telegramMap = [];
+        foreach ($telegramLinks as $link) {
+            $telegramMap[$link['user_id']] = $link;
+        }
+
         foreach ($users as &$userRow) {
             $latestFingerprint = $fingerprintMap[(int) ($userRow['id'] ?? 0)] ?? null;
             if (is_array($latestFingerprint)) {
@@ -57,6 +64,13 @@ class UserController extends Controller
                 $userRow['ip_address'] = (string) ($latestFingerprint['ip_address'] ?? ($userRow['ip_address'] ?? ''));
                 $userRow['user_agent'] = (string) ($latestFingerprint['user_agent'] ?? ($userRow['user_agent'] ?? ''));
             }
+
+            $uid = (int) ($userRow['id'] ?? 0);
+            $tgLink = $telegramMap[$uid] ?? null;
+            $userRow['telegram_id'] = $tgLink ? $tgLink['telegram_id'] : '';
+            $userRow['telegram_username'] = $tgLink ? $tgLink['telegram_username'] : '';
+            $userRow['tg_last_active'] = $tgLink ? $tgLink['last_active'] : '';
+            $userRow['source'] = $tgLink ? 'telegram' : 'web';
 
             $userRow = $this->attachListTimeMeta($userRow, ['created_at', 'time']);
         }

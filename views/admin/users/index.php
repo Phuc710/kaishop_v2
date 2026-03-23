@@ -58,9 +58,16 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             <div class="dt-filters">
                 <!-- Search Line -->
                 <div class="row g-2 mb-3">
-                    <div class="col-md-5 mb-2">
+                    <div class="col-md-4 mb-2">
                         <input id="f-keyword" class="form-control form-control-sm"
-                            placeholder="Tìm Username hoặc Email...">
+                            placeholder="Tìm Username hoặc Telegram ID...">
+                    </div>
+                    <div class="col-md-3 mb-2 text-center">
+                        <select id="f-source" class="form-control form-control-sm">
+                            <option value="">-- ALL --</option>
+                            <option value="web">WEB</option>
+                            <option value="telegram">TELEGRAM</option>
+                        </select>
                     </div>
                     <div class="col-md-3 mb-2 text-center">
                         <select id="f-status" class="form-control form-control-sm">
@@ -104,21 +111,26 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                         <thead>
                             <tr>
                                 <th class="text-center font-weight-bold align-middle">USERNAME</th>
-                                <th class="text-center font-weight-bold align-middle">EMAIL</th>
+                                <th class="text-center font-weight-bold align-middle">TELEGRAM ID</th>
+                                <th class="text-center font-weight-bold align-middle">@USERNAME TG</th>
                                 <th class="text-center font-weight-bold align-middle">TỔNG NẠP</th>
                                 <th class="text-center font-weight-bold align-middle">TRẠNG THÁI</th>
                                 <th class="text-center font-weight-bold align-middle">NGÀY TẠO</th>
+                                <th class="text-center font-weight-bold align-middle">HOẠT ĐỘNG CUỐI</th>
                                 <th class="text-center font-weight-bold align-middle" style="width:120px">THAO TÁC</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (!empty($users)): ?>
                                 <?php foreach ($users as $row): ?>
-                                    <tr>
+                                    <tr data-source="<?= htmlspecialchars($row['source'] ?? '') ?>">
                                         <td class="text-center align-middle font-weight-bold">
                                             <?= htmlspecialchars($row['username']) ?>
                                         </td>
-                                        <td class="text-center align-middle"><?= htmlspecialchars($row['email']) ?></td>
+                                        <td class="text-center align-middle"><?= htmlspecialchars($row['telegram_id']) ?></td>
+                                        <td class="text-center align-middle">
+                                            <?= $row['telegram_username'] ? '@' . htmlspecialchars($row['telegram_username']) : '-' ?>
+                                        </td>
                                         <td class="text-center align-middle font-weight-bold text-success">
                                             <?= number_format($row['tong_nap'] ?? 0) ?>đ
                                         </td>
@@ -138,6 +150,9 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                                 $row['list_time_display'] ?? ($row['created_at'] ?? ''),
                                                 $row['time'] ?? ($row['created_at'] ?? '')
                                             ) ?>
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <?= $row['tg_last_active'] ? FormatHelper::eventTime($row['tg_last_active'], $row['tg_last_active']) : '-' ?>
                                         </td>
                                         <td class="text-center align-middle">
                                             <div class="btn-group">
@@ -168,7 +183,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted py-4">Không có dữ liệu</td>
+                                    <td colspan="8" class="text-center text-muted py-4">Không có dữ liệu</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
@@ -190,7 +205,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
         try {
             var rowMeta = settings && settings.aoData ? settings.aoData[dataIndex] : null;
             var rowNode = rowMeta ? rowMeta.nTr : null;
-            var timeCell = rowNode && rowNode.cells ? rowNode.cells[4] : null;
+            var timeCell = rowNode && rowNode.cells ? rowNode.cells[5] : null;
             if (timeCell) {
                 var tsAttr = Number(timeCell.getAttribute('data-time-ts') || '');
                 if (!isNaN(tsAttr) && tsAttr > 0) return tsAttr * 1000;
@@ -223,7 +238,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             order: [[0, "desc"]],
             pageLength: 10,
             columnDefs: [
-                { orderable: false, targets: [5] }  // action
+                { orderable: false, targets: [7] }  // action
             ],
             language: {
                 sLengthMenu: 'Hiển thị _MENU_ mục',
@@ -244,9 +259,14 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
             dtUser.search(this.value.trim()).draw();
         });
 
-        // Status filter — column 3
+        // Status filter — column 4
         $('#f-status').change(function () {
-            dtUser.column(3).search($(this).val()).draw();
+            dtUser.column(4).search($(this).val()).draw();
+        });
+
+        // Source filter
+        $('#f-source').change(function () {
+            dtUser.draw();
         });
 
         // Date sort
@@ -255,11 +275,21 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
         // Date filter
         $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
             if (settings.nTable.id !== 'datatable1') return true;
+
+            var sourceVal = $('#f-source').val();
+            if (sourceVal) {
+                var rowNode = settings.aoData[dataIndex].nTr;
+                if (rowNode) {
+                    var rowSource = rowNode.getAttribute('data-source');
+                    if (rowSource !== sourceVal) return false;
+                }
+            }
+
             var sortVal = $('#f-sort').val();
             if (sortVal !== 'all') {
                 var days = parseInt(sortVal);
                 if (!isNaN(days)) {
-                    var rowTime = getUserRowTimestamp(settings, dataIndex, data[4]);
+                    var rowTime = getUserRowTimestamp(settings, dataIndex, data[5]);
                     var pastTime = new Date().getTime() - (days * 24 * 60 * 60 * 1000);
                     if (!isNaN(rowTime) && rowTime < pastTime) return false;
                 }
@@ -270,6 +300,7 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
         // Clear
         $('#btn-clear').click(function () {
             $('#f-keyword').val('');
+            $('#f-source').val('');
             $('#f-status').val('');
             $('#f-length').val('10');
             $('#f-sort').val('all');
