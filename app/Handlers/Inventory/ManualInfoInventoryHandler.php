@@ -32,6 +32,7 @@ class ManualInfoInventoryHandler extends BaseInventoryHandler
             'total' => (int) ($counts['pending'] + $counts['completed']),
             'available' => (int) $counts['pending'], // Chờ xử ký
             'sold' => (int) $counts['completed'], // Đã xử lý
+            'revenue' => $this->getRevenue(),
             'is_manual_queue' => true
         ];
     }

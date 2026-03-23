@@ -206,7 +206,8 @@ $galleryArr = $product['gallery_arr'] ?? [];
                     <select class="form-control font-weight-bold" name="visibility_mode">
                         <option value="both" <?= $visibilityMode === 'both' ? 'selected' : '' ?>>Web + Telegram</option>
                         <option value="web" <?= $visibilityMode === 'web' ? 'selected' : '' ?>>Chỉ Web</option>
-                        <option value="telegram" <?= $visibilityMode === 'telegram' ? 'selected' : '' ?>>Chỉ Telegram</option>
+                        <option value="telegram" <?= $visibilityMode === 'telegram' ? 'selected' : '' ?>>Chỉ Telegram
+                        </option>
                         <option value="hidden" <?= $visibilityMode === 'hidden' ? 'selected' : '' ?>>Ẩn cả 2</option>
                     </select>
                     <small class="text-muted d-block mt-1">1/1 = cả 2, 1/0 = web, 0/1 = Telegram, 0/0 = ẩn.</small>
@@ -355,7 +356,6 @@ $galleryArr = $product['gallery_arr'] ?? [];
                                 <?= $deliveryMode === 'manual_info' ? '' : 'readonly' ?>>
                         </div>
                     </div>
-                </div>
             </div>
         </div>
         <div class="col-md-6 mb-4">
@@ -365,6 +365,11 @@ $galleryArr = $product['gallery_arr'] ?? [];
                     <label class="font-weight-bold">Mô tả SEO</label>
                     <textarea class="form-control" name="seo_description" rows="9"
                         placeholder="Đoạn mô tả ngắn hiển thị trên Google..."><?= htmlspecialchars($product['seo_description'] ?? '') ?></textarea>
+                    <div class="mt-2" style="font-size: 12.5px; line-height: 1.5; color: #555;">
+                        <i class="fas fa-lightbulb text-warning mr-1"></i> <b>Lời khuyên:</b> Với từng sản phẩm quan trọng (ChatGPT Plus, Gemini Pro...), hãy điền tay Mô tả SEO theo format:<br>
+                        <code class="text-primary">"[Từ khóa chính] — [lợi ích ngắn gọn]. [Call to action]. Giao tự động, nhanh chóng tại KaiShop."</code><br>
+                        Giữ trong <b>150–160 ký tự</b> để Google không bị cắt bớt nội dung.
+                    </div>
                 </div>
             </div>
         </div>
@@ -372,408 +377,413 @@ $galleryArr = $product['gallery_arr'] ?? [];
 
     <!-- Row 5: Ảnh (Thumbnail & Gallery) -->
     <div class="form-section mb-4">
-        <div class="row mb-4">
-            <div class="col-12">
-                <label class="font-weight-bold d-block">Ảnh sản phẩm (Thumbnail)</label>
-                <div class="row align-items-center">
-                    <div class="col-md-9">
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="image" name="image"
-                                value="<?= htmlspecialchars($product['image'] ?? '') ?>"
-                                placeholder="Link ảnh hoặc chọn từ máy">
-                            <div class="input-group-append">
-                                <button type="button" class="btn btn-primary px-4"
-                                    style="background-color: #6f42c1; border-color: #6f42c1;"
-                                    onclick="openImageManager && openImageManager('image')">Chọn ảnh</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3 mt-2 mt-md-0">
-                        <div class="thumb-preview-box">
-                            <img id="imagePreview" src="<?= htmlspecialchars($product['image'] ?? '') ?>" alt=""
-                                style="<?= empty($product['image']) ? 'display:none;' : '' ?>">
-                            <span id="noImage" style="<?= !empty($product['image']) ? 'display:none;' : '' ?>">Xem trước
-                                ảnh đại diện</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="mt-4 pt-3 border-top">
-            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap">
-                <label class="font-weight-bold mb-0">Ảnh trong sản phẩm (Gallery)</label>
-                <button type="button" class="btn btn-add-gallery btn-sm" onclick="addGalleryItem()">
-                    <i class="fas fa-plus mr-1"></i>Thêm dòng ảnh
-                </button>
-            </div>
-            <small class="text-muted d-block mb-3">Hình ảnh chi tiết sản phẩm hiển thị dạng trượt.</small>
-            <div id="gallery-container">
-                <?php foreach ($galleryArr as $i => $gUrl): ?>
-                    <div class="gallery-line mb-3" id="gallery-row-<?= (int) $i ?>">
-                        <div class="row align-items-center">
-                            <div class="col-md-9">
-                                <div class="input-group">
-                                    <input type="text" class="form-control gallery-url-input" name="gallery[]"
-                                        id="gallery-input-<?= (int) $i ?>" value="<?= htmlspecialchars($gUrl) ?>"
-                                        placeholder="Link ảnh hoặc chọn từ máy">
-                                    <div class="input-group-append">
-                                        <button type="button" class="btn btn-primary"
-                                            style="background-color: #6f42c1; border-color: #6f42c1;"
-                                            onclick="openImageManager('gallery-input-<?= (int) $i ?>')">Chọn ảnh</button>
-                                        <button type="button" class="btn btn-danger"
-                                            onclick="removeGalleryItem('gallery-row-<?= (int) $i ?>')"><i
-                                                class="fas fa-trash"></i></button>
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <label class="font-weight-bold d-block">Ảnh sản phẩm (Thumbnail)</label>
+                            <div class="row align-items-center">
+                                <div class="col-md-9">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="image" name="image"
+                                            value="<?= htmlspecialchars($product['image'] ?? '') ?>"
+                                            placeholder="Link ảnh hoặc chọn từ máy">
+                                        <div class="input-group-append">
+                                            <button type="button" class="btn btn-primary px-4"
+                                                style="background-color: #6f42c1; border-color: #6f42c1;"
+                                                onclick="openImageManager && openImageManager('image')">Chọn
+                                                ảnh</button>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted d-block mt-2">Gợi ý kích thước: 920x430 px.</small>
+                                </div>
+                                <div class="col-md-3 mt-2 mt-md-0">
+                                    <div class="thumb-preview-box">
+                                        <img id="imagePreview" src="<?= htmlspecialchars($product['image'] ?? '') ?>"
+                                            alt="" style="<?= empty($product['image']) ? 'display:none;' : '' ?>">
+                                        <span id="noImage"
+                                            style="<?= !empty($product['image']) ? 'display:none;' : '' ?>">Xem trước
+                                            ảnh đại diện</span>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3 mt-2 mt-md-0">
-                                <div class="gallery-line-preview">
-                                    <img id="gallery-preview-img-<?= (int) $i ?>" class="gallery-preview-img" alt="preview"
-                                        src="<?= htmlspecialchars($gUrl) ?>">
-                                    <span id="gallery-preview-empty-<?= (int) $i ?>" class="gallery-preview-empty"
-                                        style="display: none;">Xem trước</span>
-                                </div>
-                            </div>
                         </div>
                     </div>
-                <?php endforeach; ?>
+
+                    <div class="mt-4 pt-3 border-top">
+                        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap">
+                            <label class="font-weight-bold mb-0">Ảnh trong sản phẩm (Gallery)</label>
+                            <button type="button" class="btn btn-add-gallery btn-sm" onclick="addGalleryItem()">
+                                <i class="fas fa-plus mr-1"></i>Thêm dòng ảnh
+                            </button>
+                        </div>
+                        <small class="text-muted d-block mb-3">Hình ảnh chi tiết sản phẩm hiển thị dạng trượt.</small>
+                        <div id="gallery-container">
+                            <?php foreach ($galleryArr as $i => $gUrl): ?>
+                                <div class="gallery-line mb-3" id="gallery-row-<?= (int) $i ?>">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-9">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control gallery-url-input" name="gallery[]"
+                                                    id="gallery-input-<?= (int) $i ?>"
+                                                    value="<?= htmlspecialchars($gUrl) ?>"
+                                                    placeholder="Link ảnh hoặc chọn từ máy">
+                                                <div class="input-group-append">
+                                                    <button type="button" class="btn btn-primary"
+                                                        style="background-color: #6f42c1; border-color: #6f42c1;"
+                                                        onclick="openImageManager('gallery-input-<?= (int) $i ?>')">Chọn
+                                                        ảnh</button>
+                                                    <button type="button" class="btn btn-danger"
+                                                        onclick="removeGalleryItem('gallery-row-<?= (int) $i ?>')"><i
+                                                            class="fas fa-trash"></i></button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 mt-2 mt-md-0">
+                                            <div class="gallery-line-preview">
+                                                <img id="gallery-preview-img-<?= (int) $i ?>" class="gallery-preview-img"
+                                                    alt="preview" src="<?= htmlspecialchars($gUrl) ?>">
+                                                <span id="gallery-preview-empty-<?= (int) $i ?>"
+                                                    class="gallery-preview-empty" style="display: none;">Xem trước</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 7: Mô tả -->
+                <div class="form-section mt-4">
+                    <div class="form-section-title">👉 Mô tả sản phẩm</div>
+                    <div class="form-group mb-0">
+                        <textarea class="form-control" id="description" name="description"
+                            rows="12"><?= htmlspecialchars($product['description'] ?? '') ?></textarea>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Row 7: Mô tả -->
-    <div class="form-section mt-4">
-        <div class="form-section-title">👉 Mô tả sản phẩm</div>
-        <div class="form-group mb-0">
-            <textarea class="form-control" id="description" name="description"
-                rows="12"><?= htmlspecialchars($product['description'] ?? '') ?></textarea>
-        </div>
-    </div>
-</div>
+            <div class="card-footer text-right bg-transparent border-top-0 pt-0 pb-4">
+                <a href="<?= url('admin/products') ?>" class="btn btn-light border mr-2 px-4">Hủy</a>
+                <button type="submit" class="btn btn-primary px-4 shadow">
+                    <?= $isEdit ? 'Cập nhật' : 'Lưu' ?> sản phẩm
+                </button>
+            </div>
 
-<div class="card-footer text-right bg-transparent border-top-0 pt-0 pb-4">
-    <a href="<?= url('admin/products') ?>" class="btn btn-light border mr-2 px-4">Hủy</a>
-    <button type="submit" class="btn btn-primary px-4 shadow">
-        <?= $isEdit ? 'Cập nhật' : 'Lưu' ?> sản phẩm
-    </button>
-</div>
+            <script>
+                let galleryIndex = <?= count($galleryArr) ?>;
 
-<script>
-    let galleryIndex = <?= count($galleryArr) ?>;
-
-    // Wait for jQuery and DOM to be ready
-    document.addEventListener("DOMContentLoaded", function () {
-        let checkJquery = setInterval(function () {
-            if (window.jQuery) {
-                clearInterval(checkJquery);
-                initFormScripts();
-            }
-        }, 100);
-    });
-
-    function initFormScripts() {
-        if ($.fn.summernote) {
-            $('#description').summernote({ height: 300 });
-        }
-
-        // Smart Pricing Logic
-        bindSmartPricing();
-
-        bindThumbPreview();
-        bindSlugAutoGen();
-        bindCategorySlugPrefix();
-        bindSaleModeUI();
-        bindGalleryLivePreview();
-
-        // Initial setup
-        var mode = getSelectedSaleMode();
-        applySaleMode(mode);
-
-        if ($('#gallery-container .gallery-line').length === 0) {
-            addGalleryItem();
-        }
-
-        // Validation: max_purchase_qty <= stock
-        $('#productForm').on('submit', function (e) {
-            var mode = getSelectedSaleMode();
-            if (mode !== 'account_stock' && mode !== 'manual_info') return true;
-
-            var maxQty = parseInt($('input[name="max_purchase_qty"]').val(), 10) || 0;
-            var stock = parseInt($('#stockPreviewInput').val(), 10) || 0;
-
-            if (maxQty > 0 && stock > 0 && maxQty > stock) {
-                e.preventDefault();
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Không hợp lệ',
-                    html: '<b>Mua tối đa (' + maxQty + ')</b> không được lớn hơn <b>Tồn kho (' + stock + ')</b>.',
-                    confirmButtonText: 'OK'
+                // Wait for jQuery and DOM to be ready
+                document.addEventListener("DOMContentLoaded", function () {
+                    let checkJquery = setInterval(function () {
+                        if (window.jQuery) {
+                            clearInterval(checkJquery);
+                            initFormScripts();
+                        }
+                    }, 100);
                 });
-                return false;
-            }
-        });
-    }
 
-    function bindSmartPricing() {
-        const $priceVnd = $('#price_vnd');
-        const $oldPrice = $('#old_price');
-        const $discountPercent = $('#discount_percent');
+                function initFormScripts() {
+                    if ($.fn.summernote) {
+                        $('#description').summernote({ height: 300 });
+                    }
 
-        function calculateDiscount() {
-            let price = parseInt($priceVnd.val()) || 0;
-            let oldPrice = parseInt($oldPrice.val()) || 0;
-            if (oldPrice > 0 && price <= oldPrice) {
-                let discount = Math.round(((oldPrice - price) / oldPrice) * 100);
-                $discountPercent.val(discount);
-            } else {
-                $discountPercent.val('');
-            }
-        }
+                    // Smart Pricing Logic
+                    bindSmartPricing();
 
-        function calculatePriceFromDiscount() {
-            let oldPrice = parseInt($oldPrice.val()) || 0;
-            let discount = parseInt($discountPercent.val()) || 0;
-            if (oldPrice > 0 && discount > 0 && discount <= 100) {
-                let currentPrice = Math.round(oldPrice * (1 - (discount / 100)));
-                $priceVnd.val(currentPrice);
-            }
-        }
+                    bindThumbPreview();
+                    bindSlugAutoGen();
+                    bindCategorySlugPrefix();
+                    bindSaleModeUI();
+                    bindGalleryLivePreview();
 
-        $priceVnd.on('input', calculateDiscount);
-        $oldPrice.on('input', calculateDiscount);
-        $discountPercent.on('input', calculatePriceFromDiscount);
+                    // Initial setup
+                    var mode = getSelectedSaleMode();
+                    applySaleMode(mode);
 
-        // Initial setup
-        calculateDiscount();
-    }
+                    if ($('#gallery-container .gallery-line').length === 0) {
+                        addGalleryItem();
+                    }
 
-    function handleStockFile(input) {
-        const file = input.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            const content = e.target.result;
-            $('#initial_stock').val(content);
-            updateStockPreview('account_stock');
-            if (window.Toast) {
-                Toast.fire({ icon: 'success', title: 'Đã tải nội dung từ file' });
-            } else {
-                Swal.fire({ icon: 'success', title: 'Thành công', text: 'Đã tải nội dung từ file', timer: 1500 });
-            }
-        };
-        reader.readAsText(file);
-        input.value = '';
-    }
+                    // Validation: max_purchase_qty <= stock
+                    $('#productForm').on('submit', function (e) {
+                        var mode = getSelectedSaleMode();
+                        if (mode !== 'account_stock' && mode !== 'manual_info') return true;
 
-    function bindThumbPreview() {
-        $('#initial_stock').on('input', function () {
-            updateStockPreview();
-        });
+                        var maxQty = parseInt($('input[name="max_purchase_qty"]').val(), 10) || 0;
+                        var stock = parseInt($('#stockPreviewInput').val(), 10) || 0;
 
-        $('#image').on('change keyup paste', function () {
-            updateImagePreview($(this).val(), '#imagePreview', '#noImage', 'Xem trước ảnh đại diện');
-        });
-    }
+                        if (maxQty > 0 && stock > 0 && maxQty > stock) {
+                            e.preventDefault();
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Không hợp lệ',
+                                html: '<b>Mua tối đa (' + maxQty + ')</b> không được lớn hơn <b>Tồn kho (' + stock + ')</b>.',
+                                confirmButtonText: 'OK'
+                            });
+                            return false;
+                        }
+                    });
+                }
 
-    function bindSlugAutoGen() {
-        $('#name').on('keyup change', function () {
-            if (!$('#slug').data('manual')) {
-                $('#slug').val(toSlug($(this).val()));
-            }
-        });
-        $('#slug').on('input', function () {
-            $(this).data('manual', true);
-        });
-    }
+                function bindSmartPricing() {
+                    const $priceVnd = $('#price_vnd');
+                    const $oldPrice = $('#old_price');
+                    const $discountPercent = $('#discount_percent');
 
-    function bindCategorySlugPrefix() {
-        $('#category_id').on('change', updateSlugPrefixFromCategory);
-        updateSlugPrefixFromCategory();
-    }
+                    function calculateDiscount() {
+                        let price = parseInt($priceVnd.val()) || 0;
+                        let oldPrice = parseInt($oldPrice.val()) || 0;
+                        if (oldPrice > 0 && price <= oldPrice) {
+                            let discount = Math.round(((oldPrice - price) / oldPrice) * 100);
+                            $discountPercent.val(discount);
+                        } else {
+                            $discountPercent.val('');
+                        }
+                    }
 
-    function updateSlugPrefixFromCategory() {
-        var opt = $('#category_id option:selected');
-        var catSlug = String(opt.data('slug') || '').trim();
-        if (!catSlug) catSlug = 'danh-muc';
-        $('#slugPrefix').text('/' + catSlug + '/');
-    }
+                    function calculatePriceFromDiscount() {
+                        let oldPrice = parseInt($oldPrice.val()) || 0;
+                        let discount = parseInt($discountPercent.val()) || 0;
+                        if (oldPrice > 0 && discount > 0 && discount <= 100) {
+                            let currentPrice = Math.round(oldPrice * (1 - (discount / 100)));
+                            $priceVnd.val(currentPrice);
+                        }
+                    }
 
-    function bindSaleModeUI() {
-        $(document).on('click', '.mode-card', function () {
-            var mode = $(this).data('mode');
-            $(this).find('input[type="radio"]').prop('checked', true);
-            applySaleMode(mode);
-        });
+                    $priceVnd.on('input', calculateDiscount);
+                    $oldPrice.on('input', calculateDiscount);
+                    $discountPercent.on('input', calculatePriceFromDiscount);
 
-        $(document).on('change', 'input[name="sale_mode_ui"]', function () {
-            applySaleMode($(this).val());
-        });
-    }
+                    // Initial setup
+                    calculateDiscount();
+                }
 
-    function getSelectedSaleMode() {
-        return $('input[name="sale_mode_ui"]:checked').val() || 'account_stock';
-    }
+                function handleStockFile(input) {
+                    const file = input.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        const content = e.target.result;
+                        $('#initial_stock').val(content);
+                        updateStockPreview('account_stock');
+                        if (window.Toast) {
+                            Toast.fire({ icon: 'success', title: 'Đã tải nội dung từ file' });
+                        } else {
+                            Swal.fire({ icon: 'success', title: 'Thành công', text: 'Đã tải nội dung từ file', timer: 1500 });
+                        }
+                    };
+                    reader.readAsText(file);
+                    input.value = '';
+                }
 
-    function countStockPreviewItems(rawText) {
-        var seen = {};
-        var count = 0;
-        String(rawText || '').split(/\r?\n/).forEach(function (line) {
-            var normalized = String(line || '').trim();
-            if (!normalized || seen[normalized]) return;
-            seen[normalized] = true;
-            count++;
-        });
-        return count;
-    }
+                function bindThumbPreview() {
+                    $('#initial_stock').on('input', function () {
+                        updateStockPreview();
+                    });
 
-    function updateStockPreview(mode) {
-        var currentMode = mode || getSelectedSaleMode();
-        var stockInput = $('#stockPreviewInput');
+                    $('#image').on('change keyup paste', function () {
+                        updateImagePreview($(this).val(), '#imagePreview', '#noImage', 'Xem trước ảnh đại diện');
+                    });
+                }
 
-        if (currentMode === 'source_link') {
-            stockInput.val('Unlimited');
-            return;
-        }
+                function bindSlugAutoGen() {
+                    $('#name').on('keyup change', function () {
+                        if (!$('#slug').data('manual')) {
+                            $('#slug').val(toSlug($(this).val()));
+                        }
+                    });
+                    $('#slug').on('input', function () {
+                        $(this).data('manual', true);
+                    });
+                }
 
-        if (currentMode === 'manual_info') {
-            return;
-        }
+                function bindCategorySlugPrefix() {
+                    $('#category_id').on('change', updateSlugPrefixFromCategory);
+                    updateSlugPrefixFromCategory();
+                }
 
-        // For add mode, count from textarea. For edit mode, it's already set from PHP but we might need to handle updates if it's dynamic.
-        // Actually for edit mode, 'account_stock' is readonly and shows existing count.
-        if ($('#initial_stock').length) {
-            stockInput.val(String(countStockPreviewItems($('#initial_stock').val())));
-        } else {
-            var accountStock = Number(stockInput.data('accountStock') || 0);
-            stockInput.val(String(accountStock));
-        }
-    }
+                function updateSlugPrefixFromCategory() {
+                    var opt = $('#category_id option:selected');
+                    var catSlug = String(opt.data('slug') || '').trim();
+                    if (!catSlug) catSlug = 'danh-muc';
+                    $('#slugPrefix').text('/' + catSlug + '/');
+                }
 
-    function applySaleMode(mode) {
-        mode = mode || 'account_stock';
+                function bindSaleModeUI() {
+                    $(document).on('click', '.mode-card', function () {
+                        var mode = $(this).data('mode');
+                        $(this).find('input[type="radio"]').prop('checked', true);
+                        applySaleMode(mode);
+                    });
 
-        $('.mode-card').removeClass('active');
-        $('.mode-card[data-mode="' + mode + '"]').addClass('active');
+                    $(document).on('change', 'input[name="sale_mode_ui"]', function () {
+                        applySaleMode($(this).val());
+                    });
+                }
 
-        var productType = 'account';
-        var requiresInfo = '0';
+                function getSelectedSaleMode() {
+                    return $('input[name="sale_mode_ui"]:checked').val() || 'account_stock';
+                }
 
-        if (mode === 'source_link') {
-            productType = 'link';
-            requiresInfo = '0';
-        } else if (mode === 'manual_info') {
-            productType = 'account';
-            requiresInfo = '1';
-        }
+                function countStockPreviewItems(rawText) {
+                    var seen = {};
+                    var count = 0;
+                    String(rawText || '').split(/\r?\n/).forEach(function (line) {
+                        var normalized = String(line || '').trim();
+                        if (!normalized || seen[normalized]) return;
+                        seen[normalized] = true;
+                        count++;
+                    });
+                    return count;
+                }
 
-        $('#productType').val(productType);
-        $('#requires_info').val(requiresInfo);
+                function updateStockPreview(mode) {
+                    var currentMode = mode || getSelectedSaleMode();
+                    var stockInput = $('#stockPreviewInput');
 
-        // Visibility
-        $('#section-stock').toggle(mode === 'account_stock');
-        $('#section-stock-info').toggle(mode === 'account_stock');
-        $('#initial_stock').prop('disabled', mode !== 'account_stock');
+                    if (currentMode === 'source_link') {
+                        stockInput.val('Unlimited');
+                        return;
+                    }
 
-        $('#section-link').toggle(mode === 'source_link');
-        $('#source_link').prop('required', mode === 'source_link').prop('disabled', mode !== 'source_link');
+                    if (currentMode === 'manual_info') {
+                        return;
+                    }
 
-        $('#section-info').toggle(mode === 'manual_info');
-        $('#info_instructions').prop('disabled', mode !== 'manual_info');
+                    // For add mode, count from textarea. For edit mode, it's already set from PHP but we might need to handle updates if it's dynamic.
+                    // Actually for edit mode, 'account_stock' is readonly and shows existing count.
+                    if ($('#initial_stock').length) {
+                        stockInput.val(String(countStockPreviewItems($('#initial_stock').val())));
+                    } else {
+                        var accountStock = Number(stockInput.data('accountStock') || 0);
+                        stockInput.val(String(accountStock));
+                    }
+                }
 
-        // Stock preview behaviors
-        if (mode === 'source_link') {
-            $('input[name="max_purchase_qty"]').val(1).prop('readonly', true).css('background-color', '#e9ecef');
-            $('#stockPreviewInput').val('Unlimited').prop('readonly', true).css('background-color', '#e9ecef');
-            $('#stockLabel').text('Stock (Unlimited)');
-        } else if (mode === 'manual_info') {
-            $('input[name="max_purchase_qty"]').prop('readonly', false).css('background-color', '');
-            $('#stockPreviewInput').prop('readonly', false).css('background-color', '');
-            $('#stockLabel').text('Số lượng Stock');
-        } else {
-            $('input[name="max_purchase_qty"]').prop('readonly', false).css('background-color', '');
-            $('#stockPreviewInput').prop('readonly', true).css('background-color', '#e9ecef');
-            $('#stockLabel').text('Tồn kho');
-            updateStockPreview(mode);
-        }
-    }
+                function applySaleMode(mode) {
+                    mode = mode || 'account_stock';
 
-    function bindGalleryLivePreview() {
-        $(document).on('change keyup paste', '.gallery-url-input', function () {
-            var row = $(this).closest('.gallery-line');
-            var img = row.find('.gallery-preview-img');
-            var empty = row.find('.gallery-preview-empty');
-            updateImagePreview($(this).val(), img, empty, 'Xem trước ảnh');
-        });
-    }
+                    $('.mode-card').removeClass('active');
+                    $('.mode-card[data-mode="' + mode + '"]').addClass('active');
 
-    function updateImagePreview(url, imgSelector, emptySelector, emptyText) {
-        var img = (imgSelector instanceof jQuery) ? imgSelector : $(imgSelector);
-        var empty = (emptySelector instanceof jQuery) ? emptySelector : $(emptySelector);
-        url = String(url || '').trim();
+                    var productType = 'account';
+                    var requiresInfo = '0';
 
-        if (url) {
-            img.attr('src', url).show();
-            empty.hide();
-        } else {
-            img.attr('src', '').hide();
-            empty.text(emptyText || 'Xem trước').show();
-        }
-    }
+                    if (mode === 'source_link') {
+                        productType = 'link';
+                        requiresInfo = '0';
+                    } else if (mode === 'manual_info') {
+                        productType = 'account';
+                        requiresInfo = '1';
+                    }
 
-    function addGalleryItem(url) {
-        url = url || '';
-        var currentIdx = galleryIndex++;
-        var inputId = 'gallery-input-' + currentIdx;
-        var rowId = 'gallery-row-' + currentIdx;
-        var previewImgId = 'gallery-preview-img-' + currentIdx;
-        var previewEmptyId = 'gallery-preview-empty-' + currentIdx;
+                    $('#productType').val(productType);
+                    $('#requires_info').val(requiresInfo);
 
-        var html = ''
-            + '<div class="gallery-line mb-3" id="' + rowId + '">'
-            + '  <div class="row align-items-center">'
-            + '    <div class="col-md-9">'
-            + '      <div class="input-group">'
-            + '        <input type="text" class="form-control gallery-url-input" name="gallery[]" id="' + inputId + '" value="' + escHtml(url) + '" placeholder="Link ảnh hoặc chọn từ máy">'
-            + '        <div class="input-group-append">'
-            + '          <button type="button" class="btn btn-primary" style="background-color: #6f42c1; border-color: #6f42c1;" onclick="openImageManager(\'' + inputId + '\')">Chọn ảnh</button>'
-            + '          <button type="button" class="btn btn-danger" onclick="removeGalleryItem(\'' + rowId + '\')"><i class="fas fa-trash"></i></button>'
-            + '        </div>'
-            + '      </div>'
-            + '    </div>'
-            + '    <div class="col-md-3 mt-2 mt-md-0">'
-            + '      <div class="gallery-line-preview">'
-            + '        <img id="' + previewImgId + '" class="gallery-preview-img" alt="preview" style="' + (url ? '' : 'display:none;') + '" src="' + escHtml(url) + '">'
-            + '        <span id="' + previewEmptyId + '" class="gallery-preview-empty" style="' + (url ? 'display:none;' : '') + '">Xem trước</span>'
-            + '      </div>'
-            + '    </div>'
-            + '  </div>'
-            + '</div>';
+                    // Visibility
+                    $('#section-stock').toggle(mode === 'account_stock');
+                    $('#section-stock-info').toggle(mode === 'account_stock');
+                    $('#initial_stock').prop('disabled', mode !== 'account_stock');
 
-        $('#gallery-container').append(html);
-    }
+                    $('#section-link').toggle(mode === 'source_link');
+                    $('#source_link').prop('required', mode === 'source_link').prop('disabled', mode !== 'source_link');
 
-    function removeGalleryItem(rowId) {
-        $('#' + rowId).remove();
-        if ($('#gallery-container .gallery-line').length === 0) {
-            addGalleryItem();
-        }
-    }
+                    $('#section-info').toggle(mode === 'manual_info');
+                    $('#info_instructions').prop('disabled', mode !== 'manual_info');
 
-    function escHtml(value) {
-        return value ? String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : '';
-    }
+                    // Stock preview behaviors
+                    if (mode === 'source_link') {
+                        $('input[name="max_purchase_qty"]').val(1).prop('readonly', true).css('background-color', '#e9ecef');
+                        $('#stockPreviewInput').val('Unlimited').prop('readonly', true).css('background-color', '#e9ecef');
+                        $('#stockLabel').text('Stock (Unlimited)');
+                    } else if (mode === 'manual_info') {
+                        $('input[name="max_purchase_qty"]').prop('readonly', false).css('background-color', '');
+                        $('#stockPreviewInput').prop('readonly', false).css('background-color', '');
+                        $('#stockLabel').text('Số lượng Stock');
+                    } else {
+                        $('input[name="max_purchase_qty"]').prop('readonly', false).css('background-color', '');
+                        $('#stockPreviewInput').prop('readonly', true).css('background-color', '#e9ecef');
+                        $('#stockLabel').text('Tồn kho');
+                        updateStockPreview(mode);
+                    }
+                }
 
-    function toSlug(str) {
-        str = String(str || '').toLowerCase();
-        if (typeof str.normalize === 'function') {
-            str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        }
-        str = str.replace(/đ/g, 'd');
-        return str
-            .replace(/[^a-z0-9\s-]/g, '')
-            .trim()
-            .replace(/\s+/g, '-')
-            .replace(/-+/g, '-');
-    }
-</script>
+                function bindGalleryLivePreview() {
+                    $(document).on('change keyup paste', '.gallery-url-input', function () {
+                        var row = $(this).closest('.gallery-line');
+                        var img = row.find('.gallery-preview-img');
+                        var empty = row.find('.gallery-preview-empty');
+                        updateImagePreview($(this).val(), img, empty, 'Xem trước ảnh');
+                    });
+                }
+
+                function updateImagePreview(url, imgSelector, emptySelector, emptyText) {
+                    var img = (imgSelector instanceof jQuery) ? imgSelector : $(imgSelector);
+                    var empty = (emptySelector instanceof jQuery) ? emptySelector : $(emptySelector);
+                    url = String(url || '').trim();
+
+                    if (url) {
+                        img.attr('src', url).show();
+                        empty.hide();
+                    } else {
+                        img.attr('src', '').hide();
+                        empty.text(emptyText || 'Xem trước').show();
+                    }
+                }
+
+                function addGalleryItem(url) {
+                    url = url || '';
+                    var currentIdx = galleryIndex++;
+                    var inputId = 'gallery-input-' + currentIdx;
+                    var rowId = 'gallery-row-' + currentIdx;
+                    var previewImgId = 'gallery-preview-img-' + currentIdx;
+                    var previewEmptyId = 'gallery-preview-empty-' + currentIdx;
+
+                    var html = ''
+                        + '<div class="gallery-line mb-3" id="' + rowId + '">'
+                        + '  <div class="row align-items-center">'
+                        + '    <div class="col-md-9">'
+                        + '      <div class="input-group">'
+                        + '        <input type="text" class="form-control gallery-url-input" name="gallery[]" id="' + inputId + '" value="' + escHtml(url) + '" placeholder="Link ảnh hoặc chọn từ máy">'
+                        + '        <div class="input-group-append">'
+                        + '          <button type="button" class="btn btn-primary" style="background-color: #6f42c1; border-color: #6f42c1;" onclick="openImageManager(\'' + inputId + '\')">Chọn ảnh</button>'
+                        + '          <button type="button" class="btn btn-danger" onclick="removeGalleryItem(\'' + rowId + '\')"><i class="fas fa-trash"></i></button>'
+                        + '        </div>'
+                        + '      </div>'
+                        + '    </div>'
+                        + '    <div class="col-md-3 mt-2 mt-md-0">'
+                        + '      <div class="gallery-line-preview">'
+                        + '        <img id="' + previewImgId + '" class="gallery-preview-img" alt="preview" style="' + (url ? '' : 'display:none;') + '" src="' + escHtml(url) + '">'
+                        + '        <span id="' + previewEmptyId + '" class="gallery-preview-empty" style="' + (url ? 'display:none;' : '') + '">Xem trước</span>'
+                        + '      </div>'
+                        + '    </div>'
+                        + '  </div>'
+                        + '</div>';
+
+                    $('#gallery-container').append(html);
+                }
+
+                function removeGalleryItem(rowId) {
+                    $('#' + rowId).remove();
+                    if ($('#gallery-container .gallery-line').length === 0) {
+                        addGalleryItem();
+                    }
+                }
+
+                function escHtml(value) {
+                    return value ? String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : '';
+                }
+
+                function toSlug(str) {
+                    str = String(str || '').toLowerCase();
+                    if (typeof str.normalize === 'function') {
+                        str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                    }
+                    str = str.replace(/đ/g, 'd');
+                    return str
+                        .replace(/[^a-z0-9\s-]/g, '')
+                        .trim()
+                        .replace(/\s+/g, '-')
+                        .replace(/-+/g, '-');
+                }
+            </script>

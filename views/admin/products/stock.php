@@ -39,7 +39,7 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
 
         <!-- STATS -->
         <div class="row mb-3">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="info-box shadow-sm mb-3" style="border-radius: 8px;">
                     <span class="info-box-icon bg-info elevation-1" style="border-radius: 8px;"><i
                             class="fas fa-boxes"></i></span>
@@ -50,7 +50,7 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="info-box shadow-sm mb-3" style="border-radius: 8px;">
                     <span class="info-box-icon bg-success elevation-1" style="border-radius: 8px;"><i
                             class="fas fa-check-circle"></i></span>
@@ -61,7 +61,7 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="info-box shadow-sm mb-3" style="border-radius: 8px;">
                     <span class="info-box-icon bg-danger elevation-1" style="border-radius: 8px;"><i
                             class="fas fa-shopping-bag"></i></span>
@@ -69,6 +69,17 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
                         <span
                             class="info-box-text font-weight-bold text-uppercase"><?= !empty($isManualQueue) ? 'ĐÃ XỬ LÝ' : 'ĐÃ BÁN' ?></span>
                         <span class="info-box-number h4 mb-0" id="stat-sold"><?= $stats['sold'] ?></span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="info-box shadow-sm mb-3" style="border-radius: 8px;">
+                    <span class="info-box-icon bg-warning elevation-1" style="border-radius: 8px;"><i
+                            class="fas fa-dollar-sign"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text font-weight-bold text-uppercase">DOANH THU</span>
+                        <span class="info-box-number h4 mb-0"
+                            id="stat-revenue"><?= number_format($stats['revenue'] ?? 0, 0, ',', '.') ?>đ</span>
                     </div>
                 </div>
             </div>
@@ -677,6 +688,10 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
             $('#stat-total').text(stats.total);
             $('#stat-available').text(stats.available);
             $('#stat-sold').text(stats.sold);
+
+            // Format revenue as currency
+            const revenue = new Intl.NumberFormat('vi-VN').format(stats.revenue || 0);
+            $('#stat-revenue').text(revenue + 'đ');
 
             // Dynamically update labels if needed (optional since PHP already handles first load)
             $('.info-box-text').eq(0).text(isManualQueue ? 'TỔNG ĐƠN' : 'TỔNG KHO');

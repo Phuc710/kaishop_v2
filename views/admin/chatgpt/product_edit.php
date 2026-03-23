@@ -291,6 +291,13 @@ $visibilityMode = (string) ($product['visibility_mode'] ?? 'both');
                                     <label class="font-weight-bold">Mô tả SEO</label>
                                     <textarea class="form-control" name="seo_description" rows="6"
                                         placeholder="Hiển thị trên kết quả tìm kiếm Google..."><?= htmlspecialchars($product['seo_description'] ?? '') ?></textarea>
+                                    <div class="mt-2" style="font-size: 12px; line-height: 1.5; color: #666;">
+                                        <i class="fas fa-lightbulb text-warning mr-1"></i> <b>Lời khuyên:</b> Điền tay
+                                        Mô tả SEO theo format:<br>
+                                        <code
+                                            class="text-primary small">"[Từ khóa] — [lợi ích]. [Call to action]. Giao nhanh tại KaiShop."</code><br>
+                                        Nên nằm trong khoảng <b>150–160 ký tự</b>.
+                                    </div>
                                 </div>
                             </div>
                         </div>

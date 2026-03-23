@@ -4,7 +4,7 @@
 <head>
     <?php
     $seoTitle = "KaiShop - Kho tài nguyên & Source Code Uy Tín";
-    $seoDescription = "KaiShop chuyên cung cấp dịch vụ MMO, mua bán Source Code FREE và hệ thống nạp tiền tự động 24/7 siêu tốc qua Ngân hàng, MoMo, Binance. Giao dịch an toàn, bảo mật và uy tín hàng đầu.";
+    $seoDescription = "KaiShop chuyên cung cấp dịch vụ MMO, Source Code chất lượng. Hệ thống nạp tiền tự động 24/7 qua Ngân hàng, USDT. Giao dịch uy tín, bảo mật.";
     $seoKeywords = "nạp tiền 24/7, nạp tiền tự động, dịch vụ mmo, mua source code, kaishop, nạp tiền giá rẻ, nạp tiền game";
 
     $GLOBALS['pageAssets'] = array_merge($GLOBALS['pageAssets'] ?? [], [
@@ -14,6 +14,39 @@
         'vendor_swiper' => false,
         'vendor_aos' => false,
     ]);
+    $supportTeleUrl = trim((string) ($chungapi['support_tele'] ?? ''));
+    if ($supportTeleUrl === '') {
+        $supportTeleUrl = url('lien-he');
+    }
+    $organizationSameAs = array_values(array_filter([
+        (string) ($chungapi['fb_admin'] ?? ''),
+        (string) ($chungapi['tele_admin'] ?? ''),
+        (string) ($chungapi['support_tele'] ?? ''),
+        (string) ($chungapi['tiktok_admin'] ?? ''),
+        (string) ($chungapi['youtube_admin'] ?? ''),
+    ]));
+    $homeFaqItems = [
+        [
+            'question' => 'KaiShop nạp tiền tự động qua kênh nào? Mất bao lâu?',
+            'answer' => 'KaiShop hỗ trợ nạp tiền tự động 24/7 qua chuyển khoản ngân hàng nội địa và Binance Pay (USDT). Hầu hết giao dịch được hệ thống xử lý trong vài giây sau khi ngân hàng/ví xác nhận — không cần chờ admin. Mỗi lệnh nạp có mã đối soát riêng, đảm bảo khớp chính xác và an toàn.',
+        ],
+        [
+            'question' => 'KaiShop có uy tín không? Giao dịch có an toàn không?',
+            'answer' => 'KaiShop vận hành minh bạch với lịch sử đơn hàng đầy đủ, hệ thống nạp tiền tự động qua cổng thanh toán xác thực, và kênh hỗ trợ trực tiếp qua Telegram. Thông tin thanh toán rõ ràng, không lưu thẻ ngân hàng. Bạn có thể kiểm tra lịch sử nạp và đơn hàng bất cứ lúc nào trong tài khoản.',
+        ],
+        [
+            'question' => 'Mua hàng xong tôi nhận sản phẩm bằng cách nào?',
+            'answer' => 'Với sản phẩm giao tự động (tài khoản số, source code, link tải), hệ thống trả nội dung ngay trong đơn hàng sau khi thanh toán thành công — không cần chờ. Với dịch vụ cần xử lý thủ công hoặc cần thông tin bổ sung từ bạn, admin sẽ tiếp nhận và xử lý theo quy trình đã cấu hình sẵn trên sản phẩm.',
+        ],
+        [
+            'question' => 'KaiShop bán những loại sản phẩm và dịch vụ số nào?',
+            'answer' => 'KaiShop tập trung vào nhóm sản phẩm số: tài khoản game và dịch vụ số, source code website/app, công cụ hỗ trợ MMO (marketing online), dịch vụ tự động hoá và các sản phẩm kỹ thuật số giao ngay. Danh mục được chia rõ ràng, hỗ trợ tìm kiếm và lọc theo nhóm để mua nhanh hơn.',
+        ],
+        [
+            'question' => 'Sản phẩm có bảo hành không? Nếu lỗi tôi liên hệ ai?',
+            'answer' => 'Chính sách bảo hành áp dụng theo mô tả trên từng sản phẩm cụ thể. Nếu gặp sự cố sau mua, bạn liên hệ hỗ trợ trực tiếp qua Telegram hoặc kênh liên hệ được hiển thị trên trang. Vui lòng cung cấp mã đơn hàng để admin xử lý nhanh nhất có thể.',
+        ],
+    ];
     ?>
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>
 
@@ -39,14 +72,23 @@
         'name' => $chungapi['ten_web'] ?? 'KaiShop',
         'url' => url(''),
         'logo' => $chungapi['logo'] ?? asset('assets/images/logo.png'),
-        'sameAs' => array_filter([
-            $chungapi['tele_admin'] ?? '',
-            $chungapi['support_tele'] ?? '',
-        ]),
+        'description' => $seoDescription,
+        'email' => (string) ($chungapi['email_cf'] ?? ''),
+        'telephone' => (string) ($chungapi['sdt_admin'] ?? ''),
+        'sameAs' => $organizationSameAs,
+        'areaServed' => [
+            '@type' => 'Country',
+            'name' => 'Vietnam',
+        ],
         'contactPoint' => [
-            '@type' => 'ContactPoint',
-            'contactType' => 'customer support',
-            'url' => $chungapi['support_tele'] ?? (url('lien-he')),
+            array_filter([
+                '@type' => 'ContactPoint',
+                'contactType' => 'customer support',
+                'url' => $supportTeleUrl,
+                'email' => (string) ($chungapi['email_cf'] ?? ''),
+                'telephone' => (string) ($chungapi['sdt_admin'] ?? ''),
+                'availableLanguage' => ['Vietnamese', 'English'],
+            ]),
         ],
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
     </script>
@@ -57,42 +99,58 @@
         'mainEntity' => [
             [
                 '@type' => 'Question',
-                'name' => 'KaiShop nạp tiền tự động qua những ngân hàng nào?',
+                'name' => 'KaiShop nạp tiền tự động qua kênh nào? Mất bao lâu?',
                 'acceptedAnswer' => [
                     '@type' => 'Answer',
-                    'text' => 'KaiShop hỗ trợ nạp tiền tự động 24/7 qua tất cả ngân hàng nội địa (Vietcombank, Techcombank, MB Bank, BIDV, VPBank...), ví MoMo và tiền mã hoá Binance (USDT).',
+                    'text' => 'KaiShop hỗ trợ nạp tiền tự động 24/7 qua chuyển khoản ngân hàng nội địa và Binance Pay (USDT). Hầu hết giao dịch được hệ thống xử lý trong vài giây sau khi ngân hàng/ví xác nhận — không cần chờ admin. Mỗi lệnh nạp có mã đối soát riêng, đảm bảo khớp chính xác và an toàn.',
                 ],
             ],
             [
                 '@type' => 'Question',
-                'name' => 'KaiShop có an toàn và uy tín không?',
+                'name' => 'KaiShop có uy tín không? Giao dịch có an toàn không?',
                 'acceptedAnswer' => [
                     '@type' => 'Answer',
-                    'text' => 'KaiShop là hệ thống mua bán dịch vụ số hoạt động minh bạch. Mọi giao dịch nạp tiền được xử lý tự động qua SePay, lịch sử đơn hàng được lưu đầy đủ, và hỗ trợ 24/7 qua Telegram.',
+                    'text' => 'KaiShop vận hành minh bạch với lịch sử đơn hàng đầy đủ, hệ thống nạp tiền tự động qua cổng thanh toán xác thực, và kênh hỗ trợ trực tiếp qua Telegram. Thông tin thanh toán rõ ràng, không lưu thẻ ngân hàng. Bạn có thể kiểm tra lịch sử nạp và đơn hàng bất cứ lúc nào trong tài khoản.',
                 ],
             ],
             [
                 '@type' => 'Question',
-                'name' => 'Sau khi mua hàng tôi nhận sản phẩm bằng cách nào?',
+                'name' => 'Mua hàng xong tôi nhận sản phẩm bằng cách nào?',
                 'acceptedAnswer' => [
                     '@type' => 'Answer',
-                    'text' => 'Hệ thống giao hàng tự động ngay sau khi thanh toán thành công. Với sản phẩm tài khoản và source code, thông tin được giao ngay trong đơn hàng. Với dịch vụ thủ công, admin sẽ xử lý trong thời gian sớm nhất.',
+                    'text' => 'Với sản phẩm giao tự động (tài khoản số, source code, link tải), hệ thống trả nội dung ngay trong đơn hàng sau khi thanh toán thành công — không cần chờ. Với dịch vụ thủ công, admin tiếp nhận và xử lý theo quy trình đã cấu hình trên sản phẩm.',
                 ],
             ],
             [
                 '@type' => 'Question',
-                'name' => 'KaiShop bán những dịch vụ gì?',
+                'name' => 'KaiShop bán những loại sản phẩm và dịch vụ số nào?',
                 'acceptedAnswer' => [
                     '@type' => 'Answer',
-                    'text' => 'KaiShop cung cấp: tài khoản game, dịch vụ MMO (marketing online), source code website/app, dịch vụ tự động hoá, và các sản phẩm số giá rẻ uy tín.',
+                    'text' => 'KaiShop cung cấp: tài khoản game và dịch vụ số, source code website/app, công cụ hỗ trợ MMO (marketing online), dịch vụ tự động hoá và các sản phẩm kỹ thuật số giao ngay.',
                 ],
             ],
             [
                 '@type' => 'Question',
-                'name' => 'Nạp tiền vào KaiShop mất bao lâu?',
+                'name' => 'Tôi cần tạo tài khoản trước khi mua hàng không?',
                 'acceptedAnswer' => [
                     '@type' => 'Answer',
-                    'text' => 'Hệ thống xử lý nạp tiền tự động trong vòng 1-60 giây. Tiền ập vào tài khoản ngay sau khi ngân hàng/ví điện tử xác nhận giao dịch thành công.',
+                    'text' => 'Bạn cần đăng ký tài khoản để đảm bảo đơn hàng và nội dung sản phẩm được lưu lại đầy đủ. Đăng ký chỉ mất vài giây. Sau khi đăng nhập, bạn có thể nạp tiền, mua hàng và theo dõi toàn bộ lịch sử giao dịch tại một nơi.',
+                ],
+            ],
+            [
+                '@type' => 'Question',
+                'name' => 'Sản phẩm có bảo hành không? Nếu lỗi tôi liên hệ ai?',
+                'acceptedAnswer' => [
+                    '@type' => 'Answer',
+                    'text' => 'Chính sách bảo hành áp dụng theo mô tả trên từng sản phẩm. Nếu gặp sự cố, liên hệ hỗ trợ qua Telegram hoặc kênh liên hệ trên trang, kèm mã đơn hàng để được xử lý nhanh nhất.',
+                ],
+            ],
+            [
+                '@type' => 'Question',
+                'name' => 'KaiShop có hỗ trợ hoàn tiền không?',
+                'acceptedAnswer' => [
+                    '@type' => 'Answer',
+                    'text' => 'Chính sách hoàn tiền áp dụng theo từng sản phẩm. Lỗi do hệ thống hoặc sản phẩm không đúng mô tả sẽ được xem xét hoàn tiền/đổi hàng. Trường hợp mua nhầm hoặc đổi ý sau khi nhận nội dung thường không thuộc diện hoàn tiền. Chi tiết xem tại trang Điều khoản.',
                 ],
             ],
         ],
@@ -173,6 +231,145 @@
             overflow-wrap: break-word;
             max-width: 100%;
         }
+
+        .home-faq-section {
+            margin-top: 64px;
+            padding: 56px 0;
+            background: transparent;
+            border: 0;
+            box-shadow: none;
+        }
+
+        .home-faq-shell {
+            max-width: 860px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .home-faq-kicker {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(255, 105, 0, 0.1);
+            color: #ea580c;
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .home-faq-title {
+            margin: 14px 0 0;
+            font-size: 2rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .home-faq-intro {
+            max-width: 700px;
+            margin: 14px auto 0;
+            color: #475569;
+            line-height: 1.75;
+        }
+
+        .home-faq-list {
+            margin-top: 26px;
+            display: grid;
+            gap: 14px;
+            text-align: left;
+        }
+
+        .home-faq-item {
+            border-radius: 20px;
+            background: #ffffff;
+            border: 1px solid #f1f5f9;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+
+
+        .home-faq-trigger {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 20px 22px;
+            text-align: left;
+            cursor: pointer;
+            color: #0f172a;
+        }
+
+        .home-faq-trigger:focus-visible {
+            outline: 2px solid rgba(255, 105, 0, 0.35);
+            outline-offset: -2px;
+        }
+
+        .home-faq-question {
+            margin: 0;
+            font-size: 1.02rem;
+            line-height: 1.55;
+            font-weight: 700;
+        }
+
+        .home-faq-icon {
+            flex: 0 0 auto;
+            width: 34px;
+            height: 34px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff7ed;
+            color: #ea580c;
+            transition: transform 0.28s ease, background-color 0.28s ease, color 0.28s ease;
+        }
+
+        .home-faq-item.is-open .home-faq-icon {
+            transform: rotate(180deg);
+            background: #ea580c;
+            color: #fff;
+        }
+
+        .home-faq-panel {
+            height: 0;
+            overflow: hidden;
+            transition: height 0.3s ease;
+        }
+
+        .home-faq-panel-inner {
+            padding: 0 22px 22px;
+            color: #475569;
+            line-height: 1.8;
+        }
+
+        .home-faq-panel-inner p {
+            margin: 0;
+        }
+
+        @media (max-width: 767.98px) {
+            .home-faq-section {
+                padding: 20px;
+            }
+
+            .home-faq-title {
+                font-size: 1.45rem;
+            }
+
+            .home-faq-trigger {
+                padding: 18px;
+            }
+
+            .home-faq-panel-inner {
+                padding: 0 18px 18px;
+            }
+        }
     </style>
 </head>
 
@@ -191,7 +388,7 @@
                         <div class="hero-header-flex">
                             <img src="https://media.giphy.com/media/0fnrt8FDzQBO8RSP9q/giphy.gif" alt="Thông báo"
                                 class="hero-notice-gif ks-img-guard" loading="lazy" decoding="async" draggable="false">
-                            <h1>Thông Báo Quan Trọng :</h1>
+                            <h2>Thông Báo Quan Trọng :</h2>
                         </div>
                         <div class="hero-disclaimer">
                             <p><strong>【Tuyên bố miễn trừ trách nhiệm】</strong></p>
@@ -441,6 +638,30 @@
                     </div>
                 <?php endif; ?>
             </div>
+
+            <section class="home-faq-section" aria-labelledby="homeFaqHeading">
+                <div class="home-faq-shell">
+                    <h2 id="homeFaqHeading" class="home-faq-title">Câu hỏi thường gặp về KaiShop</h2>
+                    <div class="home-faq-list" data-faq-accordion>
+                        <?php foreach ($homeFaqItems as $index => $faqItem): ?>
+                            <?php $faqPanelId = 'home-faq-panel-' . (int) $index; ?>
+                            <article class="home-faq-item">
+                                <button type="button" class="home-faq-trigger" aria-expanded="false"
+                                    aria-controls="<?= $faqPanelId ?>">
+                                    <span class="home-faq-question"><?= htmlspecialchars($faqItem['question']) ?></span>
+                                    <span class="home-faq-icon" aria-hidden="true"><i
+                                            class="fas fa-chevron-down"></i></span>
+                                </button>
+                                <div id="<?= $faqPanelId ?>" class="home-faq-panel" hidden>
+                                    <div class="home-faq-panel-inner">
+                                        <p><?= htmlspecialchars($faqItem['answer']) ?></p>
+                                    </div>
+                                </div>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </section>
         </div>
     </main>
 
@@ -595,6 +816,86 @@
                     animateCardClick(rect.left + rect.width / 2, rect.top + rect.height / 2);
                 });
             });
+
+            const faqAccordion = document.querySelector('[data-faq-accordion]');
+            if (faqAccordion) {
+                const faqItems = Array.from(faqAccordion.querySelectorAll('.home-faq-item'));
+
+                const collapsePanel = (item) => {
+                    const trigger = item.querySelector('.home-faq-trigger');
+                    const panel = item.querySelector('.home-faq-panel');
+                    if (!trigger || !panel || !item.classList.contains('is-open')) return;
+
+                    panel.style.height = panel.scrollHeight + 'px';
+                    requestAnimationFrame(() => {
+                        panel.style.height = '0px';
+                    });
+
+                    trigger.setAttribute('aria-expanded', 'false');
+                    item.classList.remove('is-open');
+
+                    const onCollapseEnd = (event) => {
+                        if (event.propertyName !== 'height') return;
+                        panel.hidden = true;
+                        panel.style.height = '';
+                        panel.removeEventListener('transitionend', onCollapseEnd);
+                    };
+                    panel.addEventListener('transitionend', onCollapseEnd);
+                };
+
+                const expandPanel = (item) => {
+                    const trigger = item.querySelector('.home-faq-trigger');
+                    const panel = item.querySelector('.home-faq-panel');
+                    if (!trigger || !panel) return;
+
+                    panel.hidden = false;
+                    const targetHeight = panel.scrollHeight;
+                    panel.style.height = '0px';
+                    requestAnimationFrame(() => {
+                        item.classList.add('is-open');
+                        trigger.setAttribute('aria-expanded', 'true');
+                        panel.style.height = targetHeight + 'px';
+                    });
+
+                    const onExpandEnd = (event) => {
+                        if (event.propertyName !== 'height') return;
+                        panel.style.height = 'auto';
+                        panel.removeEventListener('transitionend', onExpandEnd);
+                    };
+                    panel.addEventListener('transitionend', onExpandEnd);
+                };
+
+                faqItems.forEach((item, index) => {
+                    const trigger = item.querySelector('.home-faq-trigger');
+                    const panel = item.querySelector('.home-faq-panel');
+                    if (!trigger || !panel) return;
+
+                    if (item.classList.contains('is-open')) {
+                        panel.hidden = false;
+                        panel.style.height = 'auto';
+                        trigger.setAttribute('aria-expanded', 'true');
+                    } else {
+                        panel.hidden = true;
+                        panel.style.height = '';
+                        trigger.setAttribute('aria-expanded', 'false');
+                    }
+
+                    trigger.addEventListener('click', function () {
+                        const isOpen = item.classList.contains('is-open');
+                        faqItems.forEach(otherItem => {
+                            if (otherItem !== item) {
+                                collapsePanel(otherItem);
+                            }
+                        });
+
+                        if (isOpen) {
+                            collapsePanel(item);
+                        } else {
+                            expandPanel(item);
+                        }
+                    });
+                });
+            }
         });
     </script>
 </body>

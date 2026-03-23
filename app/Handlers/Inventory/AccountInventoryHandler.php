@@ -25,6 +25,7 @@ class AccountInventoryHandler extends BaseInventoryHandler
             'total' => (int) ($res['available'] + $res['sold']),
             'available' => (int) $res['available'],
             'sold' => (int) $res['sold'],
+            'revenue' => $this->getRevenue(),
             'is_manual_queue' => false
         ];
     }

@@ -390,6 +390,111 @@ require_once __DIR__ . '/layout/breadcrumb.php';
                     </div>
                 </form>
 
+                <form id="form-binance" method="post" action="<?= url('admin/setting/update') ?>">
+                    <div class="card custom-card mt-3">
+                        <div class="card-header border-0 d-flex justify-content-between align-items-center">
+                            <h3 class="card-title text-uppercase font-weight-bold mb-0">
+                                BINANCE PAY (USDT)
+                            </h3>
+                            <div class="status-toggle ml-auto">
+                                <input type="hidden" name="binance_pay_enabled" id="binance_pay_enabled_val"
+                                    value="<?= (int) ($chungapi['binance_pay_enabled'] ?? 0) ?>">
+                                <?php if ((int) ($chungapi['binance_pay_enabled'] ?? 0) === 1): ?>
+                                    <button type="button"
+                                        class="btn btn-sm btn-success font-weight-bold px-3 btn-status-toggle"
+                                        data-key="binance_pay_enabled" data-target="#binance_pay_enabled_val">
+                                        <i class="fas fa-check-circle mr-1"></i> HOẠT ĐỘNG
+                                    </button>
+                                <?php else: ?>
+                                    <button type="button"
+                                        class="btn btn-sm btn-danger font-weight-bold px-3 btn-status-toggle"
+                                        data-key="binance_pay_enabled" data-target="#binance_pay_enabled_val">
+                                        <i class="fas fa-tools mr-1"></i> BẢO TRÌ
+                                    </button>
+                                <?php endif; ?>
+                            </div>
+
+                        </div>
+                        <div class="card-body pt-0">
+
+                            <div class="form-group">
+                                <label class="font-weight-bold small text-uppercase">ẢNH QR BINANCE Pay</label>
+                                <div class="image-preview-container"
+                                    onclick="document.getElementById('file_binance_qr').click()">
+                                    <?php $binance_qr = $chungapi['binance_qr_image'] ?? ''; ?>
+                                    <img src="<?= htmlspecialchars(url($binance_qr)) ?>" id="preview_binance_qr"
+                                        class="<?= empty($binance_qr) ? 'd-none' : '' ?>">
+                                    <div class="upload-placeholder <?= !empty($binance_qr) ? 'd-none' : '' ?>"
+                                        id="placeholder_binance_qr">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <span class="small">Click để tải ảnh QR</span>
+                                    </div>
+                                </div>
+                                <input type="file" id="file_binance_qr" name="binance_qr_image" class="d-none"
+                                    accept="image/*"
+                                    onchange="previewFile(this, 'preview_binance_qr', 'placeholder_binance_qr', 'input_binance_qr')">
+                                <input type="text" class="form-control form-control-sm" id="input_binance_qr"
+                                    name="binance_qr_image" placeholder="Hoặc nhập URL https://..."
+                                    value="<?= htmlspecialchars((string) ($binance_qr)); ?>"
+                                    oninput="previewUrl(this.value, 'preview_binance_qr', 'placeholder_binance_qr')">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="font-weight-bold small text-uppercase">Binance UID nhận tiền</label>
+                                <input type="text" name="binance_uid" class="form-control"
+                                    value="<?= htmlspecialchars((string) ($chungapi['binance_uid'] ?? '')) ?>"
+                                    placeholder="Nhập UID Binance Funding nhận USDT">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="font-weight-bold small text-uppercase">Tên owner Binance</label>
+                                <input type="text" name="binance_owner" class="form-control"
+                                    value="<?= htmlspecialchars((string) ($chungapi['binance_owner'] ?? '')) ?>"
+                                    placeholder="Ví dụ: KaiHub hoặc tên chủ tài khoản Binance">
+                                <small class="text-muted">Tên này sẽ hiển thị trong bot để user biết đang chuyển cho
+                                    ai.</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="font-weight-bold small text-uppercase">Ghi chú nạp tiền (Binance)</label>
+                                <textarea name="deposit_warning_binance" class="form-control" rows="3"
+                                    placeholder="Cảnh báo hiển thị khi người dùng nạp tiền qua Binance..."><?= htmlspecialchars((string) ($chungapi['deposit_warning_binance'] ?? '')) ?></textarea>
+                                <small class="text-muted">Sử dụng <code>{amount}</code>, <code>{uid}</code> và
+                                    <code>{owner}</code> để hiển
+                                    thị động số tiền, UID nhận và tên owner.</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="font-weight-bold small text-uppercase">Tỷ giá quy đổi (1 USDT = ?
+                                    VND)</label>
+                                <input type="number" min="1" step="1" name="binance_rate_vnd" class="form-control"
+                                    value="<?= htmlspecialchars((string) ($chungapi['binance_rate_vnd'] ?? '25000')) ?>"
+                                    placeholder="25000">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="font-weight-bold small text-uppercase">Binance API Key</label>
+                                <input type="password" name="binance_api_key" class="form-control"
+                                    value="<?= htmlspecialchars((string) ($chungapi['binance_api_key'] ?? '')) ?>"
+                                    autocomplete="off" placeholder="API Key (chỉ quyền đọc giao dịch Pay)">
+                            </div>
+
+                            <div class="form-group mb-0">
+                                <label class="font-weight-bold small text-uppercase">Binance API Secret</label>
+                                <input type="password" name="binance_api_secret" class="form-control"
+                                    value="<?= htmlspecialchars((string) ($chungapi['binance_api_secret'] ?? '')) ?>"
+                                    autocomplete="off" placeholder="API Secret">
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-0 text-right">
+                            <button type="submit" class="btn btn-primary shadow-sm px-4 font-weight-bold"
+                                style="border-radius: 8px;">
+                                <i class="fas fa-save mr-1"></i> LƯU BINANCE
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
 
             </div>
 
@@ -577,111 +682,6 @@ require_once __DIR__ . '/layout/breadcrumb.php';
                             <button type="submit" class="btn btn-primary shadow-sm px-4 font-weight-bold"
                                 style="border-radius: 8px;">
                                 <i class="fas fa-save mr-1"></i> LƯU BINANCE BONUS
-                            </button>
-                        </div>
-                    </div>
-                </form>
-
-                <form id="form-binance" method="post" action="<?= url('admin/setting/update') ?>">
-                    <div class="card custom-card mt-3">
-                        <div class="card-header border-0 d-flex justify-content-between align-items-center">
-                            <h3 class="card-title text-uppercase font-weight-bold mb-0">
-                                BINANCE PAY (USDT)
-                            </h3>
-                            <div class="status-toggle ml-auto">
-                                <input type="hidden" name="binance_pay_enabled" id="binance_pay_enabled_val"
-                                    value="<?= (int) ($chungapi['binance_pay_enabled'] ?? 0) ?>">
-                                <?php if ((int) ($chungapi['binance_pay_enabled'] ?? 0) === 1): ?>
-                                    <button type="button"
-                                        class="btn btn-sm btn-success font-weight-bold px-3 btn-status-toggle"
-                                        data-key="binance_pay_enabled" data-target="#binance_pay_enabled_val">
-                                        <i class="fas fa-check-circle mr-1"></i> HOẠT ĐỘNG
-                                    </button>
-                                <?php else: ?>
-                                    <button type="button"
-                                        class="btn btn-sm btn-danger font-weight-bold px-3 btn-status-toggle"
-                                        data-key="binance_pay_enabled" data-target="#binance_pay_enabled_val">
-                                        <i class="fas fa-tools mr-1"></i> BẢO TRÌ
-                                    </button>
-                                <?php endif; ?>
-                            </div>
-
-                        </div>
-                        <div class="card-body pt-0">
-
-                            <div class="form-group">
-                                <label class="font-weight-bold small text-uppercase">ẢNH QR BINANCE Pay</label>
-                                <div class="image-preview-container"
-                                    onclick="document.getElementById('file_binance_qr').click()">
-                                    <?php $binance_qr = $chungapi['binance_qr_image'] ?? ''; ?>
-                                    <img src="<?= htmlspecialchars(url($binance_qr)) ?>" id="preview_binance_qr"
-                                        class="<?= empty($binance_qr) ? 'd-none' : '' ?>">
-                                    <div class="upload-placeholder <?= !empty($binance_qr) ? 'd-none' : '' ?>"
-                                        id="placeholder_binance_qr">
-                                        <i class="fas fa-cloud-upload-alt"></i>
-                                        <span class="small">Click để tải ảnh QR</span>
-                                    </div>
-                                </div>
-                                <input type="file" id="file_binance_qr" name="binance_qr_image" class="d-none"
-                                    accept="image/*"
-                                    onchange="previewFile(this, 'preview_binance_qr', 'placeholder_binance_qr', 'input_binance_qr')">
-                                <input type="text" class="form-control form-control-sm" id="input_binance_qr"
-                                    name="binance_qr_image" placeholder="Hoặc nhập URL https://..."
-                                    value="<?= htmlspecialchars((string) ($binance_qr)); ?>"
-                                    oninput="previewUrl(this.value, 'preview_binance_qr', 'placeholder_binance_qr')">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="font-weight-bold small text-uppercase">Binance UID nhận tiền</label>
-                                <input type="text" name="binance_uid" class="form-control"
-                                    value="<?= htmlspecialchars((string) ($chungapi['binance_uid'] ?? '')) ?>"
-                                    placeholder="Nhập UID Binance Funding nhận USDT">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="font-weight-bold small text-uppercase">Tên owner Binance</label>
-                                <input type="text" name="binance_owner" class="form-control"
-                                    value="<?= htmlspecialchars((string) ($chungapi['binance_owner'] ?? '')) ?>"
-                                    placeholder="Ví dụ: KaiHub hoặc tên chủ tài khoản Binance">
-                                <small class="text-muted">Tên này sẽ hiển thị trong bot để user biết đang chuyển cho
-                                    ai.</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="font-weight-bold small text-uppercase">Ghi chú nạp tiền (Binance)</label>
-                                <textarea name="deposit_warning_binance" class="form-control" rows="3"
-                                    placeholder="Cảnh báo hiển thị khi người dùng nạp tiền qua Binance..."><?= htmlspecialchars((string) ($chungapi['deposit_warning_binance'] ?? '')) ?></textarea>
-                                <small class="text-muted">Sử dụng <code>{amount}</code>, <code>{uid}</code> và
-                                    <code>{owner}</code> để hiển
-                                    thị động số tiền, UID nhận và tên owner.</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="font-weight-bold small text-uppercase">Tỷ giá quy đổi (1 USDT = ?
-                                    VND)</label>
-                                <input type="number" min="1" step="1" name="binance_rate_vnd" class="form-control"
-                                    value="<?= htmlspecialchars((string) ($chungapi['binance_rate_vnd'] ?? '25000')) ?>"
-                                    placeholder="25000">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="font-weight-bold small text-uppercase">Binance API Key</label>
-                                <input type="password" name="binance_api_key" class="form-control"
-                                    value="<?= htmlspecialchars((string) ($chungapi['binance_api_key'] ?? '')) ?>"
-                                    autocomplete="off" placeholder="API Key (chỉ quyền đọc giao dịch Pay)">
-                            </div>
-
-                            <div class="form-group mb-0">
-                                <label class="font-weight-bold small text-uppercase">Binance API Secret</label>
-                                <input type="password" name="binance_api_secret" class="form-control"
-                                    value="<?= htmlspecialchars((string) ($chungapi['binance_api_secret'] ?? '')) ?>"
-                                    autocomplete="off" placeholder="API Secret">
-                            </div>
-                        </div>
-                        <div class="card-footer bg-transparent border-0 text-right">
-                            <button type="submit" class="btn btn-primary shadow-sm px-4 font-weight-bold"
-                                style="border-radius: 8px;">
-                                <i class="fas fa-save mr-1"></i> LƯU BINANCE
                             </button>
                         </div>
                     </div>

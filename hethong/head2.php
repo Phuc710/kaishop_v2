@@ -39,6 +39,8 @@ $privatePaths = [
     '/history-code',
     '/history-orders',
     '/deposit',
+    '/deposit-bank',
+    '/balance',
     '/bao-tri',
 ];
 $isPrivatePage = false;
@@ -65,6 +67,8 @@ $lightweightPaths = [
     '/history-code',
     '/history-orders',
     '/deposit',
+    '/deposit-bank',
+    '/balance',
     '/chinh-sach',
     '/dieu-khoan',
     '/bao-tri',
@@ -112,7 +116,8 @@ $ogLocale = $isEnglishPage ? 'en_US' : 'vi_VN';
 <meta name="robots" content="<?= htmlspecialchars($seoRobotsValue, ENT_QUOTES, 'UTF-8') ?>">
 <meta name="theme-color" content="#ff6900">
 <meta name="author" content="<?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?>">
-<meta name="csrf-token" content="<?= htmlspecialchars(function_exists('csrf_token') ? csrf_token() : '', ENT_QUOTES, 'UTF-8') ?>">
+<meta name="csrf-token"
+    content="<?= htmlspecialchars(function_exists('csrf_token') ? csrf_token() : '', ENT_QUOTES, 'UTF-8') ?>">
 <meta name="revisit-after" content="3 days">
 <meta name="geo.region" content="<?= htmlspecialchars($geoRegion, ENT_QUOTES, 'UTF-8') ?>">
 <meta name="geo.placename" content="Việt Nam">
@@ -138,6 +143,7 @@ $ogLocale = $isEnglishPage ? 'en_US' : 'vi_VN';
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="<?= htmlspecialchars($seoTitleValue, ENT_QUOTES, 'UTF-8') ?>">
 <meta name="twitter:description" content="<?= htmlspecialchars($seoDescriptionValue, ENT_QUOTES, 'UTF-8') ?>">
+<meta name="twitter:url" content="<?= htmlspecialchars($seoCanonicalValue, ENT_QUOTES, 'UTF-8') ?>">
 <?php if ($seoImageValue !== ''): ?>
     <meta name="twitter:image" content="<?= htmlspecialchars($seoImageValue, ENT_QUOTES, 'UTF-8') ?>">
     <meta name="twitter:image:alt" content="<?= htmlspecialchars($seoTitleValue, ENT_QUOTES, 'UTF-8') ?>">
@@ -233,7 +239,7 @@ $fallbackFaviconHref = asset('assets/images/kaishop_favicon.png');
     <link rel="stylesheet" type="text/css" href="<?= asset('assets/css/datatables.css') ?>">
 <?php endif; ?>
 
-<script src="<?= asset('assets/js/jquery.js') ?>"></script>
+<script src="<?= asset('assets/js/jquery.js') ?>" defer></script>
 <script src="<?= asset('assets/js/notify.js') ?>" defer></script>
 <script src="<?= asset('assets/js/sweetalert.js') ?>" defer></script>
 <script src="<?= asset('assets/js/swal_helper.js') ?>" defer></script>

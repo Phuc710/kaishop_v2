@@ -182,7 +182,7 @@
                                         foreach ($footer_categories as $cat):
                                             ?>
                                             <li><a
-                                                    href="<?= url('category/' . xoadau($cat['name'])) ?>"><?= htmlspecialchars($cat['name']); ?></a>
+                                                    href="<?= url('category/' . trim((string) ($cat['slug'] ?? xoadau($cat['name'])))) ?>"><?= htmlspecialchars($cat['name']); ?></a>
                                             </li>
                                             <?php
                                         endforeach;

@@ -711,14 +711,17 @@ if ($active_template === '2' && empty($thongbaoContent)) {
             return; // Still within closed period
         }
 
-        // Show popup with animation
+        // Show popup with animation after 6 seconds to avoid Intrusive Interstitial Penalty
         const overlay = document.getElementById('notification-popup-overlay');
         if (!overlay) return;
-        overlay.style.display = 'flex';
-        overlay.classList.remove('lp-popup-hide');
-        requestAnimationFrame(() => {
-            overlay.classList.add('lp-popup-show');
-        });
+
+        setTimeout(() => {
+            overlay.style.display = 'flex';
+            overlay.classList.remove('lp-popup-hide');
+            requestAnimationFrame(() => {
+                overlay.classList.add('lp-popup-show');
+            });
+        }, 6000);
     })();
 
     function closeNotificationPopup() {

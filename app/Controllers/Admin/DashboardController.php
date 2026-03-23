@@ -61,6 +61,11 @@ class DashboardController extends Controller
         $topDepositors = $this->fetchTopDepositors($rangeMeta, 10);
         $topSpenders = $this->fetchTopSpenders($rangeMeta, 10);
 
+        // New breakdowns for enhanced dashboard
+        $categoryBreakdown = $this->fetchCategoryBreakdown($rangeMeta);
+        $orderStatusBreakdown = $this->fetchOrderStatusBreakdown($rangeMeta);
+        $depositMethodBreakdown = $this->fetchDepositMethodBreakdown($rangeMeta);
+
         $this->view('admin/dashboard', [
             'chungapi' => $chungapi,
             'activeRange' => $rangeKey,
@@ -80,6 +85,9 @@ class DashboardController extends Controller
             'lowStockProducts' => $lowStockProducts,
             'topDepositors' => $topDepositors,
             'topSpenders' => $topSpenders,
+            'categoryBreakdown' => $categoryBreakdown,
+            'orderStatusBreakdown' => $orderStatusBreakdown,
+            'depositMethodBreakdown' => $depositMethodBreakdown,
         ]);
     }
 
@@ -249,9 +257,14 @@ class DashboardController extends Controller
                     $whereSql .= $this->buildRangeWhere('h.`created_at`', $rangeMeta, $params, 'dep');
                 }
 
+                $telegramDepositCond = $this->buildTelegramDepositCondition('h');
+                $webDepositCond = "NOT ({$telegramDepositCond})";
+
                 $sql = "
                     SELECT
                         COALESCE(SUM(h.`thucnhan`), 0) AS deposit_total,
+                        COALESCE(SUM(CASE WHEN {$webDepositCond} THEN h.`thucnhan` ELSE 0 END), 0) AS deposit_web,
+                        COALESCE(SUM(CASE WHEN {$telegramDepositCond} THEN h.`thucnhan` ELSE 0 END), 0) AS deposit_telegram,
                         COUNT(*) AS deposit_count
                     FROM `history_nap_bank` h
                     {$whereSql}
@@ -260,14 +273,17 @@ class DashboardController extends Controller
                 $stmt->execute($params);
                 $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
                 $stats['deposit_total'] = (int) ($row['deposit_total'] ?? 0);
+                $stats['deposit_web'] = (int) ($row['deposit_web'] ?? 0);
+                $stats['deposit_telegram'] = (int) ($row['deposit_telegram'] ?? 0);
                 $stats['deposit_count'] = (int) ($row['deposit_count'] ?? 0);
             }
 
-            // Keep legacy keys for backward compatibility in old views/widgets.
-            $stats['revenue_total'] = $stats['spend_total'];
-            $stats['revenue_web'] = $stats['spend_web'];
-            $stats['revenue_telegram'] = $stats['spend_telegram'];
-            $stats['net_flow'] = $stats['deposit_total'] - ($stats['spend_web'] + $stats['spend_telegram']);
+            // Redefine metrics based on user request:
+            // Web = Deposits (Nạp), Tele = Purchases (Mua)
+            $stats['revenue_total'] = $stats['deposit_total']; // Tổng nạp
+            $stats['revenue_web'] = $stats['deposit_web']; // Nạp qua Web
+            $stats['revenue_telegram'] = $stats['spend_telegram']; // Mua qua Bot
+            $stats['net_flow'] = $stats['deposit_total'] - $stats['spend_total'];
         } catch (Throwable $e) {
             // Non-blocking dashboard fallback.
         }
@@ -997,6 +1013,110 @@ class DashboardController extends Controller
         } catch (Throwable $e) {
             return [];
         }
+    }
+
+    private function fetchCategoryBreakdown(array $rangeMeta): array
+    {
+        if (!$this->tableExists('orders') || !$this->tableExists('products') || !$this->tableExists('categories')) {
+            return [];
+        }
+
+        try {
+            $params = [];
+            $whereSql = "WHERE o.status IN ('pending','processing','completed')";
+            if ($this->hasColumn('orders', 'created_at')) {
+                $whereSql .= $this->buildRangeWhere('o.created_at', $rangeMeta, $params, 'cat');
+            }
+
+            $sql = "
+                SELECT c.name as category_name, SUM(o.price) as revenue_total, COUNT(*) as order_count
+                FROM orders o
+                JOIN products p ON o.product_id = p.id
+                JOIN categories c ON p.category_id = c.id
+                {$whereSql}
+                GROUP BY c.id
+                ORDER BY revenue_total DESC
+                LIMIT 10
+            ";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (Throwable $e) {
+            return [];
+        }
+    }
+
+    private function fetchOrderStatusBreakdown(array $rangeMeta): array
+    {
+        if (!$this->tableExists('orders')) {
+            return [];
+        }
+
+        try {
+            $params = [];
+            $whereSql = "WHERE 1=1";
+            if ($this->hasColumn('orders', 'created_at')) {
+                $whereSql .= $this->buildRangeWhere('o.created_at', $rangeMeta, $params, 'os');
+            }
+
+            $sql = "
+                SELECT status, COUNT(*) as count
+                FROM orders o
+                {$whereSql}
+                GROUP BY status
+            ";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (Throwable $e) {
+            return [];
+        }
+    }
+
+    private function fetchDepositMethodBreakdown(array $rangeMeta): array
+    {
+        if (!$this->tableExists('history_nap_bank')) {
+            return [];
+        }
+
+        try {
+            $params = [];
+            $whereSql = "WHERE " . $this->buildSuccessfulDepositCondition('h');
+            if ($this->hasColumn('history_nap_bank', 'created_at')) {
+                $whereSql .= $this->buildRangeWhere('h.created_at', $rangeMeta, $params, 'dmb');
+            }
+
+            $sql = "
+                SELECT type as method, SUM(thucnhan) as total_amount, COUNT(*) as count
+                FROM history_nap_bank h
+                {$whereSql}
+                GROUP BY type
+                ORDER BY total_amount DESC
+            ";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (Throwable $e) {
+            return [];
+        }
+    }
+
+    private function buildTelegramDepositCondition(string $alias): string
+    {
+        $parts = [];
+        if ($this->hasColumn('history_nap_bank', 'source_channel')) {
+            $parts[] = "COALESCE({$alias}.source_channel, 0) = 1";
+        }
+        if ($this->hasColumn('history_nap_bank', 'type')) {
+            $parts[] = "LOWER(COALESCE({$alias}.type, '')) LIKE '%telegram%'";
+        }
+        if ($this->hasColumn('history_nap_bank', 'username')) {
+            $parts[] = "LOWER(COALESCE({$alias}.username, '')) LIKE 'tg\_%'";
+        }
+
+        if (empty($parts))
+            return "0=1";
+        return '(' . implode(' OR ', $parts) . ')';
     }
 
     private function tableExists(string $table): bool

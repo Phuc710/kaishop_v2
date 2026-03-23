@@ -32,6 +32,8 @@ $categoryName = trim((string) ($product['category_name'] ?? ''));
 $categorySlug = trim((string) ($product['category_slug'] ?? ''));
 $publicPath = (string) ($product['public_path'] ?? ('product/' . $productId));
 $publicUrl = (string) ($product['public_url'] ?? url($publicPath));
+$siteName = (string) ($chungapi['ten_web'] ?? 'KaiShop');
+$categoryUrl = $categorySlug !== '' ? url('category/' . $categorySlug) : '';
 $thumb = trim((string) ($product['image'] ?? ''));
 $gallery = is_array($product['gallery_arr'] ?? null) ? $product['gallery_arr'] : [];
 
@@ -88,17 +90,27 @@ if ($displayMaxQty > 0 && $displayMaxQty < $purchaseMinQty) {
     $canPurchase = false;
 }
 
-$seoTitle = $productName . ' | ' . (string) ($chungapi['ten_web'] ?? 'KaiShop');
+$seoTitle = $productName . ($categoryName !== '' ? ' - ' . $categoryName : '') . ' | ' . $siteName;
 $rawDescHtml = trim((string) ($product['description'] ?? ''));
-$rawDesc = trim(strip_tags(html_entity_decode($rawDescHtml, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+$rawDesc = SeoContentHelper::cleanText($rawDescHtml);
+$productSummaryText = $rawDesc !== ''
+    ? SeoContentHelper::excerpt($rawDesc, 220)
+    : SeoContentHelper::excerpt($productName . ' thuộc danh mục ' . ($categoryName !== '' ? $categoryName : 'sản phẩm số') . ' tại ' . $siteName . '.', 220);
 $seoDescription = trim((string) ($product['seo_description'] ?? ''));
 if ($seoDescription === '') {
-    $seoDescription = function_exists('mb_substr')
-        ? mb_substr($rawDesc, 0, 160)
-        : substr($rawDesc, 0, 160);
+    $seoDescription = SeoContentHelper::excerpt($productSummaryText, 160);
 }
+$seoKeywords = SeoContentHelper::keywordString([
+    $productName,
+    $categoryName,
+    'mua ' . $productName,
+    $categoryName !== '' ? ($categoryName . ' uy tín') : '',
+    $deliveryMode === 'source_link' ? 'source code' : 'sản phẩm số',
+    $siteName,
+]);
 $seoCanonical = $publicUrl;
 $seoImage = $galleryImages[0] ?? '';
+$seoOgType = 'product';
 
 $descriptionHtml = 'Chưa có mô tả cho sản phẩm này.';
 if ($rawDescHtml !== '') {
@@ -132,13 +144,16 @@ if ($rawDescHtml !== '') {
     $schemaProduct = [
         '@context'    => 'https://schema.org',
         '@type'       => 'Product',
+        'mainEntityOfPage' => $publicUrl,
+        'sku'         => (string) $productId,
         'name'        => $productName,
         'description' => $seoDescription !== '' ? $seoDescription : $productName,
         'image'       => $galleryImages,
         'url'         => $publicUrl,
+        'category'    => $categoryName !== '' ? $categoryName : null,
         'brand'       => [
             '@type' => 'Brand',
-            'name'  => $chungapi['ten_web'] ?? 'KaiShop',
+            'name'  => $siteName,
         ],
         'offers'      => [
             '@type'         => 'Offer',
@@ -146,9 +161,10 @@ if ($rawDescHtml !== '') {
             'price'         => $priceVnd,
             'availability'  => $schemaAvailability,
             'url'           => $publicUrl,
+            'itemCondition' => 'https://schema.org/NewCondition',
             'seller'        => [
                 '@type' => 'Organization',
-                'name'  => $chungapi['ten_web'] ?? 'KaiShop',
+                'name'  => $siteName,
                 'url'   => url(''),
             ],
         ],
@@ -165,7 +181,7 @@ if ($rawDescHtml !== '') {
     ];
     $pos = 2;
     if ($categoryName !== '') {
-        $catUrl = $categorySlug !== '' ? url($categorySlug) : url('');
+        $catUrl = $categoryUrl !== '' ? $categoryUrl : url('');
         $breadcrumbs[] = ['@type' => 'ListItem', 'position' => $pos++, 'name' => $categoryName, 'item' => $catUrl];
     }
     $breadcrumbs[] = ['@type' => 'ListItem', 'position' => $pos, 'name' => $productName, 'item' => $publicUrl];
@@ -339,6 +355,38 @@ if ($rawDescHtml !== '') {
             margin: 0 0 15px;
             font-weight: 700;
             color: #151a2d;
+        }
+
+        .pd-breadcrumb {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 14px;
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .pd-breadcrumb a {
+            color: #475569;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .pd-breadcrumb a:hover {
+            color: #ff6900;
+        }
+
+        .pd-summary-text {
+            margin: 0 0 18px;
+            color: #475569;
+            line-height: 1.8;
+        }
+
+        .pd-summary-text a {
+            color: #ff6900;
+            font-weight: 700;
+            text-decoration: none;
         }
 
         .pd-meta-line {
@@ -723,7 +771,17 @@ if ($rawDescHtml !== '') {
 
                 <div class="col-lg-7">
                     <div class="pd-card p-3 p-md-4">
+                        <nav class="pd-breadcrumb" aria-label="Breadcrumb">
+                            <a href="<?= url('') ?>">Trang chủ</a>
+                            <?php if ($categoryUrl !== ''): ?>
+                                <span>/</span>
+                                <a href="<?= htmlspecialchars($categoryUrl, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($categoryName, ENT_QUOTES, 'UTF-8') ?></a>
+                            <?php endif; ?>
+                            <span>/</span>
+                            <span><?= htmlspecialchars($productName, ENT_QUOTES, 'UTF-8') ?></span>
+                        </nav>
                         <h1 class="pd-title"><?= htmlspecialchars($productName, ENT_QUOTES, 'UTF-8') ?></h1>
+                        <p class="pd-summary-text"><?= htmlspecialchars($productSummaryText, ENT_QUOTES, 'UTF-8') ?></p>
 
                         <div class="pd-meta-line">
                             <div>
@@ -856,6 +914,21 @@ if ($rawDescHtml !== '') {
                         <div class="pd-desc">
                             <?= $descriptionHtml ?>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="pd-card p-3 p-md-4">
+                        <h2 class="mb-3" style="font-weight:700; color:#151a2d;">Thông tin nhanh cho người mua</h2>
+                        <p class="pd-summary-text mb-0">
+                            <?= htmlspecialchars($productSummaryText, ENT_QUOTES, 'UTF-8') ?>
+                            <?php if ($categoryUrl !== ''): ?>
+                                Xem thêm các sản phẩm cùng nhóm tại
+                                <a href="<?= htmlspecialchars($categoryUrl, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($categoryName, ENT_QUOTES, 'UTF-8') ?></a>.
+                            <?php endif; ?>
+                        </p>
                     </div>
                 </div>
             </div>

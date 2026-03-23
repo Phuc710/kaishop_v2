@@ -28,6 +28,13 @@ abstract class BaseInventoryHandler implements InventoryHandlerInterface
         return $items;
     }
 
+    protected function getRevenue(): int
+    {
+        $stmt = $this->db->prepare("SELECT SUM(`price`) FROM `orders` WHERE `product_id` = ? AND `status` = 'completed'");
+        $stmt->execute([$this->product['id']]);
+        return (int) $stmt->fetchColumn();
+    }
+
     abstract public function getItems(array $filters): array;
     abstract public function getStats(): array;
     abstract public function getPartialView(): string;

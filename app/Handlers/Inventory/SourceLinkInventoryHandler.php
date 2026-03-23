@@ -33,6 +33,7 @@ class SourceLinkInventoryHandler extends BaseInventoryHandler
             'total' => (int) $counts['total'],
             'available' => (int) $counts['total'], // Luôn có link
             'sold' => (int) $counts['sold'],
+            'revenue' => $this->getRevenue(),
             'is_manual_queue' => true,
             'is_source_link' => true
         ];

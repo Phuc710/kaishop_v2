@@ -10,6 +10,8 @@ Allow: /public/
 Disallow: /admin/
 Disallow: /profile/
 Disallow: /deposit/
+Disallow: /deposit-bank
+Disallow: /balance/
 Disallow: /history-balance/
 Disallow: /history-code/
 Disallow: /history-orders/
