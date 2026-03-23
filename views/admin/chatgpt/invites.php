@@ -11,6 +11,22 @@ $invites = $invites ?? [];
 $allowed = $allowed ?? [];
 $farms = $farms ?? [];
 $filters = $filters ?? [];
+$gptTimeService = class_exists('TimeService') ? TimeService::instance() : null;
+$formatGptTime = static function ($value, $format = 'd/m/Y H:i') use ($gptTimeService) {
+    $raw = trim((string) ($value ?? ''));
+    if ($raw === '' || $raw === '0000-00-00 00:00:00') {
+        return '--';
+    }
+
+    if ($gptTimeService) {
+        $formatted = $gptTimeService->formatDisplay($raw, $format, $gptTimeService->getDbTimezone());
+        if ($formatted !== '') {
+            return $formatted;
+        }
+    }
+
+    return $raw;
+};
 ?>
 
 <style>
@@ -242,7 +258,7 @@ $filters = $filters ?? [];
                                                     </span>
                                                 </td>
                                                 <td class="text-center"><span
-                                                        class="date-badge"><?= !empty($invite['last_seen_at']) ? date('d/m/Y H:i', strtotime($invite['last_seen_at'])) : '--' ?></span>
+                                                        class="date-badge"><?= htmlspecialchars($formatGptTime($invite['last_seen_at'] ?? null), ENT_QUOTES, 'UTF-8') ?></span>
                                                 </td>
                                                 <td class="text-center">
                                                     <?php if (($invite['status'] ?? '') === 'pending'): ?>
@@ -306,7 +322,7 @@ $filters = $filters ?? [];
                                                         class="date-badge"><?= htmlspecialchars($row['status'] ?? '--') ?></span>
                                                 </td>
                                                 <td class="text-center"><span
-                                                        class="date-badge"><?= !empty($row['created_at']) ? date('d/m/Y H:i', strtotime($row['created_at'])) : '--' ?></span>
+                                                        class="date-badge"><?= htmlspecialchars($formatGptTime($row['created_at'] ?? null), ENT_QUOTES, 'UTF-8') ?></span>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>

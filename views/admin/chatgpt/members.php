@@ -225,10 +225,10 @@ $memberSourceOptions = $memberSourceOptions ?? [];
                                     <th class="text-center">Email</th>
                                     <th class="text-center">Farm</th>
                                     <th class="text-center">Vai trò</th>
-                                    <th class="text-center">Nguồn</th>
+                                    <th class="text-center">Nguồn mời</th>
                                     <th class="text-center">Trạng thái</th>
-                                    <th class="text-center">Lần đầu</th>
-                                    <th class="text-center">Lần cuối</th>
+                                    <th class="text-center">Ngày vào</th>
+                                    <th class="text-center">Cập nhật</th>
                                     <th class="text-center">Hành động</th>
                                 </tr>
                             </thead>
@@ -266,7 +266,7 @@ $memberSourceOptions = $memberSourceOptions ?? [];
                                             <td class="text-center">
                                                 <span
                                                     class="<?= htmlspecialchars($member['source_badge_class'] ?? 'gptb-badge gptb-badge--muted') ?>">
-                                                    <?= htmlspecialchars($member['source_label'] ?? '--') ?>
+                                                    <?= $member['source_label'] ?? '--' ?>
                                                 </span>
                                             </td>
                                             <td class="text-center">

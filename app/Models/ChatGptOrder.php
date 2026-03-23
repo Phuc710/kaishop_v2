@@ -24,11 +24,12 @@ class ChatGptOrder extends Model
     public function create($data)
     {
         $code = $this->generateOrderCode();
-        $expiresAt = $data['expires_at'] ?? date('Y-m-d H:i:s', strtotime('+30 days'));
+        $expiresAt = $data['expires_at'] ?? $this->defaultExpiresAt();
+        $nowSql = $this->nowSql();
         $stmt = $this->db->prepare(
             "INSERT INTO `{$this->table}`
              (`order_code`, `customer_email`, `product_code`, `status`, `assigned_farm_id`, `expires_at`, `source_order_id`, `created_at`, `updated_at`)
-             VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())"
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
         );
         $stmt->execute([
             $code,
@@ -38,6 +39,8 @@ class ChatGptOrder extends Model
             $data['assigned_farm_id'] ?? null,
             $expiresAt,
             $data['source_order_id'] ?? null,
+            $nowSql,
+            $nowSql,
         ]);
         return (int) $this->db->lastInsertId();
     }
@@ -92,11 +95,11 @@ class ChatGptOrder extends Model
         }
         if (!empty($filters['date_from'])) {
             $where[] = 'o.`created_at` >= ?';
-            $params[] = $filters['date_from'] . ' 00:00:00';
+            $params[] = $this->normalizeDateBoundary($filters['date_from'], false);
         }
         if (!empty($filters['date_to'])) {
             $where[] = 'o.`created_at` <= ?';
-            $params[] = $filters['date_to'] . ' 23:59:59';
+            $params[] = $this->normalizeDateBoundary($filters['date_to'], true);
         }
 
         $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
@@ -118,8 +121,8 @@ class ChatGptOrder extends Model
      */
     public function updateStatus($id, $status, $extra = [])
     {
-        $sets = ['`status` = ?', '`updated_at` = NOW()'];
-        $params = [$status];
+        $sets = ['`status` = ?', '`updated_at` = ?'];
+        $params = [$status, $this->nowSql()];
 
         if (isset($extra['note'])) {
             $sets[] = '`note` = ?';
@@ -170,16 +173,17 @@ class ChatGptOrder extends Model
 
     public function getExpiredOrders($farmId)
     {
+        $nowSql = $this->nowSql();
         $stmt = $this->db->prepare(
             "SELECT *
              FROM `{$this->table}`
              WHERE `assigned_farm_id` = ?
                AND `status` IN ('pending', 'inviting', 'active')
                AND `expires_at` IS NOT NULL
-               AND `expires_at` <= NOW()
+               AND `expires_at` <= ?
              ORDER BY `expires_at` ASC, `id` ASC"
         );
-        $stmt->execute([(int) $farmId]);
+        $stmt->execute([(int) $farmId, $nowSql]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
@@ -200,5 +204,42 @@ class ChatGptOrder extends Model
         );
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    private function nowSql(): string
+    {
+        if ($this->timeService) {
+            return $this->timeService->nowSql($this->timeService->getDbTimezone());
+        }
+
+        return date('Y-m-d H:i:s');
+    }
+
+    private function defaultExpiresAt(): string
+    {
+        if ($this->timeService) {
+            return $this->timeService
+                ->nowDateTime($this->timeService->getDbTimezone())
+                ->modify('+30 days')
+                ->format('Y-m-d H:i:s');
+        }
+
+        return date('Y-m-d H:i:s', strtotime('+30 days'));
+    }
+
+    private function normalizeDateBoundary($date, bool $endOfDay): string
+    {
+        $raw = trim((string) $date);
+        $boundary = $raw . ($endOfDay ? ' 23:59:59' : ' 00:00:00');
+
+        if ($this->timeService) {
+            return $this->timeService->formatDb(
+                $boundary,
+                'Y-m-d H:i:s',
+                $this->timeService->getDisplayTimezone()
+            );
+        }
+
+        return $boundary;
     }
 }

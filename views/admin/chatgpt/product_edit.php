@@ -4,10 +4,10 @@
  * Optimized for ChatGPT Business Module
  */
 $isEdit = !empty($product);
-$pageTitle = $isEdit ? 'Sửa sản phẩm GPT' : 'Tạo sản phẩm GPT Business';
+$pageTitle = $isEdit ? 'SÃƒÂ¡Ã‚Â»Ã‚Â­a sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m GPT' : 'TÃƒÂ¡Ã‚ÂºÃ‚Â¡o sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m GPT Business';
 $breadcrumbs = [
     ['label' => 'GPT Business', 'url' => url('admin/gpt-business/farms')],
-    ['label' => $isEdit ? 'Sửa sản phẩm' : 'Thêm mới'],
+    ['label' => $isEdit ? 'SÃƒÂ¡Ã‚Â»Ã‚Â­a sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m' : 'ThÃƒÆ’Ã‚Âªm mÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºi'],
 ];
 $adminNeedsSummernote = true;
 require_once __DIR__ . '/../layout/head.php';
@@ -116,16 +116,16 @@ $visibilityMode = (string) ($product['visibility_mode'] ?? 'both');
                     <div
                         class="card-header gptb-card-header-main border-0 d-flex justify-content-between align-items-center">
                         <span class="gptb-title-with-bar">
-                            <?= $isEdit ? 'CẬP NHẬT: <span class="text-warning">' . htmlspecialchars($product['name']) . '</span>' : 'TẠO SẢN PHẨM GPT MỚI' ?>
+                            <?= $isEdit ? 'CÃƒÂ¡Ã‚ÂºÃ‚Â¬P NHÃƒÂ¡Ã‚ÂºÃ‚Â¬T: <span class="text-warning">' . htmlspecialchars($product['name']) . '</span>' : 'TÃƒÂ¡Ã‚ÂºÃ‚Â O SÃƒÂ¡Ã‚ÂºÃ‚Â¢N PHÃƒÂ¡Ã‚ÂºÃ‚Â¨M GPT MÃƒÂ¡Ã‚Â»Ã…Â¡I' ?>
                         </span>
                     </div>
 
                     <div class="card-body pt-4">
-                        <!-- Tên & Slug -->
+                        <!-- TÃƒÆ’Ã‚Âªn & Slug -->
                         <div class="row">
                             <div class="col-md-7">
                                 <div class="form-group mb-3">
-                                    <label class="font-weight-bold">Tên sản phẩm <span
+                                    <label class="font-weight-bold">TÃƒÆ’Ã‚Âªn sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m <span
                                             class="text-danger">*</span></label>
                                     <input type="text" class="form-control form-control-lg" id="name" name="name"
                                         value="<?= htmlspecialchars($product['name'] ?? '') ?>" required>
@@ -133,7 +133,7 @@ $visibilityMode = (string) ($product['visibility_mode'] ?? 'both');
                             </div>
                             <div class="col-md-5">
                                 <div class="form-group mb-3">
-                                    <label class="font-weight-bold">Đường dẫn (Slug)</label>
+                                    <label class="font-weight-bold">Ãƒâ€žÃ‚ÂÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã‚Âng dÃƒÂ¡Ã‚ÂºÃ‚Â«n (Slug)</label>
                                     <div class="input-group">
                                         <div class="input-group-prepend"><span class="input-group-text">/</span></div>
                                         <input type="text" class="form-control" name="slug" id="slug"
@@ -143,54 +143,54 @@ $visibilityMode = (string) ($product['visibility_mode'] ?? 'both');
                             </div>
                         </div>
 
-                        <!-- Giá & Logic % -->
+                        <!-- GiÃƒÆ’Ã‚Â¡ & Logic % -->
                         <div class="row">
                             <div class="col-md-3">
                                 <div class="form-group mb-3">
-                                    <label class="font-weight-bold">Giá bán (VNĐ)</label>
+                                    <label class="font-weight-bold">GiÃƒÆ’Ã‚Â¡ bÃƒÆ’Ã‚Â¡n (VNÃƒâ€žÃ‚Â)</label>
                                     <div class="input-group">
                                         <input type="number" class="form-control text-success font-weight-bold"
                                             name="price_vnd" id="price_vnd"
                                             value="<?= (int) ($product['price_vnd'] ?? 0) ?>" required>
-                                        <div class="input-group-append"><span class="input-group-text">đ</span></div>
+                                        <div class="input-group-append"><span class="input-group-text">Ãƒâ€žÃ¢â‚¬Ëœ</span></div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group mb-3">
-                                    <label class="font-weight-bold">Giá gốc ảo (VNĐ)</label>
+                                    <label class="font-weight-bold">GiÃƒÆ’Ã‚Â¡ gÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœc ÃƒÂ¡Ã‚ÂºÃ‚Â£o (VNÃƒâ€žÃ‚Â)</label>
                                     <div class="input-group">
                                         <input type="number" class="form-control text-muted" name="old_price"
                                             id="old_price" value="<?= (int) ($product['old_price'] ?? 0) ?>">
-                                        <div class="input-group-append"><span class="input-group-text">đ</span></div>
+                                        <div class="input-group-append"><span class="input-group-text">Ãƒâ€žÃ¢â‚¬Ëœ</span></div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group mb-3">
-                                    <label class="font-weight-bold text-danger">Giảm (%)</label>
+                                    <label class="font-weight-bold text-danger">GiÃƒÂ¡Ã‚ÂºÃ‚Â£m (%)</label>
                                     <input type="number" class="form-control text-danger font-weight-bold"
                                         id="discount_percent" readonly>
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group mb-3">
-                                    <label class="font-weight-bold">Thứ tự</label>
+                                    <label class="font-weight-bold">ThÃƒÂ¡Ã‚Â»Ã‚Â© tÃƒÂ¡Ã‚Â»Ã‚Â±</label>
                                     <input type="number" class="form-control" name="display_order"
                                         value="<?= (int) ($product['display_order'] ?? 0) ?>">
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group mb-3">
-                                    <label class="font-weight-bold">Hiển thị</label>
+                                    <label class="font-weight-bold">HiÃƒÂ¡Ã‚Â»Ã†â€™n thÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¹</label>
                                     <select class="form-control" name="visibility_mode">
                                         <option value="both" <?= $visibilityMode === 'both' ? 'selected' : '' ?>>Web +
                                             Telegram</option>
-                                        <option value="web" <?= $visibilityMode === 'web' ? 'selected' : '' ?>>Chỉ Web
+                                        <option value="web" <?= $visibilityMode === 'web' ? 'selected' : '' ?>>ChÃƒÂ¡Ã‚Â»Ã¢â‚¬Â° Web
                                         </option>
                                         <option value="telegram" <?= $visibilityMode === 'telegram' ? 'selected' : '' ?>>
-                                            Chỉ Telegram</option>
-                                        <option value="hidden" <?= $visibilityMode === 'hidden' ? 'selected' : '' ?>>Ẩn cả
+                                            ChÃƒÂ¡Ã‚Â»Ã¢â‚¬Â° Telegram</option>
+                                        <option value="hidden" <?= $visibilityMode === 'hidden' ? 'selected' : '' ?>>ÃƒÂ¡Ã‚ÂºÃ‚Â¨n cÃƒÂ¡Ã‚ÂºÃ‚Â£
                                             2</option>
                                     </select>
                                 </div>
@@ -203,40 +203,27 @@ $visibilityMode = (string) ($product['visibility_mode'] ?? 'both');
                             <!-- Left Col: Type & Info -->
                             <div class="col-md-6">
                                 <label class="font-weight-bold text-primary mb-3"><i
-                                        class="fas fa-shipping-fast mr-1"></i>CHẾ ĐỘ GIAO HÀNG</label>
+                                        class="fas fa-shipping-fast mr-1"></i>CHÃƒÂ¡Ã‚ÂºÃ‚Â¾ Ãƒâ€žÃ‚ÂÃƒÂ¡Ã‚Â»Ã‹Å“ GIAO HÃƒÆ’Ã¢â€šÂ¬NG</label>
 
                                 <div class="form-group mb-3">
-                                    <select class="form-control form-control-lg border-primary" name="delivery_mode"
-                                        id="delivery_mode_select">
-                                        <?php
-                                        $currentMode = $product['product_type'] ?? 'account';
-                                        if ($currentMode === 'account' && ($product['requires_info'] ?? 0))
-                                            $currentMode = 'manual_info';
-                                        ?>
-                                        <option value="manual_info" <?= $currentMode === 'manual_info' ? 'selected' : '' ?>>
-                                            📩 Nhập Email (Thủ công)
-                                        </option>
-                                        <option value="business_invite_auto" <?= $currentMode === 'business_invite_auto' ? 'selected' : '' ?>>
-                                            ⚡ GPT Business (Auto Invite)
-                                        </option>
-                                        <option value="account_stock" <?= $currentMode === 'account' && !($product['requires_info'] ?? 0) ? 'selected' : '' ?>>
-                                            📦 Tài khoản có sẵn (Stock)
-                                        </option>
-                                    </select>
-                                    <small class="text-muted mt-1 d-block">Chọn cách sản phẩm này được giao tới khách
-                                        hàng.</small>
+                                    <?php $currentMode = 'business_invite_auto'; ?>
+                                    <input type="hidden" name="delivery_mode" value="business_invite_auto">
+                                    <input type="hidden" name="auto_invite" value="1">
+                                    <div class="mode-card-static">
+                                        <div class="font-weight-bold text-primary mb-1">Ã¢Å¡Â¡ GPT Business (Auto Invite)</div>
+                                        <div class="text-muted small mb-0">Trang nÃƒÂ y luÃƒÂ´n dÃƒÂ¹ng auto invite vÃƒÂ o farm. KhÃƒÂ´ng dÃƒÂ¹ng thÃ¡Â»Â§ cÃƒÂ´ng vÃƒÂ  khÃƒÂ´ng dÃƒÂ¹ng stock.</div>
+                                    </div>
                                 </div>
 
                                 <!-- Automated Invitation Config (Co-existing but toggled) -->
-                                <div id="auto_invite_config" class="p-3 border rounded bg-light mb-3"
-                                    style="<?= $currentMode !== 'business_invite_auto' ? 'display:none;' : '' ?>">
-                                    <h6 class="font-weight-bold text-success mb-3"><i class="fas fa-magic mr-1"></i> Cấu
-                                        hình Auto Invite</h6>
+                                <div id="auto_invite_config" class="p-3 border rounded bg-light mb-3">
+                                    <h6 class="font-weight-bold text-success mb-3"><i class="fas fa-magic mr-1"></i> CÃƒÂ¡Ã‚ÂºÃ‚Â¥u
+                                        hÃƒÆ’Ã‚Â¬nh Auto Invite</h6>
 
                                     <div class="form-group mb-2">
                                         <label class="small font-weight-bold">Target Farm (Auto)</label>
                                         <select class="form-control form-control-sm" name="farm_id">
-                                            <option value="">-- Chọn Farm đích --</option>
+                                            <option value="">-- ChÃƒÂ¡Ã‚Â»Ã‚Ân Farm Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â­ch --</option>
                                             <?php foreach ($farms as $f): ?>
                                                 <option value="<?= (int) $f['id'] ?>" <?= ((int) ($product['farm_id'] ?? 0) === (int) $f['id']) ? 'selected' : '' ?>>
                                                     <?= htmlspecialchars($f['farm_name']) ?> (Admin:
@@ -247,63 +234,51 @@ $visibilityMode = (string) ($product['visibility_mode'] ?? 'both');
                                     </div>
 
                                     <div class="row">
-                                        <div class="col-6">
+                                        <div class="col-12">
                                             <div class="form-group mb-2">
-                                                <label class="small font-weight-bold">Thời hạn (Ngày)</label>
+                                                <label class="small font-weight-bold">ThÃ¡Â»Âi hÃ¡ÂºÂ¡n (NgÃƒÂ y)</label>
                                                 <input type="number" class="form-control form-control-sm"
                                                     name="duration_days"
                                                     value="<?= (int) ($product['duration_days'] ?? 30) ?>">
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="form-group mb-2 mt-4">
-                                                <div class="custom-control custom-switch">
-                                                    <input type="checkbox" class="custom-control-input"
-                                                        id="auto_invite_switch" name="auto_invite" value="1"
-                                                        <?= ($product['auto_invite'] ?? 1) ? 'checked' : '' ?>>
-                                                    <label class="custom-control-label small"
-                                                        for="auto_invite_switch">Tự động gửi</label>
-                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div class="form-group mb-3">
-                                    <label class="font-weight-bold small">Hướng dẫn nhập thông tin</label>
+                                    <label class="font-weight-bold small">HÃ†Â°Ã¡Â»â€ºng dÃ¡ÂºÂ«n nhÃ¡ÂºÂ­p thÃƒÂ´ng tin</label>
                                     <textarea name="info_instructions" class="form-control" rows="3"
-                                        placeholder="VD: Nhập Email tài khoản..."><?= htmlspecialchars($product['info_instructions'] ?? '') ?></textarea>
+                                        placeholder="VD: NhÃ¡ÂºÂ­p email GPT Business Ã„â€˜Ã¡Â»Æ’ hÃ¡Â»â€¡ thÃ¡Â»â€˜ng tÃ¡Â»Â± Ã„â€˜Ã¡Â»â„¢ng gÃ¡Â»Â­i lÃ¡Â»Âi mÃ¡Â»Âi vÃƒÂ o farm..."><?= htmlspecialchars($product['info_instructions'] ?? '') ?></textarea>
                                 </div>
 
                                 <div class="row">
                                     <div class="col-4">
-                                        <div class="form-group"><label class="small">Mua tối thiểu</label>
+                                        <div class="form-group"><label class="small">Mua tÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœi thiÃƒÂ¡Ã‚Â»Ã†â€™u</label>
                                             <input type="number" class="form-control form-control-sm"
                                                 name="min_purchase_qty"
                                                 value="<?= (int) ($product['min_purchase_qty'] ?? 1) ?>">
                                         </div>
                                     </div>
                                     <div class="col-4">
-                                        <div class="form-group"><label class="small">Mua tối đa</label>
+                                        <div class="form-group"><label class="small">Mua tÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœi Ãƒâ€žÃ¢â‚¬Ëœa</label>
                                             <input type="number" class="form-control form-control-sm"
                                                 name="max_purchase_qty"
                                                 value="<?= (int) ($product['max_purchase_qty'] ?? 0) ?>">
                                         </div>
                                     </div>
                                     <div class="col-4">
-                                        <div class="form-group"><label class="small">Số lượng Stock</label>
-                                            <input type="number" class="form-control form-control-sm"
-                                                name="manual_stock"
-                                                value="<?= (int) ($product['manual_stock'] ?? 0) ?>">
+                                        <div class="form-group"><label class="small">Stock</label>
+                                            <input type="hidden" name="manual_stock" value="0">
+                                            <input type="text" class="form-control form-control-sm" value="KhÃƒÂ´ng dÃƒÂ¹ng cho Auto Invite" readonly>
                                         </div>
                                     </div>
-                                </div>
+                                        </div>
                             </div>
 
                             <!-- Right Col: Category & SEO -->
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
-                                    <label class="font-weight-bold">Danh mục</label>
+                                    <label class="font-weight-bold">Danh mÃƒÂ¡Ã‚Â»Ã‚Â¥c</label>
                                     <select class="form-control" name="category_id">
                                         <?php foreach ($categories as $cat):
                                             $isSelected = false;
@@ -320,28 +295,28 @@ $visibilityMode = (string) ($product['visibility_mode'] ?? 'both');
                                     </select>
                                 </div>
                                 <div class="form-group mb-0">
-                                    <label class="font-weight-bold">Mô tả SEO</label>
+                                    <label class="font-weight-bold">MÃƒÆ’Ã‚Â´ tÃƒÂ¡Ã‚ÂºÃ‚Â£ SEO</label>
                                     <textarea class="form-control" name="seo_description" rows="6"
-                                        placeholder="Hiển thị trên kết quả tìm kiếm Google..."><?= htmlspecialchars($product['seo_description'] ?? '') ?></textarea>
+                                        placeholder="HiÃƒÂ¡Ã‚Â»Ã†â€™n thÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¹ trÃƒÆ’Ã‚Âªn kÃƒÂ¡Ã‚ÂºÃ‚Â¿t quÃƒÂ¡Ã‚ÂºÃ‚Â£ tÃƒÆ’Ã‚Â¬m kiÃƒÂ¡Ã‚ÂºÃ‚Â¿m Google..."><?= htmlspecialchars($product['seo_description'] ?? '') ?></textarea>
                                 </div>
                             </div>
                         </div>
 
                         <hr>
 
-                        <!-- Ảnh Thumbnail -->
+                        <!-- ÃƒÂ¡Ã‚ÂºÃ‚Â¢nh Thumbnail -->
                         <div class="form-group mb-4">
-                            <label class="font-weight-bold">Ảnh sản phẩm (Thumbnail)</label>
+                            <label class="font-weight-bold">ÃƒÂ¡Ã‚ÂºÃ‚Â¢nh sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m (Thumbnail)</label>
                             <div class="row align-items-center">
                                 <div class="col-md-9">
                                     <div class="input-group">
                                         <input type="text" class="form-control" id="image" name="image"
                                             value="<?= htmlspecialchars($product['image'] ?? '') ?>"
-                                            placeholder="Link ảnh hoặc chọn từ máy">
+                                            placeholder="Link ÃƒÂ¡Ã‚ÂºÃ‚Â£nh hoÃƒÂ¡Ã‚ÂºÃ‚Â·c chÃƒÂ¡Ã‚Â»Ã‚Ân tÃƒÂ¡Ã‚Â»Ã‚Â« mÃƒÆ’Ã‚Â¡y">
                                         <div class="input-group-append">
                                             <button type="button" class="btn btn-primary"
-                                                onclick="openImageManager && openImageManager('image')">Chọn
-                                                ảnh</button>
+                                                onclick="openImageManager && openImageManager('image')">ChÃƒÂ¡Ã‚Â»Ã‚Ân
+                                                ÃƒÂ¡Ã‚ÂºÃ‚Â£nh</button>
                                         </div>
                                     </div>
                                 </div>
@@ -351,7 +326,7 @@ $visibilityMode = (string) ($product['visibility_mode'] ?? 'both');
                                             style="<?= empty($product['image']) ? 'display:none;' : '' ?>">
                                         <span id="noImage"
                                             style="<?= !empty($product['image']) ? 'display:none;' : '' ?>">Xem
-                                            trước</span>
+                                            trÃƒâ€ Ã‚Â°ÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºc</span>
                                     </div>
                                 </div>
                             </div>
@@ -360,10 +335,10 @@ $visibilityMode = (string) ($product['visibility_mode'] ?? 'both');
                         <!-- Gallery -->
                         <div class="mb-4">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label class="font-weight-bold mb-0">Ảnh chi tiết (Gallery)</label>
+                                <label class="font-weight-bold mb-0">ÃƒÂ¡Ã‚ÂºÃ‚Â¢nh chi tiÃƒÂ¡Ã‚ÂºÃ‚Â¿t (Gallery)</label>
                                 <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3"
                                     onclick="addGalleryItem()">
-                                    <i class="fas fa-plus mr-1"></i> Thêm ảnh
+                                    <i class="fas fa-plus mr-1"></i> ThÃƒÆ’Ã‚Âªm ÃƒÂ¡Ã‚ÂºÃ‚Â£nh
                                 </button>
                             </div>
                             <div id="gallery-container">
@@ -377,7 +352,7 @@ $visibilityMode = (string) ($product['visibility_mode'] ?? 'both');
                                                         value="<?= htmlspecialchars($gUrl) ?>">
                                                     <div class="input-group-append">
                                                         <button type="button" class="btn btn-primary"
-                                                            onclick="openImageManager('gallery-input-<?= $i ?>')">Chọn</button>
+                                                            onclick="openImageManager('gallery-input-<?= $i ?>')">ChÃƒÂ¡Ã‚Â»Ã‚Ân</button>
                                                         <button type="button" class="btn btn-danger"
                                                             onclick="removeGalleryItem('gallery-row-<?= $i ?>')"><i
                                                                 class="fas fa-trash"></i></button>
@@ -396,9 +371,9 @@ $visibilityMode = (string) ($product['visibility_mode'] ?? 'both');
                             </div>
                         </div>
 
-                        <!-- Mô tả Summernote -->
+                        <!-- MÃƒÆ’Ã‚Â´ tÃƒÂ¡Ã‚ÂºÃ‚Â£ Summernote -->
                         <div class="form-group mb-0">
-                            <label class="font-weight-bold">👉 Mô tả sản phẩm</label>
+                            <label class="font-weight-bold">ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ¢â‚¬Â° MÃƒÆ’Ã‚Â´ tÃƒÂ¡Ã‚ÂºÃ‚Â£ sÃƒÂ¡Ã‚ÂºÃ‚Â£n phÃƒÂ¡Ã‚ÂºÃ‚Â©m</label>
                             <textarea name="description" id="description"
                                 class="form-control summernote"><?= htmlspecialchars($product['description'] ?? '') ?></textarea>
                         </div>
@@ -406,7 +381,7 @@ $visibilityMode = (string) ($product['visibility_mode'] ?? 'both');
 
                     <div class="card-footer bg-white border-0 text-right py-4">
                         <button type="submit" class="btn btn-gptb-save px-5 shadow-lg">
-                            <i class="fas fa-save mr-1"></i> <?= $isEdit ? 'LƯU THAY ĐỔI' : 'TẠO NGAY' ?>
+                            <i class="fas fa-save mr-1"></i> <?= $isEdit ? 'LÃƒâ€ Ã‚Â¯U THAY Ãƒâ€žÃ‚ÂÃƒÂ¡Ã‚Â»Ã¢â‚¬ÂI' : 'TÃƒÂ¡Ã‚ÂºÃ‚Â O NGAY' ?>
                         </button>
                     </div>
                 </div>
@@ -456,15 +431,7 @@ $visibilityMode = (string) ($product['visibility_mode'] ?? 'both');
         });
         $('#slug').on('input', function () { $(this).data('touched', true); });
 
-        // Delivery Mode Toggle
-        $('#delivery_mode_select').on('change', function () {
-            let mode = $(this).val();
-            if (mode === 'business_invite_auto') {
-                $('#auto_invite_config').slideDown();
-            } else {
-                $('#auto_invite_config').slideUp();
-            }
-        });
+    });
     });
 
     function addGalleryItem() {
@@ -474,9 +441,9 @@ $visibilityMode = (string) ($product['visibility_mode'] ?? 'both');
         <div class="row align-items-center">
             <div class="col-md-9">
                 <div class="input-group">
-                    <input type="text" class="form-control gallery-url-input" name="gallery[]" id="gallery-input-${i}" placeholder="Chèn link ảnh...">
+                    <input type="text" class="form-control gallery-url-input" name="gallery[]" id="gallery-input-${i}" placeholder="ChÃƒÆ’Ã‚Â¨n link ÃƒÂ¡Ã‚ÂºÃ‚Â£nh...">
                     <div class="input-group-append">
-                        <button type="button" class="btn btn-primary" onclick="openImageManager('gallery-input-${i}')">Chọn</button>
+                        <button type="button" class="btn btn-primary" onclick="openImageManager('gallery-input-${i}')">ChÃƒÂ¡Ã‚Â»Ã‚Ân</button>
                         <button type="button" class="btn btn-danger" onclick="removeGalleryItem('gallery-row-${i}')"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>
@@ -492,7 +459,7 @@ $visibilityMode = (string) ($product['visibility_mode'] ?? 'both');
     function removeGalleryItem(id) { $('#' + id).remove(); }
 
     function toSlug(s) {
-        s = s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d");
+        s = s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/Ãƒâ€žÃ¢â‚¬Ëœ/g, "d");
         return s.replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-').replace(/-+/g, '-');
     }
     function addGalleryItem(url) {

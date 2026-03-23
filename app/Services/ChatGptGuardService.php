@@ -13,6 +13,7 @@ class ChatGptGuardService
     private $auditLog;
     private $farmService;
     private $violationModel;
+    private ?TimeService $timeService = null;
 
     public function __construct()
     {
@@ -23,6 +24,9 @@ class ChatGptGuardService
         $this->auditLog = new ChatGptAuditLog();
         $this->farmService = new ChatGptFarmService();
         $this->violationModel = new ChatGptViolation();
+        if (class_exists('TimeService')) {
+            $this->timeService = TimeService::instance();
+        }
     }
 
     public function processFarmById($farmId, $actorEmail = 'system_guard', $source = 'manual_sync')
@@ -285,7 +289,7 @@ class ChatGptGuardService
             if (!isset($liveMemberEmails[$email])) {
                 continue;
             }
-            if (!empty($order['expires_at']) && strtotime((string) $order['expires_at']) <= time()) {
+            if ($this->isExpiredAt($order['expires_at'] ?? null)) {
                 continue;
             }
 
@@ -461,7 +465,7 @@ class ChatGptGuardService
             return ['success' => false, 'message' => 'Không tìm thấy đơn hàng.'];
         }
 
-        if (!empty($order['expires_at']) && strtotime((string) $order['expires_at']) <= time()) {
+        if ($this->isExpiredAt($order['expires_at'] ?? null)) {
             return ['success' => false, 'message' => 'Đơn hàng đã hết hạn 30 ngày, không thể gửi lại invite.'];
         }
 
@@ -735,7 +739,7 @@ class ChatGptGuardService
 
         // 4. Create ChatGptOrder record
         $durationDays = (int) ($product['duration_days'] ?? 30);
-        $expiresAt = date('Y-m-d H:i:s', strtotime("+{$durationDays} days"));
+        $expiresAt = $this->addDaysToNow($durationDays);
 
         $cgOrderId = $this->orderModel->create([
             'customer_email' => $email,
@@ -777,5 +781,39 @@ class ChatGptGuardService
             'expires_at' => $expiresAt,
             'cg_order_id' => $cgOrderId
         ];
+    }
+
+    private function isExpiredAt($value): bool
+    {
+        $raw = trim((string) ($value ?? ''));
+        if ($raw === '' || $raw === '0000-00-00 00:00:00') {
+            return false;
+        }
+
+        if ($this->timeService) {
+            $expiresTs = $this->timeService->toTimestamp($raw, $this->timeService->getDbTimezone());
+            if ($expiresTs === null) {
+                return false;
+            }
+
+            return $expiresTs <= $this->timeService->nowTs();
+        }
+
+        $expiresTs = strtotime($raw);
+        return $expiresTs !== false && $expiresTs <= time();
+    }
+
+    private function addDaysToNow(int $days): string
+    {
+        $days = max(1, $days);
+
+        if ($this->timeService) {
+            return $this->timeService
+                ->nowDateTime($this->timeService->getDbTimezone())
+                ->modify('+' . $days . ' days')
+                ->format('Y-m-d H:i:s');
+        }
+
+        return date('Y-m-d H:i:s', strtotime('+' . $days . ' days'));
     }
 }

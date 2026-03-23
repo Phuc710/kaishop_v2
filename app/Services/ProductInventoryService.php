@@ -24,6 +24,7 @@ class ProductInventoryService
             case 'source_link':
                 return new SourceLinkInventoryHandler($product);
             case 'manual_info':
+            case 'business_invite_auto':
                 return new ManualInfoInventoryHandler($product);
             default:
                 throw new Exception("Unsupported delivery mode: {$deliveryMode}");
@@ -46,6 +47,10 @@ class ProductInventoryService
 
         if ($deliveryMode === 'source_link') {
             return null; // Unlimited
+        }
+
+        if ($deliveryMode === 'business_invite_auto') {
+            return null;
         }
 
         if ($deliveryMode === 'manual_info') {

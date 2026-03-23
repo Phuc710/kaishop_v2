@@ -6,15 +6,24 @@
  */
 class ChatGptAdminViewService
 {
+    private ?TimeService $timeService = null;
+
+    public function __construct()
+    {
+        if (class_exists('TimeService')) {
+            $this->timeService = TimeService::instance();
+        }
+    }
+
     public function buildFarmPageData($farms, $stats, $orderStats)
     {
         return [
             'farms' => $this->decorateFarms($farms),
             'summaryCards' => [
-                $this->makeSummaryCard('Tổng farm', (int) ($stats['total_farms'] ?? 0), 'fas fa-server', 'primary', 'Số farm đang quản lý'),
-                $this->makeSummaryCard('Tổng slot', (int) ($stats['total_seats'] ?? 0), 'fas fa-layer-group', 'info', 'Tổng sức chứa của tất cả farm'),
-                $this->makeSummaryCard('Đã sử dụng', (int) ($stats['used_seats'] ?? 0), 'fas fa-user-check', 'warning', 'Slot đã giao cho khách'),
-                $this->makeSummaryCard('Còn trống', (int) ($stats['available_seats'] ?? 0), 'fas fa-chair', 'success', 'Slot sẵn sàng bán tiếp'),
+                $this->makeSummaryCard('Tổng Farm', (int) ($stats['total_farms'] ?? 0), 'fas fa-server', 'primary', 'Số farm đang quản lý'),
+                $this->makeSummaryCard('Tổng Slot', (int) ($stats['total_seats'] ?? 0), 'fas fa-layer-group', 'info', 'Tổng sức chứa của tất cả farm'),
+                $this->makeSummaryCard('Đã sử dụng', (int) ($stats['used_seats'] ?? 0), 'fas fa-user-check', 'warning', 'Sức chứa đã được gán cho khách'),
+                $this->makeSummaryCard('Còn trống', (int) ($stats['available_seats'] ?? 0), 'fas fa-chair', 'success', 'Sức chứa sẵn sàng bán tiếp'),
             ],
             'quickLinks' => [
                 [
@@ -54,10 +63,10 @@ class ChatGptAdminViewService
         return [
             'orders' => $this->decorateOrders($orders),
             'summaryCards' => [
-                $this->makeSummaryCard('Tổng đơn', (int) ($stats['total'] ?? 0), 'fas fa-shopping-cart', 'primary', 'Tổng số đơn GPT Business'),
-                $this->makeSummaryCard('Đã kích hoạt', (int) ($stats['active_count'] ?? 0), 'fas fa-check-circle', 'success', 'Đơn đã vào farm thành công'),
-                $this->makeSummaryCard('Đang xử lý', (int) (($stats['inviting_count'] ?? 0) + ($stats['pending_count'] ?? 0)), 'fas fa-hourglass-half', 'warning', 'Đang mời hoặc chờ hệ thống xử lý'),
-                $this->makeSummaryCard('Sự cố', (int) (($stats['failed_count'] ?? 0) + ($stats['revoked_count'] ?? 0)), 'fas fa-exclamation-triangle', 'danger', 'Đơn lỗi hoặc bị thu hồi'),
+                $this->makeSummaryCard('Tổng mua', (int) ($stats['total'] ?? 0), 'fas fa-shopping-cart', 'primary', 'Số đơn từ Web và Bot Telegram'),
+                $this->makeSummaryCard('Đã vào Farm', (int) ($stats['active_count'] ?? 0), 'fas fa-check-circle', 'success', 'Email đã được kích hoạt thành công'),
+                $this->makeSummaryCard('Đang xử lý (Pending)', (int) (($stats['inviting_count'] ?? 0) + ($stats['pending_count'] ?? 0)), 'fas fa-hourglass-half', 'warning', 'Đang gửi mời hoặc chờ xử lý'),
+                $this->makeSummaryCard('Sự cố / Lỗi', (int) (($stats['failed_count'] ?? 0) + ($stats['revoked_count'] ?? 0)), 'fas fa-exclamation-triangle', 'danger', 'Lỗi invite hoặc bị thu hồi'),
             ],
             'orderStatusOptions' => $this->getOrderStatusOptions(),
         ];
@@ -83,10 +92,10 @@ class ChatGptAdminViewService
         return [
             'members' => $this->decorateMembers($members),
             'summaryCards' => [
-                $this->makeSummaryCard('Tổng thành viên', count($members), 'fas fa-users', 'primary', 'Số bản ghi snapshot hiện có'),
-                $this->makeSummaryCard('Đã duyệt', $approved, 'fas fa-user-shield', 'success', 'Thành viên dùng lượng hợp lệ'),
-                $this->makeSummaryCard('Chưa xác định', $unknown, 'fas fa-user-secret', 'warning', 'Thành viên phát hiện chưa duyệt'),
-                $this->makeSummaryCard('Đã rời farm', $removed, 'fas fa-user-minus', 'danger', 'Bản ghi đã bị đánh dấu đã rời'),
+                $this->makeSummaryCard('Thành viên Farm', count($members), 'fas fa-users', 'primary', 'Tổng số email ghi nhận trong Farm'),
+                $this->makeSummaryCard('Chuẩn (Approved)', $approved, 'fas fa-user-shield', 'success', 'Thành viên đã xác minh / mua hàng'),
+                $this->makeSummaryCard('Chưa xác định', $unknown, 'fas fa-user-secret', 'warning', 'Email lạ phát hiện trong Farm'),
+                $this->makeSummaryCard('Đã rời / Xóa', $removed, 'fas fa-user-minus', 'danger', 'Thành viên đã bị kick hoặc tự rời'),
             ],
             'memberSourceOptions' => $this->getMemberSourceOptions(),
         ];
@@ -141,11 +150,11 @@ class ChatGptAdminViewService
     public function getOrderStatusOptions()
     {
         return [
-            'pending' => 'Chờ xử lý',
-            'inviting' => 'Đang chờ chấp nhận',
-            'active' => 'Đã kích hoạt',
-            'failed' => 'Lỗi kết nối/vận hành',
-            'revoked' => 'Đã thu hồi',
+            'pending' => 'Đang chờ (Pending)',
+            'inviting' => 'Đang mời (Inviting)',
+            'active' => 'Đã vào Farm',
+            'failed' => 'Sự cố / Lỗi',
+            'revoked' => 'Bị thu hồi',
         ];
     }
 
@@ -185,11 +194,11 @@ class ChatGptAdminViewService
     private function decorateOrders($orders)
     {
         $statusMap = [
-            'pending' => ['label' => 'Chờ xử lý', 'tone' => 'warning'],
-            'inviting' => ['label' => 'Đã mời', 'tone' => 'info'],
-            'active' => ['label' => 'Đã kích hoạt', 'tone' => 'success'],
-            'failed' => ['label' => 'Lỗi', 'tone' => 'danger'],
-            'revoked' => ['label' => 'Đã thu hồi', 'tone' => 'muted'],
+            'pending' => ['label' => 'Đang chờ (Pending)', 'tone' => 'warning'],
+            'inviting' => ['label' => 'Đang mời (Inviting)', 'tone' => 'info'],
+            'active' => ['label' => 'Đã vào Farm', 'tone' => 'success'],
+            'failed' => ['label' => 'Sự cố / Lỗi', 'tone' => 'danger'],
+            'revoked' => ['label' => 'Bị thu hồi', 'tone' => 'muted'],
         ];
 
         $output = [];
@@ -223,6 +232,11 @@ class ChatGptAdminViewService
             $role = (string) ($member['role'] ?? 'reader');
 
             $member['source_label'] = $source === 'approved' ? 'Hợp lệ' : 'Lạ/Chưa duyệt';
+            if ($source === 'approved' && !empty($member['linked_order_code'])) {
+                $code = htmlspecialchars($member['linked_order_code']);
+                $emailSearch = urlencode($member['email']);
+                $member['source_label'] .= ' <br><a href="' . url('admin/gpt-business/orders?email=' . $emailSearch) . '" class="badge badge-light border text-primary" style="font-size:11px;"><i class="fas fa-shopping-basket mr-1"></i>#' . $code . '</a>';
+            }
             $member['source_badge_class'] = 'gptb-badge gptb-badge--' . ($source === 'approved' ? 'success' : 'warning');
             $member['status_label'] = $status === 'removed' ? 'Đã rời farm' : 'Đang hoạt động';
             $member['status_badge_class'] = 'gptb-badge gptb-badge--' . ($status === 'removed' ? 'danger' : 'info');
@@ -443,11 +457,16 @@ class ChatGptAdminViewService
             return '--';
         }
 
-        $timestamp = strtotime($raw);
-        if ($timestamp === false) {
-            return $raw;
+        if ($this->timeService) {
+            $formatted = $this->timeService->formatDisplay(
+                $raw,
+                $format,
+                $this->timeService->getDbTimezone()
+            );
+
+            return $formatted !== '' ? $formatted : $raw;
         }
 
-        return date($format, $timestamp);
+        return $raw;
     }
 }

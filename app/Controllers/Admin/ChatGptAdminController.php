@@ -248,7 +248,14 @@ class ChatGptAdminController extends Controller
             return;
         }
 
-        $expiresAt = date('Y-m-d H:i:s', strtotime("+{$months} months"));
+        if (class_exists('TimeService')) {
+            $expiresAt = TimeService::instance()
+                ->nowDateTime(TimeService::instance()->getDbTimezone())
+                ->modify('+' . $months . ' months')
+                ->format('Y-m-d H:i:s');
+        } else {
+            $expiresAt = date('Y-m-d H:i:s', strtotime("+{$months} months"));
+        }
 
         $orderId = $this->orderModel->create([
             'customer_email' => $email,
@@ -467,14 +474,15 @@ class ChatGptAdminController extends Controller
         $image = trim((string) $this->post('image', ''));
         $minPurchaseQty = max(1, (int) $this->post('min_purchase_qty', 1));
         $maxPurchaseQty = max(0, (int) $this->post('max_purchase_qty', 0));
-        $manualStock = max(0, (int) $this->post('manual_stock', 0));
+        $manualStock = 0;
 
-        $deliveryMode = (string) $this->post('delivery_mode', 'manual_info');
-        $productType = ($deliveryMode === 'business_invite_auto') ? 'business_invite_auto' : 'account';
-        $requiresInfo = ($deliveryMode === 'business_invite_auto' || $deliveryMode === 'manual_info') ? 1 : 0;
+        // Dedicated GPT Business product is always auto-invite.
+        $deliveryMode = 'business_invite_auto';
+        $productType = 'business_invite_auto';
+        $requiresInfo = 1;
 
         $durationDays = max(1, (int) $this->post('duration_days', 30));
-        $autoInvite = (int) $this->post('auto_invite', 1);
+        $autoInvite = 1;
         $farmId = (int) $this->post('farm_id', 0);
 
         $galleryInput = $this->post('gallery', []);
@@ -524,7 +532,7 @@ class ChatGptAdminController extends Controller
             $msg = 'Cập nhật cấu hình sản phẩm thành công';
         } else {
             if ($slug === '')
-                $data['slug'] = 'chatgpt-business-' . time();
+                $data['slug'] = 'chatgpt-business-' . (class_exists('TimeService') ? TimeService::instance()->nowTs() : time());
             $id = $this->productModel->create($data);
             $action = 'PRODUCT_CREATED';
             $msg = 'Tạo sản phẩm GPT Business thành công';

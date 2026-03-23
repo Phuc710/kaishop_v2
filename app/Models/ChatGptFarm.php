@@ -88,16 +88,19 @@ class ChatGptFarm extends Model
      */
     public function create($data)
     {
+        $nowSql = $this->nowSql();
         $stmt = $this->db->prepare(
             "INSERT INTO `{$this->table}`
              (`farm_name`, `admin_email`, `admin_api_key`, `seat_total`, `seat_used`, `status`, `created_at`, `updated_at`)
-             VALUES (?, ?, ?, ?, 0, 'active', NOW(), NOW())"
+             VALUES (?, ?, ?, ?, 0, 'active', ?, ?)"
         );
         $stmt->execute([
             $data['farm_name'],
             $data['admin_email'],
             $data['admin_api_key'],
             (int) ($data['seat_total'] ?? 4),
+            $nowSql,
+            $nowSql,
         ]);
         return (int) $this->db->lastInsertId();
     }
@@ -119,8 +122,10 @@ class ChatGptFarm extends Model
         if (empty($fields)) {
             return false;
         }
+        $fields[] = '`updated_at` = ?';
+        $params[] = $this->nowSql();
         $params[] = $id;
-        $sql = "UPDATE `{$this->table}` SET " . implode(', ', $fields) . ", `updated_at` = NOW() WHERE `id` = ? LIMIT 1";
+        $sql = "UPDATE `{$this->table}` SET " . implode(', ', $fields) . " WHERE `id` = ? LIMIT 1";
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
         return $stmt->rowCount() > 0;
@@ -131,14 +136,15 @@ class ChatGptFarm extends Model
      */
     public function incrementSeatUsed($farmId)
     {
+        $nowSql = $this->nowSql();
         $stmt = $this->db->prepare(
             "UPDATE `{$this->table}`
              SET `seat_used` = `seat_used` + 1,
                  `status` = IF(`seat_used` + 1 >= `seat_total`, 'full', 'active'),
-                 `updated_at` = NOW()
+                 `updated_at` = ?
              WHERE `id` = ? LIMIT 1"
         );
-        $stmt->execute([$farmId]);
+        $stmt->execute([$nowSql, $farmId]);
     }
 
     /**
@@ -146,14 +152,15 @@ class ChatGptFarm extends Model
      */
     public function decrementSeatUsed($farmId)
     {
+        $nowSql = $this->nowSql();
         $stmt = $this->db->prepare(
             "UPDATE `{$this->table}`
              SET `seat_used` = GREATEST(0, `seat_used` - 1),
                  `status` = IF(`status` = 'full', 'active', `status`),
-                 `updated_at` = NOW()
+                 `updated_at` = ?
              WHERE `id` = ? LIMIT 1"
         );
-        $stmt->execute([$farmId]);
+        $stmt->execute([$nowSql, $farmId]);
     }
 
     /**
@@ -161,10 +168,11 @@ class ChatGptFarm extends Model
      */
     public function touchSyncAt($farmId)
     {
+        $nowSql = $this->nowSql();
         $stmt = $this->db->prepare(
-            "UPDATE `{$this->table}` SET `last_sync_at` = NOW() WHERE `id` = ? LIMIT 1"
+            "UPDATE `{$this->table}` SET `last_sync_at` = ?, `updated_at` = ? WHERE `id` = ? LIMIT 1"
         );
-        $stmt->execute([$farmId]);
+        $stmt->execute([$nowSql, $nowSql, $farmId]);
     }
 
     /**
@@ -194,16 +202,17 @@ class ChatGptFarm extends Model
 
         $totalUsed = $nonAdminCount + $pendingInviteCount;
         $status = $totalUsed >= $seatTotal ? 'full' : 'active';
+        $nowSql = $this->nowSql();
 
         $stmt = $this->db->prepare(
             "UPDATE `{$this->table}`
              SET `seat_used` = ?,
                  `status` = IF(`status` = 'locked', 'locked', ?),
-                 `last_sync_at` = NOW(),
-                 `updated_at` = NOW()
+                 `last_sync_at` = ?,
+                 `updated_at` = ?
              WHERE `id` = ? LIMIT 1"
         );
-        $stmt->execute([$totalUsed, $status, $farmId]);
+        $stmt->execute([$totalUsed, $status, $nowSql, $nowSql, $farmId]);
 
         return $totalUsed;
     }
@@ -250,10 +259,20 @@ class ChatGptFarm extends Model
         if (!in_array($status, $allowed, true)) {
             return false;
         }
+        $nowSql = $this->nowSql();
         $stmt = $this->db->prepare(
-            "UPDATE `{$this->table}` SET `status` = ?, `updated_at` = NOW() WHERE `id` = ? LIMIT 1"
+            "UPDATE `{$this->table}` SET `status` = ?, `updated_at` = ? WHERE `id` = ? LIMIT 1"
         );
-        $stmt->execute([$status, $farmId]);
+        $stmt->execute([$status, $nowSql, $farmId]);
         return $stmt->rowCount() > 0;
+    }
+
+    private function nowSql(): string
+    {
+        if ($this->timeService) {
+            return $this->timeService->nowSql($this->timeService->getDbTimezone());
+        }
+
+        return date('Y-m-d H:i:s');
     }
 }

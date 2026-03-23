@@ -18,12 +18,13 @@ class ChatGptAllowedInvite extends Model
      */
     public function createInvite($orderId, $farmId, $email, $inviteId = null)
     {
+        $nowSql = $this->nowSql();
         $stmt = $this->db->prepare(
             "INSERT INTO `{$this->table}`
              (`order_id`, `farm_id`, `target_email`, `invite_id`, `status`, `created_by`, `created_at`, `updated_at`)
-             VALUES (?, ?, ?, ?, 'pending', 'system', NOW(), NOW())"
+             VALUES (?, ?, ?, ?, 'pending', 'system', ?, ?)"
         );
-        $stmt->execute([$orderId, $farmId, strtolower(trim($email)), $inviteId]);
+        $stmt->execute([$orderId, $farmId, strtolower(trim($email)), $inviteId, $nowSql, $nowSql]);
         return (int) $this->db->lastInsertId();
     }
 
@@ -32,10 +33,11 @@ class ChatGptAllowedInvite extends Model
      */
     public function setInviteId($id, $inviteId)
     {
+        $nowSql = $this->nowSql();
         $stmt = $this->db->prepare(
-            "UPDATE `{$this->table}` SET `invite_id` = ?, `updated_at` = NOW() WHERE `id` = ? LIMIT 1"
+            "UPDATE `{$this->table}` SET `invite_id` = ?, `updated_at` = ? WHERE `id` = ? LIMIT 1"
         );
-        $stmt->execute([$inviteId, $id]);
+        $stmt->execute([$inviteId, $nowSql, $id]);
     }
 
     /**
@@ -96,10 +98,11 @@ class ChatGptAllowedInvite extends Model
      */
     public function updateStatus($id, $status)
     {
+        $nowSql = $this->nowSql();
         $stmt = $this->db->prepare(
-            "UPDATE `{$this->table}` SET `status` = ?, `updated_at` = NOW() WHERE `id` = ? LIMIT 1"
+            "UPDATE `{$this->table}` SET `status` = ?, `updated_at` = ? WHERE `id` = ? LIMIT 1"
         );
-        $stmt->execute([$status, $id]);
+        $stmt->execute([$status, $nowSql, $id]);
     }
 
     /**
@@ -107,12 +110,13 @@ class ChatGptAllowedInvite extends Model
      */
     public function markAcceptedByEmail($farmId, $email)
     {
+        $nowSql = $this->nowSql();
         $stmt = $this->db->prepare(
             "UPDATE `{$this->table}`
-             SET `status` = 'accepted', `updated_at` = NOW()
+             SET `status` = 'accepted', `updated_at` = ?
              WHERE `farm_id` = ? AND LOWER(`target_email`) = ? AND `status` = 'pending'"
         );
-        $stmt->execute([$farmId, strtolower(trim($email))]);
+        $stmt->execute([$nowSql, $farmId, strtolower(trim($email))]);
     }
 
     /**
@@ -120,21 +124,23 @@ class ChatGptAllowedInvite extends Model
      */
     public function markRevokedByInviteId($inviteId, $status = 'revoked')
     {
+        $nowSql = $this->nowSql();
         $stmt = $this->db->prepare(
-            "UPDATE `{$this->table}` SET `status` = ?, `updated_at` = NOW()
+            "UPDATE `{$this->table}` SET `status` = ?, `updated_at` = ?
              WHERE `invite_id` = ?"
         );
-        $stmt->execute([$status, $inviteId]);
+        $stmt->execute([$status, $nowSql, $inviteId]);
     }
 
     public function markExpiredByOrder($orderId)
     {
+        $nowSql = $this->nowSql();
         $stmt = $this->db->prepare(
             "UPDATE `{$this->table}`
-             SET `status` = 'expired', `updated_at` = NOW()
+             SET `status` = 'expired', `updated_at` = ?
              WHERE `order_id` = ? AND `status` IN ('pending', 'accepted')"
         );
-        $stmt->execute([(int) $orderId]);
+        $stmt->execute([$nowSql, (int) $orderId]);
     }
 
     public function getOpenInvitesByOrder($orderId)
@@ -218,5 +224,14 @@ class ChatGptAllowedInvite extends Model
         );
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    private function nowSql(): string
+    {
+        if ($this->timeService) {
+            return $this->timeService->nowSql($this->timeService->getDbTimezone());
+        }
+
+        return date('Y-m-d H:i:s');
     }
 }

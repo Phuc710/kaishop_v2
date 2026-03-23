@@ -22,18 +22,19 @@ class ChatGptSnapshot extends Model
      */
     public function upsertMember($farmId, $openaiUserId, $email, $role, $source = 'detected_unknown')
     {
+        $nowSql = $this->nowSql();
         $stmt = $this->db->prepare(
             "INSERT INTO `chatgpt_farm_members_snapshot`
              (`farm_id`, `openai_user_id`, `email`, `role`, `status`, `source`, `first_seen_at`, `last_seen_at`)
-             VALUES (?, ?, ?, ?, 'active', ?, NOW(), NOW())
+             VALUES (?, ?, ?, ?, 'active', ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                `openai_user_id` = VALUES(`openai_user_id`),
                `role` = VALUES(`role`),
                `status` = 'active',
                `source` = IF(`source` = 'approved', 'approved', VALUES(`source`)),
-               `last_seen_at` = NOW()"
+               `last_seen_at` = VALUES(`last_seen_at`)"
         );
-        $stmt->execute([$farmId, $openaiUserId, strtolower(trim($email)), $role, $source]);
+        $stmt->execute([$farmId, $openaiUserId, strtolower(trim($email)), $role, $source, $nowSql, $nowSql]);
     }
 
     /**
@@ -70,17 +71,19 @@ class ChatGptSnapshot extends Model
         }
         if (!empty($filters['date_from'])) {
             $where[] = 'm.`first_seen_at` >= ?';
-            $params[] = $filters['date_from'] . ' 00:00:00';
+            $params[] = $this->normalizeDateBoundary($filters['date_from'], false);
         }
         if (!empty($filters['date_to'])) {
             $where[] = 'm.`first_seen_at` <= ?';
-            $params[] = $filters['date_to'] . ' 23:59:59';
+            $params[] = $this->normalizeDateBoundary($filters['date_to'], true);
         }
 
         $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
         $stmt = $this->db->prepare(
-            "SELECT m.*, f.farm_name
+            "SELECT m.*, f.farm_name,
+                    (SELECT order_code FROM chatgpt_orders WHERE LOWER(customer_email) = LOWER(m.email) AND assigned_farm_id = m.farm_id ORDER BY created_at DESC LIMIT 1) as linked_order_code,
+                    (SELECT id FROM chatgpt_orders WHERE LOWER(customer_email) = LOWER(m.email) AND assigned_farm_id = m.farm_id ORDER BY created_at DESC LIMIT 1) as linked_order_id
              FROM `chatgpt_farm_members_snapshot` m
              LEFT JOIN `chatgpt_farms` f ON f.id = m.farm_id
              {$whereSql}
@@ -96,12 +99,13 @@ class ChatGptSnapshot extends Model
      */
     public function markMemberGone($farmId, $email)
     {
+        $nowSql = $this->nowSql();
         $stmt = $this->db->prepare(
             "UPDATE `chatgpt_farm_members_snapshot`
-             SET `status` = 'removed', `last_seen_at` = NOW()
+             SET `status` = 'removed', `last_seen_at` = ?
              WHERE `farm_id` = ? AND `email` = ?"
         );
-        $stmt->execute([$farmId, strtolower(trim($email))]);
+        $stmt->execute([$nowSql, $farmId, strtolower(trim($email))]);
     }
 
     /**
@@ -109,12 +113,13 @@ class ChatGptSnapshot extends Model
      */
     public function markMemberApproved($farmId, $email)
     {
+        $nowSql = $this->nowSql();
         $stmt = $this->db->prepare(
             "UPDATE `chatgpt_farm_members_snapshot`
-             SET `source` = 'approved', `last_seen_at` = NOW()
+             SET `source` = 'approved', `last_seen_at` = ?
              WHERE `farm_id` = ? AND LOWER(`email`) = ?"
         );
-        $stmt->execute([$farmId, strtolower(trim($email))]);
+        $stmt->execute([$nowSql, $farmId, strtolower(trim($email))]);
     }
 
     // ==================== INVITES ====================
@@ -124,18 +129,19 @@ class ChatGptSnapshot extends Model
      */
     public function upsertInvite($farmId, $inviteId, $email, $status, $source = 'detected_unknown', $role = 'reader')
     {
+        $nowSql = $this->nowSql();
         $stmt = $this->db->prepare(
             "INSERT INTO `chatgpt_farm_invites_snapshot`
              (`farm_id`, `invite_id`, `email`, `role`, `status`, `source`, `first_seen_at`, `last_seen_at`)
-             VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                `email` = VALUES(`email`),
                `role` = VALUES(`role`),
                `status` = VALUES(`status`),
                `source` = IF(`source` = 'approved', 'approved', VALUES(`source`)),
-               `last_seen_at` = NOW()"
+               `last_seen_at` = VALUES(`last_seen_at`)"
         );
-        $stmt->execute([$farmId, $inviteId, strtolower(trim($email)), $role, $status, $source]);
+        $stmt->execute([$farmId, $inviteId, strtolower(trim($email)), $role, $status, $source, $nowSql, $nowSql]);
     }
 
     /**
@@ -190,12 +196,13 @@ class ChatGptSnapshot extends Model
      */
     public function markInviteGone($farmId, $inviteId)
     {
+        $nowSql = $this->nowSql();
         $stmt = $this->db->prepare(
             "UPDATE `chatgpt_farm_invites_snapshot`
-             SET `status` = 'revoked', `last_seen_at` = NOW()
+             SET `status` = 'revoked', `last_seen_at` = ?
              WHERE `farm_id` = ? AND `invite_id` = ?"
         );
-        $stmt->execute([$farmId, $inviteId]);
+        $stmt->execute([$nowSql, $farmId, $inviteId]);
     }
 
     public function markMissingMembers($farmId, $liveEmails)
@@ -203,14 +210,15 @@ class ChatGptSnapshot extends Model
         $liveEmails = array_values(array_filter(array_map(function ($email) {
             return strtolower(trim((string) $email));
         }, (array) $liveEmails)));
+        $nowSql = $this->nowSql();
 
         if (empty($liveEmails)) {
             $stmt = $this->db->prepare(
                 "UPDATE `chatgpt_farm_members_snapshot`
-                 SET `status` = 'removed', `last_seen_at` = NOW()
+                 SET `status` = 'removed', `last_seen_at` = ?
                  WHERE `farm_id` = ? AND `status` = 'active'"
             );
-            $stmt->execute([(int) $farmId]);
+            $stmt->execute([$nowSql, (int) $farmId]);
             return;
         }
 
@@ -218,9 +226,10 @@ class ChatGptSnapshot extends Model
         $params = array_merge([(int) $farmId], $liveEmails);
         $stmt = $this->db->prepare(
             "UPDATE `chatgpt_farm_members_snapshot`
-             SET `status` = 'removed', `last_seen_at` = NOW()
+             SET `status` = 'removed', `last_seen_at` = ?
              WHERE `farm_id` = ? AND `status` = 'active' AND `email` NOT IN ({$placeholders})"
         );
+        array_unshift($params, $nowSql);
         $stmt->execute($params);
     }
 
@@ -237,12 +246,13 @@ class ChatGptSnapshot extends Model
 
             $email = strtolower(trim((string) ($row['email'] ?? '')));
             $resolvedStatus = $resolutionMap[$inviteId] ?? $resolutionMap[$email] ?? 'gone';
+            $nowSql = $this->nowSql();
             $stmt = $this->db->prepare(
                 "UPDATE `chatgpt_farm_invites_snapshot`
-                 SET `status` = ?, `last_seen_at` = NOW()
+                 SET `status` = ?, `last_seen_at` = ?
                  WHERE `farm_id` = ? AND `invite_id` = ?"
             );
-            $stmt->execute([$resolvedStatus, (int) $farmId, $inviteId]);
+            $stmt->execute([$resolvedStatus, $nowSql, (int) $farmId, $inviteId]);
         }
     }
 
@@ -262,5 +272,30 @@ class ChatGptSnapshot extends Model
         );
         $stmt->execute([(int) $id]);
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    private function nowSql(): string
+    {
+        if ($this->timeService) {
+            return $this->timeService->nowSql($this->timeService->getDbTimezone());
+        }
+
+        return date('Y-m-d H:i:s');
+    }
+
+    private function normalizeDateBoundary($date, bool $endOfDay): string
+    {
+        $raw = trim((string) $date);
+        $boundary = $raw . ($endOfDay ? ' 23:59:59' : ' 00:00:00');
+
+        if ($this->timeService) {
+            return $this->timeService->formatDb(
+                $boundary,
+                'Y-m-d H:i:s',
+                $this->timeService->getDisplayTimezone()
+            );
+        }
+
+        return $boundary;
     }
 }

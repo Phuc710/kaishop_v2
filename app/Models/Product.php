@@ -464,7 +464,7 @@ class Product extends Model
 
     public static function isStockManagedProduct(array $row): bool
     {
-        return self::resolveDeliveryMode($row) !== 'source_link';
+        return in_array(self::resolveDeliveryMode($row), ['account_stock', 'manual_info'], true);
     }
 
     public static function usesAccountStock(array $row): bool
@@ -474,8 +474,7 @@ class Product extends Model
 
     public static function usesManualStock(array $row): bool
     {
-        $mode = self::resolveDeliveryMode($row);
-        return $mode === 'manual_info' || $mode === 'business_invite_auto';
+        return self::resolveDeliveryMode($row) === 'manual_info';
     }
 
     public static function normalizeVisibilityMode(string $mode): string
@@ -582,6 +581,13 @@ class Product extends Model
             $row['max_purchase_qty'] = 1;
             $row['requires_info'] = 0;
             $row['info_instructions'] = null;
+        }
+
+        if ((string) $row['product_type'] === 'business_invite_auto') {
+            $row['requires_info'] = 1;
+            $row['manual_stock'] = 0;
+            $row['auto_invite'] = 1;
+            $row['duration_days'] = max(1, (int) ($row['duration_days'] ?? 30));
         }
 
         $visibilityPayload = self::buildVisibilityPayload(self::resolveVisibilityMode($row));

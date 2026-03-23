@@ -18,10 +18,11 @@ class ChatGptViolation extends Model
      */
     public function createViolation($data)
     {
+        $createdAt = $this->nowSql();
         $stmt = $this->db->prepare(
             "INSERT INTO `{$this->table}`
              (`farm_id`, `email`, `type`, `severity`, `reason`, `action_taken`, `created_at`)
-             VALUES (?, ?, ?, ?, ?, ?, NOW())"
+             VALUES (?, ?, ?, ?, ?, ?, ?)"
         );
         $stmt->execute([
             (int) ($data['farm_id'] ?? 0),
@@ -30,6 +31,7 @@ class ChatGptViolation extends Model
             (string) ($data['severity'] ?? 'high'),
             $data['reason'] ?? null,
             $data['action_taken'] ?? null,
+            $createdAt,
         ]);
 
         return (int) $this->db->lastInsertId();
@@ -101,5 +103,14 @@ class ChatGptViolation extends Model
         $types = array_unique(array_merge($predefined, $dynamic));
         sort($types);
         return $types;
+    }
+
+    private function nowSql(): string
+    {
+        if ($this->timeService) {
+            return $this->timeService->nowSql($this->timeService->getDbTimezone());
+        }
+
+        return date('Y-m-d H:i:s');
     }
 }

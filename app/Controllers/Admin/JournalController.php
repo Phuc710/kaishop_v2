@@ -13,6 +13,7 @@ class JournalController extends Controller
     private $orderModel;
     private $productModel;
     private $timeService;
+    private $purchaseService;
 
     public function __construct()
     {
@@ -22,6 +23,7 @@ class JournalController extends Controller
         $this->orderModel = new Order();
         $this->productModel = new Product();
         $this->timeService = class_exists('TimeService') ? TimeService::instance() : null;
+        $this->purchaseService = new PurchaseService();
     }
 
     /**
@@ -150,6 +152,34 @@ class JournalController extends Controller
 
         $orderId = (int) $this->post('order_id', 0);
         $deliveryContent = (string) $this->post('delivery_content', '');
+
+        $order = $this->orderModel->getById($orderId);
+        if (!$order) {
+            return $this->json(['success' => false, 'message' => 'Không tìm thấy đơn hàng.'], 404);
+        }
+
+        $productId = (int) ($order['product_id'] ?? 0);
+        $product = $this->productModel->find($productId);
+        if (!$product) {
+            return $this->json(['success' => false, 'message' => 'Không tìm thấy sản phẩm.'], 404);
+        }
+
+        $deliveryMode = (string) ($product['delivery_mode'] ?? Product::resolveDeliveryMode($product));
+
+        // If it's an auto-invite product and content is empty, try auto-fulfilling it
+        if ($deliveryMode === 'business_invite_auto') {
+            $customerInput = (string) ($order['customer_input'] ?? '');
+            $inviteResult = $this->purchaseService->processBusinessInviteAuto($orderId, $product, $customerInput, 'admin_manual_fulfill');
+            if ($inviteResult['success']) {
+                if ($deliveryContent === '') {
+                    $deliveryContent = $inviteResult['delivery_content'] ?? 'Auto Invite Sent';
+                }
+            } else {
+                // If auto-fulfillment fails, we can either stop or allow manual fulfillment
+                // Let's stop to inform the admin
+                return $this->json(['success' => false, 'message' => 'Lỗi Auto Invite: ' . $inviteResult['message']], 400);
+            }
+        }
 
         $result = $this->orderModel->fulfillPendingOrder($orderId, $deliveryContent, $adminUsername);
         if (!empty($result['success']) && class_exists('Logger')) {

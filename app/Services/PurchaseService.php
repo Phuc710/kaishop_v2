@@ -92,6 +92,8 @@ class PurchaseService
             );
 
             $productType = (string) ($product['product_type'] ?? 'account');
+            $deliveryMode = (string) ($product['delivery_mode'] ?? Product::resolveDeliveryMode($product));
+            $isBusinessAuto = $deliveryMode === 'business_invite_auto';
             $requiresInfo = (int) ($product['requires_info'] ?? 0) === 1;
             $stockManaged = Product::isStockManagedProduct($product);
 
@@ -144,7 +146,7 @@ class PurchaseService
             $totalPrice = max(0, $subtotalPrice - $discountAmount);
             $orderCode = $this->orderModel->generateOrderCode();
 
-            $orderStatus = $requiresInfo ? 'pending' : 'processing';
+            $orderStatus = ($requiresInfo && !$isBusinessAuto) ? 'pending' : 'processing';
             $nowTs = $this->timeService ? $this->timeService->nowTs() : time();
             $orderCreatedAtSql = $this->timeService ? $this->timeService->formatDb($nowTs) : date('Y-m-d H:i:s', $nowTs);
             $orderColumns = [
@@ -201,9 +203,7 @@ class PurchaseService
             $insertOrder->execute($orderValues);
             $orderId = (int) $this->db->lastInsertId();
 
-            // Decrement manual stock if applicable
-            $deliveryMode = (string) ($product['delivery_mode'] ?? Product::resolveDeliveryMode($product));
-            if ($requiresInfo && ($deliveryMode === 'manual_info' || $deliveryMode === 'business_invite_auto')) {
+            if ($deliveryMode === 'manual_info') {
                 $decStmt = $this->db->prepare("UPDATE `products` SET `manual_stock` = GREATEST(0, `manual_stock` - ?) WHERE `id` = ?");
                 $decStmt->execute([$requestedQty, $productId]);
             }
@@ -269,7 +269,7 @@ class PurchaseService
                 }
                 $deliveredPlain = $sourceLink;
                 $this->completeOrderDelivery($orderId, null, $deliveredPlain);
-            } elseif ($productType === 'business_invite_auto') {
+            } elseif ($isBusinessAuto) {
                 $inviteResult = $this->processBusinessInviteAuto($orderId, $product, $customerInput, 'web_purchase');
                 if (!$inviteResult['success']) {
                     throw new RuntimeException($inviteResult['message']);
@@ -323,7 +323,7 @@ class PurchaseService
             try {
                 if (class_exists('OrderNotificationService')) {
                     $notifService = new OrderNotificationService();
-                    if ($requiresInfo) {
+                    if ($requiresInfo && !$isBusinessAuto) {
                         $notifService->notifyAdminPendingOrder($orderData);
                     } else {
                         $notifService->notifyAdminNewOrder($orderData);
@@ -348,7 +348,7 @@ class PurchaseService
                 'source_channel' => $sourceChannel,
             ]);
 
-            if ($requiresInfo) {
+            if ($requiresInfo && !$isBusinessAuto) {
                 return [
                     'success' => true,
                     'pending' => true,
@@ -580,7 +580,7 @@ class PurchaseService
                     throw new RuntimeException('Sản phẩm tạm hết hàng.');
                 }
                 $this->linkStockToPendingOrder($orderId, (int) ($allocated['stock_id'] ?? 0), (string) ($allocated['delivery_content'] ?? ''));
-            } elseif ($deliveryMode === 'manual_info' || $deliveryMode === 'business_invite_auto') {
+            } elseif ($deliveryMode === 'manual_info') {
                 $reserveStmt = $this->db->prepare("UPDATE `products` SET `manual_stock` = `manual_stock` - ? WHERE `id` = ? AND `manual_stock` >= ?");
                 $reserveStmt->execute([$requestedQty, $productId, $requestedQty]);
                 if ($reserveStmt->rowCount() < 1) {
@@ -866,7 +866,7 @@ class PurchaseService
             try {
                 if (class_exists('OrderNotificationService')) {
                     $notifService = new OrderNotificationService();
-                    if ($requiresInfo) {
+                    if ((string) ($freshOrder['status'] ?? '') !== 'completed') {
                         $notifService->notifyAdminPendingOrder($freshOrder);
                     } else {
                         $notifService->notifyAdminNewOrder($freshOrder);
@@ -1618,7 +1618,7 @@ class PurchaseService
     /**
      * Process business_invite_auto fulfillment
      */
-    private function processBusinessInviteAuto(int $orderId, array $product, string $customerEmail, string $actor = 'system'): array
+    public function processBusinessInviteAuto(int $orderId, array $product, string $customerEmail, string $actor = 'system'): array
     {
         if (!$this->guardService) {
             return ['success' => false, 'message' => 'ChatGptGuardService not available.'];

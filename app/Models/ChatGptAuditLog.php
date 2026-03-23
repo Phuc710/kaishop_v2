@@ -129,10 +129,11 @@ class ChatGptAuditLog extends Model
     public function log($data)
     {
         try {
+            $createdAt = $this->nowSql();
             $stmt = $this->db->prepare(
                 "INSERT INTO `{$this->table}`
                  (`farm_id`, `farm_name`, `action`, `actor_email`, `target_email`, `result`, `reason`, `meta_json`, `created_at`)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())"
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
             );
             $stmt->execute([
                 $data['farm_id'] ?? null,
@@ -143,6 +144,7 @@ class ChatGptAuditLog extends Model
                 $data['result'] ?? 'OK',
                 $data['reason'] ?? null,
                 isset($data['meta']) ? json_encode($data['meta'], JSON_UNESCAPED_UNICODE) : null,
+                $createdAt,
             ]);
         } catch (Throwable $e) {
             // Non-blocking: log failure should not break the main flow
@@ -181,11 +183,11 @@ class ChatGptAuditLog extends Model
         }
         if (!empty($filters['date_from'])) {
             $where[] = '`created_at` >= ?';
-            $params[] = $filters['date_from'] . ' 00:00:00';
+            $params[] = $this->normalizeDateBoundary($filters['date_from'], false);
         }
         if (!empty($filters['date_to'])) {
             $where[] = '`created_at` <= ?';
-            $params[] = $filters['date_to'] . ' 23:59:59';
+            $params[] = $this->normalizeDateBoundary($filters['date_to'], true);
         }
 
         $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
@@ -236,5 +238,30 @@ class ChatGptAuditLog extends Model
         }
 
         return $all;
+    }
+
+    private function nowSql(): string
+    {
+        if ($this->timeService) {
+            return $this->timeService->nowSql($this->timeService->getDbTimezone());
+        }
+
+        return date('Y-m-d H:i:s');
+    }
+
+    private function normalizeDateBoundary($date, bool $endOfDay): string
+    {
+        $raw = trim((string) $date);
+        $boundary = $raw . ($endOfDay ? ' 23:59:59' : ' 00:00:00');
+
+        if ($this->timeService) {
+            return $this->timeService->formatDb(
+                $boundary,
+                'Y-m-d H:i:s',
+                $this->timeService->getDisplayTimezone()
+            );
+        }
+
+        return $boundary;
     }
 }
