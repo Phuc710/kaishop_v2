@@ -22,6 +22,22 @@ Disallow: /api/
 Disallow: /ajax/
 Crawl-delay: 1
 
+# AI Crawlers
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
 Sitemap: <?= $fullSitemapUrl ?>
 
 # Block aggressive SEO/scrapers

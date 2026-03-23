@@ -533,8 +533,9 @@ foreach ($authNavPaths as $p) {
                                     ?>
                                     <li class="d-none d-md-block">
                                         <?php if ($dropdownType === 'logout'): ?>
-                                            <a class="dashboard-profile-item dropdown-item logout-item" href="javascript:void(0)"
-                                                onclick="SwalHelper.confirmLogout('<?= $dropdownHref ?>')">
+                                            <a class="dashboard-profile-item dropdown-item logout-item" href="<?= $dropdownHref ?>"
+                                                onclick="event.preventDefault(); SwalHelper.confirmLogout('<?= $dropdownHref ?>')"
+                                                aria-label="<?= $dropdownLabel ?>">
                                                 <i class="<?= $dropdownIcon ?>"></i><?= $dropdownLabel ?>
                                             </a>
                                         <?php else: ?>
@@ -557,8 +558,9 @@ foreach ($authNavPaths as $p) {
                                     ?>
                                     <li class="d-md-none">
                                         <?php if ($dropdownType === 'logout'): ?>
-                                            <a class="dashboard-profile-item dropdown-item logout-item" href="javascript:void(0)"
-                                                onclick="SwalHelper.confirmLogout('<?= $dropdownHref ?>')">
+                                            <a class="dashboard-profile-item dropdown-item logout-item" href="<?= $dropdownHref ?>"
+                                                onclick="event.preventDefault(); SwalHelper.confirmLogout('<?= $dropdownHref ?>')"
+                                                aria-label="<?= $dropdownLabel ?>">
                                                 <i class="<?= $dropdownIcon ?>" <?= $iconStyle ?>></i><?= $dropdownLabel ?>
                                             </a>
                                         <?php else: ?>
