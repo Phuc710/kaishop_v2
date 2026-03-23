@@ -1,8 +1,8 @@
 <?php
 $pageTitle = 'Sửa Farm GPT';
 $breadcrumbs = [
-    ['label' => 'GPT Business', 'url' => url('admin/chatgpt/farms')],
-    ['label' => 'Quản lý Farm', 'url' => url('admin/chatgpt/farms')],
+    ['label' => 'GPT Business', 'url' => url('admin/gpt-business/farms')],
+    ['label' => 'Quản lý Farm', 'url' => url('admin/gpt-business/farms')],
     ['label' => 'Sửa farm'],
 ];
 require __DIR__ . '/../layout/head.php';
@@ -11,6 +11,62 @@ require __DIR__ . '/../layout/breadcrumb.php';
 $farm = $farm ?? [];
 $error = $error ?? null;
 ?>
+<style>
+    .admin-chatgpt-page .content-header {
+        display: none;
+    }
+
+    .gptb-card-header {
+        background: #fff !important;
+        color: #212529 !important;
+        border-bottom: 1px solid #ebedf2 !important;
+        padding: 15px 20px !important;
+    }
+
+    .gptb-title-with-bar {
+        border-left: 4px solid #6610f2;
+        padding-left: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .form-section {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .form-section-title {
+        font-weight: 800;
+        color: #1e293b;
+        text-transform: uppercase;
+        font-size: 13px;
+        margin-bottom: 16px;
+        display: block;
+        letter-spacing: 0.02em;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 8px;
+    }
+
+    .form-label-req::after {
+        content: " *";
+        color: #dc3545;
+    }
+
+    .gptb-mono-input {
+        font-family: 'Courier New', Courier, monospace;
+        letter-spacing: 0.05em;
+    }
+
+    .gptb-form-actions {
+        padding-top: 20px;
+        border-top: 1px solid #ebedf2;
+        display: flex;
+        gap: 10px;
+    }
+</style>
 
 <section class="content pb-4 mt-1 admin-chatgpt-page">
     <div class="container-fluid">
@@ -22,10 +78,12 @@ $error = $error ?? null;
 
                 <div class="card custom-card gptb-form-card">
                     <div class="card-header gptb-card-header">
-                        <h3 class="card-title">CẬP NHẬT FARM</h3>
+                        <span class="gptb-title-with-bar">CẬP NHẬT FARM</span>
                     </div>
                     <div class="card-body">
-                        <form method="post" action="<?= url('admin/chatgpt/farms/edit/' . (int) ($farm['id'] ?? 0)) ?>" id="farmEditForm">
+                        <form method="post"
+                            action="<?= url('admin/gpt-business/farms/edit/' . (int) ($farm['id'] ?? 0)) ?>"
+                            id="farmEditForm">
                             <div class="form-section">
                                 <div class="form-section-title">Thông tin farm</div>
                                 <div class="form-group">
@@ -42,15 +100,18 @@ $error = $error ?? null;
                                     <label>API Key mới</label>
                                     <div class="input-group">
                                         <input type="password" name="admin_api_key" class="form-control gptb-mono-input"
-                                            id="editApiKeyInput" placeholder="Để trống nếu giữ nguyên" autocomplete="off">
+                                            id="editApiKeyInput" placeholder="Để trống nếu giữ nguyên"
+                                            autocomplete="off">
                                         <div class="input-group-append">
-                                            <button type="button" class="btn btn-outline-secondary" id="toggleEditApiKeyBtn">
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                id="toggleEditApiKeyBtn">
                                                 <i class="fas fa-eye"></i>
                                             </button>
                                         </div>
                                     </div>
                                     <small class="form-text text-muted">
-                                        Key hiện tại: <code><?= htmlspecialchars($farm['admin_api_key_masked'] ?? '***') ?></code>
+                                        Key hiện tại:
+                                        <code><?= htmlspecialchars($farm['admin_api_key_masked'] ?? '***') ?></code>
                                     </small>
                                 </div>
                             </div>
@@ -82,7 +143,7 @@ $error = $error ?? null;
                                 <button type="submit" class="btn btn-primary" id="saveFarmBtn">
                                     <i class="fas fa-save mr-1"></i> Lưu thay đổi
                                 </button>
-                                <a href="<?= url('admin/chatgpt/farms') ?>" class="btn btn-secondary">Hủy</a>
+                                <a href="<?= url('admin/gpt-business/farms') ?>" class="btn btn-secondary">Hủy</a>
                             </div>
                         </form>
                     </div>

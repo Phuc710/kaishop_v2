@@ -82,6 +82,7 @@ class AdminProductController extends Controller
     public function toggleStatus()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
         $id = (int) $this->post('id', 0);
         $mode = trim((string) $this->post('mode', ''));
         if ($id <= 0)
@@ -95,6 +96,7 @@ class AdminProductController extends Controller
     public function delete()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
         $id = (int) $this->post('id', 0);
         if ($id <= 0)
             return $this->json(['success' => false, 'message' => 'Thiếu ID'], 400);
@@ -119,6 +121,7 @@ class AdminProductController extends Controller
     public function store()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf(url('admin/products/add'));
         [$data, $errors] = $this->buildAdminProductSavePayload();
         if (!empty($errors)) {
             $_SESSION['notify'] = ['type' => 'error', 'title' => 'Lỗi', 'message' => $errors[0]];
@@ -166,6 +169,7 @@ class AdminProductController extends Controller
     public function update($id)
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf(url('admin/products/edit/' . (int) $id));
         $id = (int) $id;
         if (!$this->productModel->find($id)) {
             $_SESSION['notify'] = ['type' => 'error', 'title' => 'Lỗi', 'message' => 'Sản phẩm không tồn tại'];
@@ -244,6 +248,7 @@ class AdminProductController extends Controller
     public function stockImport($id)
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
         $id = (int) $id;
         $product = $this->productModel->find($id);
         if (!$product) {
@@ -267,6 +272,7 @@ class AdminProductController extends Controller
     public function stockAction($productId)
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
         $productId = (int) $productId;
         $product = $this->productModel->find($productId);
         if (!$product) {
@@ -293,6 +299,8 @@ class AdminProductController extends Controller
 
     public function stockDelete()
     {
+        $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
         // For backward compatibility or internal redirects
         $id = (int) $this->post('id');
         // We need the product ID to get the handler, but old stockDelete didn't pass it.

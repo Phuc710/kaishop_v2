@@ -106,6 +106,7 @@ class BlacklistController extends Controller
     public function unban(): void
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf(url('admin/blacklist'));
 
         $type = (string) ($_POST['type'] ?? '');
         $id = (int) ($_POST['id'] ?? 0);
@@ -204,6 +205,7 @@ class BlacklistController extends Controller
     public function clearExpired(): void
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf(url('admin/blacklist'));
 
         $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
         $this->banService->syncExpiredState();

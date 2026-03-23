@@ -18,28 +18,28 @@ class ChatGptAdminViewService
             ],
             'quickLinks' => [
                 [
-                    'href' => url('admin/chatgpt/orders'),
+                    'href' => url('admin/gpt-business/orders'),
                     'label' => 'Đơn hàng GPT',
                     'description' => 'Theo dõi đơn đang mời và đã kích hoạt.',
                     'icon' => 'fas fa-box-open',
                     'meta' => (int) ($orderStats['total'] ?? 0) . ' đơn',
                 ],
                 [
-                    'href' => url('admin/chatgpt/members'),
+                    'href' => url('admin/gpt-business/members'),
                     'label' => 'Thành viên farm',
                     'description' => 'Snapshot thành viên hiện có trong từng farm.',
                     'icon' => 'fas fa-users',
                     'meta' => (int) ($stats['used_seats'] ?? 0) . ' slot đang dùng',
                 ],
                 [
-                    'href' => url('admin/chatgpt/logs'),
+                    'href' => url('admin/gpt-business/logs'),
                     'label' => 'Audit logs',
                     'description' => 'Lịch sử invite, sync và thao tác quản trị.',
                     'icon' => 'fas fa-clipboard-list',
                     'meta' => (int) ($orderStats['failed_count'] ?? 0) . ' lỗi cần xem',
                 ],
                 [
-                    'href' => url('admin/chatgpt/violations'),
+                    'href' => url('admin/gpt-business/violations'),
                     'label' => 'Violations',
                     'description' => 'Theo dõi vi phạm, kick, revoke và xử lý thủ công.',
                     'icon' => 'fas fa-shield-alt',
@@ -106,7 +106,10 @@ class ChatGptAdminViewService
 
         $actionTypeOptions = [];
         foreach ($actionTypes as $type) {
-            $actionTypeOptions[$type] = $this->translateAuditAction($type);
+            $canonicalType = $this->normalizeAuditAction($type);
+            if (!isset($actionTypeOptions[$canonicalType])) {
+                $actionTypeOptions[$canonicalType] = $this->getAuditActionLabel($canonicalType);
+            }
         }
 
         return [
@@ -116,7 +119,7 @@ class ChatGptAdminViewService
                 $this->makeSummaryCard('Tổng log', count($logs), 'fas fa-clipboard-list', 'primary', 'Bản ghi audit đang hiển thị'),
                 $this->makeSummaryCard('Kết quả thành công', $okCount, 'fas fa-check-double', 'success', 'Tác vụ hoàn tất thành công'),
                 $this->makeSummaryCard('Kết quả thất bại', $failCount, 'fas fa-bug', 'danger', 'Sự cố cần kiểm tra thêm'),
-                $this->makeSummaryCard('Loại tác vụ', count($actionTypes), 'fas fa-sitemap', 'info', 'Số action type khác nhau'),
+                $this->makeSummaryCard('Loại tác vụ', count($actionTypeOptions), 'fas fa-sitemap', 'info', 'Số action type chuẩn khác nhau'),
             ],
         ];
     }
@@ -196,7 +199,13 @@ class ChatGptAdminViewService
             $order['status_label'] = $meta['label'];
             $order['status_badge_class'] = 'gptb-badge gptb-badge--' . $meta['tone'];
             $order['farm_display'] = trim((string) ($order['farm_name'] ?? '')) !== '' ? (string) $order['farm_name'] : 'Chưa gán farm';
-            $order['note_display'] = trim((string) ($order['note'] ?? '')) !== '' ? (string) $order['note'] : '--';
+            $sourceOrderId = (int) ($order['source_order_id'] ?? 0);
+            $note = htmlspecialchars(trim((string) ($order['note'] ?? '')));
+            if ($sourceOrderId > 0) {
+                $orderLink = '<a href="' . url('admin/orders/view/' . $sourceOrderId) . '" target="_blank" class="badge badge-light border text-primary"><i class="fas fa-shopping-basket mr-1"></i>Order #' . $sourceOrderId . '</a>';
+                $note = ($note !== '' ? ($note . '<br>') : '') . $orderLink;
+            }
+            $order['note_display'] = $note !== '' ? $note : '--';
             $order['expires_at_display'] = $this->formatDateTime($order['expires_at'] ?? null, 'd/m/Y H:i');
             $order['created_at_display'] = $this->formatDateTime($order['created_at'] ?? null, 'd/m/Y H:i');
             $output[] = $order;
@@ -231,11 +240,12 @@ class ChatGptAdminViewService
     {
         $output = [];
         foreach ($logs as $log) {
-            $action = (string) ($log['action'] ?? '');
+            $action = $this->normalizeAuditAction((string) ($log['action'] ?? ''));
             $result = strtoupper((string) ($log['result'] ?? 'OK'));
 
-            $log['action_badge_class'] = 'gptb-badge gptb-badge--' . $this->resolveAuditActionTone($action);
-            $log['action_label'] = $this->translateAuditAction($action);
+            $log['action'] = $action;
+            $log['action_badge_class'] = 'gptb-badge gptb-badge--' . $this->resolveCanonicalAuditActionTone($action);
+            $log['action_label'] = $this->getAuditActionLabel($action);
             $log['result_badge_class'] = 'gptb-badge gptb-badge--' . ($result === 'FAIL' ? 'danger' : 'success');
             $log['result_label'] = $result === 'FAIL' ? 'THẤT BẠI' : 'THÀNH CÔNG';
             $log['meta_display'] = $this->formatMetaJson($log['meta_json'] ?? null);
@@ -340,6 +350,46 @@ class ChatGptAdminViewService
             case 'FARM_ADDED':
             case 'FARM_UPDATED':
                 return 'success';
+            case 'SYSTEM_INVITE_CREATED':
+                return 'info';
+            case 'SYSTEM_INVITE_FAILED':
+            case 'INVITE_REVOKED_UNAUTHORIZED':
+                return 'warning';
+            case 'MEMBER_REMOVED_UNAUTHORIZED':
+            case 'MEMBER_REMOVED_POLICY':
+                return 'danger';
+            default:
+                return 'muted';
+        }
+    }
+
+    private function normalizeAuditAction($action)
+    {
+        return ChatGptAuditLog::normalizeActionName((string) $action);
+    }
+
+    private function getAuditActionLabel($action)
+    {
+        $action = $this->normalizeAuditAction($action);
+        $catalog = ChatGptAuditLog::getActionCatalog();
+
+        return $catalog[$action]['label'] ?? $this->titleize($action);
+    }
+
+    private function resolveCanonicalAuditActionTone($action)
+    {
+        $action = $this->normalizeAuditAction($action);
+
+        switch ($action) {
+            case 'ORDER_MANUAL_CREATED':
+            case 'ORDER_ACTIVATED':
+            case 'ORDER_EXPIRED':
+            case 'FARM_ADDED':
+            case 'FARM_UPDATED':
+            case 'PRODUCT_CREATED':
+            case 'PRODUCT_UPDATED':
+                return 'success';
+            case 'FARM_SYNCED':
             case 'SYSTEM_INVITE_CREATED':
                 return 'info';
             case 'SYSTEM_INVITE_FAILED':

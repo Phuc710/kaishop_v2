@@ -12,6 +12,7 @@ use ChatGptOrder;
 use ChatGptSnapshot;
 use ChatGptViolation;
 use Controller;
+use Product;
 
 /**
  * ChatGptAdminController
@@ -29,6 +30,7 @@ class ChatGptAdminController extends Controller
     private $viewService;
     private $guardService;
     private $violationModel;
+    private $productModel;
 
     public function __construct()
     {
@@ -42,6 +44,7 @@ class ChatGptAdminController extends Controller
         $this->viewService = new ChatGptAdminViewService();
         $this->guardService = new ChatGptGuardService();
         $this->violationModel = new ChatGptViolation();
+        $this->productModel = new Product();
     }
 
     private function requireAdmin()
@@ -75,6 +78,7 @@ class ChatGptAdminController extends Controller
     public function farmStore()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf(url('admin/gpt-business/farms/add'));
 
         $farmName = trim((string) $this->post('farm_name', ''));
         $adminEmail = strtolower(trim((string) $this->post('admin_email', '')));
@@ -83,19 +87,19 @@ class ChatGptAdminController extends Controller
 
         if ($farmName === '' || $adminEmail === '' || $apiKey === '') {
             $_SESSION['cgpt_admin_error'] = 'Vui lòng điền đầy đủ thông tin.';
-            $this->redirect(url('admin/chatgpt/farms/add'));
+            $this->redirect(url('admin/gpt-business/farms/add'));
             return;
         }
 
         if (!filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
             $_SESSION['cgpt_admin_error'] = 'Email quản trị không hợp lệ.';
-            $this->redirect(url('admin/chatgpt/farms/add'));
+            $this->redirect(url('admin/gpt-business/farms/add'));
             return;
         }
 
         if (!$this->farmService->validateKey(['id' => 0, 'admin_api_key' => $apiKey])) {
             $_SESSION['cgpt_admin_error'] = 'API key không hợp lệ hoặc không kết nối được OpenAI.';
-            $this->redirect(url('admin/chatgpt/farms/add'));
+            $this->redirect(url('admin/gpt-business/farms/add'));
             return;
         }
 
@@ -120,7 +124,7 @@ class ChatGptAdminController extends Controller
         ]);
 
         $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thành công', 'message' => "Đã thêm farm [{$farmName}] thành công."];
-        $this->redirect(url('admin/chatgpt/farms'));
+        $this->redirect(url('admin/gpt-business/farms'));
     }
 
     public function farmEdit($id)
@@ -129,7 +133,7 @@ class ChatGptAdminController extends Controller
         $farm = $this->farmModel->getById((int) $id);
         if (!$farm) {
             $_SESSION['notify'] = ['type' => 'error', 'title' => 'Lỗi', 'message' => 'Farm không tồn tại.'];
-            $this->redirect(url('admin/chatgpt/farms'));
+            $this->redirect(url('admin/gpt-business/farms'));
             return;
         }
 
@@ -144,10 +148,11 @@ class ChatGptAdminController extends Controller
     public function farmUpdate($id)
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf(url('admin/gpt-business/farms/edit/' . (int) $id));
         $farmId = (int) $id;
         $farm = $this->farmModel->getById($farmId);
         if (!$farm) {
-            $this->redirect(url('admin/chatgpt/farms'));
+            $this->redirect(url('admin/gpt-business/farms'));
             return;
         }
 
@@ -162,7 +167,7 @@ class ChatGptAdminController extends Controller
         if ($newKey !== '') {
             if (!$this->farmService->validateKey(['id' => $farmId, 'admin_api_key' => $newKey])) {
                 $_SESSION['cgpt_admin_error'] = 'API key mới không hợp lệ.';
-                $this->redirect(url('admin/chatgpt/farms/edit/' . $farmId));
+                $this->redirect(url('admin/gpt-business/farms/edit/' . $farmId));
                 return;
             }
             $data['admin_api_key'] = $this->farmService->encryptKey($newKey);
@@ -184,7 +189,7 @@ class ChatGptAdminController extends Controller
         ]);
 
         $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thành công', 'message' => 'Đã cập nhật farm.'];
-        $this->redirect(url('admin/chatgpt/farms'));
+        $this->redirect(url('admin/gpt-business/farms'));
     }
 
     public function orders()
@@ -208,6 +213,71 @@ class ChatGptAdminController extends Controller
                 'filters' => $filters,
             ]
         ));
+    }
+
+    public function orderAdd()
+    {
+        $this->requireAdmin();
+        $farms = $this->farmModel->getAll();
+        $this->view('admin/chatgpt/orders_add', [
+            'farms' => $farms,
+            'error' => $_SESSION['cgpt_admin_error'] ?? null,
+        ]);
+        unset($_SESSION['cgpt_admin_error']);
+    }
+
+    public function orderStore()
+    {
+        $this->requireAdmin();
+        $this->rejectInvalidCsrf(url('admin/gpt-business/orders/add'));
+
+        $email = strtolower(trim((string) $this->post('customer_email', '')));
+        $farmId = (int) $this->post('assigned_farm_id', 0);
+        $months = max(1, (int) $this->post('months', 1));
+        $note = trim((string) $this->post('note', ''));
+
+        if ($email === '') {
+            $_SESSION['cgpt_admin_error'] = 'Vui lòng nhập email khách hàng.';
+            $this->redirect(url('admin/gpt-business/orders/add'));
+            return;
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $_SESSION['cgpt_admin_error'] = 'Email không hợp lệ.';
+            $this->redirect(url('admin/gpt-business/orders/add'));
+            return;
+        }
+
+        $expiresAt = date('Y-m-d H:i:s', strtotime("+{$months} months"));
+
+        $orderId = $this->orderModel->create([
+            'customer_email' => $email,
+            'assigned_farm_id' => $farmId > 0 ? $farmId : null,
+            'expires_at' => $expiresAt,
+            'status' => 'pending',
+            'product_code' => 'chatgpt_business_manual',
+        ]);
+
+        if ($note !== '') {
+            $this->orderModel->updateStatus($orderId, 'pending', ['note' => $note]);
+        }
+
+        $this->auditLog->log([
+            'farm_id' => $farmId > 0 ? $farmId : null,
+            'action' => 'ORDER_MANUAL_CREATED',
+            'actor_email' => $this->authService->getCurrentUser()['email'] ?? 'admin',
+            'result' => 'OK',
+            'reason' => 'Quản trị viên tạo đơn hàng thủ công.',
+            'meta' => [
+                'order_id' => $orderId,
+                'customer_email' => $email,
+                'months' => $months,
+                'expires_at' => $expiresAt,
+            ],
+        ]);
+
+        $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thành công', 'message' => "Đã tạo đơn hàng cho [{$email}] thành công."];
+        $this->redirect(url('admin/gpt-business/orders'));
     }
 
     public function members()
@@ -300,6 +370,7 @@ class ChatGptAdminController extends Controller
     public function farmSyncNow($id)
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
         $result = $this->guardService->processFarmById((int) $id, $this->authService->getCurrentUser()['email'] ?? 'admin', 'manual_sync');
         if (!$result['success']) {
             return $this->json($result, 404);
@@ -315,6 +386,7 @@ class ChatGptAdminController extends Controller
     public function memberRemove($id)
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf(url('admin/gpt-business/members'), $this->isAjax());
         $result = $this->guardService->removeMemberBySnapshotId((int) $id, $this->authService->getCurrentUser()['email'] ?? 'admin');
         if ($this->isAjax()) {
             return $this->json($result, $result['success'] ? 200 : 400);
@@ -325,12 +397,13 @@ class ChatGptAdminController extends Controller
             'title' => $result['success'] ? 'Thành công' : 'Lỗi',
             'message' => $result['message'],
         ];
-        $this->redirect(url('admin/chatgpt/members'));
+        $this->redirect(url('admin/gpt-business/members'));
     }
 
     public function inviteRevoke($id)
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf(url('admin/gpt-business/invites'), $this->isAjax());
         $result = $this->guardService->revokeInviteBySnapshotId((int) $id, $this->authService->getCurrentUser()['email'] ?? 'admin');
         if ($this->isAjax()) {
             return $this->json($result, $result['success'] ? 200 : 400);
@@ -341,12 +414,13 @@ class ChatGptAdminController extends Controller
             'title' => $result['success'] ? 'Thành công' : 'Lỗi',
             'message' => $result['message'],
         ];
-        $this->redirect(url('admin/chatgpt/invites'));
+        $this->redirect(url('admin/gpt-business/invites'));
     }
 
     public function orderRetryInvite($id)
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf(url('admin/gpt-business/orders'), $this->isAjax());
         $result = $this->guardService->retryOrderInvite((int) $id, $this->authService->getCurrentUser()['email'] ?? 'admin');
         if ($this->isAjax()) {
             return $this->json($result, $result['success'] ? 200 : 400);
@@ -357,6 +431,114 @@ class ChatGptAdminController extends Controller
             'title' => $result['success'] ? 'Thành công' : 'Lỗi',
             'message' => $result['message'],
         ];
-        $this->redirect(url('admin/chatgpt/orders'));
+        $this->redirect(url('admin/gpt-business/orders'));
+    }
+
+    public function productEdit()
+    {
+        $this->requireAdmin();
+        // Tìm sản phẩm GPT Business duy nhất
+        $product = $this->productModel->getFiltered(['search' => 'ChatGPT Plus - Business']);
+        $product = $product[0] ?? null;
+
+        $this->view('admin/chatgpt/product_edit', [
+            'product' => $product ? (array) $product : null,
+            'categories' => $this->productModel->getCategories(),
+            'farms' => $this->farmModel->getAll(),
+        ]);
+    }
+
+    public function productUpdate()
+    {
+        $this->requireAdmin();
+        $this->rejectInvalidCsrf(url('admin/gpt-business/product'));
+        $id = (int) $this->post('id', 0);
+
+        $name = trim((string) $this->post('name', ''));
+        $priceVnd = max(0, (int) $this->post('price_vnd', 0));
+        $oldPrice = max(0, (int) $this->post('old_price', 0));
+        $description = (string) $this->post('description', '');
+        $infoInstructions = trim((string) $this->post('info_instructions', ''));
+        $catId = (int) $this->post('category_id', 0);
+        $slug = trim((string) $this->post('slug', ''));
+        $displayOrder = max(0, (int) $this->post('display_order', 0));
+        $visibilityMode = (string) $this->post('visibility_mode', 'both');
+        $seoDescription = trim((string) $this->post('seo_description', ''));
+        $image = trim((string) $this->post('image', ''));
+        $minPurchaseQty = max(1, (int) $this->post('min_purchase_qty', 1));
+        $maxPurchaseQty = max(0, (int) $this->post('max_purchase_qty', 0));
+        $manualStock = max(0, (int) $this->post('manual_stock', 0));
+
+        $deliveryMode = (string) $this->post('delivery_mode', 'manual_info');
+        $productType = ($deliveryMode === 'business_invite_auto') ? 'business_invite_auto' : 'account';
+        $requiresInfo = ($deliveryMode === 'business_invite_auto' || $deliveryMode === 'manual_info') ? 1 : 0;
+
+        $durationDays = max(1, (int) $this->post('duration_days', 30));
+        $autoInvite = (int) $this->post('auto_invite', 1);
+        $farmId = (int) $this->post('farm_id', 0);
+
+        $galleryInput = $this->post('gallery', []);
+        $gallery = [];
+        if (is_array($galleryInput)) {
+            foreach ($galleryInput as $item) {
+                $item = trim((string) $item);
+                if ($item !== '')
+                    $gallery[] = $item;
+            }
+            $gallery = array_values(array_unique($gallery));
+        }
+
+        if ($name === '') {
+            $_SESSION['notify'] = ['type' => 'error', 'title' => 'Lỗi', 'message' => 'Vui lòng nhập tên sản phẩm'];
+            $this->redirect(url('admin/gpt-business/product'));
+            return;
+        }
+
+        $data = [
+            'name' => $name,
+            'slug' => $slug,
+            'price_vnd' => $priceVnd,
+            'old_price' => $oldPrice,
+            'description' => $description,
+            'requires_info' => $requiresInfo,
+            'info_instructions' => $infoInstructions,
+            'category_id' => $catId,
+            'display_order' => $displayOrder,
+            'visibility_mode' => $visibilityMode,
+            'seo_description' => $seoDescription,
+            'image' => $image,
+            'gallery' => json_encode($gallery),
+            'min_purchase_qty' => $minPurchaseQty,
+            'max_purchase_qty' => $maxPurchaseQty,
+            'manual_stock' => $manualStock,
+            'status' => 'ON',
+            'product_type' => $productType,
+            'duration_days' => $durationDays,
+            'auto_invite' => $autoInvite,
+            'farm_id' => $farmId > 0 ? $farmId : null,
+        ];
+
+        if ($id > 0) {
+            $this->productModel->update($id, $data);
+            $action = 'PRODUCT_UPDATED';
+            $msg = 'Cập nhật cấu hình sản phẩm thành công';
+        } else {
+            if ($slug === '')
+                $data['slug'] = 'chatgpt-business-' . time();
+            $id = $this->productModel->create($data);
+            $action = 'PRODUCT_CREATED';
+            $msg = 'Tạo sản phẩm GPT Business thành công';
+        }
+
+        $this->auditLog->log([
+            'action' => $action,
+            'actor_email' => $this->authService->getCurrentUser()['email'] ?? 'admin',
+            'result' => 'OK',
+            'reason' => 'Admin managed GPT product detail via dedicated module.',
+            'meta' => ['product_id' => $id, 'name' => $data['name']],
+        ]);
+
+        $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thành công', 'message' => $msg];
+        $this->redirect(url('admin/gpt-business/product'));
     }
 }

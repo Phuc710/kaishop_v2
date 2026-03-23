@@ -117,6 +117,35 @@ class Controller
     }
 
     /**
+     * Enforce CSRF validation for state-changing requests.
+     */
+    protected function rejectInvalidCsrf($redirectUrl = '', $expectsJson = false, $message = 'Phiên làm việc không hợp lệ. Vui lòng tải lại trang và thử lại.')
+    {
+        if ($this->validateCsrf()) {
+            return;
+        }
+
+        if ($expectsJson || $this->isAjax()) {
+            $this->json([
+                'success' => false,
+                'message' => $message,
+            ], 419);
+        }
+
+        $_SESSION['notify'] = [
+            'type' => 'error',
+            'title' => 'Phiên không hợp lệ',
+            'message' => $message,
+        ];
+
+        if ($redirectUrl === '') {
+            $redirectUrl = function_exists('url') ? url('admin') : '/';
+        }
+
+        $this->redirect($redirectUrl);
+    }
+
+    /**
      * Check if request is AJAX
      * @return bool
      */

@@ -101,6 +101,7 @@ class FinanceController extends Controller
     public function storeGiftcode()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf(url('admin/finance/giftcodes/add'));
 
         $data = [
             'giftcode' => strtoupper(trim($this->post('giftcode'))),
@@ -172,6 +173,7 @@ class FinanceController extends Controller
     public function updateGiftcode($id)
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf(url('admin/finance/giftcodes/edit/' . (int) $id));
 
         $data = [
             'giftcode' => strtoupper(trim($this->post('giftcode'))),
@@ -201,6 +203,7 @@ class FinanceController extends Controller
     public function deleteGiftcode($id)
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
 
         $this->giftCodeModel->deleteById($id);
         $this->json(['success' => true, 'message' => 'Đã xóa mã giảm giá']);

@@ -26,6 +26,7 @@ $adminNeedsSummernote = !empty($adminNeedsSummernote);
         crossorigin="anonymous">
         </script>
 <?php endif; ?>
+<script src="<?= asset('assets/js/csrf-guard.js') ?>"></script>
 <!-- AdminLTE App -->
 <script src="https://cdn.jsdelivr.net/gh/quangtuu2006/admin_lite@main/dist/js/adminlte.js"
     crossorigin="anonymous"></script>

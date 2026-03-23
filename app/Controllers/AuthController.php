@@ -589,6 +589,8 @@ class AuthController extends Controller
             return $this->json(['success' => false]);
         }
 
+        $this->rejectInvalidCsrf('', true);
+
         $user = $this->authService->getCurrentUser();
         $fpHash = trim($this->post('fingerprint', ''));
 

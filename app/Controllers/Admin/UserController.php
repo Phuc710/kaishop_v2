@@ -141,6 +141,7 @@ class UserController extends Controller
     public function update($username)
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf(url('admin/users/edit/' . urlencode((string) $username)));
         global $connection;
 
         $email = (string) $this->post('email');
@@ -176,6 +177,7 @@ class UserController extends Controller
     public function addMoney($username)
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf(url('admin/users/edit/' . urlencode((string) $username)));
         global $connection;
 
         $safeUsername = $connection->real_escape_string((string) $username);
@@ -241,6 +243,7 @@ class UserController extends Controller
     public function subMoney($username)
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf(url('admin/users/edit/' . urlencode((string) $username)));
         global $connection;
 
         $safeUsername = $connection->real_escape_string((string) $username);
@@ -306,6 +309,7 @@ class UserController extends Controller
     public function delete()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
 
         $userId = $this->post('user_id');
         $this->userModel->delete($userId);
@@ -319,6 +323,7 @@ class UserController extends Controller
     public function banUser($username)
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
 
         $reason = trim((string) $this->post('reason', ''));
         if ($reason === '') {
@@ -356,6 +361,7 @@ class UserController extends Controller
     public function banDevice($username)
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
 
         $reason = trim((string) $this->post('reason', ''));
         if ($reason === '') {
@@ -401,6 +407,7 @@ class UserController extends Controller
     public function unbanUser($username)
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
         $adminName = (string) ($_SESSION['admin'] ?? 'Admin');
         $result = $this->banService->releaseAccountBan((string) $username, $adminName);
 

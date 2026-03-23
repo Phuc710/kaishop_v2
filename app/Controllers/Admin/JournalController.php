@@ -140,6 +140,7 @@ class JournalController extends Controller
     public function fulfillPurchase()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
 
         $user = $this->authService->getCurrentUser();
         $adminUsername = trim((string) ($user['username'] ?? 'admin'));
@@ -168,6 +169,7 @@ class JournalController extends Controller
     public function cancelPurchase()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
 
         $user = $this->authService->getCurrentUser();
         $adminUsername = trim((string) ($user['username'] ?? 'admin'));
@@ -245,9 +247,8 @@ class JournalController extends Controller
                 ['key' => 'source', 'label' => 'Nguồn', 'align' => 'center'],
                 ['key' => 'trans_id', 'label' => 'Mã GD', 'align' => 'center'],
                 ['key' => 'method', 'label' => 'Phương Thức', 'align' => 'center'],
-                ['key' => 'bank_name', 'label' => 'Ngân Hàng', 'align' => 'center'],
-                ['key' => 'stk', 'label' => 'STK', 'align' => 'center'],
-                ['key' => 'bank_owner', 'label' => 'Chủ Tài Khoản', 'align' => 'center'],
+                ['key' => 'sender_account', 'label' => 'STK Khách', 'align' => 'center'],
+                ['key' => 'sender_name', 'label' => 'Tên Khách', 'align' => 'center'],
                 ['key' => 'amount', 'label' => 'Thực Nhận', 'align' => 'center'],
                 ['key' => 'reason', 'label' => 'Nội dung CK', 'align' => 'center'],
             ],
@@ -437,9 +438,7 @@ class JournalController extends Controller
             $username = $this->formatUsername($row['username'] ?? '');
 
             $method = trim((string) ($row['type'] ?? 'Unknown'));
-            $bankName = trim((string) ($row['bank_name'] ?? ''));
-            $stk = trim((string) ($row['stk'] ?? ''));
-            $bankOwner = trim((string) ($row['bank_owner'] ?? ''));
+            $senderMeta = $this->resolveDepositSenderMeta($row);
 
             // Override formatted amount for deposit to force positive display
             $amountVal = (int) ($row['amount'] ?? 0);
@@ -453,9 +452,10 @@ class JournalController extends Controller
                 'source' => $this->formatSourceCell($row['source_channel'] ?? null),
                 'trans_id' => '<span class="font-weight-500 text-monospace">' . htmlspecialchars($row['trans_id'] ?? '--') . '</span>',
                 'method' => '<span class="badge bg-light text-dark border">' . htmlspecialchars($method) . '</span>',
-                'bank_name' => $bankName !== '' ? htmlspecialchars($bankName) : '--',
-                'stk' => $stk !== '' ? '<span class="text-monospace">' . htmlspecialchars($stk) . '</span>' : '--',
-                'bank_owner' => $bankOwner !== '' ? htmlspecialchars($bankOwner) : '--',
+                'sender_account' => $senderMeta['sender_account'] !== ''
+                    ? '<span class="text-monospace">' . htmlspecialchars($senderMeta['sender_account']) . '</span>'
+                    : '--',
+                'sender_name' => $senderMeta['sender_name'] !== '' ? htmlspecialchars($senderMeta['sender_name']) : '--',
                 'amount' => FormatHelper::balanceChange($amountVal),
                 'reason' => htmlspecialchars(trim((string) ($row['reason'] ?? '--'))),
             ];
@@ -715,5 +715,69 @@ class JournalController extends Controller
         }
 
         return '<span class="js-admin-time-cell"' . $attrs . '>' . $html . '</span>';
+    }
+
+    /**
+     * @param array<string,mixed> $row
+     * @return array{sender_account:string,sender_name:string}
+     */
+    private function resolveDepositSenderMeta(array $row): array
+    {
+        $senderAccount = preg_replace('/\D+/', '', trim((string) ($row['sender_account'] ?? '')));
+        $senderName = $this->normalizeDepositSenderName(trim((string) ($row['sender_name'] ?? '')));
+
+        if ($senderAccount !== '' || $senderName !== '') {
+            return [
+                'sender_account' => $senderAccount,
+                'sender_name' => $senderName,
+            ];
+        }
+
+        return $this->extractSenderMetaFromDepositText((string) ($row['reason'] ?? ''));
+    }
+
+    /**
+     * @return array{sender_account:string,sender_name:string}
+     */
+    private function extractSenderMetaFromDepositText(string $text): array
+    {
+        $normalized = preg_replace('/\s+/u', ' ', trim($text));
+        if ($normalized === '') {
+            return ['sender_account' => '', 'sender_name' => ''];
+        }
+
+        $patterns = [
+            '/\b(?:CT\s*tu|TU|Tu|tu)\s*([0-9]{6,20})\s*([A-Z0-9\.\- ]{2,120}?)(?=\s+(?:toi|TOI|tới|TỚI)\b)/u',
+            '/\b(?:from|FROM)\s*([0-9]{6,20})\s*([A-Z0-9\.\- ]{2,120}?)(?=\s+(?:to|TO)\b)/u',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $normalized, $matches)) {
+                return [
+                    'sender_account' => preg_replace('/\D+/', '', (string) ($matches[1] ?? '')),
+                    'sender_name' => $this->normalizeDepositSenderName((string) ($matches[2] ?? '')),
+                ];
+            }
+        }
+
+        return ['sender_account' => '', 'sender_name' => ''];
+    }
+
+    private function normalizeDepositSenderName(string $value): string
+    {
+        $value = trim(preg_replace('/\s+/u', ' ', $value));
+        if ($value === '') {
+            return '';
+        }
+
+        $value = preg_replace('/\b(?:chuyen tien|chuyển tiền|transfer|ck|gd)\b.*$/iu', '', $value);
+        $value = preg_replace('/[^A-Z0-9\p{L}\.\- ]+/u', ' ', (string) $value);
+        $value = trim(preg_replace('/\s+/u', ' ', (string) $value));
+
+        if ($value === '' || preg_match('/^[0-9]+$/', $value)) {
+            return '';
+        }
+
+        return $value;
     }
 }

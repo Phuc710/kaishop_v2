@@ -102,11 +102,20 @@ class SepayWebhookController extends Controller
                 break;
             }
         }
+        $senderMeta = $this->extractSenderMetaFromPayload($data);
+        $senderAccountSource = $senderMeta['sender_account'];
+        $senderNameSource = $senderMeta['sender_name'];
         if ($bankNameSource !== '') {
             $bankNameSource = function_exists('mb_substr') ? mb_substr($bankNameSource, 0, 120) : substr($bankNameSource, 0, 120);
         }
         if ($bankOwnerSource !== '') {
             $bankOwnerSource = function_exists('mb_substr') ? mb_substr($bankOwnerSource, 0, 150) : substr($bankOwnerSource, 0, 150);
+        }
+        if ($senderAccountSource !== '') {
+            $senderAccountSource = substr(preg_replace('/\D+/', '', $senderAccountSource), 0, 32);
+        }
+        if ($senderNameSource !== '') {
+            $senderNameSource = function_exists('mb_substr') ? mb_substr($senderNameSource, 0, 150) : substr($senderNameSource, 0, 150);
         }
         $referenceCode = trim((string) ($data['referenceCode'] ?? ''));
         $transactionDate = trim((string) ($data['transactionDate'] ?? ''));
@@ -369,6 +378,14 @@ class SepayWebhookController extends Controller
             $historyColumns[] = 'bank_owner';
             $historyValues[] = ($bankOwnerSource !== '' ? $bankOwnerSource : null);
         }
+        if ($this->hasColumn('history_nap_bank', 'sender_account')) {
+            $historyColumns[] = 'sender_account';
+            $historyValues[] = ($senderAccountSource !== '' ? $senderAccountSource : null);
+        }
+        if ($this->hasColumn('history_nap_bank', 'sender_name')) {
+            $historyColumns[] = 'sender_name';
+            $historyValues[] = ($senderNameSource !== '' ? $senderNameSource : null);
+        }
         $historyMarks = implode(', ', array_fill(0, count($historyColumns), '?'));
         $stmt = $db->prepare("
             INSERT INTO `history_nap_bank` (`" . implode('`, `', $historyColumns) . "`)
@@ -404,6 +421,8 @@ class SepayWebhookController extends Controller
             'gateway' => $gateway,
             'bank_name' => $bankNameSource,
             'bank_owner' => $bankOwnerSource,
+            'sender_account' => $senderAccountSource,
+            'sender_name' => $senderNameSource,
             'username' => $username,
             'source_channel' => $sourceChannel,
         ]);
@@ -577,9 +596,164 @@ class SepayWebhookController extends Controller
             // ignore if key exists or ALTER is restricted
         }
 
+        try {
+            if (!$this->hasColumn('history_nap_bank', 'sender_account')) {
+                Database::getInstance()->getConnection()
+                    ->exec("ALTER TABLE `history_nap_bank` ADD COLUMN `sender_account` VARCHAR(32) NULL AFTER `bank_owner`");
+            }
+        } catch (Throwable $e) {
+            // ignore if ALTER is restricted
+        }
+
+        try {
+            if (!$this->hasColumn('history_nap_bank', 'sender_name')) {
+                Database::getInstance()->getConnection()
+                    ->exec("ALTER TABLE `history_nap_bank` ADD COLUMN `sender_name` VARCHAR(150) NULL AFTER `sender_account`");
+            }
+        } catch (Throwable $e) {
+            // ignore if ALTER is restricted
+        }
+
+        try {
+            Database::getInstance()->getConnection()
+                ->exec("ALTER TABLE `history_nap_bank` ADD KEY `idx_hnb_sender_account` (`sender_account`)");
+        } catch (Throwable $e) {
+            // ignore if key exists or ALTER is restricted
+        }
+
         unset($this->schemaCache['history_nap_bank.source_channel']);
         unset($this->schemaCache['history_nap_bank.bank_name']);
         unset($this->schemaCache['history_nap_bank.bank_owner']);
+        unset($this->schemaCache['history_nap_bank.sender_account']);
+        unset($this->schemaCache['history_nap_bank.sender_name']);
+        unset(self::$staticSchemaCache['history_nap_bank.source_channel']);
+        unset(self::$staticSchemaCache['history_nap_bank.bank_name']);
+        unset(self::$staticSchemaCache['history_nap_bank.bank_owner']);
+        unset(self::$staticSchemaCache['history_nap_bank.sender_account']);
+        unset(self::$staticSchemaCache['history_nap_bank.sender_name']);
+    }
+
+    /**
+     * @param array<string,mixed> $data
+     * @return array{sender_account:string,sender_name:string}
+     */
+    private function extractSenderMetaFromPayload(array $data): array
+    {
+        $senderAccount = '';
+        foreach ([
+            'senderAccountNumber',
+            'sender_account_number',
+            'senderAccount',
+            'sender_account',
+            'payerAccountNumber',
+            'payer_account_number',
+            'fromAccountNumber',
+            'from_account_number',
+            'counterAccountNumber',
+            'counter_account_number',
+            'counterAccount',
+            'counter_account',
+        ] as $accountKey) {
+            $value = preg_replace('/\D+/', '', trim((string) ($data[$accountKey] ?? '')));
+            if ($value !== '') {
+                $senderAccount = $value;
+                break;
+            }
+        }
+
+        $senderName = '';
+        foreach ([
+            'senderName',
+            'sender_name',
+            'payerName',
+            'payer_name',
+            'counterAccountName',
+            'counter_account_name',
+        ] as $nameKey) {
+            $value = $this->normalizeSenderName(trim((string) ($data[$nameKey] ?? '')));
+            if ($value !== '') {
+                $senderName = $value;
+                break;
+            }
+        }
+
+        if ($senderAccount !== '' && $senderName !== '') {
+            return [
+                'sender_account' => $senderAccount,
+                'sender_name' => $senderName,
+            ];
+        }
+
+        $text = trim((string) ($data['content'] ?? ''));
+        if ($text === '') {
+            $text = trim((string) ($data['description'] ?? ''));
+        } elseif (!empty($data['description'])) {
+            $text .= ' ' . trim((string) $data['description']);
+        }
+
+        if ($text !== '') {
+            $parsed = $this->extractSenderMetaFromText($text);
+            if ($senderAccount === '' && $parsed['sender_account'] !== '') {
+                $senderAccount = $parsed['sender_account'];
+            }
+            if ($senderName === '' && $parsed['sender_name'] !== '') {
+                $senderName = $parsed['sender_name'];
+            }
+        }
+
+        return [
+            'sender_account' => $senderAccount,
+            'sender_name' => $senderName,
+        ];
+    }
+
+    /**
+     * @return array{sender_account:string,sender_name:string}
+     */
+    private function extractSenderMetaFromText(string $text): array
+    {
+        $normalized = preg_replace('/\s+/u', ' ', trim($text));
+        if ($normalized === '') {
+            return ['sender_account' => '', 'sender_name' => ''];
+        }
+
+        $patterns = [
+            '/\b(?:CT\s*tu|TU|Tu|tu)\s*([0-9]{6,20})\s*([A-Z0-9\.\- ]{2,120}?)(?=\s+(?:toi|TOI|tới|TỚI)\b)/u',
+            '/\b(?:from|FROM)\s*([0-9]{6,20})\s*([A-Z0-9\.\- ]{2,120}?)(?=\s+(?:to|TO)\b)/u',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $normalized, $matches)) {
+                $senderAccount = preg_replace('/\D+/', '', (string) ($matches[1] ?? ''));
+                $senderName = $this->normalizeSenderName((string) ($matches[2] ?? ''));
+                if ($senderAccount !== '' || $senderName !== '') {
+                    return [
+                        'sender_account' => $senderAccount,
+                        'sender_name' => $senderName,
+                    ];
+                }
+            }
+        }
+
+        return ['sender_account' => '', 'sender_name' => ''];
+    }
+
+    private function normalizeSenderName(string $value): string
+    {
+        $value = trim(preg_replace('/\s+/u', ' ', $value));
+        if ($value === '') {
+            return '';
+        }
+
+        $value = preg_replace('/\b(?:chuyen tien|chuyển tiền|transfer|ck|gd)\b.*$/iu', '', $value);
+        $value = preg_replace('/[^A-Z0-9\p{L}\.\- ]+/u', ' ', (string) $value);
+        $value = trim(preg_replace('/\s+/u', ' ', (string) $value));
+
+        if ($value === '' || preg_match('/^[0-9]+$/', $value)) {
+            return '';
+        }
+
+        return $value;
     }
 
 }

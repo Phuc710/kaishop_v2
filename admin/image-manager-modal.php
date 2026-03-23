@@ -121,6 +121,8 @@
     var imageManagerTargetInput = '#image';
     var imageManagerAjaxUrl = '<?= APP_DIR ?>/admin/ajax-image.php';
     var IMAGE_CSRF_TOKEN = '<?= function_exists('csrf_token') ? csrf_token() : '' ?>';
+    var defaultImageManagerTitle = 'Thư viện ảnh';
+    var defaultImageManagerTip = 'Tip: Click để chọn nhiều. Double-click để chọn ngay.';
 
     // Gửi CSRF token trong header cho mọi AJAX request
     $.ajaxSetup({
@@ -142,12 +144,136 @@
         return '#image';
     }
 
+    function getImageManagerTargetElement() {
+        var $target = $(imageManagerTargetInput);
+        if ($target.length === 0) {
+            $target = $('#image');
+            imageManagerTargetInput = '#image';
+        }
+        return $target;
+    }
+
+    function isGalleryTarget($target) {
+        $target = $target && $target.length ? $target : getImageManagerTargetElement();
+        if (!$target.length) return false;
+
+        var targetId = String($target.attr('id') || '');
+        var targetName = String($target.attr('name') || '');
+
+        return $target.hasClass('gallery-url-input')
+            || targetName === 'gallery[]'
+            || targetId.indexOf('gallery-input-') === 0
+            || $target.closest('.gallery-line').length > 0;
+    }
+
+    function uniqImageUrls(urls) {
+        var seen = {};
+        var result = [];
+
+        (urls || []).forEach(function (url) {
+            url = String(url || '').trim();
+            if (!url || seen[url]) return;
+            seen[url] = true;
+            result.push(url);
+        });
+
+        return result;
+    }
+
+    function setGalleryInputValue($input, url) {
+        if (!$input || !$input.length) return;
+        $input.val(url).trigger('change');
+    }
+
+    function applyGallerySelection(urls) {
+        var $target = getImageManagerTargetElement();
+        if (!$target.length) {
+            Swal.fire('Lỗi', 'Không tìm thấy ô gallery để chèn ảnh.', 'error');
+            return;
+        }
+
+        var normalizedUrls = uniqImageUrls(urls);
+        if (normalizedUrls.length === 0) {
+            Swal.fire('Thông báo', 'Vui lòng chọn ít nhất một ảnh', 'warning');
+            return;
+        }
+
+        var existingElsewhere = {};
+        $('.gallery-url-input').not($target).each(function () {
+            var value = String($(this).val() || '').trim();
+            if (value) existingElsewhere[value] = true;
+        });
+
+        var dedupedUrls = normalizedUrls.filter(function (url) {
+            return !existingElsewhere[url];
+        });
+
+        if (dedupedUrls.length === 0) {
+            Swal.fire('Thông báo', 'Các ảnh đã chọn đều đã có trong gallery.', 'info');
+            return;
+        }
+
+        var skippedCount = normalizedUrls.length - dedupedUrls.length;
+        var queue = dedupedUrls.slice();
+        setGalleryInputValue($target, queue.shift());
+
+        var emptyInputs = $('.gallery-url-input').not($target).filter(function () {
+            return !String($(this).val() || '').trim();
+        }).toArray();
+
+        queue.forEach(function (url) {
+            var nextEmpty = emptyInputs.shift();
+            if (nextEmpty) {
+                setGalleryInputValue($(nextEmpty), url);
+                return;
+            }
+
+            if (typeof addGalleryItem === 'function') {
+                addGalleryItem(url);
+            }
+        });
+
+        $('#imageManagerModal').modal('hide');
+
+        if (dedupedUrls.length > 1 || skippedCount > 0) {
+            var message = 'Đã thêm ' + dedupedUrls.length + ' ảnh vào gallery.';
+            if (skippedCount > 0) {
+                message += ' Bỏ qua ' + skippedCount + ' ảnh trùng.';
+            }
+            Swal.fire({
+                icon: 'success',
+                title: 'Thành công',
+                text: message,
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2500
+            });
+        }
+    }
+
+    function refreshImageManagerSelectionUi() {
+        var galleryMode = isGalleryTarget();
+        var selectedCount = selectedImages.length;
+        var chooseLabel = galleryMode
+            ? 'Chọn ' + (selectedCount > 0 ? '(' + selectedCount + ') ' : '') + 'ảnh'
+            : 'Chọn ảnh';
+        var tipText = galleryMode
+            ? 'Tip: Gallery hỗ trợ chọn nhiều ảnh. Double-click để chèn nhanh 1 ảnh.'
+            : defaultImageManagerTip;
+
+        $('#imageManagerModalLabel').text(galleryMode ? defaultImageManagerTitle + ' - Gallery' : defaultImageManagerTitle);
+        $('#btnChooseImage').text(chooseLabel);
+        $('#imageManagerModal .modal-footer small.text-muted').text(tipText);
+    }
+
     function openImageManager(targetInput) {
         imageManagerTargetInput = resolveImageManagerTarget(targetInput);
-        $('#imageManagerModal').modal('show');
-        loadImages();
         selectedImages = [];
+        $('#imageManagerModal').modal('show');
+        refreshImageManagerSelectionUi();
         updateDeleteButton();
+        loadImages();
     }
 
     function loadImages() {
@@ -171,17 +297,17 @@
                     }
                 } else {
                     allImages = [];
-                    $('#imageList').html('<div class="col-12 text-center">Chua co anh nao</div>');
+                    $('#imageList').html('<div class="col-12 text-center">Chưa có ảnh nào</div>');
                 }
             },
             error: function (xhr) {
-                var msg = 'Khong tai duoc thu vien anh.';
+                var msg = 'Không tải được thư viện ảnh.';
                 if (xhr && xhr.responseJSON && (xhr.responseJSON.error || xhr.responseJSON.message)) {
                     msg = xhr.responseJSON.error || xhr.responseJSON.message;
                 } else if (xhr && xhr.status === 403) {
-                    msg = 'Forbidden - ban khong co quyen truy cap.';
+                    msg = 'Forbidden - bạn không có quyền truy cập.';
                 } else if (xhr && xhr.status === 419) {
-                    msg = 'CSRF token het han. Vui long tai lai trang.';
+                    msg = 'CSRF token hết hạn. Vui lòng tải lại trang.';
                 }
                 allImages = [];
                 $('#imageList').html('<div class="col-12 text-center text-danger">' + msg + '</div>');
@@ -353,7 +479,7 @@
                 try {
                     var parsed = JSON.parse(xhr.responseText || '{}');
                     serverMsg = parsed.error || parsed.message || (Array.isArray(parsed.details) ? parsed.details.join(', ') : '');
-                } catch (e) {}
+                } catch (e) { }
 
                 var errorMsg;
                 if (xhr.status === 413) {
@@ -447,5 +573,6 @@
         var files = $(this).prop('files');
         var label = files.length > 1 ? files.length + ' files selected' : (files[0] ? files[0].name : 'Chọn nhiều ảnh...');
         $(this).siblings(".custom-file-label").addClass("selected").html(label);
+    });
     });
 </script>

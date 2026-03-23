@@ -35,9 +35,13 @@ global $chungapi, $user;
                         const fd = new FormData();
                         fd.append('fingerprint', fp.hash);
                         fd.append('fp_components', JSON.stringify(fp.components));
+                        if (window.KS_CSRF_TOKEN) {
+                            fd.append('csrf_token', window.KS_CSRF_TOKEN);
+                        }
                         fetch('<?= url('/api/update-fingerprint') ?>', {
                             method: 'POST',
                             body: fd,
+                            headers: window.KS_CSRF_TOKEN ? { 'X-CSRF-Token': window.KS_CSRF_TOKEN } : {},
                             keepalive: true
                         }).catch(() => { });
                         localStorage.setItem(storageKey, String(now));

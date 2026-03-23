@@ -40,6 +40,9 @@ class Product extends Model
         'seo_description',
         'requires_info',
         'info_instructions',
+        'duration_days',
+        'auto_invite',
+        'farm_id',
         'created_at',
         'updated_at',
     ];
@@ -443,8 +446,8 @@ class Product extends Model
         $productType = (string) ($row['product_type'] ?? 'account');
         $requiresInfo = (int) ($row['requires_info'] ?? 0) === 1;
 
-        if ($productType === 'link') {
-            return 'source_link';
+        if ($productType === 'business_invite_auto') {
+            return 'business_invite_auto';
         }
 
         if ($requiresInfo) {
@@ -452,6 +455,11 @@ class Product extends Model
         }
 
         return 'account_stock';
+    }
+
+    public static function isBusinessInviteAuto(array $row): bool
+    {
+        return (string) ($row['product_type'] ?? '') === 'business_invite_auto';
     }
 
     public static function isStockManagedProduct(array $row): bool
@@ -466,7 +474,8 @@ class Product extends Model
 
     public static function usesManualStock(array $row): bool
     {
-        return self::resolveDeliveryMode($row) === 'manual_info';
+        $mode = self::resolveDeliveryMode($row);
+        return $mode === 'manual_info' || $mode === 'business_invite_auto';
     }
 
     public static function normalizeVisibilityMode(string $mode): string
@@ -494,12 +503,14 @@ class Product extends Model
     public static function resolveVisibilityMode(array $row): string
     {
         $mode = strtolower(trim((string) ($row['visibility_mode'] ?? '')));
-        if (in_array($mode, [
-            self::VISIBILITY_BOTH,
-            self::VISIBILITY_WEB,
-            self::VISIBILITY_TELEGRAM,
-            self::VISIBILITY_HIDDEN,
-        ], true)) {
+        if (
+            in_array($mode, [
+                self::VISIBILITY_BOTH,
+                self::VISIBILITY_WEB,
+                self::VISIBILITY_TELEGRAM,
+                self::VISIBILITY_HIDDEN,
+            ], true)
+        ) {
             return $mode;
         }
 
@@ -604,13 +615,15 @@ class Product extends Model
     {
         switch ($mode) {
             case 'account_stock':
-                return 'Tai Khoan';
+                return 'Tài Khoản';
             case 'manual_info':
-                return 'Yeu cau thong tin';
+                return 'Yêu cầu thông tin';
             case 'source_link':
                 return 'Source';
+            case 'business_invite_auto':
+                return 'GPT Business (Auto)';
             default:
-                return 'Khac';
+                return 'Khác';
         }
     }
 

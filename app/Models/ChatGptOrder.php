@@ -27,8 +27,8 @@ class ChatGptOrder extends Model
         $expiresAt = $data['expires_at'] ?? date('Y-m-d H:i:s', strtotime('+30 days'));
         $stmt = $this->db->prepare(
             "INSERT INTO `{$this->table}`
-             (`order_code`, `customer_email`, `product_code`, `status`, `assigned_farm_id`, `expires_at`, `created_at`, `updated_at`)
-             VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())"
+             (`order_code`, `customer_email`, `product_code`, `status`, `assigned_farm_id`, `expires_at`, `source_order_id`, `created_at`, `updated_at`)
+             VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())"
         );
         $stmt->execute([
             $code,
@@ -37,6 +37,7 @@ class ChatGptOrder extends Model
             $data['status'] ?? 'pending',
             $data['assigned_farm_id'] ?? null,
             $expiresAt,
+            $data['source_order_id'] ?? null,
         ]);
         return (int) $this->db->lastInsertId();
     }

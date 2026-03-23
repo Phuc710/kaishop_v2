@@ -154,7 +154,9 @@ $productImg = 'https://i.imgur.com/gpt-pro-thumb.jpg'; // Replace with real CDN 
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: <?= $stock > 0 ? '#10a37f' : '#ef4444' ?>;
+            background:
+                <?= $stock > 0 ? '#10a37f' : '#ef4444' ?>
+            ;
             animation: pulse 1.5s infinite;
         }
 
@@ -172,7 +174,9 @@ $productImg = 'https://i.imgur.com/gpt-pro-thumb.jpg'; // Replace with real CDN 
 
         .cgpt-stock-text {
             font-size: .82rem;
-            color: <?= $stock > 0 ? '#34d399' : '#f87171' ?>;
+            color:
+                <?= $stock > 0 ? '#34d399' : '#f87171' ?>
+            ;
             font-weight: 600;
         }
 
@@ -404,8 +408,7 @@ $productImg = 'https://i.imgur.com/gpt-pro-thumb.jpg'; // Replace with real CDN 
                                 <?php endif; ?>
 
                                 <?php if ($stock > 0): ?>
-                                    <form method="post" action="<?= url('chatgpt/pro-1-month-add-farm/order') ?>"
-                                        id="cgptOrderForm">
+                                    <form method="post" action="<?= url('gpt-business/order') ?>" id="cgptOrderForm">
                                         <label class="cgpt-form-label" for="customer_email">
                                             📧 Gmail của bạn <span style="color:#ef4444">*</span>
                                         </label>

@@ -139,24 +139,29 @@ class NavConfig
                 'label' => 'GPT Business',
                 'children' => [
                     [
-                        'href' => self::buildUrl('admin/chatgpt/farms'),
+                        'href' => self::buildUrl('admin/gpt-business/farms'),
                         'label' => 'Quản lý Farm',
-                        'active_prefixes' => ['admin/chatgpt/farms'],
+                        'active_prefixes' => ['admin/gpt-business/farms'],
                     ],
                     [
-                        'href' => self::buildUrl('admin/chatgpt/orders'),
+                        'href' => self::buildUrl('admin/gpt-business/orders'),
                         'label' => 'Đơn hàng GPT',
-                        'active_prefixes' => ['admin/chatgpt/orders'],
+                        'active_prefixes' => ['admin/gpt-business/orders'],
                     ],
                     [
-                        'href' => self::buildUrl('admin/chatgpt/members'),
+                        'href' => self::buildUrl('admin/gpt-business/members'),
                         'label' => 'Thành viên Farm',
-                        'active_prefixes' => ['admin/chatgpt/members'],
+                        'active_prefixes' => ['admin/gpt-business/members'],
                     ],
                     [
-                        'href' => self::buildUrl('admin/chatgpt/logs'),
+                        'href' => self::buildUrl('admin/gpt-business/product'),
+                        'label' => 'Cấu hình sản phẩm',
+                        'active_prefixes' => ['admin/gpt-business/product'],
+                    ],
+                    [
+                        'href' => self::buildUrl('admin/gpt-business/logs'),
                         'label' => 'Audit Logs',
-                        'active_prefixes' => ['admin/chatgpt/logs'],
+                        'active_prefixes' => ['admin/gpt-business/logs'],
                     ],
                 ],
             ],

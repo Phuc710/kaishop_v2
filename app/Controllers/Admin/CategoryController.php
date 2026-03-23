@@ -74,6 +74,7 @@ class CategoryController extends Controller
     public function store()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf(url('admin/categories/add'));
 
         $name = trim($this->post('name', ''));
         $slug = trim($this->post('slug', ''));
@@ -140,6 +141,7 @@ class CategoryController extends Controller
     public function update($id)
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf(url('admin/categories/edit/' . (int) $id));
 
         $category = $this->categoryModel->find((int) $id);
         if (!$category) {
@@ -190,6 +192,7 @@ class CategoryController extends Controller
     public function delete()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
 
         $id = (int) $this->post('id', 0);
         if (!$id) {

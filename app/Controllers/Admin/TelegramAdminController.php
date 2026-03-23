@@ -92,6 +92,7 @@ class TelegramAdminController extends Controller
     public function updateSettings()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
 
         $fields = [
             'telegram_bot_token',
@@ -179,6 +180,7 @@ class TelegramAdminController extends Controller
     public function setWebhookAction()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
         $db = (new UserTelegramLink())->getConnection();
 
         // 1. Optionally save new path first
@@ -215,6 +217,7 @@ class TelegramAdminController extends Controller
     public function activateWebhookAction()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
 
         $baseUrl = rtrim(defined('BASE_URL') ? BASE_URL : '', '/');
         $path = trim((string) get_setting('telegram_webhook_path', ''));
@@ -240,6 +243,7 @@ class TelegramAdminController extends Controller
     public function deleteWebhookAction()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
         $result = $this->telegram->deleteWebhook();
         $this->json([
             'success' => !empty($result['ok']),
@@ -250,6 +254,7 @@ class TelegramAdminController extends Controller
     public function testNotification()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
         $chatId = (string) TelegramConfig::primaryAdminId();
         if ($chatId === '' || $chatId === '0') {
             $this->json(['success' => false, 'message' => 'Chưa cấu hình Chat ID']);
@@ -269,6 +274,7 @@ class TelegramAdminController extends Controller
     public function syncBotAction()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
         $botLogic = new TelegramBotService($this->telegram);
         $result = $botLogic->initializeBot();
         $this->json([
@@ -339,6 +345,7 @@ class TelegramAdminController extends Controller
     public function addChannelAction()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
         $chatId = trim((string) $this->post('chat_id', ''));
         $label = trim((string) $this->post('label', ''));
 
@@ -359,6 +366,7 @@ class TelegramAdminController extends Controller
     public function toggleChannelAction()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
         $id = (int) $this->post('id', 0);
         if ($id <= 0) {
             $this->json(['success' => false, 'message' => 'ID không hợp lệ']);
@@ -373,6 +381,7 @@ class TelegramAdminController extends Controller
     public function updateChannelAction()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
 
         $id = (int) $this->post('id', 0);
         $chatId = trim((string) $this->post('chat_id', ''));
@@ -411,6 +420,7 @@ class TelegramAdminController extends Controller
     public function deleteChannelAction()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
         $id = (int) $this->post('id', 0);
         if ($id <= 0) {
             $this->json(['success' => false, 'message' => 'ID không hợp lệ']);
@@ -462,6 +472,7 @@ class TelegramAdminController extends Controller
     public function sendMainChannelAlertAction()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
 
         $defaultChatId = TelegramConfig::mainChannelId();
         if ($defaultChatId === '') {
@@ -588,6 +599,7 @@ class TelegramAdminController extends Controller
     public function outboxRetry()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
         $ids = $this->post('ids', '');
 
         $outboxModel = new TelegramOutbox();
@@ -610,6 +622,7 @@ class TelegramAdminController extends Controller
     public function outboxDelete()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
         $idsRaw = $this->post('ids', '');
 
         $outboxModel = new TelegramOutbox();
@@ -639,6 +652,7 @@ class TelegramAdminController extends Controller
     public function broadcastAction()
     {
         $this->requireAdmin();
+        $this->rejectInvalidCsrf('', true);
         $message = trim((string) $this->post('message', ''));
         if ($message === '') {
             $this->json(['success' => false, 'message' => 'Nội dung tin nhắn không được để trống']);

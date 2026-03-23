@@ -17,6 +17,10 @@ if (empty($_SESSION['admin'])) {
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="<?= htmlspecialchars(function_exists('csrf_token') ? csrf_token() : '', ENT_QUOTES, 'UTF-8') ?>">
+<script>
+    window.KS_CSRF_TOKEN = <?= json_encode(function_exists('csrf_token') ? csrf_token() : '', JSON_UNESCAPED_UNICODE) ?>;
+</script>
 <?php
 
 $appendAdminIconVersion = static function (string $href, string $version): string {

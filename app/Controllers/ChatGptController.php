@@ -40,20 +40,20 @@ class ChatGptController extends Controller
         $email = strtolower(trim((string) $this->post('customer_email', '')));
         if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $_SESSION['cgpt_error'] = 'Vui lòng nhập Gmail hợp lệ.';
-            $this->redirect(url('chatgpt/pro-1-month-add-farm'));
+            $this->redirect(url('gpt-business/buy'));
             return;
         }
 
         if ($this->orderModel->hasActiveOrder($email)) {
             $_SESSION['cgpt_error'] = 'Email này đã có đơn hàng đang hoạt động. Vui lòng dùng Gmail khác.';
-            $this->redirect(url('chatgpt/pro-1-month-add-farm'));
+            $this->redirect(url('gpt-business/buy'));
             return;
         }
 
         $farm = $this->farmModel->getBestAvailableFarm();
         if (!$farm) {
             $_SESSION['cgpt_error'] = 'Hiện tại không có slot trống. Vui lòng thử lại sau.';
-            $this->redirect(url('chatgpt/pro-1-month-add-farm'));
+            $this->redirect(url('gpt-business/buy'));
             return;
         }
 
@@ -88,7 +88,7 @@ class ChatGptController extends Controller
                 ],
             ]);
             $_SESSION['cgpt_error'] = 'Lỗi khi gửi invite. Vui lòng liên hệ hỗ trợ. (order #' . $orderId . ')';
-            $this->redirect(url('chatgpt/pro-1-month-add-farm'));
+            $this->redirect(url('gpt-business/buy'));
             return;
         }
 
@@ -115,7 +115,7 @@ class ChatGptController extends Controller
 
         $_SESSION['cgpt_order_id'] = $orderId;
         $_SESSION['cgpt_order_email'] = $email;
-        $this->redirect(url('chatgpt/pro-1-month-add-farm/success'));
+        $this->redirect(url('gpt-business/success'));
     }
 
     public function success()
@@ -124,7 +124,7 @@ class ChatGptController extends Controller
         $email = (string) ($_SESSION['cgpt_order_email'] ?? '');
 
         if ($orderId <= 0 || $email === '') {
-            $this->redirect(url('chatgpt/pro-1-month-add-farm'));
+            $this->redirect(url('gpt-business/buy'));
             return;
         }
 

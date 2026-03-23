@@ -291,9 +291,13 @@ $fallbackFaviconHref = asset('assets/images/kaishop_favicon.png');
 
                     const fd = new FormData();
                     fd.append('fingerprint', fp.hash);
+                    if (window.KS_CSRF_TOKEN) {
+                        fd.append('csrf_token', window.KS_CSRF_TOKEN);
+                    }
                     fetch(BASE_URL + '/api/update-fingerprint', {
                         method: 'POST',
-                        body: fd
+                        body: fd,
+                        headers: window.KS_CSRF_TOKEN ? { 'X-CSRF-Token': window.KS_CSRF_TOKEN } : {}
                     }).then(() => {
                         try {
                             localStorage.setItem(syncKey, JSON.stringify({

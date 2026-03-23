@@ -228,7 +228,7 @@ $orderCode = (string) ($order['order_code'] ?? '');
                     ⚠️ Invite có hiệu lực 72h. Nếu không nhận được email, kiểm tra thư mục Spam hoặc liên hệ hỗ trợ.
                 </p>
 
-                <a href="<?= url('chatgpt/pro-1-month-add-farm') ?>" class="success-btn">
+                <a href="<?= url('gpt-business/buy') ?>" class="success-btn">
                     ← Mua thêm slot
                 </a>
             </div>

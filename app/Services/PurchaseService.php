@@ -17,6 +17,8 @@ class PurchaseService
     private ?TimeService $timeService = null;
     private ?BalanceChangeService $balanceChangeService = null;
     private array $schemaColumnCache = [];
+    private ?ChatGptGuardService $guardService = null;
+
 
     public function __construct(
         ?Product $productModel = null,
@@ -42,6 +44,10 @@ class PurchaseService
         if (class_exists('CryptoService')) {
             $this->crypto = new CryptoService();
         }
+        if (class_exists('ChatGptGuardService')) {
+            $this->guardService = new ChatGptGuardService();
+        }
+
         $this->ensureSourceChannelSchema();
         $this->ensureTelegramPaymentSchema();
     }
@@ -196,7 +202,8 @@ class PurchaseService
             $orderId = (int) $this->db->lastInsertId();
 
             // Decrement manual stock if applicable
-            if ($requiresInfo && ($product['delivery_mode'] ?? '') === 'manual_info') {
+            $deliveryMode = (string) ($product['delivery_mode'] ?? Product::resolveDeliveryMode($product));
+            if ($requiresInfo && ($deliveryMode === 'manual_info' || $deliveryMode === 'business_invite_auto')) {
                 $decStmt = $this->db->prepare("UPDATE `products` SET `manual_stock` = GREATEST(0, `manual_stock` - ?) WHERE `id` = ?");
                 $decStmt->execute([$requestedQty, $productId]);
             }
@@ -262,6 +269,12 @@ class PurchaseService
                 }
                 $deliveredPlain = $sourceLink;
                 $this->completeOrderDelivery($orderId, null, $deliveredPlain);
+            } elseif ($productType === 'business_invite_auto') {
+                $inviteResult = $this->processBusinessInviteAuto($orderId, $product, $customerInput, 'web_purchase');
+                if (!$inviteResult['success']) {
+                    throw new RuntimeException($inviteResult['message']);
+                }
+                $deliveredPlain = $inviteResult['delivery_content'] ?? '';
             }
 
             $nowTs = (string) ($this->timeService ? $this->timeService->nowTs() : time());
@@ -567,7 +580,7 @@ class PurchaseService
                     throw new RuntimeException('Sản phẩm tạm hết hàng.');
                 }
                 $this->linkStockToPendingOrder($orderId, (int) ($allocated['stock_id'] ?? 0), (string) ($allocated['delivery_content'] ?? ''));
-            } elseif ($deliveryMode === 'manual_info') {
+            } elseif ($deliveryMode === 'manual_info' || $deliveryMode === 'business_invite_auto') {
                 $reserveStmt = $this->db->prepare("UPDATE `products` SET `manual_stock` = `manual_stock` - ? WHERE `id` = ? AND `manual_stock` >= ?");
                 $reserveStmt->execute([$requestedQty, $productId, $requestedQty]);
                 if ($reserveStmt->rowCount() < 1) {
@@ -829,6 +842,12 @@ class PurchaseService
                     $this->completeOrderDelivery($orderId, null, $deliveredPlain);
                 } elseif ($stockManaged) {
                     $this->completeOrderDelivery($orderId, (int) ($order['stock_id'] ?? 0), $deliveredPlain);
+                }
+            } elseif ($deliveryMode === 'business_invite_auto') {
+                $customerInput = (string) ($order['customer_input'] ?? '');
+                $inviteResult = $this->processBusinessInviteAuto($orderId, $product, $customerInput, 'telegram_payment_bot');
+                if ($inviteResult['success']) {
+                    $deliveredPlain = $inviteResult['delivery_content'] ?? '';
                 }
             }
 
@@ -1594,5 +1613,31 @@ class PurchaseService
         } catch (Throwable $e) {
             // Non-blocking
         }
+    }
+
+    /**
+     * Process business_invite_auto fulfillment
+     */
+    private function processBusinessInviteAuto(int $orderId, array $product, string $customerEmail, string $actor = 'system'): array
+    {
+        if (!$this->guardService) {
+            return ['success' => false, 'message' => 'ChatGptGuardService not available.'];
+        }
+
+        $result = $this->guardService->createAutoInviteForOrder($orderId, $product, $customerEmail, $actor);
+
+        if ($result['success']) {
+            $deliveryContent = "✅ Invitation sent to: " . $customerEmail . "\n"
+                . "Farm: " . $result['farm_name'] . "\n"
+                . "Expires at: " . $result['expires_at'] . "\n"
+                . "Instructions: Please check your email inbox (and spam folder) for the invitation link from OpenAI.";
+
+            // Update the main order with the delivery content
+            $this->completeOrderDelivery($orderId, null, $deliveryContent);
+
+            return array_merge($result, ['delivery_content' => $deliveryContent]);
+        }
+
+        return $result;
     }
 }

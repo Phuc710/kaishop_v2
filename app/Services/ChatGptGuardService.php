@@ -277,7 +277,7 @@ class ChatGptGuardService
             }
         }
 
-        foreach ($this->orderModel->getInvitingOrders($farmId) as $order) {
+        foreach ($this->orderModel->getInvitingOrdersByFarm($farmId) as $order) {
             $email = strtolower(trim((string) ($order['customer_email'] ?? '')));
             if ($email === '') {
                 continue;
@@ -679,5 +679,103 @@ class ChatGptGuardService
         }
 
         $this->violationModel->createViolation($data);
+    }
+    public function createAutoInviteForOrder($orderId, $product, $customerEmail, $actorEmail = 'system_auto')
+    {
+        $email = strtolower(trim((string) $customerEmail));
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['success' => false, 'message' => 'Email khách hàng không hợp lệ.'];
+        }
+
+        // 1. Check if an active order already exists for this email
+        if ($this->orderModel->hasActiveOrder($email)) {
+            return ['success' => false, 'message' => 'Email này đã có một gói GPT Business đang hoạt động hoặc đang chờ.'];
+        }
+
+        // 2. Select Farm
+        $farmId = (int) ($product['farm_id'] ?? 0);
+        $farm = null;
+        if ($farmId > 0) {
+            $farm = $this->farmModel->getById($farmId);
+            if (!$farm || !in_array((string) ($farm['status'] ?? ''), ['active', 'full'], true)) {
+                $farm = null; // Fallback if specific farm is unavailable
+            }
+        }
+
+        if (!$farm) {
+            $farm = $this->farmModel->getBestAvailableFarm();
+        }
+
+        if (!$farm) {
+            return ['success' => false, 'message' => 'Hiện tại không còn slot trống trong bất kỳ farm nào. Vui lòng liên hệ admin.'];
+        }
+
+        $farmId = (int) $farm['id'];
+
+        // 3. Create Invite via OpenAI API
+        $invite = $this->farmService->createInvite($farm, $email, 'reader');
+        if (!$invite['success']) {
+            $this->auditLog->log([
+                'farm_id' => $farmId,
+                'farm_name' => $farm['farm_name'],
+                'action' => 'SYSTEM_INVITE_FAILED',
+                'actor_email' => $actorEmail,
+                'target_email' => $email,
+                'result' => 'FAIL',
+                'reason' => 'Tự động gửi invite thất bại.',
+                'meta' => [
+                    'source_order_id' => $orderId,
+                    'api_error' => $invite['error'] ?? 'OpenAI API Error',
+                ],
+            ]);
+            return ['success' => false, 'message' => 'Không thể gửi lời mời qua OpenAI: ' . ($invite['error'] ?? 'Lỗi không xác định')];
+        }
+
+        $openaiInviteId = $invite['invite_id'] ?? null;
+
+        // 4. Create ChatGptOrder record
+        $durationDays = (int) ($product['duration_days'] ?? 30);
+        $expiresAt = date('Y-m-d H:i:s', strtotime("+{$durationDays} days"));
+
+        $cgOrderId = $this->orderModel->create([
+            'customer_email' => $email,
+            'assigned_farm_id' => $farmId,
+            'expires_at' => $expiresAt,
+            'status' => 'inviting',
+            'product_code' => 'business_auto_' . $durationDays . 'd',
+            'source_order_id' => $orderId,
+        ]);
+
+        // 5. Create AllowedInvite record (Whitelist)
+        $this->allowModel->createInvite($cgOrderId, $farmId, $email, $openaiInviteId);
+
+        // 6. Update Farm usage
+        $this->farmModel->incrementSeatUsed($farmId);
+
+        // 7. Log Success
+        $this->auditLog->log([
+            'farm_id' => $farmId,
+            'farm_name' => $farm['farm_name'],
+            'action' => 'SYSTEM_INVITE_CREATED',
+            'actor_email' => $actorEmail,
+            'target_email' => $email,
+            'result' => 'OK',
+            'reason' => 'Tự động gửi invite cho đơn hàng mới.',
+            'meta' => [
+                'source_order_id' => $orderId,
+                'cg_order_id' => $cgOrderId,
+                'invite_id' => $openaiInviteId,
+                'duration_days' => $durationDays,
+            ],
+        ]);
+
+        return [
+            'success' => true,
+            'message' => 'Lời mời đã được gửi tự động tới ' . $email,
+            'invite_id' => $openaiInviteId,
+            'farm_name' => $farm['farm_name'],
+            'expires_at' => $expiresAt,
+            'cg_order_id' => $cgOrderId
+        ];
     }
 }

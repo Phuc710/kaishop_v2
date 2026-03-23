@@ -10,6 +10,8 @@
 storage/logs/
 storage/cache/*
 !storage/cache/.gitignore
+storage/sessions/*
+!storage/sessions/.gitignore
 
 # Keep example files
 !config.example.php
