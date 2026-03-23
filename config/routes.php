@@ -124,8 +124,6 @@ $routes = [
     ['POST', '/admin/products/stock/action/{id}', 'Admin\\AdminProductController@stockAction'],
     ['POST', '/admin/products/stock/{id}/import', 'Admin\\AdminProductController@stockImport'],
     ['POST', '/admin/products/stock/{id}/clean', 'Admin\\AdminProductController@stockClean'],
-    ['POST', '/admin/products/stock/update', 'Admin\\AdminProductController@stockUpdate'],
-    ['POST', '/admin/products/stock/delete', 'Admin\\AdminProductController@stockDelete'],
     // ========== DEPOSIT (User) ==========
     ['GET', '/deposit-bank', 'DepositController@index'],
     ['GET', '/deposit', 'DepositController@legacyRedirect'],

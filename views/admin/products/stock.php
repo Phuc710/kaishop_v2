@@ -354,8 +354,6 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
     $(function () {
         const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2500, timerProgressBar: true });
         const importUrl = '<?= url("admin/products/stock/" . $product['id'] . "/import") ?>';
-        const deleteUrl = '<?= url("admin/products/stock/delete") ?>';
-        const updateUrl = '<?= url("admin/products/stock/update") ?>';
         const cleanUrl = '<?= url("admin/products/stock/" . $product['id'] . "/clean") ?>';
         const baseUrl = '<?= url("admin/products/stock/" . $product['id']) ?>';
 
@@ -409,63 +407,6 @@ $timeService = class_exists('TimeService') ? TimeService::instance() : null;
             }, 'json').fail(() => {
                 btn.prop('disabled', false).html('<i class="fas fa-plus-circle mr-2"></i> BẮT ĐẦU NHẬP KHO');
                 Toast.fire({ icon: 'error', title: 'Lỗi server!' });
-            });
-        });
-
-        // Delete
-        $(document).on('click', '.delete-stock-btn', function () {
-            const id = $(this).data('id');
-            Swal.fire({ title: 'Xác nhận xóa?', text: 'Mục này sẽ bị xóa vĩnh viễn khỏi kho!', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonText: 'Hủy', confirmButtonText: 'Xác nhận xóa' })
-                .then(r => {
-                    if (!r.isConfirmed) return;
-                    $.post(deleteUrl, { id: id }, function (res) {
-                        if (res.success) {
-                            $('#stock-row-' + id).fadeOut(300, function () { $(this).remove(); });
-                            Toast.fire({ icon: 'success', title: 'Đã xóa' });
-                        } else {
-                            Toast.fire({ icon: 'error', title: res.message });
-                        }
-                    }, 'json');
-                });
-        });
-
-        // Edit Modal
-        $(document).on('click', '.edit-stock-btn', function () {
-            $('#editId').val($(this).data('id'));
-            $('#editContent').val($(this).data('content'));
-            $('#editStockModal').modal('show');
-        });
-
-        // Save Edit
-        $('#btnSaveEdit').on('click', function () {
-            const id = $('#editId').val();
-            const content = $('#editContent').val().trim();
-            if (!content) {
-                Toast.fire({ icon: 'warning', title: 'Nội dung không được để trống' });
-                return;
-            }
-
-            const btn = $(this);
-            btn.prop('disabled', true).text('Đang lưu...');
-            $.post(updateUrl, { id: id, content: content }, function (res) {
-                btn.prop('disabled', false).text('LƯU CẬP NHẬT');
-                if (res.success) {
-                    $('#editStockModal').modal('hide');
-                    $(`#stock-row-${id} code`).text(content);
-                    $(`#stock-row-${id} .copy-content-btn`).data('content', content);
-                    $(`.edit-stock-btn[data-id="${id}"]`).data('content', content);
-                    Toast.fire({ icon: 'success', title: 'Đã cập nhật' });
-                } else {
-                    Toast.fire({ icon: 'error', title: res.message });
-                }
-            }, 'json').fail(function (xhr) {
-                btn.prop('disabled', false).text('LÆ¯U Cáº¬P NHáº¬T');
-
-                const message = xhr.responseJSON && xhr.responseJSON.message
-                    ? xhr.responseJSON.message
-                    : 'Lỗi cập nhật nội dung kho';
-
-                Toast.fire({ icon: 'error', title: message });
             });
         });
 
