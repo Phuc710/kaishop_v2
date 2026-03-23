@@ -8,6 +8,16 @@
     $seoKeywords = "nạp tiền 24/7, nạp tiền tự động, dịch vụ mmo, mua source code, kaishop, nạp tiền giá rẻ, nạp tiền game";
 
     $siteName = (string) ($chungapi['ten_web'] ?? 'KaiShop');
+    // Default SEO optional variables to prevent notices after removal from controller
+    $pageHeading = $pageHeading ?? '';
+    $pageIntro = $pageIntro ?? '';
+    $pageKicker = $pageKicker ?? '';
+    $pageBodyTitle = $pageBodyTitle ?? '';
+    $pageBodyText = $pageBodyText ?? '';
+    $pageBottomTitle = $pageBottomTitle ?? '';
+    $pageBottomText = $pageBottomText ?? '';
+    $seoCanonical = $seoCanonical ?? '';
+
     if (!empty($pageHeading)) {
         $seoTitle = trim((string) $pageHeading);
         if (stripos($seoTitle, $siteName) === false) {
