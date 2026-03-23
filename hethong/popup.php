@@ -711,7 +711,6 @@ if ($active_template === '2' && empty($thongbaoContent)) {
             return; // Still within closed period
         }
 
-        // Show popup with animation after 6 seconds to avoid Intrusive Interstitial Penalty
         const overlay = document.getElementById('notification-popup-overlay');
         if (!overlay) return;
 
@@ -721,7 +720,7 @@ if ($active_template === '2' && empty($thongbaoContent)) {
             requestAnimationFrame(() => {
                 overlay.classList.add('lp-popup-show');
             });
-        }, 6000);
+        }, 500);
     })();
 
     function closeNotificationPopup() {

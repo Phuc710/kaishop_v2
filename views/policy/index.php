@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="<?= function_exists('app_is_english') && app_is_english() ? 'en' : 'vi' ?>">
 
 <head>
     <?php

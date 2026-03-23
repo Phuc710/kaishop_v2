@@ -1,11 +1,25 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="<?= function_exists('app_is_english') && app_is_english() ? 'en' : 'vi' ?>">
 
 <head>
     <?php
     $seoTitle = "KaiShop - Kho tài nguyên & Source Code Uy Tín";
     $seoDescription = "KaiShop chuyên cung cấp dịch vụ MMO, Source Code chất lượng. Hệ thống nạp tiền tự động 24/7 qua Ngân hàng, USDT. Giao dịch uy tín, bảo mật.";
     $seoKeywords = "nạp tiền 24/7, nạp tiền tự động, dịch vụ mmo, mua source code, kaishop, nạp tiền giá rẻ, nạp tiền game";
+
+    $siteName = (string) ($chungapi['ten_web'] ?? 'KaiShop');
+    if (!empty($pageHeading)) {
+        $seoTitle = trim((string) $pageHeading);
+        if (stripos($seoTitle, $siteName) === false) {
+            $seoTitle .= ' | ' . $siteName;
+        }
+    }
+    if (!empty($pageIntro)) {
+        $seoDescription = trim((string) $pageIntro);
+    }
+    if (!empty($selectedCategory['name'])) {
+        $seoKeywords .= ', ' . trim((string) $selectedCategory['name']);
+    }
 
     $GLOBALS['pageAssets'] = array_merge($GLOBALS['pageAssets'] ?? [], [
         'vendor_quill' => false,
@@ -47,9 +61,57 @@
             'answer' => 'Chính sách bảo hành áp dụng theo mô tả trên từng sản phẩm cụ thể. Nếu gặp sự cố sau mua, bạn liên hệ hỗ trợ trực tiếp qua Telegram hoặc kênh liên hệ được hiển thị trên trang. Vui lòng cung cấp mã đơn hàng để admin xử lý nhanh nhất có thể.',
         ],
     ];
+    $seoSchemaType = !empty($is_category_page) ? 'CollectionPage' : 'WebPage';
+    $homeVisibleCategories = !empty($displayCategories) && is_array($displayCategories) ? $displayCategories : ($categories ?? []);
+    $homeVisibleProductCount = 0;
+    $homeItemListElements = [];
+    $itemPosition = 1;
+    foreach ((array) $homeVisibleCategories as $schemaCategory) {
+        $homeVisibleProductCount += count($productsByCategory[$schemaCategory['id']] ?? []);
+    }
+    foreach ((array) $homeVisibleCategories as $schemaCategory) {
+        $schemaProducts = $productsByCategory[$schemaCategory['id']] ?? [];
+        foreach ($schemaProducts as $schemaProduct) {
+            if ($itemPosition > 18) {
+                break 2;
+            }
+
+            $schemaUrl = url($schemaProduct['public_path'] ?? ('product/' . $schemaProduct['id']));
+            $homeItemListElements[] = [
+                '@type' => 'ListItem',
+                'position' => $itemPosition++,
+                'url' => $schemaUrl,
+                'item' => array_filter([
+                    '@type' => 'Product',
+                    'name' => (string) ($schemaProduct['name'] ?? ''),
+                    'url' => $schemaUrl,
+                    'image' => !empty($schemaProduct['image']) ? (string) $schemaProduct['image'] : null,
+                ]),
+            ];
+        }
+    }
+    $homeFaqSchemaItems = [];
+    foreach ($homeFaqItems as $faqItem) {
+        $homeFaqSchemaItems[] = [
+            '@type' => 'Question',
+            'name' => (string) ($faqItem['question'] ?? ''),
+            'acceptedAnswer' => [
+                '@type' => 'Answer',
+                'text' => (string) ($faqItem['answer'] ?? ''),
+            ],
+        ];
+    }
+    $homeBreadcrumbItems = [];
+    if (!empty($is_category_page) && !empty($selectedCategory['name'])) {
+        $homeBreadcrumbItems = [
+            ['@type' => 'ListItem', 'position' => 1, 'name' => 'Trang chủ', 'item' => url('')],
+            ['@type' => 'ListItem', 'position' => 2, 'name' => (string) $selectedCategory['name'], 'item' => $seoCanonical ?? url('')],
+        ];
+    }
     ?>
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>
 
+    <?php if (false): ?>
     <!-- Structured Data (JSON-LD) for SEO -->
     <script type="application/ld+json">
     <?= json_encode([
@@ -156,6 +218,37 @@
         ],
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
     </script>
+    <?php endif; ?>
+    <?php if (!empty($homeBreadcrumbItems)): ?>
+    <script type="application/ld+json">
+    <?= json_encode([
+        '@context' => 'https://schema.org',
+        '@type' => 'BreadcrumbList',
+        'itemListElement' => $homeBreadcrumbItems,
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
+    </script>
+    <?php endif; ?>
+    <?php if (!empty($homeItemListElements)): ?>
+    <script type="application/ld+json">
+    <?= json_encode([
+        '@context' => 'https://schema.org',
+        '@type' => 'ItemList',
+        'name' => $seoTitle,
+        'description' => $seoDescription,
+        'numberOfItems' => $homeVisibleProductCount,
+        'itemListElement' => $homeItemListElements,
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
+    </script>
+    <?php endif; ?>
+    <?php if (!empty($homeFaqSchemaItems)): ?>
+    <script type="application/ld+json">
+    <?= json_encode([
+        '@context' => 'https://schema.org',
+        '@type' => 'FAQPage',
+        'mainEntity' => $homeFaqSchemaItems,
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
+    </script>
+    <?php endif; ?>
     <title><?= htmlspecialchars($seoTitle, ENT_QUOTES, 'UTF-8') ?></title>
 
     <style>
@@ -165,6 +258,100 @@
 
         .ds-card.search-hidden {
             display: none !important;
+        }
+
+        .home-seo-intro {
+            margin-bottom: 28px;
+            padding: 24px 26px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, rgba(255, 247, 237, 0.98), rgba(255, 255, 255, 0.98));
+            border: 1px solid rgba(255, 105, 0, 0.12);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.05);
+        }
+
+        .home-seo-breadcrumb {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+            color: #64748b;
+            font-size: 0.93rem;
+        }
+
+        .home-seo-breadcrumb a {
+            color: #ea580c;
+            font-weight: 700;
+        }
+
+        .home-seo-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(255, 105, 0, 0.1);
+            color: #c2410c;
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .home-seo-title {
+            margin: 16px 0 12px;
+            font-size: clamp(1.8rem, 3vw, 2.5rem);
+            line-height: 1.15;
+            color: #0f172a;
+            font-weight: 900;
+        }
+
+        .home-seo-lead {
+            max-width: 880px;
+            margin: 0;
+            color: #475569;
+            line-height: 1.8;
+            font-size: 1rem;
+        }
+
+        .home-seo-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .home-seo-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: #fff;
+            border: 1px solid rgba(255, 105, 0, 0.12);
+            color: #334155;
+            font-weight: 700;
+        }
+
+        .home-copy-block {
+            margin-top: 28px;
+            padding: 24px 26px;
+            border-radius: 22px;
+            background: #fff;
+            border: 1px solid #eef2f7;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+        }
+
+        .home-copy-block h2 {
+            margin: 0 0 12px;
+            color: #0f172a;
+            font-size: 1.35rem;
+            font-weight: 800;
+        }
+
+        .home-copy-block p {
+            margin: 0;
+            color: #475569;
+            line-height: 1.85;
         }
 
 
@@ -376,6 +563,48 @@
 <body> <?php require __DIR__ . '/../../hethong/nav.php'; ?>
     <main>
         <div class="container py-4 home-main-content">
+            <section class="home-seo-intro" aria-labelledby="homeSeoHeading">
+                <?php if (!empty($homeBreadcrumbItems)): ?>
+                    <nav class="home-seo-breadcrumb" aria-label="Breadcrumb">
+                        <a href="<?= url('') ?>">Trang chủ</a>
+                        <span>/</span>
+                        <span><?= htmlspecialchars((string) ($selectedCategory['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                    </nav>
+                <?php endif; ?>
+
+                <?php if (!empty($pageKicker)): ?>
+                    <span class="home-seo-kicker"><?= htmlspecialchars((string) $pageKicker, ENT_QUOTES, 'UTF-8') ?></span>
+                <?php endif; ?>
+
+                <h2 id="homeSeoHeading" class="home-seo-title">
+                    <?= htmlspecialchars((string) ($pageHeading ?? $seoTitle), ENT_QUOTES, 'UTF-8') ?>
+                </h2>
+                <p class="home-seo-lead">
+                    <?= htmlspecialchars((string) ($pageIntro ?? $seoDescription), ENT_QUOTES, 'UTF-8') ?>
+                </p>
+                <div class="home-seo-meta">
+                    <span class="home-seo-chip">
+                        <i class="fas fa-layer-group"></i>
+                        <?= number_format(count((array) $homeVisibleCategories)) ?> danh mục
+                    </span>
+                    <span class="home-seo-chip">
+                        <i class="fas fa-box-open"></i>
+                        <?= number_format((int) $homeVisibleProductCount) ?> sản phẩm
+                    </span>
+                    <a href="<?= url('lien-he') ?>" class="home-seo-chip">
+                        <i class="fas fa-headset"></i>
+                        Liên hệ hỗ trợ
+                    </a>
+                    <a href="<?= url('chinh-sach') ?>" class="home-seo-chip">
+                        <i class="fas fa-shield-halved"></i>
+                        Chính sách
+                    </a>
+                    <a href="<?= url('dieu-khoan') ?>" class="home-seo-chip">
+                        <i class="fas fa-file-contract"></i>
+                        Điều khoản
+                    </a>
+                </div>
+            </section>
             <!-- Visually Hidden H1 for SEO -->
             <h1 class="visually-hidden">KaiShop - Hệ thống Nạp tiền Tự động 24/7, Dịch vụ MMO & Source Code</h1>
 
@@ -386,7 +615,7 @@
                 <div class="home-hero-banner mb-5">
                     <div class="hero-content">
                         <div class="hero-header-flex">
-                            <img src="https://media.giphy.com/media/0fnrt8FDzQBO8RSP9q/giphy.gif" alt="Thông báo"
+                            <img src="https://media.giphy.com/media/0fnrt8FDzQBO8RSP9q/giphy.gif" width="32" height="32" alt="Thông báo"
                                 class="hero-notice-gif ks-img-guard" loading="lazy" decoding="async" draggable="false">
                             <h2>Thông Báo Quan Trọng :</h2>
                         </div>
@@ -476,7 +705,7 @@
 
             <!-- Smart Category Navigation -->
             <div class="section-title-row mb-3 mt-5">
-                <h5 class="fw-bold">🛒 Danh mục sản phẩm</h5>
+                <h2 class="fw-bold h5 mb-0">🛒 Danh mục sản phẩm</h2>
                 <div class="home-search-container">
                     <input type="text" id="homeSearchInput" class="home-search-input"
                         placeholder="Tìm kiếm sản phẩm...">
@@ -501,7 +730,7 @@
                                 class="category-pill <?= (isset($is_category_page) && $is_category_page) ? 'active' : '' ?>"
                                 data-filter="cat-wrap-<?= $cat['id'] ?>">
                                 <?php if (!empty($cat['icon'])): ?>
-                                    <img src="<?= $cat['icon'] ?>" alt="" style="width: 18px; height: 18px; object-fit: contain;">
+                                    <img src="<?= $cat['icon'] ?>" width="18" height="18" alt="" style="width: 18px; height: 18px; object-fit: contain;">
                                 <?php else: ?>
                                     <i class="fas fa-folder"></i>
                                 <?php endif; ?>
@@ -539,7 +768,7 @@
                                     <div class="d-flex align-items-center">
                                         <h3 class="ds-category-title mb-0">
                                             <?php if (!empty($category['icon'])): ?>
-                                                <img src="<?= $category['icon'] ?>" alt=""
+                                                <img src="<?= $category['icon'] ?>" width="28" height="28" alt=""
                                                     style="width: 28px; height: 28px; object-fit: contain; margin-right: 10px;">
                                             <?php else: ?>
                                                 <i class="fas fa-folder me-2"></i>
@@ -578,7 +807,7 @@
                                         <a href="<?= url($product['public_path'] ?? ('product/' . $product['id'])) ?>"
                                             class="ds-card <?= $is_offline ? 'offline' : '' ?>">
                                             <div class="ds-card-img-wrap">
-                                                <img src="<?= $product['image'] ?>" class="ds-card-img" alt="<?= $product['name'] ?>"
+                                                <img src="<?= $product['image'] ?>" width="400" height="400" class="ds-card-img" alt="<?= $product['name'] ?>"
                                                     loading="lazy" decoding="async" fetchpriority="low">
                                                 <?php if ($badge_text): ?>
                                                     <div class="ds-badge <?= $badge ?>"><?= htmlspecialchars($badge_text) ?></div>
@@ -639,6 +868,17 @@
                 <?php endif; ?>
             </div>
 
+            <?php if (!empty($pageBodyTitle) || !empty($pageBodyText)): ?>
+                <section class="home-copy-block" aria-labelledby="homeBodyCopyHeading">
+                    <?php if (!empty($pageBodyTitle)): ?>
+                        <h2 id="homeBodyCopyHeading"><?= htmlspecialchars((string) $pageBodyTitle, ENT_QUOTES, 'UTF-8') ?></h2>
+                    <?php endif; ?>
+                    <?php if (!empty($pageBodyText)): ?>
+                        <p><?= htmlspecialchars((string) $pageBodyText, ENT_QUOTES, 'UTF-8') ?></p>
+                    <?php endif; ?>
+                </section>
+            <?php endif; ?>
+
             <section class="home-faq-section" aria-labelledby="homeFaqHeading">
                 <div class="home-faq-shell">
                     <h2 id="homeFaqHeading" class="home-faq-title">Câu hỏi thường gặp về KaiShop</h2>
@@ -662,6 +902,17 @@
                     </div>
                 </div>
             </section>
+
+            <?php if (!empty($pageBottomTitle) || !empty($pageBottomText)): ?>
+                <section class="home-copy-block" aria-labelledby="homeBottomCopyHeading">
+                    <?php if (!empty($pageBottomTitle)): ?>
+                        <h2 id="homeBottomCopyHeading"><?= htmlspecialchars((string) $pageBottomTitle, ENT_QUOTES, 'UTF-8') ?></h2>
+                    <?php endif; ?>
+                    <?php if (!empty($pageBottomText)): ?>
+                        <p><?= htmlspecialchars((string) $pageBottomText, ENT_QUOTES, 'UTF-8') ?></p>
+                    <?php endif; ?>
+                </section>
+            <?php endif; ?>
         </div>
     </main>
 

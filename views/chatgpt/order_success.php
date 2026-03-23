@@ -4,7 +4,7 @@ $email = (string) ($email ?? $order['customer_email'] ?? '');
 $orderCode = (string) ($order['order_code'] ?? '');
 ?>
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="<?= function_exists('app_is_english') && app_is_english() ? 'en' : 'vi' ?>">
 
 <head>
     <?php require __DIR__ . '/../../hethong/head2.php'; ?>

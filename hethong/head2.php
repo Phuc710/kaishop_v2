@@ -14,6 +14,7 @@ $requestPath = function_exists('app_request_path') ? app_request_path(false) : (
 $requestPathNoLocale = function_exists('app_request_path') ? app_request_path(true) : $requestPath;
 
 $siteName = (string) ($chungapi['ten_web'] ?? 'KaiShop');
+$siteBaseUrl = rtrim((string) BASE_URL, '/');
 $isEnglishPage = function_exists('app_is_english') && app_is_english();
 $defaultTitle = $siteName;
 $defaultDescription = (string) ($chungapi['mo_ta'] ?? 'Dịch vụ số chất lượng cao.');
@@ -28,6 +29,7 @@ $seoDescriptionValue = isset($seoDescription) && trim((string) $seoDescription) 
 $seoKeywordsValue = isset($seoKeywords) && trim((string) $seoKeywords) !== '' ? trim((string) $seoKeywords) : $defaultKeywords;
 $seoCanonicalValue = isset($seoCanonical) && trim((string) $seoCanonical) !== '' ? trim((string) $seoCanonical) : $defaultCanonical;
 $seoImageValue = isset($seoImage) && trim((string) $seoImage) !== '' ? trim((string) $seoImage) : $defaultImage;
+$seoSchemaTypeValue = isset($seoSchemaType) && trim((string) $seoSchemaType) !== '' ? trim((string) $seoSchemaType) : 'WebPage';
 
 $privatePaths = [
     '/login',
@@ -54,6 +56,10 @@ foreach ($privatePaths as $p) {
 $seoRobotsValue = isset($seoRobots) && trim((string) $seoRobots) !== ''
     ? trim((string) $seoRobots)
     : ($isPrivatePage ? 'noindex, nofollow' : 'index, follow');
+
+if ($isLocalHost) {
+    $seoRobotsValue = 'noindex, nofollow, noarchive';
+}
 
 $pageAssets = isset($GLOBALS['pageAssets']) && is_array($GLOBALS['pageAssets']) ? $GLOBALS['pageAssets'] : [];
 
@@ -106,6 +112,40 @@ $geoRegion = $isEnglishPage ? 'GLOBAL' : 'VN';
 $geoPlacename = $isEnglishPage ? 'International' : 'Việt Nam';
 $languageName = $isEnglishPage ? 'English' : 'Vietnamese';
 $ogLocale = $isEnglishPage ? 'en_US' : 'vi_VN';
+$resolveAbsoluteUrl = static function (string $path) use ($siteBaseUrl): string {
+    $cleanPath = trim($path);
+    if ($cleanPath === '') {
+        return $siteBaseUrl . '/';
+    }
+
+    if (preg_match('~^(?:https?:)?//|^(?:data|blob):~i', $cleanPath)) {
+        if (strpos($cleanPath, '//') === 0) {
+            $scheme = parse_url($siteBaseUrl, PHP_URL_SCHEME) ?: 'https';
+            return $scheme . ':' . $cleanPath;
+        }
+
+        return $cleanPath;
+    }
+
+    if ($cleanPath[0] !== '/') {
+        $cleanPath = '/' . ltrim($cleanPath, '/');
+    }
+
+    return $siteBaseUrl . $cleanPath;
+};
+$schemaFilter = static function ($value): bool {
+    if (is_array($value)) {
+        return $value !== [];
+    }
+
+    return $value !== null && $value !== '';
+};
+$seoCanonicalValue = $resolveAbsoluteUrl($seoCanonicalValue);
+$viCanonical = $resolveAbsoluteUrl($viCanonical);
+$enCanonical = $resolveAbsoluteUrl($enCanonical);
+$seoImageValue = $seoImageValue !== '' ? $resolveAbsoluteUrl($seoImageValue) : '';
+$siteHomeUrl = $siteBaseUrl . '/';
+$sitemapUrl = $resolveAbsoluteUrl(url('sitemap.xml'));
 ?>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -114,6 +154,7 @@ $ogLocale = $isEnglishPage ? 'en_US' : 'vi_VN';
     <meta name="keywords" content="<?= htmlspecialchars($seoKeywordsValue, ENT_QUOTES, 'UTF-8') ?>">
 <?php endif; ?>
 <meta name="robots" content="<?= htmlspecialchars($seoRobotsValue, ENT_QUOTES, 'UTF-8') ?>">
+<meta name="googlebot" content="<?= htmlspecialchars($seoRobotsValue, ENT_QUOTES, 'UTF-8') ?>">
 <meta name="theme-color" content="#ff6900">
 <meta name="author" content="<?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?>">
 <meta name="csrf-token"
@@ -126,6 +167,8 @@ $ogLocale = $isEnglishPage ? 'en_US' : 'vi_VN';
 <link rel="alternate" hreflang="vi" href="<?= htmlspecialchars($viCanonical, ENT_QUOTES, 'UTF-8') ?>">
 <link rel="alternate" hreflang="en" href="<?= htmlspecialchars($enCanonical, ENT_QUOTES, 'UTF-8') ?>">
 <link rel="alternate" hreflang="x-default" href="<?= htmlspecialchars($viCanonical, ENT_QUOTES, 'UTF-8') ?>">
+<link rel="sitemap" type="application/xml" title="Sitemap"
+    href="<?= htmlspecialchars($sitemapUrl, ENT_QUOTES, 'UTF-8') ?>">
 
 <meta property="og:locale" content="<?= htmlspecialchars($ogLocale, ENT_QUOTES, 'UTF-8') ?>">
 <meta property="og:type" content="<?= htmlspecialchars($ogType, ENT_QUOTES, 'UTF-8') ?>">
@@ -135,6 +178,7 @@ $ogLocale = $isEnglishPage ? 'en_US' : 'vi_VN';
 <meta property="og:site_name" content="<?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?>">
 <?php if ($seoImageValue !== ''): ?>
     <meta property="og:image" content="<?= htmlspecialchars($seoImageValue, ENT_QUOTES, 'UTF-8') ?>">
+    <meta property="og:image:url" content="<?= htmlspecialchars($seoImageValue, ENT_QUOTES, 'UTF-8') ?>">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="<?= htmlspecialchars($seoTitleValue, ENT_QUOTES, 'UTF-8') ?>">
@@ -171,9 +215,81 @@ $faviconHref = UrlHelper::resolveFavicon($chungapi['favicon'] ?? '', $chungapi['
 $faviconVersion = trim((string) ($chungapi['updated_at'] ?? TimeService::instance()->nowTs()));
 $faviconHref = $appendIconVersion($faviconHref, (string) $faviconVersion);
 $fallbackFaviconHref = asset('assets/images/kaishop_favicon.png');
+$siteLogoUrl = $resolveAbsoluteUrl(UrlHelper::resolveIcon($chungapi['logo'] ?? '', 'assets/images/header_logo.gif'));
+$organizationSameAs = array_values(array_unique(array_filter([
+    trim((string) ($chungapi['fb_admin'] ?? '')),
+    trim((string) ($chungapi['tele_admin'] ?? '')),
+    trim((string) ($chungapi['support_tele'] ?? '')),
+    trim((string) ($chungapi['tiktok_admin'] ?? '')),
+    trim((string) ($chungapi['youtube_admin'] ?? '')),
+], static fn($value) => $value !== '')));
+$organizationId = $siteHomeUrl . '#organization';
+$websiteId = $siteHomeUrl . '#website';
+$webPageId = $seoCanonicalValue . '#webpage';
+$contactPoint = array_filter([
+    '@type' => 'ContactPoint',
+    'contactType' => 'customer support',
+    'url' => trim((string) ($chungapi['support_tele'] ?? ($chungapi['tele_admin'] ?? ''))),
+    'email' => trim((string) ($chungapi['email_cf'] ?? '')),
+    'telephone' => trim((string) ($chungapi['sdt_admin'] ?? '')),
+    'availableLanguage' => ['Vietnamese', 'English'],
+], $schemaFilter);
+$organizationSchema = array_filter([
+    '@context' => 'https://schema.org',
+    '@type' => 'Organization',
+    '@id' => $organizationId,
+    'name' => $siteName,
+    'url' => $siteHomeUrl,
+    'logo' => $siteLogoUrl,
+    'image' => $seoImageValue !== '' ? $seoImageValue : $siteLogoUrl,
+    'description' => $seoDescriptionValue,
+    'email' => trim((string) ($chungapi['email_cf'] ?? '')),
+    'telephone' => trim((string) ($chungapi['sdt_admin'] ?? '')),
+    'sameAs' => $organizationSameAs,
+    'contactPoint' => $contactPoint !== [] ? [$contactPoint] : [],
+    'hasMap' => 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d19186.820390896668!2d106.64489592286598!3d10.833848329042643!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x317529005ce32e29%3A0x92701134ab02bfba!2sTan%20Son%20Nhat%20Driving%20Range!5e0!3m2!1svi!2s!4v1774275991944!5m2!1svi!2s',
+], $schemaFilter);
+$websiteSchema = array_filter([
+    '@context' => 'https://schema.org',
+    '@type' => 'WebSite',
+    '@id' => $websiteId,
+    'url' => $siteHomeUrl,
+    'name' => $siteName,
+    'description' => $defaultDescription,
+    'inLanguage' => $isEnglishPage ? 'en' : 'vi',
+    'publisher' => ['@id' => $organizationId],
+], $schemaFilter);
+$webPageSchema = array_filter([
+    '@context' => 'https://schema.org',
+    '@type' => $seoSchemaTypeValue,
+    '@id' => $webPageId,
+    'url' => $seoCanonicalValue,
+    'name' => $seoTitleValue,
+    'description' => $seoDescriptionValue,
+    'inLanguage' => $isEnglishPage ? 'en' : 'vi',
+    'isPartOf' => ['@id' => $websiteId],
+    'about' => ['@id' => $organizationId],
+    'publisher' => ['@id' => $organizationId],
+    'primaryImageOfPage' => $seoImageValue !== '' ? $seoImageValue : null,
+], $schemaFilter);
+$emitIdentitySchema = $requestPathNoLocale === '/';
 ?>
-<link rel="icon" href="<?= htmlspecialchars($faviconHref, ENT_QUOTES, 'UTF-8') ?>">
+<link rel="icon" href="<?= asset('assets/favicon/favicon.ico') ?>">
+<link rel="apple-touch-icon" sizes="180x180" href="<?= asset('assets/favicon/apple-touch-icon.png') ?>">
+<link rel="icon" type="image/png" sizes="32x32" href="<?= asset('assets/favicon/favicon-32x32.png') ?>">
+<link rel="icon" type="image/png" sizes="16x16" href="<?= asset('assets/favicon/favicon-16x16.png') ?>">
 <link rel="shortcut icon" href="<?= htmlspecialchars($faviconHref, ENT_QUOTES, 'UTF-8') ?>">
+<?php if ($emitIdentitySchema): ?>
+    <script type="application/ld+json">
+        <?= json_encode($organizationSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
+        </script>
+    <script type="application/ld+json">
+        <?= json_encode($websiteSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
+        </script>
+<?php endif; ?>
+<script type="application/ld+json">
+<?= json_encode($webPageSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
+</script>
 <script>
     (function () {
         const primaryHref = '<?= htmlspecialchars($faviconHref, ENT_QUOTES, 'UTF-8') ?>';
@@ -239,7 +355,7 @@ $fallbackFaviconHref = asset('assets/images/kaishop_favicon.png');
     <link rel="stylesheet" type="text/css" href="<?= asset('assets/css/datatables.css') ?>">
 <?php endif; ?>
 
-<script src="<?= asset('assets/js/jquery.js') ?>" defer></script>
+<script src="<?= asset('assets/js/jquery.js') ?>"></script>
 <script src="<?= asset('assets/js/notify.js') ?>" defer></script>
 <script src="<?= asset('assets/js/sweetalert.js') ?>" defer></script>
 <script src="<?= asset('assets/js/swal_helper.js') ?>" defer></script>

@@ -289,10 +289,12 @@ foreach ($authNavPaths as $p) {
 <header class="header-primary<?= $isAuthNavPage ? ' auth-shell-header' : '' ?>">
     <div class="container">
         <nav class="navbar navbar-expand-xl justify-content-center ks-navbar">
-            <a href="<?= url('') ?>" class="ks-logo-container">
+            <a href="<?= url('') ?>" class="ks-logo-container"
+                aria-label="Trang chủ <?= htmlspecialchars($chungapi['ten_web'] ?? 'KaiShop', ENT_QUOTES, 'UTF-8') ?>">
                 <?php global $chungapi; ?>
-                <img src="<?= asset($chungapi['logo']); ?>" width="180" alt="<?= $chungapi['ten_web'] ?? 'KaiShop'; ?>"
-                    decoding="async" fetchpriority="high" draggable="false" class="ks-img-guard ks-logo-img"
+                <img src="<?= asset($chungapi['logo']); ?>" width="180" height="auto"
+                    alt="<?= htmlspecialchars($chungapi['ten_web'] ?? 'KaiShop', ENT_QUOTES, 'UTF-8') ?>"
+                    draggable="false" class="ks-img-guard ks-logo-img" decoding="async" fetchpriority="high"
                     loading="eager" />
             </a>
 
@@ -370,9 +372,10 @@ foreach ($authNavPaths as $p) {
             <div class="mobile-sidebar-nav d-xl-none" id="navbarNav">
                 <div class="mobile-sidebar-header justify-content-center">
                     <div class="mobile-sidebar-brand">
-                        <img src="<?= asset($chungapi['logo']); ?>" alt="<?= $chungapi['ten_web'] ?? 'logo' ?>"
+                        <img src="<?= asset($chungapi['logo']); ?>" width="100" height="auto"
+                            alt="<?= htmlspecialchars($chungapi['ten_web'] ?? 'logo', ENT_QUOTES, 'UTF-8') ?>"
                             draggable="false" class="ks-img-guard ks-mobile-sidebar-logo" decoding="async"
-                            loading="lazy" fetchpriority="low">
+                            loading="eager" fetchpriority="high">
                     </div>
                 </div>
 
@@ -596,7 +599,7 @@ foreach ($authNavPaths as $p) {
 
             <button class="navbar-toggler d-block d-xl-none" type="button" data-bs-toggle="collapse"
                 data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false"
-                aria-label="Toggle navigation">
+                aria-label="Nhấn để mở menu điều hướng">
                 <span></span>
             </button>
         </nav>
