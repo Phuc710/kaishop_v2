@@ -136,7 +136,7 @@ $galleryArr = $product['gallery_arr'] ?? [];
     <!-- Row 1: Danh mục & Tên -->
     <div class="form-section mb-4">
         <div class="row">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="form-group mb-3">
                     <label class="font-weight-bold">Danh mục sản phẩm</label>
                     <select class="form-control" name="category_id" id="category_id" required>
@@ -151,7 +151,7 @@ $galleryArr = $product['gallery_arr'] ?? [];
                     </select>
                 </div>
             </div>
-            <div class="col-md-8">
+            <div class="col-md-5">
                 <div class="form-group mb-3">
                     <label class="font-weight-bold form-label-req">Tên sản phẩm</label>
                     <input type="text" class="form-control" id="name" name="name"
@@ -159,8 +159,8 @@ $galleryArr = $product['gallery_arr'] ?? [];
                         required>
                 </div>
             </div>
-            <div class="col-md-12">
-                <div class="form-group mb-0">
+            <div class="col-md-4">
+                <div class="form-group mb-3">
                     <label class="font-weight-bold">Đường dẫn (Slug)</label>
                     <div class="input-group">
                         <div class="input-group-prepend"><span class="input-group-text"
@@ -359,97 +359,88 @@ $galleryArr = $product['gallery_arr'] ?? [];
                     </div>
                 </div>
             </div>
+            <!-- Row 3/4: Consolidated SEO & Media -->
             <div class="col-md-12 mb-4">
                 <div class="form-section h-100 mb-0">
-                    <div class="form-section-title">👉 Thông tin SEO / Thẻ</div>
-                    <div class="form-group mb-0">
-                        <label class="font-weight-bold">Mô tả SEO</label>
-                        <textarea class="form-control" name="seo_description" rows="9"
-                            placeholder="Đoạn mô tả ngắn hiển thị trên Google..."><?= htmlspecialchars($product['seo_description'] ?? '') ?></textarea>
-                        <div class="mt-2" style="font-size: 12.5px; line-height: 1.5; color: #555;">
-                            <i class="fas fa-lightbulb text-warning mr-1"></i> <b>Lời khuyên:</b> Với từng sản phẩm quan
-                            trọng (ChatGPT Plus, Gemini Pro...), hãy điền tay Mô tả SEO theo format:<br>
-                            <code
-                                class="text-primary">"[Từ khóa chính] — [lợi ích ngắn gọn]. [Call to action]. Giao tự động, nhanh chóng tại KaiShop."</code><br>
-                            Giữ trong <b>150–160 ký tự</b> để Google không bị cắt bớt nội dung.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Row 5: Ảnh (Thumbnail & Gallery) -->
-        <div class="form-section mb-4">
-            <div class="row mb-4">
-                <div class="col-12">
-                    <label class="font-weight-bold d-block">Ảnh sản phẩm (Thumbnail)</label>
-                    <div class="row align-items-center">
-                        <div class="col-md-9">
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="image" name="image"
-                                    value="<?= htmlspecialchars($product['image'] ?? '') ?>"
-                                    placeholder="Link ảnh hoặc chọn từ máy">
-                                <div class="input-group-append">
-                                    <button type="button" class="btn btn-primary px-4"
-                                        style="background-color: #6f42c1; border-color: #6f42c1;"
-                                        onclick="openImageManager && openImageManager('image')">Chọn
-                                        ảnh</button>
+                    <div class="form-section-title">👉 THÔNG TIN SEO & HÌNH ẢNH</div>
+                    <div class="row">
+                        <!-- Left: SEO Info -->
+                        <div class="col-md-7 border-right">
+                            <div class="form-group mb-3">
+                                <label class="font-weight-bold"><i class="fas fa-search mr-1 text-info"></i>Mô tả SEO</label>
+                                <textarea class="form-control" name="seo_description" rows="4"
+                                    placeholder="Đoạn mô tả ngắn hiển thị trên Google..."><?= htmlspecialchars($product['seo_description'] ?? '') ?></textarea>
+                                <div class="mt-3 p-2 border rounded bg-light" style="font-size: 11.5px; line-height: 1.4; color: #555;">
+                                    <i class="fas fa-lightbulb text-warning mr-1"></i><b>Tips:</b> [Từ khóa chính] — [lợi ích]. [CTA]. Giao tự động tại KaiShop. (150–160 ký tự)
                                 </div>
                             </div>
-                            <small class="text-muted d-block mt-2">Gợi ý kích thước: 920x430 px.</small>
                         </div>
-                        <div class="col-md-3 mt-2 mt-md-0">
-                            <div class="thumb-preview-box">
-                                <img id="imagePreview" src="<?= htmlspecialchars($product['image'] ?? '') ?>" alt=""
-                                    style="<?= empty($product['image']) ? 'display:none;' : '' ?>">
-                                <span id="noImage" style="<?= !empty($product['image']) ? 'display:none;' : '' ?>">Xem
-                                    trước
-                                    ảnh đại diện</span>
+
+                        <!-- Right: Thumbnail -->
+                        <div class="col-md-5">
+                            <div class="form-group mb-2">
+                                <label class="font-weight-bold d-block"><i class="fas fa-image mr-1 text-primary"></i>Ảnh Thumbnail</label>
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control form-control-sm" id="image" name="image"
+                                        value="<?= htmlspecialchars($product['image'] ?? '') ?>"
+                                        placeholder="Link ảnh hoặc chọn...">
+                                    <div class="input-group-append">
+                                        <button type="button" class="btn btn-primary btn-sm px-3"
+                                            style="background-color: #6f42c1; border-color: #6f42c1;"
+                                            onclick="openImageManager && openImageManager('image')">Chọn</button>
+                                    </div>
+                                </div>
+                                <div class="thumb-preview-box" style="height: 100px; background: #fdfdfd; border: 1px solid #eee;">
+                                    <img id="imagePreview" src="<?= htmlspecialchars($product['image'] ?? '') ?>" alt=""
+                                        style="max-height: 90px; <?= empty($product['image']) ? 'display:none;' : '' ?>">
+                                    <span id="noImage" style="font-size: 10px; color: #ccc; <?= !empty($product['image']) ? 'display:none;' : '' ?>">Xem trước ảnh</span>
+                                </div>
+                                <small class="text-muted d-block mt-1" style="font-size: 10px;">Gợi ý: 920x430 px.</small>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <div class="mt-4 pt-3 border-top">
-                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap">
-                    <label class="font-weight-bold mb-0">Ảnh trong sản phẩm (Gallery)</label>
-                    <button type="button" class="btn btn-add-gallery btn-sm" onclick="addGalleryItem()">
-                        <i class="fas fa-plus mr-1"></i>Thêm dòng ảnh
-                    </button>
-                </div>
-                <small class="text-muted d-block mb-3">Hình ảnh chi tiết sản phẩm hiển thị dạng trượt.</small>
-                <div id="gallery-container">
-                    <?php foreach ($galleryArr as $i => $gUrl): ?>
-                        <div class="gallery-line mb-3" id="gallery-row-<?= (int) $i ?>">
-                            <div class="row align-items-center">
-                                <div class="col-md-9">
-                                    <div class="input-group">
-                                        <input type="text" class="form-control gallery-url-input" name="gallery[]"
-                                            id="gallery-input-<?= (int) $i ?>" value="<?= htmlspecialchars($gUrl) ?>"
-                                            placeholder="Link ảnh hoặc chọn từ máy">
-                                        <div class="input-group-append">
-                                            <button type="button" class="btn btn-primary"
-                                                style="background-color: #6f42c1; border-color: #6f42c1;"
-                                                onclick="openImageManager('gallery-input-<?= (int) $i ?>')">Chọn
-                                                ảnh</button>
-                                            <button type="button" class="btn btn-danger"
-                                                onclick="removeGalleryItem('gallery-row-<?= (int) $i ?>')"><i
-                                                    class="fas fa-trash"></i></button>
+                    <hr class="my-4">
+
+                    <!-- Gallery section -->
+                    <div class="gallery-section">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="font-weight-bold mb-0"><i class="fas fa-images mr-1 text-success"></i>Ảnh Gallery (Trượt chi tiết)</label>
+                            <button type="button" class="btn btn-outline-primary btn-xs" onclick="addGalleryItem()">
+                                <i class="fas fa-plus"></i> Thêm ảnh
+                            </button>
+                        </div>
+                        <div id="gallery-container">
+                            <?php foreach ($galleryArr as $i => $gUrl): ?>
+                                <div class="gallery-line mb-2" id="gallery-row-<?= (int) $i ?>">
+                                    <div class="row align-items-center no-gutters">
+                                        <div class="col-md-9 pr-2">
+                                            <div class="input-group input-group-sm">
+                                                <input type="text" class="form-control gallery-url-input" name="gallery[]"
+                                                    id="gallery-input-<?= (int) $i ?>" value="<?= htmlspecialchars($gUrl) ?>"
+                                                    placeholder="Link ảnh...">
+                                                <div class="input-group-append">
+                                                    <button type="button" class="btn btn-light border"
+                                                        onclick="openImageManager('gallery-input-<?= (int) $i ?>')"><i class="fas fa-folder-open text-primary"></i></button>
+                                                    <button type="button" class="btn btn-light border"
+                                                        onclick="removeGalleryItem('gallery-row-<?= (int) $i ?>')"><i
+                                                            class="fas fa-times text-danger"></i></button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="gallery-line-preview" style="height: 32px; border-radius: 4px;">
+                                                <img id="gallery-preview-img-<?= (int) $i ?>" class="gallery-preview-img"
+                                                    style="max-height: 28px;" alt="preview" src="<?= htmlspecialchars($gUrl) ?>">
+                                                <span id="gallery-preview-empty-<?= (int) $i ?>" class="gallery-preview-empty small"
+                                                    style="display: none; font-size: 9px;">Xem</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-3 mt-2 mt-md-0">
-                                    <div class="gallery-line-preview">
-                                        <img id="gallery-preview-img-<?= (int) $i ?>" class="gallery-preview-img"
-                                            alt="preview" src="<?= htmlspecialchars($gUrl) ?>">
-                                        <span id="gallery-preview-empty-<?= (int) $i ?>" class="gallery-preview-empty"
-                                            style="display: none;">Xem trước</span>
-                                    </div>
-                                </div>
-                            </div>
+                            <?php endforeach; ?>
                         </div>
-                    <?php endforeach; ?>
+                    </div>
                 </div>
             </div>
         </div>
@@ -742,21 +733,21 @@ $galleryArr = $product['gallery_arr'] ?? [];
             var previewEmptyId = 'gallery-preview-empty-' + currentIdx;
 
             var html = ''
-                + '<div class="gallery-line mb-3" id="' + rowId + '">'
-                + '  <div class="row align-items-center">'
-                + '    <div class="col-md-9">'
-                + '      <div class="input-group">'
-                + '        <input type="text" class="form-control gallery-url-input" name="gallery[]" id="' + inputId + '" value="' + escHtml(url) + '" placeholder="Link ảnh hoặc chọn từ máy">'
+                + '<div class="gallery-line mb-2" id="' + rowId + '">'
+                + '  <div class="row align-items-center no-gutters">'
+                + '    <div class="col-md-9 pr-2">'
+                + '      <div class="input-group input-group-sm">'
+                + '        <input type="text" class="form-control gallery-url-input" name="gallery[]" id="' + inputId + '" value="' + escHtml(url) + '" placeholder="Link ảnh...">'
                 + '        <div class="input-group-append">'
-                + '          <button type="button" class="btn btn-primary" style="background-color: #6f42c1; border-color: #6f42c1;" onclick="openImageManager(\'' + inputId + '\')">Chọn ảnh</button>'
-                + '          <button type="button" class="btn btn-danger" onclick="removeGalleryItem(\'' + rowId + '\')"><i class="fas fa-trash"></i></button>'
+                + '          <button type="button" class="btn btn-light border" onclick="openImageManager(\'' + inputId + '\')"><i class="fas fa-folder-open text-primary"></i></button>'
+                + '          <button type="button" class="btn btn-light border" onclick="removeGalleryItem(\'' + rowId + '\')"><i class="fas fa-times text-danger"></i></button>'
                 + '        </div>'
                 + '      </div>'
                 + '    </div>'
-                + '    <div class="col-md-3 mt-2 mt-md-0">'
-                + '      <div class="gallery-line-preview">'
-                + '        <img id="' + previewImgId + '" class="gallery-preview-img" alt="preview" style="' + (url ? '' : 'display:none;') + '" src="' + escHtml(url) + '">'
-                + '        <span id="' + previewEmptyId + '" class="gallery-preview-empty" style="' + (url ? 'display:none;' : '') + '">Xem trước</span>'
+                + '    <div class="col-md-3">'
+                + '      <div class="gallery-line-preview" style="height: 32px; border-radius: 4px;">'
+                + '        <img id="' + previewImgId + '" class="gallery-preview-img" alt="preview" style="max-height: 28px; ' + (url ? '' : 'display:none;') + '" src="' + escHtml(url) + '">'
+                + '        <span id="' + previewEmptyId + '" class="gallery-preview-empty small" style="font-size: 9px; ' + (url ? 'display:none;' : '') + '">Xem</span>'
                 + '      </div>'
                 + '    </div>'
                 + '  </div>'

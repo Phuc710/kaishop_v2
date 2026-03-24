@@ -1194,10 +1194,10 @@ if ($rawDescHtml !== '') {
 
             if (APPLY_GIFTCODE_LOADING) return;
 
-            const formData = new FormData();
-            formData.append('quantity', String(qty));
-            formData.append('giftcode', giftcode);
-            formData.append('csrf_token', PRODUCT_DETAIL.csrfToken);
+            const requestBody = new URLSearchParams();
+            requestBody.append('quantity', String(qty));
+            requestBody.append('giftcode', giftcode);
+            requestBody.append('csrf_token', PRODUCT_DETAIL.csrfToken);
 
             setApplyGiftcodeLoading(true);
             setGiftcodeFeedback('', '');
@@ -1206,8 +1206,13 @@ if ($rawDescHtml !== '') {
                 method: 'POST',
                 credentials: 'same-origin',
                 cache: 'no-store',
-                headers: { 'X-CSRF-Token': PRODUCT_DETAIL.csrfToken },
-                body: formData
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-Token': PRODUCT_DETAIL.csrfToken
+                },
+                body: requestBody.toString()
             })
                 .then(async (res) => {
                     let data = {};
@@ -1237,7 +1242,7 @@ if ($rawDescHtml !== '') {
                         setGiftcodeFeedback('success', data.message || 'Đã cập nhật thành tiền.');
                     }
                 })
-                .catch((err) => {
+                .catch(async (err) => {
                     clearAppliedGiftcodePreview({ silent: true });
                     updateSummaryPreview();
                     setGiftcodeFeedback('error', (err && err.message) ? err.message : 'Không thể áp dụng mã giảm giá.');
@@ -1261,6 +1266,49 @@ if ($rawDescHtml !== '') {
             setPurchaseControlsAvailability();
         }
 
+
+        function showPurchaseProcessingLoading() {
+            if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.loading === 'function') {
+                SwalHelper.loading('Äang xá»­ lÃ½ Ä‘Æ¡n hÃ ng...');
+                return;
+            }
+
+            if (window.Swal && Swal.fire) {
+                Swal.fire({
+                    title: 'Äang xá»­ lÃ½ Ä‘Æ¡n hÃ ng...',
+                    html: 'Vui lÃ²ng chá» trong giÃ¢y lÃ¡t.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            }
+        }
+
+        function closePurchaseProcessingLoading() {
+            if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.closeLoading === 'function') {
+                SwalHelper.closeLoading();
+                return;
+            }
+
+            if (window.Swal && Swal.close) {
+                Swal.close();
+            }
+        }
+
+        function ensureMinPurchaseLoading(startedAt, minDuration = 1600) {
+            const elapsed = Date.now() - Number(startedAt || 0);
+            const remaining = Math.max(0, minDuration - elapsed);
+            if (remaining <= 0) {
+                return Promise.resolve();
+            }
+
+            return new Promise((resolve) => {
+                setTimeout(resolve, remaining);
+            });
+        }
 
         function showPurchaseSuccess(data) {
             const payload = data || {};
@@ -1356,20 +1404,27 @@ if ($rawDescHtml !== '') {
         }
 
         function executePurchase(qty, customerInput, giftcode) {
-            const formData = new FormData();
-            formData.append('quantity', String(qty));
-            formData.append('customer_input', customerInput);
-            formData.append('giftcode', giftcode);
-            formData.append('csrf_token', PRODUCT_DETAIL.csrfToken);
+            const requestBody = new URLSearchParams();
+            requestBody.append('quantity', String(qty));
+            requestBody.append('customer_input', customerInput);
+            requestBody.append('giftcode', giftcode);
+            requestBody.append('csrf_token', PRODUCT_DETAIL.csrfToken);
+            const loadingStartedAt = Date.now();
 
             setBuyButtonLoading(true);
+            showPurchaseProcessingLoading();
 
             fetch(PRODUCT_DETAIL.purchaseUrl, {
                 method: 'POST',
                 credentials: 'same-origin',
                 cache: 'no-store',
-                headers: { 'X-CSRF-Token': PRODUCT_DETAIL.csrfToken },
-                body: formData
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-Token': PRODUCT_DETAIL.csrfToken
+                },
+                body: requestBody.toString()
             })
                 .then(async (res) => {
                     let data = {};
@@ -1381,7 +1436,10 @@ if ($rawDescHtml !== '') {
                     }
                     return data;
                 })
-                .then((data) => {
+                .then(async (data) => {
+                    await ensureMinPurchaseLoading(loadingStartedAt);
+                    closePurchaseProcessingLoading();
+
                     const order = data.order || {};
                     const qtyEl = document.getElementById('sumQty');
                     const subEl = document.getElementById('sumSubtotal');
@@ -1394,7 +1452,9 @@ if ($rawDescHtml !== '') {
                     applyPurchaseSuccessRealtimeState(data, qty);
                     showPurchaseSuccess(data);
                 })
-                .catch((err) => {
+                .catch(async (err) => {
+                    await ensureMinPurchaseLoading(loadingStartedAt);
+                    closePurchaseProcessingLoading();
                     const msg = (err && err.message) ? err.message : 'Không thể mua sản phẩm lúc này.';
                     if (/dang nhap|đăng nhập/i.test(msg)) {
                         window.location.href = PRODUCT_DETAIL.loginUrl;
