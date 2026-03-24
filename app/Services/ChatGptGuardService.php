@@ -716,7 +716,52 @@ class ChatGptGuardService
 
         $farmId = (int) $farm['id'];
 
-        // 3. Create Invite via OpenAI API
+        // 3. Dedup check: query OpenAI live invites for this farm before sending a new one
+        $liveInvites = $this->farmService->listInvites($farm, 100);
+        if (is_array($liveInvites)) {
+            foreach ($liveInvites as $liveInvite) {
+                $inviteEmail = strtolower(trim((string) ($liveInvite['email'] ?? '')));
+                $inviteStatus = strtolower(trim((string) ($liveInvite['status'] ?? '')));
+                if ($inviteEmail === $email && $inviteStatus === 'pending') {
+                    // Already a pending invite on OpenAI — reuse it, don't send another
+                    $existingInviteId = $liveInvite['id'] ?? null;
+                    $this->auditLog->log([
+                        'farm_id' => $farmId,
+                        'farm_name' => $farm['farm_name'],
+                        'action' => 'SYSTEM_INVITE_DEDUP',
+                        'actor_email' => $actorEmail,
+                        'target_email' => $email,
+                        'result' => 'SKIP',
+                        'reason' => 'Đã có invite pending trên OpenAI, không gửi thêm.',
+                        'meta' => ['existing_invite_id' => $existingInviteId, 'source_order_id' => $orderId],
+                    ]);
+
+                    // Ensure a ChatGptOrder record exists for this email
+                    $durationDays = (int) ($product['duration_days'] ?? 30);
+                    $expiresAt = $this->addDaysToNow($durationDays);
+                    $cgOrderId = $this->orderModel->create([
+                        'customer_email' => $email,
+                        'assigned_farm_id' => $farmId,
+                        'expires_at' => $expiresAt,
+                        'status' => 'inviting',
+                        'product_code' => 'business_auto_' . $durationDays . 'd',
+                        'source_order_id' => $orderId,
+                    ]);
+                    $this->allowModel->createInvite($cgOrderId, $farmId, $email, $existingInviteId);
+
+                    return [
+                        'success' => true,
+                        'message' => 'Đã có invite đang chờ trên OpenAI, tái sử dụng.',
+                        'invite_id' => $existingInviteId,
+                        'farm_name' => $farm['farm_name'],
+                        'expires_at' => $expiresAt,
+                        'cg_order_id' => $cgOrderId,
+                    ];
+                }
+            }
+        }
+
+        // 4. Create Invite via OpenAI API
         $invite = $this->farmService->createInvite($farm, $email, 'reader');
         if (!$invite['success']) {
             $this->auditLog->log([
@@ -737,7 +782,7 @@ class ChatGptGuardService
 
         $openaiInviteId = $invite['invite_id'] ?? null;
 
-        // 4. Create ChatGptOrder record
+        // 5. Create ChatGptOrder record
         $durationDays = (int) ($product['duration_days'] ?? 30);
         $expiresAt = $this->addDaysToNow($durationDays);
 
@@ -750,13 +795,13 @@ class ChatGptGuardService
             'source_order_id' => $orderId,
         ]);
 
-        // 5. Create AllowedInvite record (Whitelist)
+        // 6. Create AllowedInvite record (Whitelist)
         $this->allowModel->createInvite($cgOrderId, $farmId, $email, $openaiInviteId);
 
-        // 6. Update Farm usage
+        // 7. Update Farm usage
         $this->farmModel->incrementSeatUsed($farmId);
 
-        // 7. Log Success
+        // 8. Log Success
         $this->auditLog->log([
             'farm_id' => $farmId,
             'farm_name' => $farm['farm_name'],
@@ -779,7 +824,7 @@ class ChatGptGuardService
             'invite_id' => $openaiInviteId,
             'farm_name' => $farm['farm_name'],
             'expires_at' => $expiresAt,
-            'cg_order_id' => $cgOrderId
+            'cg_order_id' => $cgOrderId,
         ];
     }
 

@@ -231,101 +231,124 @@ class ChatGptAdminController extends Controller
         $this->requireAdmin();
         $this->rejectInvalidCsrf(url('admin/gpt-business/orders/add'));
 
-        $email = strtolower(trim((string) $this->post('customer_email', '')));
+        $rawEmails = (string) $this->post('customer_email', '');
         $farmId = (int) $this->post('assigned_farm_id', 0);
         $months = max(1, (int) $this->post('months', 1));
         $note = trim((string) $this->post('note', ''));
         $sendInvite = (string) $this->post('send_invite', '0') === '1';
         $actorEmail = $this->authService->getCurrentUser()['email'] ?? 'admin';
 
-        if ($email === '') {
-            $_SESSION['cgpt_admin_error'] = 'Vui lòng nhập email khách hàng.';
+        // Split emails by newline, comma, or space
+        $emailLines = preg_split('/[,\n\r\s]+/', $rawEmails, -1, PREG_SPLIT_NO_EMPTY);
+        $uniqueEmails = array_unique(array_map('strtolower', array_map('trim', $emailLines)));
+
+        if (empty($uniqueEmails)) {
+            $_SESSION['cgpt_admin_error'] = 'Vui lòng nhập ít nhất một email khách hàng.';
             $this->redirect(url('admin/gpt-business/orders/add'));
             return;
         }
 
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $_SESSION['cgpt_admin_error'] = 'Email không hợp lệ.';
-            $this->redirect(url('admin/gpt-business/orders/add'));
-            return;
-        }
+        $successCount = 0;
+        $failCount = 0;
+        $skipCount = 0;
+        $errors = [];
 
-        // Check duplicate active order
-        if ($this->orderModel->hasActiveOrder($email)) {
-            $_SESSION['cgpt_admin_error'] = 'Email này đã có đơn hàng đang hoạt động hoặc đang chờ invite.';
-            $this->redirect(url('admin/gpt-business/orders/add'));
-            return;
-        }
-
-        if (class_exists('TimeService')) {
-            $expiresAt = \TimeService::instance()
-                ->nowDateTime(\TimeService::instance()->getDbTimezone())
-                ->modify('+' . $months . ' months')
-                ->format('Y-m-d H:i:s');
-        } else {
-            $expiresAt = date('Y-m-d H:i:s', strtotime("+{$months} months"));
-        }
-
-        $orderId = $this->orderModel->create([
-            'customer_email' => $email,
-            'assigned_farm_id' => $farmId > 0 ? $farmId : null,
-            'expires_at' => $expiresAt,
-            'status' => 'pending',
-            'product_code' => 'chatgpt_business_manual',
-        ]);
-
-        if ($note !== '') {
-            $this->orderModel->updateStatus($orderId, 'pending', ['note' => $note]);
-        }
-
-        $this->auditLog->log([
-            'farm_id' => $farmId > 0 ? $farmId : null,
-            'action' => 'ORDER_MANUAL_CREATED',
-            'actor_email' => $actorEmail,
-            'result' => 'OK',
-            'reason' => 'Quản trị viên tạo đơn hàng thủ công.',
-            'meta' => [
-                'order_id' => $orderId,
-                'customer_email' => $email,
-                'months' => $months,
-                'expires_at' => $expiresAt,
-            ],
-        ]);
-
-        // ---------- AUTO-INVITE ----------
-        if ($sendInvite) {
-            $fakeProduct = [
-                'duration_days' => $months * 30,
-                'farm_id' => $farmId > 0 ? $farmId : null,
-            ];
-            $inviteResult = $this->guardService->createAutoInviteForOrder(
-                $orderId,
-                $fakeProduct,
-                $email,
-                $actorEmail
-            );
-            if ($inviteResult['success']) {
-                $this->orderModel->updateStatus($orderId, 'inviting', [
-                    'assigned_farm_id' => $inviteResult['cg_order_id'] ? null : ($farmId ?: null),
-                ]);
-                $_SESSION['notify'] = [
-                    'type' => 'success',
-                    'title' => 'Thành công',
-                    'message' => "Đã tạo đơn và gửi invite tới [{$email}]. Farm: " . ($inviteResult['farm_name'] ?? ''),
-                ];
-            } else {
-                $_SESSION['notify'] = [
-                    'type' => 'warning',
-                    'title' => 'Tạo đơn thành công nhưng gửi invite thất bại',
-                    'message' => $inviteResult['message'] ?? 'Không rõ lỗi. Đơn hàng ở trạng thái Pending.',
-                ];
+        foreach ($uniqueEmails as $email) {
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $failCount++;
+                $errors[] = "Email [{$email}] không hợp lệ.";
+                continue;
             }
-            $this->redirect(url('admin/gpt-business/orders'));
-            return;
-        }
-        // ---------------------------------
 
-        $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thành công', 'message' => "Đã tạo đơn hàng cho [{$email}] thành công."];
+            // Check duplicate active/pending order
+            if ($this->orderModel->hasActiveOrder($email)) {
+                $skipCount++;
+                continue;
+            }
+
+            if (class_exists('TimeService')) {
+                $expiresAt = \TimeService::instance()
+                    ->nowDateTime(\TimeService::instance()->getDbTimezone())
+                    ->modify('+' . $months . ' months')
+                    ->format('Y-m-d H:i:s');
+            } else {
+                $expiresAt = date('Y-m-d H:i:s', strtotime("+{$months} months"));
+            }
+
+            if ($sendInvite) {
+                // FIXED: Use GuardService to create the order AND send invite in ONE flow
+                // This avoids the double-creation bug.
+                $fakeProduct = [
+                    'duration_days' => $months * 30,
+                    'farm_id' => $farmId > 0 ? $farmId : null,
+                ];
+                $inviteResult = $this->guardService->createAutoInviteForOrder(
+                    0, // source_order_id = 0 for manual admin orders
+                    $fakeProduct,
+                    $email,
+                    $actorEmail
+                );
+
+                if ($inviteResult['success']) {
+                    $successCount++;
+                    $orderId = (int) ($inviteResult['cg_order_id'] ?? 0);
+                    if ($orderId > 0 && $note !== '') {
+                        $this->orderModel->updateStatus($orderId, 'inviting', ['note' => $note]);
+                    }
+                } else {
+                    $failCount++;
+                    $errors[] = "Email [{$email}]: " . ($inviteResult['message'] ?? 'Lỗi gửi invite OpenAI.');
+                }
+            } else {
+                // Create a pending order manually
+                $orderId = $this->orderModel->create([
+                    'customer_email' => $email,
+                    'assigned_farm_id' => $farmId > 0 ? $farmId : null,
+                    'expires_at' => $expiresAt,
+                    'status' => 'pending',
+                    'product_code' => 'chatgpt_business_manual',
+                ]);
+
+                if ($orderId > 0) {
+                    $successCount++;
+                    if ($note !== '') {
+                        $this->orderModel->updateStatus($orderId, 'pending', ['note' => $note]);
+                    }
+
+                    $this->auditLog->log([
+                        'farm_id' => $farmId > 0 ? $farmId : null,
+                        'action' => 'ORDER_MANUAL_CREATED',
+                        'actor_email' => $actorEmail,
+                        'result' => 'OK',
+                        'reason' => 'Quản trị viên tạo đơn hàng thủ công.',
+                        'meta' => [
+                            'order_id' => $orderId,
+                            'customer_email' => $email,
+                            'months' => $months,
+                            'expires_at' => $expiresAt,
+                        ],
+                    ]);
+                } else {
+                    $failCount++;
+                    $errors[] = "Email [{$email}]: Không thể tạo bản ghi database.";
+                }
+            }
+        }
+
+        // Build notification summary
+        $msg = "Hoàn tất xử lý " . count($uniqueEmails) . " email.";
+        $msg .= " Thành công: {$successCount}.";
+        if ($skipCount > 0)
+            $msg .= " Bỏ qua do đã có đơn: {$skipCount}.";
+        if ($failCount > 0)
+            $msg .= " Thất bại: {$failCount}.";
+
+        if ($failCount > 0) {
+            $_SESSION['cgpt_admin_error'] = $msg . " <br>Chi tiết lỗi: " . implode(', ', $errors);
+        } else {
+            $_SESSION['notify'] = ['type' => 'success', 'title' => 'Hoàn tất', 'message' => $msg];
+        }
+
         $this->redirect(url('admin/gpt-business/orders'));
     }
 

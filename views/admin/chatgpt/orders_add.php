@@ -87,16 +87,16 @@ $error = $error ?? null;
                                 <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                             <?php endif; ?>
                             <div class="form-group mb-4">
-                                <label class="gptb-filter-label" for="customer_email">Email khách hàng <span
+                                <label class="gptb-filter-label" for="customer_email">Danh sách Email khách hàng <span
                                         class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><i class="fas fa-envelope"></i></span>
-                                    </div>
-                                    <input type="email" name="customer_email" id="customer_email" class="form-control"
-                                        placeholder="Nhập email ChatGPT của khách..." required>
-                                </div>
-                                <small class="text-muted">Đơn hàng sẽ được tạo ở trạng thái Chờ xử lý (Pending).</small>
+                                <textarea name="customer_email" id="customer_email" class="form-control" rows="5"
+                                    placeholder="Ví dụ:
+alex@gmail.com
+bob@yahoo.com
+... (mỗi dòng một email hoặc ngăn cách bằng dấu phẩy)"></textarea>
+                                <small class="text-muted mt-1 d-block">Hệ thống sẽ tự động lọc và tạo đơn cho từng email
+                                    hợp lệ. Trạng thái mặc định là <strong>Pending</strong> (nếu không bật Gửi
+                                    invite).</small>
                             </div>
 
                             <div class="row">
@@ -165,35 +165,38 @@ $error = $error ?? null;
 </section>
 
 <!-- Loading Overlay -->
-<div id="gptbLoadingOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:9999; align-items:center; justify-content:center; flex-direction:column;">
-    <div style="background:#fff; border-radius:16px; padding:36px 48px; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,0.25);">
+<div id="gptbLoadingOverlay"
+    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:9999; align-items:center; justify-content:center; flex-direction:column;">
+    <div
+        style="background:#fff; border-radius:16px; padding:36px 48px; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,0.25);">
         <div class="spinner-border text-primary mb-3" role="status" style="width:3rem;height:3rem;"></div>
-        <div id="gptbLoadingText" style="font-size:16px; font-weight:700; color:#1e293b;">Đang tạo đơn và gửi invite...</div>
+        <div id="gptbLoadingText" style="font-size:16px; font-weight:700; color:#1e293b;">Đang tạo đơn và gửi invite...
+        </div>
         <small class="text-muted d-block mt-1">Đang kết nối OpenAI, vui lòng chờ...</small>
     </div>
 </div>
 
 <?php require __DIR__ . '/../layout/foot.php'; ?>
 <script>
-(function () {
-    var form = document.getElementById('orderForm');
-    var btn = document.getElementById('submitOrderBtn');
-    var overlay = document.getElementById('gptbLoadingOverlay');
-    var loadingText = document.getElementById('gptbLoadingText');
-    var inviteSwitch = document.getElementById('sendInviteSwitch');
+    (function () {
+        var form = document.getElementById('orderForm');
+        var btn = document.getElementById('submitOrderBtn');
+        var overlay = document.getElementById('gptbLoadingOverlay');
+        var loadingText = document.getElementById('gptbLoadingText');
+        var inviteSwitch = document.getElementById('sendInviteSwitch');
 
-    if (form && btn && overlay) {
-        form.addEventListener('submit', function () {
-            var sendInvite = inviteSwitch && inviteSwitch.checked;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Đang xử lý...';
-            if (sendInvite) {
-                loadingText.textContent = 'Đang gửi invite qua OpenAI...';
-            } else {
-                loadingText.textContent = 'Đang tạo đơn hàng...';
-            }
-            overlay.style.display = 'flex';
-        });
-    }
-})();
+        if (form && btn && overlay) {
+            form.addEventListener('submit', function () {
+                var sendInvite = inviteSwitch && inviteSwitch.checked;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Đang xử lý...';
+                if (sendInvite) {
+                    loadingText.textContent = 'Đang gửi invite qua OpenAI...';
+                } else {
+                    loadingText.textContent = 'Đang tạo đơn hàng...';
+                }
+                overlay.style.display = 'flex';
+            });
+        }
+    })();
 </script>
