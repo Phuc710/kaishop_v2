@@ -190,6 +190,8 @@ $routes = [
     ['POST', '/admin/gpt-business/product', 'Admin\\ChatGptAdminController@productUpdate'],
     ['GET', '/admin/gpt-business/logs', 'Admin\\ChatGptAdminController@logs'],
     ['GET', '/admin/gpt-business/violations', 'Admin\\ChatGptAdminController@violations'],
+    ['GET', '/admin/gpt-business/debug', 'Admin\\ChatGptAdminController@debug'],
+    ['POST', '/admin/gpt-business/debug', 'Admin\\ChatGptAdminController@debug'],
 
     // ========== CANONICAL PRODUCT SLUG ROUTE ==========
     // Keep this near the end to avoid catching admin/api routes like /admin/users

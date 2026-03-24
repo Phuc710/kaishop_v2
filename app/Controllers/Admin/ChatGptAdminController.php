@@ -614,4 +614,54 @@ class ChatGptAdminController extends Controller
         $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thành công', 'message' => $msg];
         $this->redirect(url('admin/gpt-business/product'));
     }
+
+    public function debug()
+    {
+        $this->requireAdmin();
+        $farms = $this->farmModel->getAll();
+        $actionResult = null;
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $fid = (int) ($_POST['farm_id'] ?? 0);
+            $action = $_POST['action'] ?? '';
+            $farm = $this->farmModel->getById($fid);
+
+            if ($farm) {
+                switch ($action) {
+                    case 'get_org':
+                        $actionResult = $this->farmService->request($farm, 'GET', '/organization');
+                        break;
+                    case 'list_invites':
+                        $actionResult = $this->farmService->request($farm, 'GET', '/organization/invites?limit=50');
+                        break;
+                    case 'list_users':
+                        $actionResult = $this->farmService->request($farm, 'GET', '/organization/users?limit=50');
+                        break;
+                    case 'create_invite':
+                        $email = trim($_POST['email'] ?? '');
+                        if ($email) {
+                            $actionResult = $this->farmService->createInvite($farm, $email);
+                        }
+                        break;
+                    case 'revoke_invite':
+                        $iid = trim($_POST['invite_id'] ?? '');
+                        if ($iid) {
+                            $actionResult = $this->farmService->revokeInvite($farm, $iid);
+                        }
+                        break;
+                    case 'remove_member':
+                        $uid = trim($_POST['user_id'] ?? '');
+                        if ($uid) {
+                            $actionResult = $this->farmService->removeMember($farm, $uid);
+                        }
+                        break;
+                }
+            }
+        }
+
+        $this->view('admin/chatgpt/debug', [
+            'farms' => $farms,
+            'actionResult' => $actionResult
+        ]);
+    }
 }
