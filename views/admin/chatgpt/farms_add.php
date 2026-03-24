@@ -87,6 +87,9 @@ $error = $error ?? null;
                     </div>
                     <div class="card-body">
                         <form method="post" action="<?= url('admin/gpt-business/farms/add') ?>" id="farmAddForm">
+                            <?php if (function_exists('csrf_token')): ?>
+                                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                            <?php endif; ?>
                             <div class="form-section">
                                 <div class="form-section-title">Thông tin farm</div>
                                 <div class="form-group">

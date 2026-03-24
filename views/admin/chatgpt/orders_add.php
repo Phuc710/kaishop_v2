@@ -83,6 +83,9 @@ $error = $error ?? null;
                         <?php endif; ?>
 
                         <form action="<?= url('admin/gpt-business/orders/add') ?>" method="POST" id="orderForm">
+                            <?php if (function_exists('csrf_token')): ?>
+                                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                            <?php endif; ?>
                             <div class="form-group mb-4">
                                 <label class="gptb-filter-label" for="customer_email">Email khách hàng <span
                                         class="text-danger">*</span></label>
@@ -133,10 +136,23 @@ $error = $error ?? null;
                                     placeholder="Ghi chú về đơn hàng này..."></textarea>
                             </div>
 
+                            <div class="form-group mb-4">
+                                <div class="custom-control custom-switch">
+                                    <input type="checkbox" class="custom-control-input" id="sendInviteSwitch"
+                                        name="send_invite" value="1" checked>
+                                    <label class="custom-control-label font-weight-bold" for="sendInviteSwitch">
+                                        Gửi invite ngay qua OpenAI
+                                    </label>
+                                </div>
+                                <small class="text-muted d-block mt-1">Hệ thống sẽ tự động chọn farm phù hợp và gửi lời
+                                    mời ngay sau khi tạo đơn. Nếu bỏ chọn, đơn sẽ ở trạng thái
+                                    <strong>Pending</strong>.</small>
+                            </div>
+
                             <hr class="my-4">
 
                             <div class="d-flex justify-content-end">
-                                <button type="submit" class="btn btn-gptb-save px-5">
+                                <button type="submit" class="btn btn-gptb-save px-5" id="submitOrderBtn">
                                     <i class="fas fa-save mr-1"></i> TẠO ĐƠN HÀNG
                                 </button>
                             </div>
@@ -148,4 +164,36 @@ $error = $error ?? null;
     </div>
 </section>
 
+<!-- Loading Overlay -->
+<div id="gptbLoadingOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:9999; align-items:center; justify-content:center; flex-direction:column;">
+    <div style="background:#fff; border-radius:16px; padding:36px 48px; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,0.25);">
+        <div class="spinner-border text-primary mb-3" role="status" style="width:3rem;height:3rem;"></div>
+        <div id="gptbLoadingText" style="font-size:16px; font-weight:700; color:#1e293b;">Đang tạo đơn và gửi invite...</div>
+        <small class="text-muted d-block mt-1">Đang kết nối OpenAI, vui lòng chờ...</small>
+    </div>
+</div>
+
 <?php require __DIR__ . '/../layout/foot.php'; ?>
+<script>
+(function () {
+    var form = document.getElementById('orderForm');
+    var btn = document.getElementById('submitOrderBtn');
+    var overlay = document.getElementById('gptbLoadingOverlay');
+    var loadingText = document.getElementById('gptbLoadingText');
+    var inviteSwitch = document.getElementById('sendInviteSwitch');
+
+    if (form && btn && overlay) {
+        form.addEventListener('submit', function () {
+            var sendInvite = inviteSwitch && inviteSwitch.checked;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Đang xử lý...';
+            if (sendInvite) {
+                loadingText.textContent = 'Đang gửi invite qua OpenAI...';
+            } else {
+                loadingText.textContent = 'Đang tạo đơn hàng...';
+            }
+            overlay.style.display = 'flex';
+        });
+    }
+})();
+</script>

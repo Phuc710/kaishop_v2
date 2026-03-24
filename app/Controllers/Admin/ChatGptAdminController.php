@@ -235,6 +235,8 @@ class ChatGptAdminController extends Controller
         $farmId = (int) $this->post('assigned_farm_id', 0);
         $months = max(1, (int) $this->post('months', 1));
         $note = trim((string) $this->post('note', ''));
+        $sendInvite = (string) $this->post('send_invite', '0') === '1';
+        $actorEmail = $this->authService->getCurrentUser()['email'] ?? 'admin';
 
         if ($email === '') {
             $_SESSION['cgpt_admin_error'] = 'Vui lòng nhập email khách hàng.';
@@ -248,9 +250,16 @@ class ChatGptAdminController extends Controller
             return;
         }
 
+        // Check duplicate active order
+        if ($this->orderModel->hasActiveOrder($email)) {
+            $_SESSION['cgpt_admin_error'] = 'Email này đã có đơn hàng đang hoạt động hoặc đang chờ invite.';
+            $this->redirect(url('admin/gpt-business/orders/add'));
+            return;
+        }
+
         if (class_exists('TimeService')) {
-            $expiresAt = TimeService::instance()
-                ->nowDateTime(TimeService::instance()->getDbTimezone())
+            $expiresAt = \TimeService::instance()
+                ->nowDateTime(\TimeService::instance()->getDbTimezone())
                 ->modify('+' . $months . ' months')
                 ->format('Y-m-d H:i:s');
         } else {
@@ -272,7 +281,7 @@ class ChatGptAdminController extends Controller
         $this->auditLog->log([
             'farm_id' => $farmId > 0 ? $farmId : null,
             'action' => 'ORDER_MANUAL_CREATED',
-            'actor_email' => $this->authService->getCurrentUser()['email'] ?? 'admin',
+            'actor_email' => $actorEmail,
             'result' => 'OK',
             'reason' => 'Quản trị viên tạo đơn hàng thủ công.',
             'meta' => [
@@ -282,6 +291,39 @@ class ChatGptAdminController extends Controller
                 'expires_at' => $expiresAt,
             ],
         ]);
+
+        // ---------- AUTO-INVITE ----------
+        if ($sendInvite) {
+            $fakeProduct = [
+                'duration_days' => $months * 30,
+                'farm_id' => $farmId > 0 ? $farmId : null,
+            ];
+            $inviteResult = $this->guardService->createAutoInviteForOrder(
+                $orderId,
+                $fakeProduct,
+                $email,
+                $actorEmail
+            );
+            if ($inviteResult['success']) {
+                $this->orderModel->updateStatus($orderId, 'inviting', [
+                    'assigned_farm_id' => $inviteResult['cg_order_id'] ? null : ($farmId ?: null),
+                ]);
+                $_SESSION['notify'] = [
+                    'type' => 'success',
+                    'title' => 'Thành công',
+                    'message' => "Đã tạo đơn và gửi invite tới [{$email}]. Farm: " . ($inviteResult['farm_name'] ?? ''),
+                ];
+            } else {
+                $_SESSION['notify'] = [
+                    'type' => 'warning',
+                    'title' => 'Tạo đơn thành công nhưng gửi invite thất bại',
+                    'message' => $inviteResult['message'] ?? 'Không rõ lỗi. Đơn hàng ở trạng thái Pending.',
+                ];
+            }
+            $this->redirect(url('admin/gpt-business/orders'));
+            return;
+        }
+        // ---------------------------------
 
         $_SESSION['notify'] = ['type' => 'success', 'title' => 'Thành công', 'message' => "Đã tạo đơn hàng cho [{$email}] thành công."];
         $this->redirect(url('admin/gpt-business/orders'));
@@ -532,7 +574,7 @@ class ChatGptAdminController extends Controller
             $msg = 'Cập nhật cấu hình sản phẩm thành công';
         } else {
             if ($slug === '')
-                $data['slug'] = 'chatgpt-business-' . (class_exists('TimeService') ? TimeService::instance()->nowTs() : time());
+                $data['slug'] = 'chatgpt-business-' . (class_exists('TimeService') ? \TimeService::instance()->nowTs() : time());
             $id = $this->productModel->create($data);
             $action = 'PRODUCT_CREATED';
             $msg = 'Tạo sản phẩm GPT Business thành công';
