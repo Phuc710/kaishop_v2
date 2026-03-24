@@ -102,7 +102,13 @@ $error = $error ?? null;
                                         farm này.</small>
                                 </div>
                                 <div class="form-group mb-0">
-                                    <label class="form-label-req">Admin API Key</label>
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <label class="form-label-req mb-0">Admin API Key</label>
+                                        <a href="https://platform.openai.com/settings/organization/admin-keys"
+                                            target="_blank" class="btn btn-xs btn-link p-0" style="font-size: 12px;">
+                                            <i class="fas fa-external-link-alt mr-1"></i> Lấy key tại OpenAI
+                                        </a>
+                                    </div>
                                     <div class="input-group">
                                         <input type="password" name="admin_api_key" class="form-control gptb-mono-input"
                                             id="apiKeyInput" placeholder="sk-admin-..." required autocomplete="off">
@@ -113,8 +119,8 @@ $error = $error ?? null;
                                             </button>
                                         </div>
                                     </div>
-                                    <small class="form-text text-muted">Key sẽ được mã hóa trước khi lưu trong cơ sở dữ
-                                        liệu.</small>
+                                    <small class="form-text text-muted">Sử dụng <b>Admin Key</b> (sk-admin-...) để có
+                                        đầy đủ quyền quản trị thành viên.</small>
                                 </div>
                             </div>
 

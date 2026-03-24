@@ -97,7 +97,13 @@ $error = $error ?? null;
                                         value="<?= htmlspecialchars($farm['admin_email'] ?? '') ?>" required>
                                 </div>
                                 <div class="form-group mb-0">
-                                    <label>API Key mới</label>
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <label class="mb-0">API Key mới</label>
+                                        <a href="https://platform.openai.com/settings/organization/admin-keys"
+                                            target="_blank" class="btn btn-xs btn-link p-0" style="font-size: 12px;">
+                                            <i class="fas fa-external-link-alt mr-1"></i> Lấy key tại OpenAI
+                                        </a>
+                                    </div>
                                     <div class="input-group">
                                         <input type="password" name="admin_api_key" class="form-control gptb-mono-input"
                                             id="editApiKeyInput" placeholder="Để trống nếu giữ nguyên"

@@ -27,9 +27,9 @@ Invoke-WebRequest -Uri $webhookUrl -Method Post -Headers $headers -Body $payload
 
 php /home/kaishopi/domains/kaishop.id.vn/public_html/chatgpt/cron/guard.php
 php /home/kaishopi/domains/kaishop.id.vn/public_html/public/telegram/cron.php >> /dev/null 2>&1
+php /home/kaishopi/domains/kaishop.id.vn/public_html/public/gpt-business/cron.php >> /dev/null 2>&1
 
 
-https://kaishop.id.vn/api/sepay/webhook
 
 Mở CMD hoặc PowerShell tại thư mục dự án 
 cd c:\xampp\htdocs\kaishop_v2
@@ -37,10 +37,4 @@ Gõ lệnh sau:
 bash
 php public/telegram/cron.php --poll
  
-# Binance auto-check đã gộp trong telegram cron (một file cron)
-php public/telegram/cron.php
 
-
-# Optional .env tuning for Binance sweep in cron mode
-BINANCE_SWEEP_WINDOW_SECONDS=50
-BINANCE_SWEEP_INTERVAL_SECONDS=10
