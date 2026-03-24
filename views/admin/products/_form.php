@@ -125,6 +125,33 @@ $galleryArr = $product['gallery_arr'] ?? [];
         color: #9ca3af;
     }
 
+    .product-description-editor .note-editor.note-frame,
+    .product-description-editor .note-editor.note-airframe {
+        border: 1px solid #dbe4f0;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    .product-description-editor .note-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 10px;
+        background: #f8fafc;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .product-description-editor .note-btn-group {
+        margin-right: 0 !important;
+    }
+
+    .product-description-editor .note-editing-area .note-editable {
+        min-height: 320px;
+        padding: 16px 18px;
+        background: #fff;
+    }
+
     @media (max-width: 991.98px) {
         .mode-card-group {
             grid-template-columns: 1fr;
@@ -359,9 +386,10 @@ $galleryArr = $product['gallery_arr'] ?? [];
                     </div>
                 </div>
             </div>
+        </div>
             <!-- Row 3/4: Consolidated SEO & Media -->
             <div class="col-md-12 mb-4">
-                <div class="form-section h-100 mb-0">
+                <div class="form-section">
                     <div class="form-section-title">👉 THÔNG TIN SEO & HÌNH ẢNH</div>
                     <div class="row">
                         <!-- Left: SEO Info -->
@@ -446,11 +474,15 @@ $galleryArr = $product['gallery_arr'] ?? [];
         </div>
 
         <!-- Row 7: Mô tả -->
-        <div class="form-section mt-4">
-            <div class="form-section-title">👉 Mô tả sản phẩm</div>
-            <div class="form-group mb-0">
-                <textarea class="form-control" id="description" name="description"
-                    rows="12"><?= htmlspecialchars($product['description'] ?? '') ?></textarea>
+        <div class="row">
+            <div class="col-md-12 mb-4">
+                <div class="form-section">
+                    <div class="form-section-title">👉 Mô tả sản phẩm</div>
+                    <div class="form-group mb-0 product-description-editor">
+                        <textarea class="form-control" id="description" name="description"
+                            rows="12"><?= htmlspecialchars($product['description'] ?? '') ?></textarea>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

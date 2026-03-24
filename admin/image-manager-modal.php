@@ -386,6 +386,10 @@
             Swal.fire('Thông báo', 'Vui lòng chọn một ảnh', 'warning');
             return;
         }
+        if (isGalleryTarget()) {
+            applyGallerySelection(selectedImages);
+            return;
+        }
         if (selectedImages.length > 1) {
             Swal.fire('Thông báo', 'Vui lòng chỉ chọn một ảnh để làm ảnh đại diện', 'warning');
             return;

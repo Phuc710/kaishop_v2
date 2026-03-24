@@ -358,7 +358,7 @@ if ($rawDescHtml !== '') {
         }
 
         .pd-breadcrumb {
-            display: flex;
+            display: none;
             flex-wrap: wrap;
             align-items: center;
             gap: 8px;
@@ -1269,14 +1269,14 @@ if ($rawDescHtml !== '') {
 
         function showPurchaseProcessingLoading() {
             if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.loading === 'function') {
-                SwalHelper.loading('Äang xá»­ lÃ½ Ä‘Æ¡n hÃ ng...');
+                SwalHelper.loading('Đang xử lý đơn hàng...');
                 return;
             }
 
             if (window.Swal && Swal.fire) {
                 Swal.fire({
-                    title: 'Äang xá»­ lÃ½ Ä‘Æ¡n hÃ ng...',
-                    html: 'Vui lÃ²ng chá» trong giÃ¢y lÃ¡t.',
+                    title: 'Đang xử lý đơn hàng...',
+                    html: 'Vui lòng chờ trong giây lát.',
                     allowOutsideClick: false,
                     allowEscapeKey: false,
                     showConfirmButton: false,
