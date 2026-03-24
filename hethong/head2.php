@@ -358,11 +358,11 @@ $emitIdentitySchema = $requestPathNoLocale === '/';
 
 
 <?php if (!empty($resolvedAssetFlags['flatpickr'])): ?>
-    <script src="<?= asset('assets/js/flatpickr.js') ?>"></script>
+    <script src="<?= asset('assets/js/flatpickr.js') ?>" defer></script>
 <?php endif; ?>
 
 <?php if (!empty($resolvedAssetFlags['datatables'])): ?>
-    <script type="text/javascript" charset="utf8" src="<?= asset('assets/js/datatables.js') ?>"></script>
+    <script type="text/javascript" charset="utf8" src="<?= asset('assets/js/datatables.js') ?>" defer></script>
 <?php endif; ?>
 
 <?php if (!empty($resolvedAssetFlags['turnstile'])): ?>

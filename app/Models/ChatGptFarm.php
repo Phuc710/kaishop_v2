@@ -91,13 +91,14 @@ class ChatGptFarm extends Model
         $nowSql = $this->nowSql();
         $stmt = $this->db->prepare(
             "INSERT INTO `{$this->table}`
-             (`farm_name`, `admin_email`, `admin_api_key`, `seat_total`, `seat_used`, `status`, `created_at`, `updated_at`)
-             VALUES (?, ?, ?, ?, 0, 'active', ?, ?)"
+             (`farm_name`, `admin_email`, `admin_api_key`, `openai_org_id`, `seat_total`, `seat_used`, `status`, `created_at`, `updated_at`)
+             VALUES (?, ?, ?, ?, ?, 0, 'active', ?, ?)"
         );
         $stmt->execute([
             $data['farm_name'],
             $data['admin_email'],
             $data['admin_api_key'],
+            $data['openai_org_id'] ?? null,
             (int) ($data['seat_total'] ?? 4),
             $nowSql,
             $nowSql,
@@ -112,7 +113,7 @@ class ChatGptFarm extends Model
     {
         $fields = [];
         $params = [];
-        $allowed = ['farm_name', 'admin_email', 'admin_api_key', 'seat_total', 'status'];
+        $allowed = ['farm_name', 'admin_email', 'admin_api_key', 'openai_org_id', 'seat_total', 'status'];
         foreach ($allowed as $f) {
             if (array_key_exists($f, $data)) {
                 $fields[] = "`{$f}` = ?";

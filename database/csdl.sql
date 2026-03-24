@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS `products` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `slug` varchar(255) DEFAULT NULL COMMENT 'URL slug (auto-gen từ tên)',
-  `product_type` enum('account','link') NOT NULL DEFAULT 'account' COMMENT 'account = bán tk từ kho, link = bán link download',
+  `product_type` varchar(50) NOT NULL DEFAULT 'account' COMMENT 'account = bán tk từ kho, link = bán link download, business_invite_auto = auto invite',
   `price_vnd` bigint(20) NOT NULL DEFAULT 0 COMMENT 'Giá bán (VNĐ)',
   `old_price` bigint(20) NOT NULL DEFAULT 0 COMMENT 'Giá gốc báo ảo (VNĐ)',
   `source_link` text DEFAULT NULL COMMENT 'Link download (Mega/GDrive...) - chỉ dùng khi product_type=link',
@@ -64,6 +64,9 @@ CREATE TABLE IF NOT EXISTS `products` (
   `seo_description` text DEFAULT NULL COMMENT 'SEO meta description',
   `requires_info` tinyint(1) NOT NULL DEFAULT 0 COMMENT '1 = yeu cau user nhap thong tin => don pending',
   `info_instructions` text DEFAULT NULL COMMENT 'Huong dan thong tin user can cung cap khi mua',
+  `duration_days` int(11) NOT NULL DEFAULT 30,
+  `auto_invite` tinyint(1) NOT NULL DEFAULT 1,
+  `farm_id` int(11) DEFAULT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
   `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
@@ -127,6 +130,7 @@ CREATE TABLE IF NOT EXISTS `orders` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_orders_code` (`order_code`),
   KEY `idx_orders_user` (`user_id`),
+  KEY `idx_orders_user_deleted_created` (`user_id`,`user_deleted_at`,`created_at`,`id`),
   KEY `idx_orders_product` (`product_id`),
   KEY `idx_orders_created` (`created_at`),
   KEY `idx_orders_source_created` (`source_channel`,`created_at`)
@@ -181,7 +185,8 @@ CREATE TABLE IF NOT EXISTS `lich_su_hoat_dong` (
   `created_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `idx_lshd_username` (`username`),
-  KEY `idx_lshd_created_at` (`created_at`)
+  KEY `idx_lshd_created_at` (`created_at`),
+  KEY `idx_lshd_username_created_id` (`username`,`created_at`,`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `lich_su_bien_dong_so_du` (
@@ -197,6 +202,8 @@ CREATE TABLE IF NOT EXISTS `lich_su_bien_dong_so_du` (
   `created_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `idx_lsbd_username` (`username`),
+  KEY `idx_lsbd_user_id_id` (`user_id`,`id`),
+  KEY `idx_lsbd_username_id` (`username`,`id`),
   KEY `idx_lsbd_created_at` (`created_at`),
   KEY `idx_lsbd_source_created` (`source_channel`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -314,6 +321,116 @@ CREATE TABLE IF NOT EXISTS `user_trusted_devices` (
   KEY `idx_user_device_until` (`trusted_until`),
   KEY `idx_user_device_user_until` (`user_id`,`trusted_until`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+CREATE TABLE IF NOT EXISTS `chatgpt_farms` (
+  `id`            INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+  `farm_name`     VARCHAR(120)     NOT NULL,
+  `admin_email`   VARCHAR(255)     NOT NULL,
+  `admin_api_key` TEXT             NOT NULL COMMENT 'Encrypted admin API key',
+  `openai_org_id` VARCHAR(100)     DEFAULT NULL,
+  `seat_total`    TINYINT UNSIGNED NOT NULL DEFAULT 4,
+  `seat_used`     TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  `status`        ENUM('active','full','locked') NOT NULL DEFAULT 'active',
+  `last_sync_at`  DATETIME         DEFAULT NULL,
+  `created_at`    DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`    DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_status_seat` (`status`, `seat_used`, `seat_total`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `chatgpt_orders` (
+  `id`               INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `order_code`       VARCHAR(32)  NOT NULL UNIQUE,
+  `customer_email`   VARCHAR(255) NOT NULL,
+  `product_code`     VARCHAR(80)  NOT NULL DEFAULT 'chatgpt_pro_add_farm_1_month',
+  `status`           ENUM('pending','inviting','active','failed','revoked') NOT NULL DEFAULT 'pending',
+  `assigned_farm_id` INT UNSIGNED DEFAULT NULL,
+  `source_order_id`  BIGINT UNSIGNED NULL,
+  `expires_at`       DATETIME     DEFAULT NULL COMMENT 'When the 1-month access expires',
+  `note`             TEXT         DEFAULT NULL,
+  `created_at`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_email` (`customer_email`),
+  KEY `idx_status` (`status`),
+  KEY `idx_farm` (`assigned_farm_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `chatgpt_allowed_invites` (
+  `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `order_id`     INT UNSIGNED NOT NULL,
+  `farm_id`      INT UNSIGNED NOT NULL,
+  `target_email` VARCHAR(255) NOT NULL,
+  `invite_id`    VARCHAR(120) DEFAULT NULL COMMENT 'OpenAI invite ID returned by API',
+  `status`       ENUM('pending','accepted','expired','revoked') NOT NULL DEFAULT 'pending',
+  `created_by`   VARCHAR(50)  NOT NULL DEFAULT 'system',
+  `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_farm_email` (`farm_id`, `target_email`),
+  KEY `idx_order` (`order_id`),
+  KEY `idx_invite_id` (`invite_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `chatgpt_farm_members_snapshot` (
+  `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `farm_id`      INT UNSIGNED NOT NULL,
+  `openai_user_id` VARCHAR(120) DEFAULT NULL,
+  `email`        VARCHAR(255) NOT NULL,
+  `role`         VARCHAR(50)  NOT NULL DEFAULT 'reader',
+  `status`       VARCHAR(50)  NOT NULL DEFAULT 'active',
+  `source`       ENUM('approved','detected_unknown') NOT NULL DEFAULT 'detected_unknown',
+  `first_seen_at` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_seen_at`  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uidx_farm_email` (`farm_id`, `email`),
+  KEY `idx_source` (`source`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `chatgpt_farm_invites_snapshot` (
+  `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `farm_id`      INT UNSIGNED NOT NULL,
+  `invite_id`    VARCHAR(120) NOT NULL,
+  `email`        VARCHAR(255) NOT NULL,
+  `role`         VARCHAR(50)  NOT NULL DEFAULT 'reader',
+  `status`       VARCHAR(50)  NOT NULL DEFAULT 'pending',
+  `source`       ENUM('approved','detected_unknown') NOT NULL DEFAULT 'detected_unknown',
+  `first_seen_at` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_seen_at`  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uidx_farm_invite` (`farm_id`, `invite_id`),
+  KEY `idx_farm_email` (`farm_id`, `email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `chatgpt_violations` (
+  `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `farm_id`      INT UNSIGNED NOT NULL,
+  `email`        VARCHAR(255) NOT NULL,
+  `type`         VARCHAR(80)  NOT NULL COMMENT 'unauthorized_invite | unauthorized_member | self_invite_violation',
+  `severity`     ENUM('low','medium','high','critical') NOT NULL DEFAULT 'high',
+  `reason`       TEXT         DEFAULT NULL,
+  `action_taken` VARCHAR(120) DEFAULT NULL,
+  `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_farm` (`farm_id`),
+  KEY `idx_email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `chatgpt_audit_logs` (
+  `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `farm_id`      INT UNSIGNED DEFAULT NULL,
+  `farm_name`    VARCHAR(120) DEFAULT NULL,
+  `action`       VARCHAR(100) NOT NULL COMMENT 'SYSTEM_INVITE_CREATED | INVITE_REVOKED_UNAUTHORIZED | MEMBER_REMOVED_UNAUTHORIZED | MEMBER_REMOVED_POLICY',
+  `actor_email`  VARCHAR(255) DEFAULT NULL,
+  `target_email` VARCHAR(255) DEFAULT NULL,
+  `result`       ENUM('OK','FAIL','SKIPPED') NOT NULL DEFAULT 'OK',
+  `reason`       VARCHAR(255) DEFAULT NULL,
+  `meta_json`    JSON         DEFAULT NULL,
+  `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_farm` (`farm_id`),
+  KEY `idx_action` (`action`),
+  KEY `idx_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `auth_login_attempts` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -375,6 +492,7 @@ CREATE TABLE IF NOT EXISTS `setting` (
   `binance_uid` varchar(50) DEFAULT NULL,
   `binance_owner` varchar(150) DEFAULT NULL,
   `binance_rate_vnd` int(11) NOT NULL DEFAULT 25000,
+  `binance_qr_image` varchar(255) DEFAULT NULL,
   `binance_pay_enabled` tinyint(1) NOT NULL DEFAULT 0,
   `deposit_warning_bank` text DEFAULT NULL COMMENT 'HTML warning shown on bank deposit page',
   `deposit_warning_binance` text DEFAULT NULL COMMENT 'HTML warning shown on Binance Pay deposit page',
@@ -548,6 +666,7 @@ CREATE TABLE IF NOT EXISTS `history_nap_bank` (
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_hnb_username` (`username`),
+  KEY `idx_hnb_username_created_id` (`username`,`created_at`,`id`),
   KEY `idx_hnb_trans` (`trans_id`),
   KEY `idx_hnb_created_at` (`created_at`),
   KEY `idx_hnb_status_created` (`status`,`created_at`),
@@ -682,6 +801,5 @@ CREATE TABLE IF NOT EXISTS `telegram_logs` (
   KEY `idx_tl_type_created` (`type`, `created_at`),
   KEY `idx_tl_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-ALTER TABLE setting ADD COLUMN binance_qr_image VARCHAR(255) DEFAULT NULL AFTER binance_rate_vnd
 SET FOREIGN_KEY_CHECKS = 1;
 COMMIT;

@@ -135,7 +135,15 @@
     DepositSuccessPresenter.prototype.show = function (res) {
         var redirectUrl = this.resolveRedirectUrl(res);
 
+        var info = (res && res.deposit_info) ? res.deposit_info : {};
+        var method = String(info.method || this.activeMethod || 'bank_sepay');
+
         if (!window.Swal) {
+            if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.info === 'function') {
+                SwalHelper.info(method === 'binance' ? ('Deposit successful. Balance: $' + (Number(res.new_balance || 0) / this.binanceRateVnd).toFixed(2)) : ('Nạp tiền thành công. Số dư: ' + formatVnd(Number((res && res.new_balance) || 0))));
+                setTimeout(function () { window.location.href = redirectUrl; }, 2000);
+                return;
+            }
             window.alert('Deposit success. Balance: ' + formatVnd(Number((res && res.new_balance) || 0)));
             window.location.href = redirectUrl;
             return;

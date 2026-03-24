@@ -104,6 +104,15 @@ $error = $error ?? null;
                                     <small class="form-text text-muted">Email tài khoản OpenAI Business đang vận hành
                                         farm này.</small>
                                 </div>
+                                <div class="form-group">
+                                    <label class="form-label">OpenAI Organization ID (Tùy chọn)</label>
+                                    <input type="text" name="openai_org_id" class="form-control"
+                                        placeholder="org-xxxxxxxxxxxxxxxx">
+                                    <small class="form-text text-muted">Bắt buộc nếu tài khoản admin có nhiều
+                                        Organization. Lấy tại <a
+                                            href="https://platform.openai.com/settings/organization/general"
+                                            target="_blank">OpenAI Settings</a>.</small>
+                                </div>
                                 <div class="form-group mb-0">
                                     <div class="d-flex justify-content-between align-items-center mb-1">
                                         <label class="form-label-req mb-0">Admin API Key</label>

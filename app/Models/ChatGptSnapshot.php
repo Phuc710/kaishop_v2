@@ -38,6 +38,18 @@ class ChatGptSnapshot extends Model
     }
 
     /**
+     * Get a member by email for a specific farm
+     */
+    public function getMemberByEmail($farmId, $email)
+    {
+        $stmt = $this->db->prepare(
+            "SELECT * FROM `chatgpt_farm_members_snapshot` WHERE `farm_id` = ? AND LOWER(`email`) = ? LIMIT 1"
+        );
+        $stmt->execute([(int) $farmId, strtolower(trim($email))]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    /**
      * Get all members snapshot for a farm
      */
     public function getMembersForFarm($farmId)

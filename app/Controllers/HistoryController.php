@@ -67,15 +67,14 @@ class HistoryController extends Controller
 
         // Use fast pagination when there is no search query and the model supports it
         $searchKeyword = trim((string) ($filters['search'] ?? ''));
+        $hasFastFilters = trim((string) ($filters['time_range'] ?? '')) !== ''
+            || trim((string) ($filters['sort_date'] ?? 'all')) !== 'all';
         if ($searchKeyword !== '' || !$this->historyModel->canUseFastPagination($userContext)) {
             $recordsTotal = $this->historyModel->countUserHistory($userContext, []);
             $allFilteredRows = $this->historyModel->getAllUserHistory($userContext, $filters);
             $recordsFiltered = count($allFilteredRows);
 
             // Fetch fresh user balance
-            $userData = $this->userModel->findByUsername($username);
-            $currentBalance = (int) ($userData['money'] ?? 0);
-
             // Build result — LSBD rows have stored before/after, legacy rows need in-memory calculation
             $hasMixedData = false;
             foreach ($allFilteredRows as $r) {
@@ -87,6 +86,8 @@ class HistoryController extends Controller
 
             // If any legacy rows exist, fall back to full in-memory running balance
             if ($hasMixedData) {
+                $userData = $this->userModel->findByUsername($username);
+                $currentBalance = (int) ($userData['money'] ?? 0);
                 $allCalculatedRows = $this->historyModel->calculateRunningBalances($allFilteredRows, $currentBalance);
             } else {
                 // All rows from LSBD — stored balances are authoritative, no recalculation needed
@@ -97,7 +98,9 @@ class HistoryController extends Controller
         } else {
             // Optimised fast path — only fetches requested page
             $recordsTotal = $this->historyModel->countUserHistoryFast($userContext, []);
-            $recordsFiltered = $this->historyModel->countUserHistoryFast($userContext, $filters);
+            $recordsFiltered = $hasFastFilters
+                ? $this->historyModel->countUserHistoryFast($userContext, $filters)
+                : $recordsTotal;
             $data = $this->historyModel->getUserHistoryFast($userContext, $filters, $length, $start);
         }
 

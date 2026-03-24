@@ -249,8 +249,15 @@ require __DIR__ . '/layout/header.php';
                 editBtn.disabled = true;
                 editBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang lưu...';
 
+                if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.loading === 'function') {
+                    SwalHelper.loading('Đang cập nhật hồ sơ...');
+                }
+
                 try {
                     const data = await submitProfile();
+                    if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.closeLoading === 'function') {
+                        SwalHelper.closeLoading();
+                    }
                     if (data && data.success) {
                         SwalHelper.toast(data.message || 'Đã cập nhật thông tin', 'success');
                         setEditMode(false);

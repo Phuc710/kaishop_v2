@@ -10,6 +10,8 @@ class Order extends Model
     private ProductStock $productStockModel;
     private ?BalanceChangeService $balanceChangeService = null;
     protected ?TimeService $timeService = null;
+    private array $columnsCache = [];
+    private static bool $historyIndexesEnsured = false;
 
     public function __construct()
     {
@@ -20,6 +22,7 @@ class Order extends Model
         if (class_exists('CryptoService')) {
             $this->crypto = new CryptoService();
         }
+        $this->ensureHistoryIndexes();
     }
 
     public function generateOrderCode(): string
@@ -37,13 +40,19 @@ class Order extends Model
 
     public function getByIdForUser(int $id, int $userId): ?array
     {
+        $where = ['`id` = ?', '`user_id` = ?'];
+        $params = [$id, $userId];
+        if ($this->hasColumn('user_deleted_at')) {
+            $where[] = '`user_deleted_at` IS NULL';
+        }
+
         $stmt = $this->db->prepare("
             SELECT *
             FROM `{$this->table}`
-            WHERE `id` = ? AND `user_id` = ? AND `user_deleted_at` IS NULL
+            WHERE " . implode(' AND ', $where) . "
             LIMIT 1
         ");
-        $stmt->execute([$id, $userId]);
+        $stmt->execute($params);
         $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
         return $row ? $this->hydrateOrderRow($row) : null;
     }
@@ -56,6 +65,10 @@ class Order extends Model
 
         try {
             $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
+            if (!$this->hasColumn('user_deleted_at')) {
+                return ['success' => false, 'message' => 'CSDL chua co cot user_deleted_at de an lich su don hang.'];
+            }
+
             $stmt = $this->db->prepare("
                 UPDATE `{$this->table}`
                 SET `user_deleted_at` = ?
@@ -90,6 +103,42 @@ class Order extends Model
 
         $sql = "
             SELECT *
+            FROM `{$this->table}`
+            {$whereSql}
+            ORDER BY `created_at` DESC, `id` DESC
+            LIMIT {$offset}, {$limit}
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        return array_map(fn(array $row) => $this->hydrateOrderRow($row), $rows);
+    }
+
+    public function getUserVisibleOrdersPage(int $userId, array $filters = [], int $offset = 0, int $limit = 10): array
+    {
+        [$whereSql, $params] = $this->buildUserHistoryWhere($userId, $filters);
+        $offset = max(0, $offset);
+        $limit = max(1, min(200, $limit));
+
+        $columns = [
+            '`id`',
+            '`order_code`',
+            '`product_name`',
+            '`price`',
+            '`quantity`',
+            '`status`',
+            '`created_at`',
+            '`fulfilled_at`',
+            '`customer_input`',
+            '`cancel_reason`',
+        ];
+        if ($this->hasColumn('stock_content')) {
+            $columns[] = '`stock_content`';
+        }
+
+        $sql = "
+            SELECT " . implode(', ', $columns) . "
             FROM `{$this->table}`
             {$whereSql}
             ORDER BY `created_at` DESC, `id` DESC
@@ -467,7 +516,9 @@ class Order extends Model
     {
         $where = ["`user_id` = ?"];
         $params = [$userId];
-        $where[] = "`user_deleted_at` IS NULL";
+        if ($this->hasColumn('user_deleted_at')) {
+            $where[] = "`user_deleted_at` IS NULL";
+        }
 
         $search = trim((string) ($filters['search'] ?? ''));
 
@@ -563,9 +614,9 @@ class Order extends Model
                 $from = trim($range[0]);
                 $to = trim($range[1]);
                 if ($from !== '' && $to !== '') {
-                    $where[] = "DATE(`created_at`) BETWEEN ? AND ?";
-                    $params[] = $from;
-                    $params[] = $to;
+                    $where[] = "`created_at` >= ? AND `created_at` <= ?";
+                    $params[] = $from . ' 00:00:00';
+                    $params[] = $to . ' 23:59:59';
                 }
             }
         }
@@ -573,19 +624,60 @@ class Order extends Model
         $sortDate = trim((string) ($filters['sort_date'] ?? 'all'));
         if ($sortDate !== '' && $sortDate !== 'all') {
             if ($sortDate === 'today') {
-                $where[] = "DATE(`created_at`) = CURDATE()";
+                $where[] = "`created_at` >= CURDATE() AND `created_at` < DATE_ADD(CURDATE(), INTERVAL 1 DAY)";
             } else {
                 $days = (int) $sortDate;
                 if ($days > 0) {
-                    $nowSql = $this->timeService ? $this->timeService->nowSql($this->timeService->getDbTimezone()) : date('Y-m-d H:i:s');
-                    $where[] = "`created_at` >= DATE_SUB(?, INTERVAL {$days} DAY)";
-                    $params[] = $nowSql;
+                    $where[] = "`created_at` >= DATE_SUB(NOW(), INTERVAL {$days} DAY)";
                 }
             }
         }
 
         $whereSql = 'WHERE ' . implode(' AND ', $where);
         return [$whereSql, $params];
+    }
+
+    private function hasColumn(string $column): bool
+    {
+        if ($column === '') {
+            return false;
+        }
+
+        if ($this->columnsCache === []) {
+            $stmt = $this->db->query("SHOW COLUMNS FROM `{$this->table}`");
+            $this->columnsCache = array_map(static function ($row) {
+                return (string) ($row['Field'] ?? '');
+            }, $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : []);
+        }
+
+        return in_array($column, $this->columnsCache, true);
+    }
+
+    private function ensureHistoryIndexes(): void
+    {
+        if (self::$historyIndexesEnsured) {
+            return;
+        }
+        self::$historyIndexesEnsured = true;
+
+        try {
+            if ($this->hasColumn('user_deleted_at')) {
+                if (!$this->indexExists($this->table, 'idx_orders_user_deleted_created')) {
+                    $this->db->exec("ALTER TABLE `{$this->table}` ADD KEY `idx_orders_user_deleted_created` (`user_id`, `user_deleted_at`, `created_at`, `id`)");
+                }
+            } elseif (!$this->indexExists($this->table, 'idx_orders_user_created_id')) {
+                $this->db->exec("ALTER TABLE `{$this->table}` ADD KEY `idx_orders_user_created_id` (`user_id`, `created_at`, `id`)");
+            }
+        } catch (Throwable $e) {
+            // Non-blocking if schema changes are unavailable.
+        }
+    }
+
+    private function indexExists(string $table, string $indexName): bool
+    {
+        $stmt = $this->db->prepare('SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?');
+        $stmt->execute([$table, $indexName]);
+        return (int) $stmt->fetchColumn() > 0;
     }
 
     private function makeShortOrderDisplayCode(string $orderCode): string

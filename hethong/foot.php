@@ -243,7 +243,7 @@
                             <li><a href="<?= url('chinh-sach') ?>"><i class="fa-solid fa-shield-halved me-1"></i>Chính
                                     sách</a></li>
                             <li><a href="<?= url('dieu-khoan') ?>"><i class="fa-solid fa-file-contract me-1"></i>Điều
-                                    khoản & Điều kiện</a></li>
+                                    khoản</a></li>
                         </ul>
                     </div>
                 </div>
@@ -316,6 +316,8 @@ $loadInteractiveBundle = !empty($pageAssetFlagsResolved['interactive_bundle']);
     <script src="<?= asset('assets/js/main.js') ?>"></script>
 <?php endif; ?>
 <script src="<?= asset('assets/js/clipboard.js') ?>" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js" crossorigin="anonymous"></script>
+<script src="<?= asset('assets/js/swal_helper.js') ?>"></script>
 <script src="<?= asset('assets/js/image-copy-guard.js') ?>" defer></script>
 <script src="<?= asset('assets/js/perf-loader.js') ?>" defer></script>
 

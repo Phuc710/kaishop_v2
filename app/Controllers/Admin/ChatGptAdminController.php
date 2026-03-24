@@ -84,6 +84,7 @@ class ChatGptAdminController extends Controller
         $adminEmail = strtolower(trim((string) $this->post('admin_email', '')));
         $apiKey = trim((string) $this->post('admin_api_key', ''));
         $seatTotal = max(1, (int) $this->post('seat_total', 4));
+        $openaiOrgId = trim((string) $this->post('openai_org_id', ''));
 
         if ($farmName === '' || $adminEmail === '' || $apiKey === '') {
             $_SESSION['cgpt_admin_error'] = 'Vui lòng điền đầy đủ thông tin.';
@@ -97,7 +98,7 @@ class ChatGptAdminController extends Controller
             return;
         }
 
-        if (!$this->farmService->validateKey(['id' => 0, 'admin_api_key' => $apiKey])) {
+        if (!$this->farmService->validateKey(['id' => 0, 'admin_api_key' => $apiKey, 'openai_org_id' => $openaiOrgId])) {
             $_SESSION['cgpt_admin_error'] = 'API key không hợp lệ hoặc không kết nối được OpenAI.';
             $this->redirect(url('admin/gpt-business/farms/add'));
             return;
@@ -107,6 +108,7 @@ class ChatGptAdminController extends Controller
             'farm_name' => $farmName,
             'admin_email' => $adminEmail,
             'admin_api_key' => $this->farmService->encryptKey($apiKey),
+            'openai_org_id' => $openaiOrgId,
             'seat_total' => $seatTotal,
         ]);
 
@@ -158,6 +160,7 @@ class ChatGptAdminController extends Controller
 
         $data = [
             'farm_name' => trim((string) $this->post('farm_name', $farm['farm_name'])),
+            'openai_org_id' => trim((string) $this->post('openai_org_id', $farm['openai_org_id'])),
             'admin_email' => strtolower(trim((string) $this->post('admin_email', $farm['admin_email']))),
             'seat_total' => max(1, (int) $this->post('seat_total', $farm['seat_total'])),
             'status' => (string) $this->post('status', $farm['status']),
@@ -619,49 +622,361 @@ class ChatGptAdminController extends Controller
     {
         $this->requireAdmin();
         $farms = $this->farmModel->getAll();
+        $selectedFarmId = (int) $this->post('farm_id', $this->get('farm_id', $farms[0]['id'] ?? 0));
+        $selectedFarm = $selectedFarmId > 0 ? $this->farmModel->getById($selectedFarmId) : null;
         $actionResult = null;
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $fid = (int) ($_POST['farm_id'] ?? 0);
-            $action = $_POST['action'] ?? '';
-            $farm = $this->farmModel->getById($fid);
+            $this->rejectInvalidCsrf(url('admin/gpt-business/debug'));
+            $action = trim((string) $this->post('action', ''));
 
-            if ($farm) {
-                switch ($action) {
-                    case 'get_org':
-                        $actionResult = $this->farmService->request($farm, 'GET', '/organization');
-                        break;
-                    case 'list_invites':
-                        $actionResult = $this->farmService->request($farm, 'GET', '/organization/invites?limit=50');
-                        break;
-                    case 'list_users':
-                        $actionResult = $this->farmService->request($farm, 'GET', '/organization/users?limit=50');
-                        break;
-                    case 'create_invite':
-                        $email = trim($_POST['email'] ?? '');
-                        if ($email) {
-                            $actionResult = $this->farmService->createInvite($farm, $email);
-                        }
-                        break;
-                    case 'revoke_invite':
-                        $iid = trim($_POST['invite_id'] ?? '');
-                        if ($iid) {
-                            $actionResult = $this->farmService->revokeInvite($farm, $iid);
-                        }
-                        break;
-                    case 'remove_member':
-                        $uid = trim($_POST['user_id'] ?? '');
-                        if ($uid) {
-                            $actionResult = $this->farmService->removeMember($farm, $uid);
-                        }
-                        break;
-                }
+            if (!$selectedFarm) {
+                $actionResult = $this->buildDebugActionResult(
+                    false,
+                    $action !== '' ? $action : 'unknown',
+                    ['id' => $selectedFarmId, 'farm_name' => 'Unknown farm', 'status' => 'missing'],
+                    [],
+                    null,
+                    'Farm không tồn tại hoặc chưa được chọn.'
+                );
+            } else {
+                $actionResult = $this->handleDebugAction($selectedFarm, $action);
+                $selectedFarm = $this->farmModel->getById((int) $selectedFarm['id']) ?: $selectedFarm;
             }
         }
 
+        $allowedInvites = $selectedFarm ? $this->allowModel->getByFarm((int) $selectedFarm['id'], 200) : [];
+        $localMembers = $selectedFarm ? array_reverse($this->snapModel->getMembersForFarm((int) $selectedFarm['id'])) : [];
+        $localInvites = $selectedFarm ? $this->snapModel->getInvitesForFarm((int) $selectedFarm['id']) : [];
+
         $this->view('admin/chatgpt/debug', [
             'farms' => $farms,
-            'actionResult' => $actionResult
+            'selectedFarm' => $selectedFarm,
+            'selectedFarmId' => $selectedFarm ? (int) $selectedFarm['id'] : $selectedFarmId,
+            'actionResult' => $actionResult,
+            'allowedInvites' => $allowedInvites,
+            'localMembers' => $localMembers,
+            'localInvites' => $localInvites,
+            'debugRoles' => ['reader', 'member', 'admin', 'owner'],
+            'debugMethods' => ['GET', 'POST', 'DELETE'],
         ]);
+    }
+
+    private function handleDebugAction(array $farm, string $action): array
+    {
+        $farmId = (int) ($farm['id'] ?? 0);
+        $actorEmail = $this->authService->getCurrentUser()['email'] ?? 'admin';
+
+        switch ($action) {
+            case 'validate_key':
+                $inviteProbe = $this->farmService->request($farm, 'GET', '/organization/invites?limit=1');
+                $userProbe = $this->farmService->request($farm, 'GET', '/organization/users?limit=1');
+                $success = $this->isDebugHttpSuccess($inviteProbe) && $this->isDebugHttpSuccess($userProbe);
+                return $this->buildDebugActionResult(
+                    $success,
+                    $action,
+                    $farm,
+                    [
+                        'probes' => [
+                            ['method' => 'GET', 'endpoint' => '/organization/invites?limit=1'],
+                            ['method' => 'GET', 'endpoint' => '/organization/users?limit=1'],
+                        ],
+                    ],
+                    [
+                        'invite_probe' => $inviteProbe,
+                        'user_probe' => $userProbe,
+                    ],
+                    $success ? null : 'API key không truy cập được đầy đủ các endpoint quản trị.'
+                );
+
+            case 'sync_guard':
+                $summary = $this->guardService->processFarm($farm, $actorEmail, 'debug_panel');
+                return $this->buildDebugActionResult(
+                    (bool) ($summary['success'] ?? false),
+                    $action,
+                    $farm,
+                    ['source' => 'debug_panel'],
+                    [
+                        'summary' => $summary,
+                        'farm_after_sync' => $this->farmModel->getById($farmId),
+                    ],
+                    $summary['success'] ?? false ? null : ($summary['message'] ?? 'Không thể đồng bộ guard.')
+                );
+
+            case 'sync_seats':
+                $membersResponse = $this->farmService->request($farm, 'GET', '/organization/users?limit=100');
+                $invitesResponse = $this->farmService->request($farm, 'GET', '/organization/invites?limit=100');
+                $success = $this->isDebugHttpSuccess($membersResponse) && $this->isDebugHttpSuccess($invitesResponse);
+                $payload = [
+                    'members_response' => $membersResponse,
+                    'invites_response' => $invitesResponse,
+                ];
+                $error = null;
+
+                if ($success) {
+                    $seatUsed = $this->farmModel->syncSeatUsageFromLiveData(
+                        $farmId,
+                        (int) ($farm['seat_total'] ?? 0),
+                        $membersResponse['data'] ?? [],
+                        $invitesResponse['data'] ?? [],
+                        (string) ($farm['admin_email'] ?? '')
+                    );
+                    $payload['seat_sync'] = [
+                        'seat_used' => $seatUsed,
+                        'farm_after_sync' => $this->farmModel->getById($farmId),
+                    ];
+                } else {
+                    $error = 'Không thể lấy đủ dữ liệu live để đồng bộ seat_used.';
+                }
+
+                return $this->buildDebugActionResult(
+                    $success,
+                    $action,
+                    $farm,
+                    [
+                        'requests' => [
+                            ['method' => 'GET', 'endpoint' => '/organization/users?limit=100'],
+                            ['method' => 'GET', 'endpoint' => '/organization/invites?limit=100'],
+                        ],
+                    ],
+                    $payload,
+                    $error
+                );
+
+            case 'get_org':
+                $orgResponse = $this->farmService->request($farm, 'GET', '/organization');
+                $fallbackResponse = null;
+                $response = $orgResponse;
+                $requestMeta = ['method' => 'GET', 'endpoint' => '/organization'];
+
+                if (!$this->isDebugHttpSuccess($orgResponse)) {
+                    $fallbackResponse = $this->farmService->request($farm, 'GET', '/organizations');
+                    if ($this->isDebugHttpSuccess($fallbackResponse)) {
+                        $response = $fallbackResponse;
+                        $requestMeta = [
+                            'method' => 'GET',
+                            'endpoint' => '/organizations',
+                            'fallback_from' => '/organization',
+                        ];
+                    }
+                }
+
+                return $this->buildDebugActionResult(
+                    $this->isDebugHttpSuccess($response),
+                    $action,
+                    $farm,
+                    $requestMeta,
+                    [
+                        'primary_response' => $orgResponse,
+                        'fallback_response' => $fallbackResponse,
+                    ],
+                    $this->isDebugHttpSuccess($response) ? null : 'Không lấy được thông tin organization từ OpenAI.'
+                );
+
+            case 'list_invites':
+                $inviteLimit = max(1, min(200, (int) $this->post('limit', 50)));
+                $invites = $this->farmService->request($farm, 'GET', '/organization/invites?limit=' . $inviteLimit);
+                return $this->buildDebugActionResult(
+                    $this->isDebugHttpSuccess($invites),
+                    $action,
+                    $farm,
+                    ['method' => 'GET', 'endpoint' => '/organization/invites?limit=' . $inviteLimit],
+                    $invites,
+                    $this->isDebugHttpSuccess($invites) ? null : 'Không lấy được danh sách invite.'
+                );
+
+            case 'list_users':
+                $userLimit = max(1, min(200, (int) $this->post('limit', 50)));
+                $users = $this->farmService->request($farm, 'GET', '/organization/users?limit=' . $userLimit);
+                return $this->buildDebugActionResult(
+                    $this->isDebugHttpSuccess($users),
+                    $action,
+                    $farm,
+                    ['method' => 'GET', 'endpoint' => '/organization/users?limit=' . $userLimit],
+                    $users,
+                    $this->isDebugHttpSuccess($users) ? null : 'Không lấy được danh sách member.'
+                );
+
+            case 'create_invite':
+                $email = strtolower(trim((string) $this->post('email', '')));
+                $role = trim((string) $this->post('role', 'reader'));
+                $allowedRoles = ['reader', 'member', 'admin', 'owner'];
+                if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    return $this->buildDebugActionResult(false, $action, $farm, [], null, 'Email invite không hợp lệ.');
+                }
+                if (!in_array($role, $allowedRoles, true)) {
+                    $role = 'reader';
+                }
+
+                $createResponse = $this->farmService->request($farm, 'POST', '/organization/invites', [
+                    'email' => $email,
+                    'role' => $role,
+                ]);
+                $notes = [];
+
+                if ($this->isDebugHttpSuccess($createResponse)) {
+                    $inviteId = trim((string) ($createResponse['id'] ?? ''));
+                    $allowedRows = $this->allowModel->getAllowedEmailsForFarm($farmId);
+                    $linkedToAllowed = false;
+                    foreach ($allowedRows as $row) {
+                        $targetEmail = strtolower(trim((string) ($row['target_email'] ?? '')));
+                        if ($targetEmail !== $email) {
+                            continue;
+                        }
+
+                        $allowedInviteId = trim((string) ($row['invite_id'] ?? ''));
+                        if ($inviteId !== '' && $allowedInviteId === '' && !empty($row['id'])) {
+                            $this->allowModel->setInviteId((int) $row['id'], $inviteId);
+                            $linkedToAllowed = true;
+                            break;
+                        }
+
+                        if ($allowedInviteId !== '') {
+                            $linkedToAllowed = true;
+                            break;
+                        }
+                    }
+
+                    if ($inviteId !== '') {
+                        $this->snapModel->upsertInvite(
+                            $farmId,
+                            $inviteId,
+                            $email,
+                            (string) ($createResponse['status'] ?? 'pending'),
+                            $linkedToAllowed ? 'approved' : 'detected_unknown',
+                            (string) ($createResponse['role'] ?? $role)
+                        );
+                    }
+
+                    if ($linkedToAllowed) {
+                        $notes[] = 'Invite đã được nối với bản ghi allowed_invites hiện có của farm.';
+                    } else {
+                        $notes[] = 'Invite này chưa nằm trong allowed_invites. Nếu chạy guard sync, hệ thống có thể tự thu hồi.';
+                    }
+                }
+
+                return $this->buildDebugActionResult(
+                    $this->isDebugHttpSuccess($createResponse),
+                    $action,
+                    $farm,
+                    [
+                        'method' => 'POST',
+                        'endpoint' => '/organization/invites',
+                        'body' => ['email' => $email, 'role' => $role],
+                    ],
+                    $createResponse,
+                    $this->isDebugHttpSuccess($createResponse) ? null : 'OpenAI từ chối tạo invite.',
+                    $notes
+                );
+
+            case 'revoke_invite':
+                $inviteId = trim((string) $this->post('invite_id', ''));
+                if ($inviteId === '') {
+                    return $this->buildDebugActionResult(false, $action, $farm, [], null, 'Thiếu invite_id.');
+                }
+
+                $revokeResponse = $this->farmService->request($farm, 'DELETE', '/organization/invites/' . rawurlencode($inviteId));
+                if ($this->isDebugHttpSuccess($revokeResponse)) {
+                    $this->allowModel->markRevokedByInviteId($inviteId);
+                    $this->snapModel->markInviteGone($farmId, $inviteId);
+                }
+
+                return $this->buildDebugActionResult(
+                    $this->isDebugHttpSuccess($revokeResponse),
+                    $action,
+                    $farm,
+                    ['method' => 'DELETE', 'endpoint' => '/organization/invites/' . $inviteId],
+                    $revokeResponse,
+                    $this->isDebugHttpSuccess($revokeResponse) ? null : 'Không thể thu hồi invite.'
+                );
+
+            case 'remove_member':
+                $userId = trim((string) $this->post('user_id', ''));
+                $memberEmail = strtolower(trim((string) $this->post('member_email', '')));
+                if ($userId === '') {
+                    return $this->buildDebugActionResult(false, $action, $farm, [], null, 'Thiếu user_id.');
+                }
+
+                $removeResponse = $this->farmService->request($farm, 'DELETE', '/organization/users/' . rawurlencode($userId));
+                if ($this->isDebugHttpSuccess($removeResponse) && $memberEmail !== '') {
+                    $this->snapModel->markMemberGone($farmId, $memberEmail);
+                }
+
+                return $this->buildDebugActionResult(
+                    $this->isDebugHttpSuccess($removeResponse),
+                    $action,
+                    $farm,
+                    ['method' => 'DELETE', 'endpoint' => '/organization/users/' . $userId],
+                    $removeResponse,
+                    $this->isDebugHttpSuccess($removeResponse) ? null : 'Không thể xóa member khỏi organization.'
+                );
+
+            case 'custom_request':
+                $method = strtoupper(trim((string) $this->post('request_method', 'GET')));
+                $endpoint = '/' . ltrim(trim((string) $this->post('endpoint', '')), '/');
+                $requestBodyRaw = trim((string) $this->post('request_body', ''));
+                $allowedMethods = ['GET', 'POST', 'DELETE'];
+                if (!in_array($method, $allowedMethods, true)) {
+                    return $this->buildDebugActionResult(false, $action, $farm, [], null, 'Method không được hỗ trợ.');
+                }
+                if ($endpoint === '/' || trim($endpoint, '/') === '') {
+                    return $this->buildDebugActionResult(false, $action, $farm, [], null, 'Endpoint không được để trống.');
+                }
+
+                $requestBody = [];
+                if ($requestBodyRaw !== '') {
+                    $decodedBody = json_decode($requestBodyRaw, true);
+                    if (json_last_error() !== JSON_ERROR_NONE || !is_array($decodedBody)) {
+                        return $this->buildDebugActionResult(false, $action, $farm, [], null, 'JSON body không hợp lệ. Chỉ chấp nhận object hoặc array hợp lệ.');
+                    }
+                    $requestBody = $decodedBody;
+                }
+
+                $customResponse = $this->farmService->request($farm, $method, $endpoint, $requestBody);
+                return $this->buildDebugActionResult(
+                    $this->isDebugHttpSuccess($customResponse),
+                    $action,
+                    $farm,
+                    [
+                        'method' => $method,
+                        'endpoint' => $endpoint,
+                        'body' => $requestBody,
+                    ],
+                    $customResponse,
+                    $this->isDebugHttpSuccess($customResponse) ? null : 'Request tùy chỉnh trả về lỗi.'
+                );
+        }
+
+        return $this->buildDebugActionResult(false, $action !== '' ? $action : 'unknown', $farm, [], null, 'Action debug không được hỗ trợ.');
+    }
+
+    private function buildDebugActionResult($success, $action, array $farm, array $request = [], $response = null, $error = null, array $notes = []): array
+    {
+        return [
+            'success' => (bool) $success,
+            'action' => (string) $action,
+            'farm' => [
+                'id' => (int) ($farm['id'] ?? 0),
+                'name' => (string) ($farm['farm_name'] ?? ('Farm #' . ((int) ($farm['id'] ?? 0)))),
+                'status' => (string) ($farm['status'] ?? ''),
+                'admin_email' => (string) ($farm['admin_email'] ?? ''),
+            ],
+            'request' => $request,
+            'response' => $response,
+            'http_code' => is_array($response) ? ($response['_http_code'] ?? null) : null,
+            'error' => $error ?: (is_array($response) ? ($response['_error'] ?? null) : null),
+            'notes' => array_values(array_filter($notes, static function ($note) {
+                return is_string($note) && trim($note) !== '';
+            })),
+            'timestamp' => class_exists('\TimeService')
+                ? \TimeService::instance()->formatDisplay(time(), 'd/m/Y H:i:s')
+                : date('d/m/Y H:i:s'),
+        ];
+    }
+
+    private function isDebugHttpSuccess(array $response): bool
+    {
+        $code = (int) ($response['_http_code'] ?? 0);
+        return $code >= 200 && $code < 300;
     }
 }

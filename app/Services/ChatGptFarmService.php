@@ -28,14 +28,20 @@ class ChatGptFarmService
 
         $url = self::BASE_URL . $endpoint;
         $ch = curl_init($url);
+        $headers = [
+            'Authorization: Bearer ' . $apiKey,
+            'Content-Type: application/json',
+        ];
+
+        if (!empty($farm['openai_org_id'])) {
+            $headers[] = 'OpenAI-Organization: ' . $farm['openai_org_id'];
+        }
+
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => self::TIMEOUT,
             CURLOPT_CUSTOMREQUEST => strtoupper($method),
-            CURLOPT_HTTPHEADER => [
-                'Authorization: Bearer ' . $apiKey,
-                'Content-Type: application/json',
-            ],
+            CURLOPT_HTTPHEADER => $headers,
             CURLOPT_SSL_VERIFYPEER => true,
         ]);
 

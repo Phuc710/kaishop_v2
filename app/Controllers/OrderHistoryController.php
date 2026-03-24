@@ -53,10 +53,15 @@ class OrderHistoryController extends Controller
             'time_range' => (string) ($_POST['time_range'] ?? ''),
             'sort_date' => (string) ($_POST['sort_date'] ?? 'all'),
         ];
+        $hasActiveFilters = trim((string) ($filters['search'] ?? '')) !== ''
+            || trim((string) ($filters['time_range'] ?? '')) !== ''
+            || trim((string) ($filters['sort_date'] ?? 'all')) !== 'all';
 
         $recordsTotal = $this->orderModel->countUserVisibleOrders($userId, []);
-        $recordsFiltered = $this->orderModel->countUserVisibleOrders($userId, $filters);
-        $rows = $this->orderModel->getUserVisibleOrders($userId, $filters, $start, $length);
+        $recordsFiltered = $hasActiveFilters
+            ? $this->orderModel->countUserVisibleOrders($userId, $filters)
+            : $recordsTotal;
+        $rows = $this->orderModel->getUserVisibleOrdersPage($userId, $filters, $start, $length);
 
         $data = [];
         $timeService = TimeService::instance();

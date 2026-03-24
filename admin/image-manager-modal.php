@@ -574,5 +574,4 @@
         var label = files.length > 1 ? files.length + ' files selected' : (files[0] ? files[0].name : 'Chọn nhiều ảnh...');
         $(this).siblings(".custom-file-label").addClass("selected").html(label);
     });
-    });
 </script>

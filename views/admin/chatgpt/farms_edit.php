@@ -99,6 +99,16 @@ $error = $error ?? null;
                                     <input type="email" name="admin_email" class="form-control"
                                         value="<?= htmlspecialchars($farm['admin_email'] ?? '') ?>" required>
                                 </div>
+                                <div class="form-group">
+                                    <label class="form-label">OpenAI Organization ID (Tùy chọn)</label>
+                                    <input type="text" name="openai_org_id" class="form-control"
+                                        value="<?= htmlspecialchars($farm['openai_org_id'] ?? '') ?>"
+                                        placeholder="org-xxxxxxxxxxxxxxxx">
+                                    <small class="form-text text-muted">Bắt buộc nếu tài khoản admin có nhiều
+                                        Organization. Lấy tại <a
+                                            href="https://platform.openai.com/settings/organization/general"
+                                            target="_blank">OpenAI Settings</a>.</small>
+                                </div>
                                 <div class="form-group mb-0">
                                     <div class="d-flex justify-content-between align-items-center mb-1">
                                         <label class="mb-0">API Key mới</label>

@@ -26,7 +26,11 @@
 
     function toastCopySuccess(text) {
         if (!text) return;
-        if (window.Swal) {
+        if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.toast === 'function') {
+            SwalHelper.toast('Copied: ' + text, 'success');
+            return;
+        }
+        if (typeof Swal !== 'undefined') {
             Swal.fire({
                 toast: true,
                 position: 'top-end',
@@ -39,7 +43,11 @@
     }
 
     function alertError(text) {
-        if (window.Swal) {
+        if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.error === 'function') {
+            SwalHelper.error(text);
+            return;
+        }
+        if (typeof Swal !== 'undefined') {
             Swal.fire({ icon: 'error', title: 'Error', text: text });
         } else {
             alert(text);
@@ -47,7 +55,11 @@
     }
 
     function toastError(text) {
-        if (window.Swal) {
+        if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.toast === 'function') {
+            SwalHelper.toast(text, 'error');
+            return;
+        }
+        if (typeof Swal !== 'undefined') {
             Swal.fire({
                 toast: true,
                 position: 'top-end',
@@ -62,12 +74,15 @@
     }
 
     function alertInfo(text, title) {
-        if (window.Swal) {
-            return Swal.fire({ icon: 'info', title: title || 'Notice', text: text });
-        } else {
-            alert(text);
+        if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.info === 'function') {
+            SwalHelper.info(text);
             return Promise.resolve();
         }
+        if (typeof Swal !== 'undefined') {
+            return Swal.fire({ icon: 'info', title: title || 'Notice', text: text });
+        }
+        alert(text);
+        return Promise.resolve();
     }
 
     function escapeHtml(text) {
@@ -80,21 +95,24 @@
     }
 
     function confirmAction(options) {
-        if (!window.Swal) {
-            return Promise.resolve(window.confirm(options.text || 'Are you sure?'));
+        if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.confirm === 'function') {
+            return SwalHelper.confirm(options.title || 'Confirm', options.text || 'Are you sure?');
         }
-        return Swal.fire({
-            icon: 'warning',
-            title: options.title || 'Confirm',
-            text: options.text || 'Are you sure?',
-            showCancelButton: true,
-            confirmButtonText: options.confirmText || 'Confirm',
-            cancelButtonText: options.cancelText || 'Cancel',
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#6c757d'
-        }).then(function (result) {
-            return !!result.isConfirmed;
-        });
+        if (typeof Swal !== 'undefined') {
+            return Swal.fire({
+                icon: 'warning',
+                title: options.title || 'Confirm',
+                text: options.text || 'Are you sure?',
+                showCancelButton: true,
+                confirmButtonText: options.confirmText || 'Confirm',
+                cancelButtonText: options.cancelText || 'Cancel',
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#6c757d'
+            }).then(function (result) {
+                return !!result.isConfirmed;
+            });
+        }
+        return Promise.resolve(window.confirm(options.text || 'Are you sure?'));
     }
 
     function fallbackCopy(text) {
@@ -353,7 +371,13 @@
             + '<div>If you already sent the payment, contact support and include the TXID.</div>'
             + '</div>';
 
-        if (window.Swal) {
+        if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.warning === 'function') {
+            return new Promise(function (resolve) {
+                SwalHelper.warning(html, resolve);
+            });
+        }
+
+        if (typeof Swal !== 'undefined') {
             return Swal.fire({
                 icon: 'warning',
                 html: html,

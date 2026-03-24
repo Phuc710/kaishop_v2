@@ -41,7 +41,11 @@
 
     function toastCopySuccess(text) {
         if (!text) return;
-        if (window.Swal) {
+        if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.toast === 'function') {
+            SwalHelper.toast('Đã sao chép: ' + text, 'success');
+            return;
+        }
+        if (typeof Swal !== 'undefined') {
             Swal.fire({
                 toast: true,
                 position: 'top-end',
@@ -54,7 +58,11 @@
     }
 
     function alertError(text) {
-        if (window.Swal) {
+        if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.error === 'function') {
+            SwalHelper.error(text);
+            return;
+        }
+        if (typeof Swal !== 'undefined') {
             Swal.fire({ icon: 'error', title: 'Lỗi', text: text });
         } else {
             alert(text);
@@ -62,30 +70,36 @@
     }
 
     function alertInfo(text) {
-        if (window.Swal) {
-            return Swal.fire({ icon: 'info', title: 'Thông báo', text: text });
-        } else {
-            alert(text);
+        if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.info === 'function') {
+            SwalHelper.info(text);
             return Promise.resolve();
         }
+        if (typeof Swal !== 'undefined') {
+            return Swal.fire({ icon: 'info', title: 'Thông báo', text: text });
+        }
+        alert(text);
+        return Promise.resolve();
     }
 
     function confirmAction(options) {
-        if (!window.Swal) {
-            return Promise.resolve(window.confirm(options.text || 'Xác nhận?'));
+        if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.confirm === 'function') {
+            return SwalHelper.confirm(options.title || 'Xác nhận', options.text || 'Bạn có chắc chắn?');
         }
-        return Swal.fire({
-            icon: 'warning',
-            title: options.title || 'Xác nhận',
-            text: options.text || 'Bạn có chắc chắn?',
-            showCancelButton: true,
-            confirmButtonText: options.confirmText || 'Đồng ý',
-            cancelButtonText: options.cancelText || 'Hủy',
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#6c757d'
-        }).then(function (result) {
-            return !!result.isConfirmed;
-        });
+        if (typeof Swal !== 'undefined') {
+            return Swal.fire({
+                icon: 'warning',
+                title: options.title || 'Xác nhận',
+                text: options.text || 'Bạn có chắc chắn?',
+                showCancelButton: true,
+                confirmButtonText: options.confirmText || 'Đồng ý',
+                cancelButtonText: options.cancelText || 'Hủy',
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#6c757d'
+            }).then(function (result) {
+                return !!result.isConfirmed;
+            });
+        }
+        return Promise.resolve(window.confirm(options.text || 'Xác nhận?'));
     }
 
     function fallbackCopy(text) {

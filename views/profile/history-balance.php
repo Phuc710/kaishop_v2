@@ -119,7 +119,73 @@ require __DIR__ . '/layout/header.php';
 
 
 <script>
-    $(document).ready(function () {
+    (function () {
+        const jquerySrc = '<?= asset('assets/js/jquery.js') ?>';
+        const datatablesSrc = '<?= asset('assets/js/datatables.js') ?>';
+        const flatpickrSrc = '<?= asset('assets/js/flatpickr.js') ?>';
+        const scriptPromises = {};
+        let booted = false;
+
+        function loadScriptOnce(src) {
+            if (!src) {
+                return Promise.reject(new Error('Missing script source'));
+            }
+            if (scriptPromises[src]) {
+                return scriptPromises[src];
+            }
+
+            scriptPromises[src] = new Promise(function (resolve, reject) {
+                const existing = document.querySelector('script[src="' + src + '"]');
+                if (existing && existing.dataset.loaded === 'true') {
+                    resolve();
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = src;
+                script.async = false;
+                script.onload = function () {
+                    script.dataset.loaded = 'true';
+                    resolve();
+                };
+                script.onerror = function () {
+                    reject(new Error('Failed to load script: ' + src));
+                };
+                document.head.appendChild(script);
+            });
+
+            return scriptPromises[src];
+        }
+
+        async function ensureDependencies() {
+            if (!window.jQuery) {
+                await loadScriptOnce(jquerySrc);
+            }
+            if (!(window.jQuery && window.jQuery.fn && window.jQuery.fn.DataTable)) {
+                await loadScriptOnce(datatablesSrc);
+            }
+            if (typeof window.flatpickr === 'undefined') {
+                await loadScriptOnce(flatpickrSrc);
+            }
+        }
+
+        async function boot() {
+            if (booted) {
+                return;
+            }
+            booted = true;
+
+            try {
+                await ensureDependencies();
+                initHistoryBalancePage();
+            } catch (error) {
+                console.error('History balance boot failed:', error);
+            }
+        }
+
+        function initHistoryBalancePage() {
+            const $ = window.jQuery;
+
         function renderSharedTimeCell(row) {
             if (window.KaiTime && typeof window.KaiTime.renderUserTimeCell === 'function') {
                 return window.KaiTime.renderUserTimeCell({
@@ -285,7 +351,14 @@ require __DIR__ . '/layout/header.php';
             datePicker.clear();
             table.draw();
         });
-    });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', boot, { once: true });
+        } else {
+            boot();
+        }
+    })();
 </script>
 
 <?php require __DIR__ . '/layout/footer.php'; ?>

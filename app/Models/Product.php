@@ -138,6 +138,10 @@ class Product extends Model
             'visibility_mode' => "ALTER TABLE `{$this->table}` ADD COLUMN `visibility_mode` ENUM('both','web','telegram','hidden') NOT NULL DEFAULT 'both' AFTER `status`",
             'show_on_web' => "ALTER TABLE `{$this->table}` ADD COLUMN `show_on_web` TINYINT(1) NOT NULL DEFAULT 1 AFTER `visibility_mode`",
             'show_on_telegram' => "ALTER TABLE `{$this->table}` ADD COLUMN `show_on_telegram` TINYINT(1) NOT NULL DEFAULT 1 AFTER `show_on_web`",
+            'duration_days' => "ALTER TABLE `{$this->table}` ADD COLUMN `duration_days` INT NOT NULL DEFAULT 30 AFTER `info_instructions`",
+            'auto_invite' => "ALTER TABLE `{$this->table}` ADD COLUMN `auto_invite` TINYINT(1) NOT NULL DEFAULT 0 AFTER `duration_days`",
+            'farm_id' => "ALTER TABLE `{$this->table}` ADD COLUMN `farm_id` INT DEFAULT NULL AFTER `auto_invite`",
+            'product_type_v2' => "ALTER TABLE `{$this->table}` MODIFY COLUMN `product_type` VARCHAR(50) NOT NULL DEFAULT 'account'",
         ];
 
         foreach ($columns as $name => $sql) {

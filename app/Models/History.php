@@ -8,11 +8,13 @@ class History extends Model
 {
     private array $tableExistsCache = [];
     private array $columnsCache = [];
+    private static bool $performanceIndexesEnsured = false;
 
     public function __construct()
     {
         parent::__construct();
         $this->table = 'lich_su_hoat_dong';
+        $this->ensurePerformanceIndexes();
     }
 
     /**
@@ -77,22 +79,25 @@ class History extends Model
                 }
             }
             if (is_array($parts) && count($parts) === 2) {
-                $where[] = "DATE(`created_at`) BETWEEN ? AND ?";
-                $params[] = trim($parts[0]);
-                $params[] = trim($parts[1]);
+                $from = trim($parts[0]);
+                $to = trim($parts[1]);
+                $where[] = "`created_at` >= ? AND `created_at` <= ?";
+                $params[] = $from . ' 00:00:00';
+                $params[] = $to . ' 23:59:59';
             } else {
-                $where[] = "DATE(`created_at`) = ?";
-                $params[] = $timeRange;
+                $where[] = "`created_at` >= ? AND `created_at` <= ?";
+                $params[] = $timeRange . ' 00:00:00';
+                $params[] = $timeRange . ' 23:59:59';
             }
         }
 
         $sortDate = trim((string) ($filters['sort_date'] ?? 'all'));
         if ($sortDate === 'today') {
-            $where[] = "DATE(`created_at`) = CURDATE()";
+            $where[] = "`created_at` >= CURDATE() AND `created_at` < DATE_ADD(CURDATE(), INTERVAL 1 DAY)";
         } elseif ($sortDate === '7') {
-            $where[] = "DATE(`created_at`) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
+            $where[] = "`created_at` >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
         } elseif ($sortDate === '30') {
-            $where[] = "DATE(`created_at`) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+            $where[] = "`created_at` >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
         }
 
         $whereSql = empty($where) ? '' : implode(' AND ', $where);
@@ -796,5 +801,41 @@ class History extends Model
             }, $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : []);
         }
         return in_array($column, $this->columnsCache[$table], true);
+    }
+
+    private function ensurePerformanceIndexes(): void
+    {
+        if (self::$performanceIndexesEnsured) {
+            return;
+        }
+        self::$performanceIndexesEnsured = true;
+
+        try {
+            if ($this->tableExists('lich_su_bien_dong_so_du')) {
+                if ($this->hasColumn('lich_su_bien_dong_so_du', 'user_id') && !$this->indexExists('lich_su_bien_dong_so_du', 'idx_lsbd_user_id_id')) {
+                    $this->db->exec("ALTER TABLE `lich_su_bien_dong_so_du` ADD KEY `idx_lsbd_user_id_id` (`user_id`, `id`)");
+                }
+                if ($this->hasColumn('lich_su_bien_dong_so_du', 'username') && !$this->indexExists('lich_su_bien_dong_so_du', 'idx_lsbd_username_id')) {
+                    $this->db->exec("ALTER TABLE `lich_su_bien_dong_so_du` ADD KEY `idx_lsbd_username_id` (`username`, `id`)");
+                }
+            }
+
+            if ($this->tableExists('lich_su_hoat_dong') && !$this->indexExists('lich_su_hoat_dong', 'idx_lshd_username_created_id')) {
+                $this->db->exec("ALTER TABLE `lich_su_hoat_dong` ADD KEY `idx_lshd_username_created_id` (`username`, `created_at`, `id`)");
+            }
+
+            if ($this->tableExists('history_nap_bank') && !$this->indexExists('history_nap_bank', 'idx_hnb_username_created_id')) {
+                $this->db->exec("ALTER TABLE `history_nap_bank` ADD KEY `idx_hnb_username_created_id` (`username`, `created_at`, `id`)");
+            }
+        } catch (Throwable $e) {
+            // Non-blocking if schema changes are unavailable.
+        }
+    }
+
+    private function indexExists(string $table, string $indexName): bool
+    {
+        $stmt = $this->db->prepare('SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?');
+        $stmt->execute([$table, $indexName]);
+        return (int) $stmt->fetchColumn() > 0;
     }
 }

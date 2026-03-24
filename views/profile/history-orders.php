@@ -454,6 +454,69 @@ require __DIR__ . '/layout/header.php';
     (function () {
         'use strict';
 
+        const jquerySrc = '<?= asset('assets/js/jquery.js') ?>';
+        const datatablesSrc = '<?= asset('assets/js/datatables.js') ?>';
+        const flatpickrSrc = '<?= asset('assets/js/flatpickr.js') ?>';
+        const scriptPromises = {};
+        let booted = false;
+
+        function loadScriptOnce(src) {
+            if (!src) {
+                return Promise.reject(new Error('Missing script source'));
+            }
+            if (scriptPromises[src]) {
+                return scriptPromises[src];
+            }
+
+            scriptPromises[src] = new Promise(function (resolve, reject) {
+                const existing = document.querySelector('script[src="' + src + '"]');
+                if (existing && existing.dataset.loaded === 'true') {
+                    resolve();
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = src;
+                script.async = false;
+                script.onload = function () {
+                    script.dataset.loaded = 'true';
+                    resolve();
+                };
+                script.onerror = function () {
+                    reject(new Error('Failed to load script: ' + src));
+                };
+                document.head.appendChild(script);
+            });
+
+            return scriptPromises[src];
+        }
+
+        async function ensureDependencies() {
+            if (!window.jQuery) {
+                await loadScriptOnce(jquerySrc);
+            }
+            if (!(window.jQuery && window.jQuery.fn && window.jQuery.fn.DataTable)) {
+                await loadScriptOnce(datatablesSrc);
+            }
+            if (typeof window.flatpickr === 'undefined') {
+                await loadScriptOnce(flatpickrSrc);
+            }
+        }
+
+        async function boot() {
+            if (booted) {
+                return;
+            }
+            booted = true;
+
+            try {
+                await ensureDependencies();
+                initOrderHistoryPage();
+            } catch (error) {
+                console.error('Order history boot failed:', error);
+            }
+        }
+
         // ── Helpers ────────────────────────────────────────────────────────
 
         function escapeHtml(v) {
@@ -899,13 +962,19 @@ require __DIR__ . '/layout/header.php';
         }
 
         // ── Boot ───────────────────────────────────────────────────────────
-        $(document).ready(function () {
+        function initOrderHistoryPage() {
             const manager = new OrderHistoryManager({
                 baseUrl: (typeof BASE_URL !== 'undefined' ? BASE_URL : ''),
                 csrfToken: (typeof window.KS_CSRF_TOKEN !== 'undefined' ? window.KS_CSRF_TOKEN : '')
             });
             manager.init();
-        });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', boot, { once: true });
+        } else {
+            boot();
+        }
 
     })();
 </script>
