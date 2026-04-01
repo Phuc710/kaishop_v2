@@ -274,13 +274,13 @@ foreach ($authNavPaths as $p) {
         /* Put caret after image */
     }
 </style>
-<div class="loader-wrapper">
+<div class="loader-wrapper" id="global-loader">
     <span class="site-loader"> </span>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        var loadingOverlay = document.querySelector('.loader-wrapper');
+        var loadingOverlay = document.getElementById('global-loader');
         if (loadingOverlay) loadingOverlay.style.display = 'none';
     });
 </script>

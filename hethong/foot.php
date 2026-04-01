@@ -41,12 +41,51 @@
             selectedStar.checked = true;
         }
     }
+    /* Global Loading Logic - KaiShop */
+    const KaiLoader = {
+        show: function() {
+            var loader = document.getElementById('global-loader');
+            if (loader) loader.style.display = 'flex';
+        },
+        hide: function() {
+            var loader = document.getElementById('global-loader');
+            if (loader) loader.style.display = 'none';
+        }
+    };
+
     $(document).ready(function () {
+        // 1. Links Click - Navigation Loading
+        $(document).on('click', 'a', function (e) {
+            const href = $(this).attr('href');
+            const target = $(this).attr('target');
+
+            // Skip: null, empty, Javascript, Hash links, New tabs
+            if (!href || href.startsWith('#') || href.startsWith('javascript:') || target === '_blank') {
+                return;
+            }
+
+            // Skip: Non-internal links (optional check)
+            try {
+                const url = new URL(href, window.location.origin);
+                if (url.origin !== window.location.origin) return;
+            } catch(err) { /* invalid URL, probably relative, continue */ }
+
+            KaiLoader.show();
+        });
+
+        // 2. Forms Submit
+        $(document).on('submit', 'form', function () {
+            // Skip forms with 'no-loader' class if needed
+            if ($(this).hasClass('no-loader')) return;
+            KaiLoader.show();
+        });
+
+        // 3. Keep old filter logic but use new loader
         $('.service-filter-btn').on('click', function () {
-            $('#loading-indicator').addClass('show');
+            KaiLoader.show();
             setTimeout(function () {
-                $('#loading-indicator').removeClass('show');
-            }, 300);
+                KaiLoader.hide();
+            }, 400);
         });
     });
 </script>

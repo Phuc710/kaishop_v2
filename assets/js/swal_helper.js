@@ -129,18 +129,28 @@ const SwalHelper = {
         });
     },
 
-    // ============ LOADING ============
+    // ============ LOADING (Global Site Loader) ============
     loading(message = 'Đang xử lý...') {
-        Swal.fire({
-            title: message,
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            didOpen: () => { Swal.showLoading(); }
-        });
+        if (typeof KaiLoader !== 'undefined') {
+            KaiLoader.show();
+        } else {
+            // Fallback to standard Swal loading if KaiLoader is missing
+            Swal.fire({
+                title: message,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+        }
     },
 
     // ============ CLOSE LOADING ============
     closeLoading() {
+        if (typeof KaiLoader !== 'undefined') {
+            KaiLoader.hide();
+        }
         Swal.close();
     },
 
