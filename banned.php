@@ -767,49 +767,8 @@ $ref = substr(hash('sha256', (string) ($_SERVER['REMOTE_ADDR'] ?? '') . '|' . (s
                 for (var j = 0; j < columns; j++) { drops[j] = Math.floor(Math.random() * canvas.height / fontSize); }
             }, true);
 
-            // ===== Anti-Debug / Anti-F12 =====
-            // Block keyboard shortcuts (F12, Ctrl+Shift+I/J/C, Ctrl+U, Ctrl+S)
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'F12' || e.keyCode === 123) { e.preventDefault(); return false; }
-                if (e.ctrlKey && e.shiftKey && 'IJCijc'.indexOf(e.key) !== -1) { e.preventDefault(); return false; }
-                if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); return false; }
-                if (e.ctrlKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); return false; }
-                if (e.ctrlKey && e.shiftKey && (e.key === 'K' || e.key === 'k')) { e.preventDefault(); return false; }
-            }, true);
 
-            // Block right-click, select, drag, copy
-            document.addEventListener('contextmenu', function (e) { e.preventDefault(); }, true);
-            document.addEventListener('selectstart', function (e) { e.preventDefault(); }, true);
-            document.addEventListener('dragstart', function (e) { e.preventDefault(); }, true);
-            document.addEventListener('copy', function (e) { e.preventDefault(); }, true);
 
-            // DevTools debugger trap
-            var _devOpen = false;
-            setInterval(function () {
-                var t0 = performance.now();
-                debugger;
-                if (performance.now() - t0 > 100 && !_devOpen) {
-                    _devOpen = true;
-                    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#050807;"><p style="color:#57ff8a;font-size:20px;font-weight:700;font-family:monospace;">⛔ ACCESS DENIED — DevTools detected</p></div>';
-                }
-            }, 1500);
-
-            // Window size delta detection (docked DevTools)
-            var _dw = window.outerWidth - window.innerWidth;
-            var _dh = window.outerHeight - window.innerHeight;
-            setInterval(function () {
-                if (window.outerWidth - window.innerWidth > _dw + 160 || window.outerHeight - window.innerHeight > _dh + 160) {
-                    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#050807;"><p style="color:#57ff8a;font-size:20px;font-weight:700;font-family:monospace;">⛔ ACCESS DENIED — DevTools detected</p></div>';
-                }
-            }, 500);
-
-            // Disable console
-            try {
-                Object.defineProperty(window, 'console', {
-                    get: function () { return { log: function () { }, warn: function () { }, error: function () { }, info: function () { }, dir: function () { }, table: function () { } }; },
-                    set: function () { }
-                });
-            } catch (x) { }
 
         })();
         /* ]]> */
