@@ -159,8 +159,24 @@ $ref = substr(hash('sha256', (string) ($_SERVER['REMOTE_ADDR'] ?? '') . '|' . (s
             --shadow: rgba(87, 255, 138, 0.12);
         }
 
+        ::selection {
+            background: var(--g);
+            color: var(--bg);
+            text-shadow: none;
+        }
+
+        ::-moz-selection {
+            background: var(--g);
+            color: var(--bg);
+            text-shadow: none;
+        }
+
         * {
             box-sizing: border-box;
+            user-select: text;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
         }
 
         html,
@@ -576,41 +592,10 @@ $ref = substr(hash('sha256', (string) ($_SERVER['REMOTE_ADDR'] ?? '') . '|' . (s
                 <div class="term">
                     <div class="lines"><span id="out"></span><span class="cursor"></span></div>
                 </div>
-                <?php if ($reason !== '' || $banStartedAt !== '' || $bannedBy !== '' || $banSource !== ''): ?>
-                    <div class="detail-grid">
-                        <?php if ($reason !== ''): ?>
-                            <div class="detail-item">
-                                <div class="detail-label">Ly do</div>
-                                <div class="detail-value"><?= $reason ?></div>
-                            </div>
-                        <?php endif; ?>
-                        <?php if ($banStartedAt !== '' || $bannedBy !== '' || $banSource !== ''): ?>
-                            <div class="detail-item">
-                                <div class="detail-label">Thong tin ban</div>
-                                <div class="detail-value">
-                                    <?php if ($banStartedAt !== ''): ?>Bat dau: <?= $banStartedAt ?><br><?php endif; ?>
-                                    <?php if ($bannedBy !== ''): ?>Thuc hien: <?= $bannedBy ?><br><?php endif; ?>
-                                    <?php if ($banSource !== ''): ?>Nguon: <?= e(strtoupper($banSource)) ?><?php endif; ?>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                <?php endif; ?>
-                <?php if ($banExpiresTs !== null): ?>
-                    <div class="countdown-box">
-                        <div class="countdown-label">Tu mo lai sau</div>
-                        <div class="countdown-value" id="banCountdown">--:--</div>
-                        <div class="countdown-note" id="banCountdownNote">
-                            Du kien mo lai luc <?= e((string) $banExpiresAt) ?>. Trang se tu tai lai khi het thoi gian.
-                        </div>
-                    </div>
-                <?php elseif ($isPermanentBan): ?>
-                    <div class="countdown-box">
-                        <div class="countdown-label">Trang thai</div>
-                        <div class="countdown-value">Permanent</div>
-                        <div class="countdown-note">Lenh ban nay chi duoc go bo thu cong boi admin.</div>
-                    </div>
-                <?php endif; ?>
+                <?php /* Removed detail-grid to hide reason and ban info as requested */ ?>
+
+                <?php /* Removed countdown-box as requested */ ?>
+
                 <div class="small">
                     Gợi ý: Nếu bạn nghĩ đây là nhầm lẫn, liên hệ hỗ trợ và cung cấp mã REF ở trên.
                 </div>
@@ -641,24 +626,8 @@ $ref = substr(hash('sha256', (string) ($_SERVER['REMOTE_ADDR'] ?? '') . '|' . (s
             lines.push("[!] result: HTTP 403 (FORBIDDEN)");
             lines.push("");
 
-            if (reason && reason.length) {
-                lines.push("[i] reason: " + reason);
-            } else {
-                lines.push("[i] reason: (hidden) automatic restriction");
-            }
+            /* Reason and details hidden as requested */
 
-            if (banScope) {
-                lines.push("[i] scope: " + banScope.toUpperCase());
-            }
-            if (banStartedAt) {
-                lines.push("[i] started: " + banStartedAt);
-            }
-            if (banExpiresAt) {
-                lines.push("[i] expires: " + banExpiresAt);
-            }
-            if (bannedBy) {
-                lines.push("[i] by: " + bannedBy);
-            }
             lines.push("[i] reference: " + ref);
             lines.push("");
             lines.push("[*] hint: contact support if needed.");
