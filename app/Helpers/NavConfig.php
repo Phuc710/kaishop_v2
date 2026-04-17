@@ -67,6 +67,13 @@ class NavConfig
                 'active_patterns' => ['#^/admin(?:/index\.php)?/?$#'],
             ],
             [
+                'type'            => 'link',
+                'href'            => self::buildUrl('admin/goals'),
+                'icon'            => 'fas fa-bullseye',
+                'label'           => 'Mục tiêu',
+                'active_prefixes' => ['admin/goals'],
+            ],
+            [
                 'type' => 'tree',
                 'icon' => 'bx bx-history side-menu__icon',
                 'label' => 'Nhật ký',
@@ -187,6 +194,7 @@ class NavConfig
                 'label' => 'Blacklist',
                 'active_prefixes' => ['admin/blacklist'],
             ],
+            
             ['type' => 'header', 'label' => 'HỆ THỐNG'],
 
             [
@@ -236,7 +244,6 @@ class NavConfig
                 'href' => self::buildUrl(''),
                 'label' => 'Trang chủ',
                 'mobile_icon' => 'fa-solid fa-house-chimney',
-                'embed_img' => 'https://media.giphy.com/media/KBlX7iF04rYrtuvSHc/giphy.gif',
             ],
             [
                 'type' => 'dropdown',

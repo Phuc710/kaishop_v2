@@ -72,6 +72,14 @@ $adminQuickActions = NavConfig::adminHeaderQuickActions();
     </ul>
 </nav>
 
+<!-- Global Loading Overlay -->
+<div class="loader-wrapper" id="global-loader" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="loader-content text-center">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+        <div class="mt-2 font-weight-bold text-primary">Đang xử lý...</div>
+    </div>
+</div>
+
 <!-- TOP HEADER -->
 <header class="app-header">
     <div class="main-header-container">

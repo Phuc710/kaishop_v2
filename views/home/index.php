@@ -629,65 +629,23 @@
                                             $discount = round((($oldPriceHome - $priceVndHome) / $oldPriceHome) * 100);
                                         }
 
-                                        // Visual Tags
-                                        $badge = '';
-                                        if (stripos($product['name'], 'Premium') !== false)
-                                            $badge = 'premium';
-                                        if (stripos($product['name'], 'Pro') !== false)
-                                            $badge = 'pro';
-                                        if (!empty($product['badge_text']))
-                                            $badge_text = $product['badge_text'];
-                                        else
-                                            $badge_text = $badge ? ucfirst($badge) : '';
+                                        $badge_text = '';
                                         ?>
                                         <a href="<?= url($product['public_path'] ?? ('product/' . $product['id'])) ?>"
                                             class="ds-card <?= $is_offline ? 'offline' : '' ?>">
                                             <div class="ds-card-img-wrap">
                                                 <img src="<?= $product['image'] ?>" width="400" height="400" class="ds-card-img" alt="<?= $product['name'] ?>"
                                                     loading="lazy" decoding="async" fetchpriority="low">
-                                                <?php if ($badge_text): ?>
-                                                    <div class="ds-badge <?= $badge ?>"><?= htmlspecialchars($badge_text) ?></div>
-                                                <?php endif; ?>
-                                                <?php if ($is_offline): ?>
-                                                    <div class="ds-status-badge">Tạm hết</div>
-                                                <?php endif; ?>
+
                                             </div>
                                             <div class="ds-card-body">
                                                 <h4 class="ds-card-title"><?= htmlspecialchars($product['name']) ?></h4>
-                                                <?php
-                                                $delivery_mode = $product['delivery_mode'] ?? 'account_stock';
-                                                $delivery_label = $product['delivery_label'] ?? 'Tài Khoản';
 
-                                                if ($delivery_mode === 'account_stock') {
-                                                    $stock_display = '<i class="fas fa-box me-1"></i> Tồn kho: <strong class="text-primary">' . number_format($availableCount) . '</strong>';
-                                                } elseif ($delivery_mode === 'manual_info') {
-                                                    $stock_display = '<i class="fas fa-bolt me-1"></i> ' . (($availableCount > 0) ? '<strong class="text-warning">Sẵn hàng</strong>' : '<strong class="text-danger">Hết hàng</strong>');
-                                                } else {
-                                                    $stock_display = '<i class="fas fa-infinity me-1"></i> ' . $delivery_label . ': <strong class="text-info">Unlimited</strong>';
-                                                }
-                                                $sold_count = number_format($stats['sold']);
-                                                ?>
-                                                <div class="ds-stock-row">
-                                                    <?php if ($delivery_mode === 'source_link'): ?>
-                                                        <span><i class="fas fa-box me-1"></i> Stock: <strong
-                                                                class="ds-stock-infinity text-primary">∞</strong></span>
-                                                    <?php else: ?>
-                                                        <span><i class="fas fa-box me-1"></i> Stock: <strong
-                                                                class="text-primary"><?= number_format($availableCount) ?></strong></span>
-                                                    <?php endif; ?>
-                                                    <span><i class="fas fa-shopping-cart me-1"></i> Đã bán: <strong
-                                                            class="text-success"><?= $sold_count ?></strong></span>
-                                                </div>
                                                 <div class="ds-price-row">
                                                     <div class="ds-price" data-price-vnd="<?= (int) $product['price_vnd'] ?>">
                                                         <?= number_format($product['price_vnd']) ?>đ
                                                     </div>
-                                                    <?php if ($discount > 0): ?>
-                                                        <div class="ds-old-price" data-price-vnd="<?= (int) $product['old_price'] ?>">
-                                                            <?= number_format($product['old_price']) ?>đ
-                                                        </div>
-                                                        <div class="ds-discount">-<?= $discount ?>%</div>
-                                                    <?php endif; ?>
+
                                                 </div>
                                             </div>
                                         </a>

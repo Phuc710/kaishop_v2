@@ -20,7 +20,13 @@ RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 ErrorDocument 403 403.php
 ErrorDocument 500 500.php
 # ─── SECURITY: Block access to sensitive files and directories ───
-<FilesMatch "\.(env|git|gitignore|sql|md|log|bak|swp|sh|bat)$">
+<FilesMatch "\.(env|git|gitignore|sql|md|log|bak|swp|sh|bat|py)$">
+    order allow,deny
+    deny from all
+</FilesMatch>
+
+# Block utility/migration PHP scripts in root
+<FilesMatch "^(csdl|patch_models|resize)\.php$">
     order allow,deny
     deny from all
 </FilesMatch>
@@ -35,6 +41,8 @@ RewriteRule ^app/ - [F,L]
 RewriteRule ^csdl\.sql$ - [F,L]
 RewriteRule ^docs/ - [F,L]
 RewriteRule ^storage/ - [F,L]
+RewriteRule ^checker_state\.json$ - [F,L]
+RewriteRule ^config\.json$ - [F,L]
 
 # Disable directory listing
 Options -Indexes

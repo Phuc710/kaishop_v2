@@ -333,6 +333,25 @@ class PurchaseService
                 // Non-blocking
             }
 
+            // Send email notification to user
+            try {
+                if ($sourceChannel === SourceChannelHelper::WEB) {
+                    if (!class_exists('MailService')) {
+                        require_once __DIR__ . '/MailService.php';
+                    }
+                    $mailData = array_merge($orderData, [
+                        'status' => ($requiresInfo && !$isBusinessAuto) ? 'pending' : 'completed',
+                        'product_image' => $product['image'] ?? '',
+                        'source_link' => $product['source_link'] ?? '',
+                        'info_instructions' => $product['info_instructions'] ?? '',
+                        'delivery_mode' => $deliveryMode,
+                    ]);
+                    (new MailService())->sendOrderSuccess($user, $mailData, $product);
+                }
+            } catch (Throwable $mailErr) {
+                // Non-blocking
+            }
+
             Logger::info('Billing', 'product_purchase_success', "Mua san pham thanh cong: {$username}", [
                 'order_code' => $orderCode,
                 'order_id' => $orderId,

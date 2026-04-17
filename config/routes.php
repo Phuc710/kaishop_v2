@@ -111,6 +111,17 @@ $routes = [
     ['POST', '/admin/blacklist/unban', 'Admin\\BlacklistController@unban'],
     ['POST', '/admin/blacklist/clear-expired', 'Admin\\BlacklistController@clearExpired'],
 
+    // Admin Goals — Mục tiêu tài chính
+    ['GET',  '/admin/goals',                          'Admin\\GoalsController@index'],
+    ['GET',  '/admin/goals/detail/{id}',              'Admin\\GoalsController@detail'],
+    ['POST', '/admin/goals/create',                   'Admin\\GoalsController@create'],
+    ['POST', '/admin/goals/update/{id}',              'Admin\\GoalsController@update'],
+    ['POST', '/admin/goals/delete/{id}',              'Admin\\GoalsController@delete'],
+    ['POST', '/admin/goals/transaction/{id}',         'Admin\\GoalsController@addTransaction'],
+    ['POST', '/admin/goals/transaction/delete/{id}',  'Admin\\GoalsController@deleteTransaction'],
+    ['POST', '/admin/goals/transaction/update/{id}',  'Admin\\GoalsController@updateTransaction'],
+    ['POST', '/admin/goals/note/{id}',                'Admin\\GoalsController@saveNote'],
+
     // Admin Products
     ['GET', '/admin/products', 'Admin\\AdminProductController@index'],
     ['GET', '/admin/products/add', 'Admin\\AdminProductController@add'],

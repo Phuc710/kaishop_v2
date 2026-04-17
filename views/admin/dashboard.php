@@ -117,9 +117,6 @@ foreach ($channelBreakdown as $row) {
                 <div class="dashboard-hero-top">
                     <div>
                         <h1 class="dashboard-page-title">Dashboard tài chính</h1>
-                        <p class="dashboard-page-subtitle">
-                            Theo dõi dòng tiền nạp, dòng tiền đã mua và hiệu suất theo kênh.
-                        </p>
                     </div>
                     <span class="dashboard-range-badge">
                         <?= htmlspecialchars($rangeLabel) ?> | <?= htmlspecialchars($rangeText) ?>
@@ -143,7 +140,72 @@ foreach ($channelBreakdown as $row) {
                 </form>
             </div>
         </div>
-
+        <div class="row mb-4">
+            <!-- 1. Total Revenue (Deposits) -->
+            <div class="col-xl-3 col-lg-6 col-md-6 col-12 mb-3 mb-xl-0">
+                <div class="card border-success h-100 shadow-sm" style="border-radius:12px;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted text-uppercase fw-bold mb-2" style="font-size:0.75rem;">DOANH THU (TỔNG NẠP)</h6>
+                                <h3 class="text-success fw-bold mb-0"><?= $fmtMoney($revenueTotal) ?></h3>
+                            </div>
+                            <div class="bg-success text-white rounded-circle d-flex justify-content-center align-items-center" style="width:48px;height:48px;">
+                                <i class="fas fa-wallet fa-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 2. Total Spend (Purchased Amount) -->
+            <div class="col-xl-3 col-lg-6 col-md-6 col-12 mb-3 mb-xl-0">
+                <div class="card border-primary h-100 shadow-sm" style="border-radius:12px;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted text-uppercase fw-bold mb-2" style="font-size:0.75rem;">TIỀN KHÁCH ĐÃ MUA</h6>
+                                <h3 class="text-primary fw-bold mb-0"><?= $fmtMoney($revenueStats['spend_total'] ?? 0) ?></h3>
+                            </div>
+                            <div class="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center" style="width:48px;height:48px;">
+                                <i class="fas fa-shopping-cart fa-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 3. Total Orders Sold -->
+            <div class="col-xl-3 col-lg-6 col-md-6 col-12 mb-3 mb-xl-0">
+                <div class="card border-warning h-100 shadow-sm" style="border-radius:12px;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted text-uppercase fw-bold mb-2" style="font-size:0.75rem;">SỐ ĐƠN BÁN RA</h6>
+                                <h3 class="text-warning fw-bold mb-0"><?= $fmtInt($revenueStats['orders_sold'] ?? 0) ?></h3>
+                            </div>
+                            <div class="bg-warning text-white rounded-circle d-flex justify-content-center align-items-center" style="width:48px;height:48px;">
+                                <i class="fas fa-box-open fa-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 4. Total Users -->
+            <div class="col-xl-3 col-lg-6 col-md-6 col-12 mb-3 mb-xl-0">
+                <div class="card border-info h-100 shadow-sm" style="border-radius:12px;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted text-uppercase fw-bold mb-2" style="font-size:0.75rem;">THÀNH VIÊN TỔNG</h6>
+                                <h3 class="text-info fw-bold mb-0"><?= $fmtInt($totalUsers ?? 0) ?></h3>
+                            </div>
+                            <div class="bg-info text-white rounded-circle d-flex justify-content-center align-items-center" style="width:48px;height:48px;">
+                                <i class="fas fa-users fa-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div class="row">
             <div class="col-xl-8">
@@ -175,46 +237,9 @@ foreach ($channelBreakdown as $row) {
 
         <div class="row mt-4">
             <div class="col-xl-6">
-                <div class="card custom-card border-primary">
-                    <div class="card-header border-0 pb-2">
-                        <h3 class="card-title mb-0 text-primary fw-bold text-center w-100"> Top Mua</h3>
-                    </div>
-                    <div class="card-body pt-2">
-                        <div class="table-responsive">
-                            <table class="table table-sm table-hover mb-0">
-                                 <thead>
-                                     <tr>
-                                         <th style="width: 50px;" class="text-center">#</th>
-                                         <th class="text-center">User</th>
-                                         <th class="text-center">Đơn</th>
-                                         <th class="text-center">Tổng chi</th>
-                                     </tr>
-                                 </thead>
-                                <tbody>
-                                    <?php if (!empty($topSpenders)): ?>
-                                        <?php foreach ($topSpenders as $idx => $spender): ?>
-                                             <tr>
-                                                 <td class="text-center text-muted">#<?= $idx + 1 ?></td>
-                                                 <td class="text-center">
-                                                     <strong><?= htmlspecialchars($spender['username']) ?></strong>
-                                                 </td>
-                                                 <td class="text-center"><?= $fmtInt($spender['order_count']) ?></td>
-                                                 <td class="text-center text-success fw-bold"><?= $fmtMoney($spender['total_spent']) ?></td>
-                                             </tr>
-                                        <?php endforeach; ?>
-                                    <?php else: ?>
-                                         <tr><td colspan="4" class="text-center text-muted py-3">Chưa có dữ liệu chi tiêu.</td></tr>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-6">
                 <div class="card custom-card border-success">
                     <div class="card-header border-0 pb-2">
-                        <h3 class="card-title mb-0 text-success fw-bold text-center w-100">Top nạp</h3>
+                        <h3 class="card-title mb-0 text-success fw-bold text-center w-100">Top Nạp Tiền</h3>
                     </div>
                     <div class="card-body pt-2">
                         <div class="table-responsive">
@@ -222,9 +247,9 @@ foreach ($channelBreakdown as $row) {
                                  <thead>
                                      <tr>
                                          <th style="width: 50px;" class="text-center">#</th>
-                                         <th class="text-center">User</th>
-                                         <th class="text-center">Lần nạp</th>
-                                         <th class="text-center">Tổng nạp</th>
+                                         <th class="text-center">Người dùng</th>
+                                         <th class="text-center">Số giao dịch</th>
+                                         <th class="text-center">Tổng tiền nạp</th>
                                      </tr>
                                  </thead>
                                 <tbody>
@@ -246,6 +271,44 @@ foreach ($channelBreakdown as $row) {
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                          <tr><td colspan="4" class="text-center text-muted py-3">Chưa có dữ liệu nạp.</td></tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-6">
+                <div class="card custom-card border-primary">
+                    <div class="card-header border-0 pb-2">
+                        <h3 class="card-title mb-0 text-primary fw-bold text-center w-100">Top Mua Hàng</h3>
+                    </div>
+                    <div class="card-body pt-2">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0">
+                                 <thead>
+                                     <tr>
+                                         <th style="width: 50px;" class="text-center">#</th>
+                                         <th class="text-center">Người dùng</th>
+                                         <th class="text-center">Lượt đơn</th>
+                                         <th class="text-center">Tổng mua</th>
+                                     </tr>
+                                 </thead>
+                                <tbody>
+                                    <?php if (!empty($topSpenders)): ?>
+                                        <?php foreach ($topSpenders as $idx => $spender): ?>
+                                             <tr>
+                                                 <td class="text-center text-muted">#<?= $idx + 1 ?></td>
+                                                 <td class="text-center">
+                                                     <strong><?= htmlspecialchars($spender['username']) ?></strong>
+                                                 </td>
+                                                 <td class="text-center"><?= $fmtInt($spender['order_count']) ?></td>
+                                                 <td class="text-center text-primary fw-bold"><?= $fmtMoney($spender['total_spent']) ?></td>
+                                             </tr>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                         <tr><td colspan="4" class="text-center text-muted py-3">Chưa có dữ liệu chi tiêu.</td></tr>
                                     <?php endif; ?>
                                 </tbody>
                             </table>

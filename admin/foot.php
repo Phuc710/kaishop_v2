@@ -75,3 +75,16 @@ if (isset($_SESSION['notify'])):
         }
     });
 </script>
+<script>
+    // Global Loading Logic - Admin Panel
+    const KaiLoader = {
+        show: function() {
+            var loader = document.getElementById('global-loader');
+            if (loader) loader.style.display = 'flex';
+        },
+        hide: function() {
+            var loader = document.getElementById('global-loader');
+            if (loader) loader.style.display = 'none';
+        }
+    };
+</script>

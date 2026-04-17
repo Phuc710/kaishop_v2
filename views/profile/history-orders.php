@@ -619,9 +619,10 @@ require __DIR__ . '/layout/header.php';
                             data: 'delivery_content',
                             className: 'order-cell-content',
                             render: function (data, type, row) {
-                                if (!data) return '<span class="text-muted small"><em>Đang xử lý...</em></span>';
+                                const pendingBadge = '<span class="text-muted small"><i class="fas fa-box-open me-1"></i><em>Chờ bàn giao...</em></span>';
+                                if (!data) return pendingBadge;
                                 const clean = data.trim();
-                                if (!clean) return '<span class="text-muted small"><em>Đang xử lý...</em></span>';
+                                if (!clean) return pendingBadge;
 
                                 return `
                                     <div class="content-textarea-wrap">
