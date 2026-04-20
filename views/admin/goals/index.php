@@ -384,7 +384,7 @@ $overallPct   = $totalTarget > 0 ? min(100, round(($totalCurrent / $totalTarget)
 <script>
 (function () {
     'use strict';
-    const BASE = '<?= url('') ?>/';
+    const BASE = '<?= rtrim(url(''), '/') ?>';
     const CSRF = '<?= $_SESSION['csrf_token'] ?? '' ?>';
     let _activeGoalId = null;
     let _chartInst    = null;
@@ -397,7 +397,7 @@ $overallPct   = $totalTarget > 0 ? min(100, round(($totalCurrent / $totalTarget)
             fd.append('csrf_token', CSRF);
             options.body = fd;
         }
-        const r = await fetch(BASE + path, options);
+        const r = await fetch(BASE + '/' + path, options);
         return r.json();
     }
 
