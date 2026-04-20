@@ -73,10 +73,39 @@ $adminQuickActions = NavConfig::adminHeaderQuickActions();
 </nav>
 
 <!-- Global Loading Overlay -->
-<div class="loader-wrapper" id="global-loader" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; align-items: center; justify-content: center;">
+<style>
+    .loader-wrapper#global-loader {
+        background: rgba(15, 23, 42, 0.9) !important;
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+    }
+    .premium-spinner {
+        width: 48px;
+        height: 48px;
+        border: 3px solid rgba(255, 255, 255, 0.1);
+        border-top-color: #3b82f6; /* Modern Blue */
+        border-radius: 50%;
+        animation: premium-spin 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+        margin: 0 auto;
+    }
+    @keyframes premium-spin {
+        to { transform: rotate(360deg); }
+    }
+    .loader-text {
+        color: #fff;
+        font-family: 'Inter', system-ui, sans-serif;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        font-weight: 700;
+        margin-top: 15px;
+    }
+</style>
+<div class="loader-wrapper" id="global-loader" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 99999; align-items: center; justify-content: center;">
     <div class="loader-content text-center">
-        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-        <div class="mt-2 font-weight-bold text-primary">Đang xử lý...</div>
+        <div class="premium-spinner"></div>
+        <div class="loader-text">Đang xử lý...</div>
+        <div style="color: rgba(255,255,255,0.5); font-size: 0.75rem; margin-top: 5px;">Vui lòng đợi trong giây lát</div>
     </div>
 </div>
 

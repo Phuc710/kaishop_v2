@@ -15,7 +15,7 @@ $goals        = is_array($goals        ?? null) ? $goals        : [];
 $stats        = is_array($stats        ?? null) ? $stats        : [];
 $statusFilter = (string) ($statusFilter ?? 'all');
 
-$fmtMoney = static fn($v): string => number_format((int) $v) . 'đ';
+$fmtMoney = static fn($v): string => number_format((int) $v, 0, ',', '.') . 'đ';
 $fmtInt   = static fn($v): string => number_format((int) $v);
 
 $totalTarget  = (int) ($stats['total_target']  ?? 0);
@@ -448,7 +448,7 @@ $overallPct   = $totalTarget > 0 ? min(100, round(($totalCurrent / $totalTarget)
                 const $card = $(`#goal-card-${g.id}`);
                 if ($card.length) {
                     // Update amounts & percent
-                    $card.find('.text-primary strong').first().text(g.current_fmt);
+                    $card.find('strong.text-primary').text(g.current_fmt);
                     $card.find('.font-weight-bold.text-primary').text(g.percent + '%');
                     
                     // Update Progress Bar

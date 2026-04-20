@@ -242,7 +242,7 @@ class GoalsController extends Controller
         $goal = $this->findGoal($id);
         $this->json([
             'success' => true,
-            'message' => ($type === 'add' ? '+ Đã thêm' : '- Đã trừ') . ' ' . number_format($amount) . 'đ',
+            'message' => ($type === 'add' ? '+ Đã thêm' : '- Đã trừ') . ' ' . number_format($amount, 0, ',', '.') . 'đ',
             'goal'    => $this->enrichGoal($goal),
             'stats'   => $this->fetchGoalStats(),
         ]);
@@ -409,7 +409,7 @@ class GoalsController extends Controller
             $daysLeft = (int) round((strtotime($deadline) - time()) / 86400);
             if ($daysLeft > 0) {
                 $perDay = (int) ceil($shortage / $daysLeft);
-                $suggest = "Còn {$daysLeft} ngày → cần tiết kiệm " . number_format($perDay) . 'đ/ngày';
+                $suggest = "Còn {$daysLeft} ngày → cần tiết kiệm " . number_format($perDay, 0, ',', '.') . 'đ/ngày';
             }
         }
 
@@ -430,9 +430,9 @@ class GoalsController extends Controller
             'target_amount'   => $target,
             'percent'         => $percent,
             'shortage'        => $shortage,
-            'shortage_fmt'    => number_format($shortage) . 'đ',
-            'current_fmt'     => number_format($current) . 'đ',
-            'target_fmt'      => number_format($target) . 'đ',
+            'shortage_fmt'    => number_format($shortage, 0, ',', '.') . 'đ',
+            'current_fmt'     => number_format($current, 0, ',', '.') . 'đ',
+            'target_fmt'      => number_format($target, 0, ',', '.') . 'đ',
             'suggest'         => $suggest,
             'insights'        => $this->generateInsights($goal, $current, $target, $shortage),
             'is_dead'         => $isDead,
@@ -511,7 +511,7 @@ class GoalsController extends Controller
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
         foreach ($rows as &$row) {
-            $row['amount_fmt'] = number_format((int) $row['amount']) . 'đ';
+            $row['amount_fmt'] = number_format((int) $row['amount'], 0, ',', '.') . 'đ';
             $row['created_fmt'] = $row['created_at']
                 ? date('H:i d/m/Y', strtotime($row['created_at']))
                 : '--';
