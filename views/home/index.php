@@ -645,7 +645,10 @@
                                                     <div class="ds-price" data-price-vnd="<?= (int) $product['price_vnd'] ?>">
                                                         <?= number_format($product['price_vnd']) ?>đ
                                                     </div>
-
+                                                    <?php if ($discount > 0): ?>
+                                                        <div class="ds-old-price"><?= number_format($oldPriceHome) ?>đ</div>
+                                                        <div class="ds-discount">-<?= $discount ?>%</div>
+                                                    <?php endif; ?>
                                                 </div>
                                             </div>
                                         </a>
