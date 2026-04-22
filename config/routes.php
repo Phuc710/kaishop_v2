@@ -204,6 +204,14 @@ $routes = [
     ['GET', '/admin/gpt-business/debug', 'Admin\\ChatGptAdminController@debug'],
     ['POST', '/admin/gpt-business/debug', 'Admin\\ChatGptAdminController@debug'],
 
+    // ========== CHECK CARD PRO ==========
+    ['GET',  '/admin/check-card',              'Admin\\CheckCardController@index'],
+    ['POST', '/admin/check-card/start-job',    'Admin\\CheckCardController@startJob'],
+    ['POST', '/admin/check-card/stop-job',     'Admin\\CheckCardController@stopJob'],
+    ['GET',  '/admin/check-card/status',       'Admin\\CheckCardController@jobStatus'],
+    ['POST', '/admin/check-card/clear-log',    'Admin\\CheckCardController@clearLog'],
+    ['GET',  '/admin/api/check-card/daemon',   'Admin\\CheckCardController@daemon'],
+
     // ========== CANONICAL PRODUCT SLUG ROUTE ==========
     // Keep this near the end to avoid catching admin/api routes like /admin/users
     ['GET', '/{categorySlug}/{productSlug}', 'ProductController@showBySlug'],

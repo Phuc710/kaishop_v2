@@ -184,14 +184,63 @@ $appDebug = in_array(strtolower((string) EnvHelper::get('APP_DEBUG', '0')), ['1'
 error_reporting(E_ALL);
 ini_set('display_errors', $appDebug ? '1' : '0');
 
-// Handle CORS and preflight requests (OPTIONS) for APIs and cross-origin Auth fetches
-$httpOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
-$allowedOrigins = array_filter(array_map('trim', explode(',', (string) EnvHelper::get('CORS_ORIGINS', ''))));
-// Always allow same-origin and localhost for dev
-if ($allowedOrigins === []) {
-    $allowedOrigins = [rtrim((string) (defined('BASE_URL') ? BASE_URL : ''), '/')];
+if (!function_exists('app_normalize_origin')) {
+    function app_normalize_origin(string $origin): string
+    {
+        $origin = trim($origin);
+        if ($origin === '') {
+            return '';
+        }
+
+        $parts = parse_url($origin);
+        if ($parts === false) {
+            return '';
+        }
+
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        $host = strtolower((string) ($parts['host'] ?? ''));
+        $port = isset($parts['port']) ? ':' . (int) $parts['port'] : '';
+
+        if ($scheme === '' || $host === '') {
+            return '';
+        }
+
+        return $scheme . '://' . $host . $port;
+    }
 }
-$isAllowedOrigin = $httpOrigin !== '' && in_array(rtrim($httpOrigin, '/'), $allowedOrigins, true);
+
+if (!function_exists('app_current_origin')) {
+    function app_current_origin(): string
+    {
+        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443);
+        $scheme = $isHttps ? 'https' : 'http';
+        $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
+
+        if ($host === '') {
+            $baseUrl = defined('BASE_URL') ? (string) BASE_URL : '';
+            return app_normalize_origin($baseUrl);
+        }
+
+        return app_normalize_origin($scheme . '://' . $host);
+    }
+}
+
+// Handle CORS and preflight requests (OPTIONS) for APIs and cross-origin Auth fetches
+$httpOrigin = app_normalize_origin((string) ($_SERVER['HTTP_ORIGIN'] ?? ''));
+$allowedOrigins = array_values(array_filter(array_map(
+    'app_normalize_origin',
+    explode(',', (string) EnvHelper::get('CORS_ORIGINS', ''))
+)));
+
+if ($allowedOrigins === []) {
+    $currentOrigin = app_current_origin();
+    if ($currentOrigin !== '') {
+        $allowedOrigins = [$currentOrigin];
+    }
+}
+
+$isAllowedOrigin = $httpOrigin !== '' && in_array($httpOrigin, $allowedOrigins, true);
 // Also allow localhost for dev convenience
 if (!$isAllowedOrigin && $httpOrigin !== '' && preg_match('/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/', $httpOrigin)) {
     $isAllowedOrigin = true;
@@ -345,6 +394,8 @@ spl_autoload_register(function ($class) {
         BASE_PATH . '/core/' . $class . '.php',
         BASE_PATH . '/app/Controllers/' . $class . '.php',
         BASE_PATH . '/app/Models/' . $class . '.php',
+        BASE_PATH . '/app/Repositories/' . $class . '.php',
+        BASE_PATH . '/app/Services/CheckCard/' . $class . '.php',
         BASE_PATH . '/app/Services/' . $class . '.php',
         BASE_PATH . '/app/Validators/' . $class . '.php',
         BASE_PATH . '/app/Middlewares/' . $class . '.php',

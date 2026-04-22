@@ -51,15 +51,19 @@ class Model
     }
 
     /**
-     * Create new record
-     * @param array $data
-     * @return int Last insert ID
+     * Get total records count
+     * @return int
      */
     public function count(): int
     {
         return (int) $this->db->query("SELECT COUNT(*) FROM `{$this->table}`")->fetchColumn();
     }
 
+    /**
+     * Create new record
+     * @param array $data
+     * @return int Last insert ID
+     */
     public function create(array $data)
     {
         $keys = array_keys($data);

@@ -172,6 +172,19 @@ class NavConfig
                     ],
                 ],
             ],
+            ['type' => 'header', 'label' => 'CÔNG CỤ'],
+            [
+                'type'            => 'tree',
+                'icon'            => 'fas fa-credit-card',
+                'label'           => 'Check Card',
+                'children'        => [
+                    [
+                        'href'            => self::buildUrl('admin/check-card'),
+                        'label'           => 'CC Stripe',
+                        'active_prefixes' => ['admin/check-card'],
+                    ],
+                ],
+            ],
             ['type' => 'header', 'label' => 'QUẢN LÝ'],
             [
                 'type' => 'link',

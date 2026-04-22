@@ -4,14 +4,16 @@
  * Authentication Service
  * Handles user authentication logic
  */
-class AuthService {
+class AuthService
+{
     private $userModel;
     private $authSecurity = null;
     private static $userCacheLoaded = false;
     private static $cachedUser = null;
     private static $cachedSessionToken = null;
-    
-    public function __construct() {
+
+    public function __construct()
+    {
         $this->userModel = new User();
     }
 
@@ -88,12 +90,13 @@ class AuthService {
         self::$cachedSessionToken = '';
         self::$cachedUser = null;
     }
-    
+
     /**
      * Check if user is logged in
      * @return bool
      */
-    public function isLoggedIn() {
+    public function isLoggedIn()
+    {
         if ($this->currentSessionToken() !== '') {
             $user = $this->loadUserFromSessionCache();
             if ($user) {
@@ -112,12 +115,13 @@ class AuthService {
 
         return false;
     }
-    
+
     /**
      * Get current logged in user
      * @return array|null
      */
-    public function getCurrentUser() {
+    public function getCurrentUser()
+    {
         $user = $this->loadUserFromSessionCache();
         if ($user) {
             return $user;
@@ -138,20 +142,22 @@ class AuthService {
 
         return null;
     }
-    
+
     /**
      * Get current user ID
      * @return int|null
      */
-    public function getUserId() {
+    public function getUserId()
+    {
         $user = $this->getCurrentUser();
         return $user ? $user['id'] : null;
     }
-    
+
     /**
      * Require authentication (redirect if not logged in)
      */
-    public function requireAuth() {
+    public function requireAuth()
+    {
         if ($this->getCurrentUser() === null) {
             header('Location: ' . url('login'));
             exit;
