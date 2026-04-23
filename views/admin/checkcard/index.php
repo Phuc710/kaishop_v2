@@ -28,7 +28,8 @@ $activeJobs = $activeJobs ?? [];
                         <div class="gptb-stat-icon"><i class="fas fa-layer-group"></i></div>
                         <div class="gptb-stat-body">
                             <div class="gptb-stat-label">Tổng xử lý</div>
-                            <div class="gptb-stat-value" id="global-total">0</div>
+                            <div class="gptb-stat-value" id="global-total">
+                                <?= number_format($globalTotals['total'] ?? 0) ?></div>
                             <div class="gptb-stat-hint">Tổng số thẻ đã check</div>
                         </div>
                     </div>
@@ -38,7 +39,8 @@ $activeJobs = $activeJobs ?? [];
                         <div class="gptb-stat-icon"><i class="fas fa-check-circle"></i></div>
                         <div class="gptb-stat-body">
                             <div class="gptb-stat-label">Approved</div>
-                            <div class="gptb-stat-value" id="global-live">0</div>
+                            <div class="gptb-stat-value" id="global-live">
+                                <?= number_format($globalTotals['live'] ?? 0) ?></div>
                             <div class="gptb-stat-hint">Thẻ Live / Thành công</div>
                         </div>
                     </div>
@@ -48,7 +50,8 @@ $activeJobs = $activeJobs ?? [];
                         <div class="gptb-stat-icon"><i class="fas fa-times-circle"></i></div>
                         <div class="gptb-stat-body">
                             <div class="gptb-stat-label">Declined</div>
-                            <div class="gptb-stat-value" id="global-dead">0</div>
+                            <div class="gptb-stat-value" id="global-dead">
+                                <?= number_format($globalTotals['dead'] ?? 0) ?></div>
                             <div class="gptb-stat-hint">Thẻ Die / Từ chối</div>
                         </div>
                     </div>
@@ -58,62 +61,15 @@ $activeJobs = $activeJobs ?? [];
                         <div class="gptb-stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
                         <div class="gptb-stat-body">
                             <div class="gptb-stat-label">Error</div>
-                            <div class="gptb-stat-value" id="global-err">0</div>
+                            <div class="gptb-stat-value" id="global-err"><?= number_format($globalTotals['err'] ?? 0) ?>
+                            </div>
                             <div class="gptb-stat-hint">Lỗi kết nối / Gateway</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="cc-settings-card">
-                <div class="cc-gate-header" style="padding: 0 0 15px 0; margin-bottom: 20px; background: transparent;">
-                    <div class="cc-gate-title">
-                        <h2 class="gptb-title-with-bar">Cấu hình chung</h2>
-                    </div>
-                    <div style="display:flex; gap:10px;">
-                        <button class="cc-btn cc-btn-stop" onclick="stopAll()">
-                            <i class="fas fa-stop"></i> DỪNG HẾT
-                        </button>
-                        <button class="cc-btn cc-btn-start" onclick="startAll()">
-                            <i class="fas fa-play"></i> CHẠY HẾT
-                        </button>
-                        <button class="cc-btn btn-success" style="background: var(--cc-green); color:#fff; border:none"
-                            onclick="saveSettings()">
-                            <i class="fas fa-save"></i> LƯU
-                        </button>
-                    </div>
-                </div>
-                <div class="cc-settings-row">
-                    <div class="cc-field" style="flex:2;min-width:140px">
-                        <label>BIN / Prefix thẻ</label>
-                        <input type="text" id="g-bin" value="515462" placeholder="6–8 chữ số" maxlength="10">
-                    </div>
-                    <div class="cc-field">
-                        <label>Tháng (MM)</label>
-                        <input type="text" id="g-mm" value="" placeholder="Trống = Ngẫu nhiên" maxlength="2">
-                    </div>
-                    <div class="cc-field">
-                        <label>Năm (YY)</label>
-                        <input type="text" id="g-yy" value="" placeholder="Trống = Ngẫu nhiên" maxlength="2">
-                    </div>
-                    <div class="cc-field">
-                        <label>CVV</label>
-                        <input type="text" id="g-cvv" value="" placeholder="Trống = Ngẫu nhiên" maxlength="4">
-                    </div>
-                    <div class="cc-field">
-                        <label>Base IP Server</label>
-                        <input type="text" id="g-ip" value="178.128.110.246" style="min-width:160px">
-                    </div>
-                    <div class="cc-field">
-                        <label>Thread / Gate</label>
-                        <div class="cc-slider-wrap">
-                            <input type="range" id="g-threads" min="1" max="50" value="20"
-                                oninput="document.getElementById('g-tval').textContent=this.value">
-                            <span id="g-tval" style="color:var(--cc-text);font-weight:700;font-size:15px">20</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
         </div>
 
         <!-- ── TAB BAR ────────────────────────────────────────────────────── -->
@@ -127,9 +83,12 @@ $activeJobs = $activeJobs ?? [];
                     <span class="cc-badge ml-1" id="badge-live-<?= $gid ?>">0 live</span>
                 </button>
             <?php endforeach; ?>
+            <button class="cc-tab-btn" data-gate="bin_lookup" onclick="switchTab('bin_lookup')">
+                <i class="fas fa-search mr-1"></i> Tra Cứu BIN
+            </button>
         </div>
 
-        <!-- ── GATE PANELS ────────────────────────────────────────────────── -->
+        <!-- ── GATE & BIN PANELS ──────────────────────────────────────────── -->
         <?php foreach ($gateways as $gid => $gate): ?>
             <div class="cc-tab-panel <?= $gid == '1' ? 'active' : '' ?>" id="panel-<?= $gid ?>">
                 <div class="cc-gate-card">
@@ -193,17 +152,77 @@ $activeJobs = $activeJobs ?? [];
                         </div>
                     </div>
 
-                    <div class="cc-body">
-                        <!-- Column 2: Live Results -->
-                        <div class="cc-col cc-live-col">
+                    <div class="cc-body" style="display: flex; gap: 20px; align-items: stretch; flex-wrap: wrap;">
+                        <!-- Column 1: Live Results (Left) -->
+                        <div class="cc-col cc-live-col"
+                            style="flex: 2; min-width: 300px; display: flex; flex-direction: column;">
                             <div class="cc-col-header cc-live-header">
                                 <span>LIVE CARD</span>
                                 <span id="live-count-label-<?= $gid ?>" class="badge badge-success cc-badge-norm approved">0
                                     THẺ</span>
                             </div>
-                            <div class="cc-live-list" id="lives-<?= $gid ?>">
+                            <div class="cc-live-list" id="lives-<?= $gid ?>"
+                                style="flex: 1; max-height: 400px; overflow-y: auto;">
                                 <div style="color:var(--cc-muted);font-size:12px;text-align:center;padding:15px 0">Chưa có
                                     thẻ LIVE nào.</div>
+                            </div>
+                        </div>
+
+                        <!-- Column 2: Settings (Right) -->
+                        <div class="cc-col cc-settings-col"
+                            style="flex: 1; min-width: 300px; display: flex; flex-direction: column; background:#fff; border:1px solid var(--cc-border); border-radius:8px; overflow:hidden;">
+                            <div class="cc-col-header"
+                                style="background:#f1f3f5; color:#495057; border-bottom:1px solid #e9ecef; font-weight:700; padding:10px 15px;">
+                                <i class="fas fa-cog"></i> CẤU HÌNH GATEWAY
+                            </div>
+                            <div style="padding: 15px; flex: 1; display:flex; flex-direction:column; gap:10px;">
+                                <div class="cc-field">
+                                    <label>API URL (End Point)</label>
+                                    <input type="text" id="g-api-url-<?= $gid ?>" value="<?= htmlspecialchars(
+                                          isset($gate['api_url']) ? $gate['api_url'] : 'http://178.128.110.246' . ($gate['path'] ?? '')
+                                      ) ?>">
+                                </div>
+                                <div class="cc-field">
+                                    <label>API Request Param</label>
+                                    <input type="text" id="g-api-param-<?= $gid ?>"
+                                        value="<?= htmlspecialchars($gate['param']) ?>">
+                                </div>
+                                <div style="display:flex; gap:10px;">
+                                    <div class="cc-field" style="flex:2">
+                                        <label>BIN / Prefix</label>
+                                        <input type="text" id="g-bin-<?= $gid ?>" value="515462" placeholder="6–8 số">
+                                    </div>
+                                    <div class="cc-field" style="flex:1">
+                                        <label>MM</label>
+                                        <input type="text" id="g-mm-<?= $gid ?>" placeholder="RN">
+                                    </div>
+                                    <div class="cc-field" style="flex:1">
+                                        <label>YY</label>
+                                        <input type="text" id="g-yy-<?= $gid ?>" placeholder="RN">
+                                    </div>
+                                    <div class="cc-field" style="flex:1">
+                                        <label>CVV</label>
+                                        <input type="text" id="g-cvv-<?= $gid ?>" placeholder="RN">
+                                    </div>
+                                </div>
+                                <div style="display:flex; gap:10px;">
+                                </div>
+                                <div class="cc-field">
+                                    <label>Thread / Gate</label>
+                                    <div class="cc-slider-wrap">
+                                        <input type="range" id="g-threads-<?= $gid ?>" min="1" max="50" value="20"
+                                            oninput="document.getElementById('g-tval-<?= $gid ?>').textContent=this.value">
+                                        <span id="g-tval-<?= $gid ?>"
+                                            style="color:var(--cc-text);font-weight:700;font-size:15px">20</span>
+                                    </div>
+                                </div>
+                                <div style="margin-top:auto; padding-top:10px;">
+                                    <button class="cc-btn btn-success w-100"
+                                        style="background: var(--cc-green); color:#fff; border:none; padding:10px; border-radius:5px; font-weight:bold; width: 100%; cursor: pointer;"
+                                        onclick="saveSettings('<?= $gid ?>')">
+                                        <i class="fas fa-save"></i> LƯU CẤU HÌNH GATEWAY NÀY
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -211,6 +230,109 @@ $activeJobs = $activeJobs ?? [];
                 </div><!-- /cc-gate-card -->
             </div><!-- /cc-tab-panel -->
         <?php endforeach; ?>
+
+        <!-- ── BIN LOOKUP PANEL ───────────────────────────────────────────── -->
+        <div class="cc-tab-panel" id="panel-bin_lookup">
+            <div class="cc-gate-card"
+                style="display:flex; flex-wrap:wrap; gap:20px; background:transparent; padding:0; box-shadow:none;">
+                <!-- Search Box -->
+                <div
+                    style="flex:1; min-width:300px; background:#fff; border-radius:10px; border:1px solid var(--cc-border); box-shadow:var(--cc-shadow); padding:20px;">
+                    <h3 style="font-size:18px; font-weight:700; margin-bottom:15px; color:var(--cc-text);"><i
+                            class="fas fa-search text-primary mr-2"></i> TRA CỨU BIN NHANH</h3>
+                    <p style="font-size:14px; color:var(--cc-muted); margin-bottom:20px;">
+                        Có thể dán thẳng toàn bộ thẻ (VD: <code>374355126445010|09|31|2403</code>) hoặc nhập 6-8 số đầu.
+                    </p>
+                    <div class="cc-field mb-3">
+                        <input type="text" id="bin-input" placeholder="Dán thẻ / Nhập BIN..."
+                            style="font-size: 18px; padding:15px; text-align:center; font-family:monospace; font-weight:bold;">
+                    </div>
+                    <button id="btn-lookup" class="cc-btn btn-primary w-100"
+                        style="background:var(--cc-blue); color:#fff; border:none; padding:12px; font-size:16px; border-radius:8px;"
+                        onclick="performBinLookup()">
+                        <i class="fas fa-search"></i> TRA CỨU NGAY
+                    </button>
+                </div>
+
+                <!-- Result Box -->
+                <div
+                    style="flex:2; min-width:400px; background:#fff; border-radius:10px; border:1px solid var(--cc-border); box-shadow:var(--cc-shadow); padding:20px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+                    <!-- Initial -->
+                    <div id="res-empty" style="text-align:center; color:var(--cc-muted);">
+                        <i class="fas fa-credit-card mb-3" style="font-size:48px; opacity:0.2;"></i>
+                        <h5>Chưa có dữ liệu</h5>
+                        <p style="font-size:14px;">Vui lòng nhập BIN và bấm Tra Cứu.</p>
+                    </div>
+
+                    <!-- Loading -->
+                    <div id="res-loading" style="display:none; text-align:center; color:var(--cc-blue);">
+                        <i class="fas fa-spinner fa-spin mb-3" style="font-size:40px;"></i>
+                        <h5 style="color:var(--cc-text);">Đang tra cứu dữ liệu...</h5>
+                    </div>
+
+                    <!-- Error -->
+                    <div id="res-error" style="display:none; text-align:center; color:var(--cc-red);">
+                        <i class="fas fa-exclamation-triangle mb-3" style="font-size:48px; opacity:0.8;"></i>
+                        <h5>Lỗi Tra Cứu</h5>
+                        <p id="error-msg" style="font-size:14px; max-width:400px; margin:0 auto;"></p>
+                    </div>
+
+                    <!-- Data -->
+                    <div id="res-data" style="display:none; width:100%;">
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px dashed #eee; padding-bottom:15px; margin-bottom:25px;">
+                            <div style="font-size:28px; font-weight:900; letter-spacing:2px; font-family:monospace; color:var(--cc-text);"
+                                id="d-bin">515462</div>
+                            <div id="d-brand-badge" class="badge badge-primary px-3 py-2"
+                                style="font-size:14px; text-transform:uppercase;">MASTERCARD</div>
+                        </div>
+
+                        <div class="row w-100 m-0">
+                            <div class="col-sm-6 mb-4 px-1">
+                                <div
+                                    style="font-size:12px; color:var(--cc-muted); text-transform:uppercase; font-weight:700; margin-bottom:5px;">
+                                    Ngân hàng cấp thẻ</div>
+                                <div
+                                    style="font-size:18px; font-weight:600; color:var(--cc-text); display:flex; align-items:center;">
+                                    <i class="fas fa-university text-primary mr-2"></i> <span id="d-bank">Ví dụ
+                                        Bank</span>
+                                </div>
+                            </div>
+                            <div class="col-sm-6 mb-4 px-1">
+                                <div
+                                    style="font-size:12px; color:var(--cc-muted); text-transform:uppercase; font-weight:700; margin-bottom:5px;">
+                                    Quốc gia</div>
+                                <div
+                                    style="font-size:18px; font-weight:600; color:var(--cc-text); display:flex; align-items:center;">
+                                    <span id="d-flag" class="mr-2" style="font-size:24px;">🇻🇳</span> <span
+                                        id="d-country">Vietnam</span>
+                                </div>
+                            </div>
+                            <div class="col-sm-6 mb-4 px-1">
+                                <div
+                                    style="font-size:12px; color:var(--cc-muted); text-transform:uppercase; font-weight:700; margin-bottom:5px;">
+                                    Loại thẻ</div>
+                                <div
+                                    style="font-size:18px; font-weight:600; color:var(--cc-text); display:flex; align-items:center;">
+                                    <i class="fas fa-credit-card text-success mr-2"></i> <span id="d-type"
+                                        style="text-transform:capitalize;">Credit</span>
+                                </div>
+                            </div>
+                            <div class="col-sm-6 mb-4 px-1">
+                                <div
+                                    style="font-size:12px; color:var(--cc-muted); text-transform:uppercase; font-weight:700; margin-bottom:5px;">
+                                    Hạng thẻ</div>
+                                <div
+                                    style="font-size:18px; font-weight:600; color:var(--cc-text); display:flex; align-items:center;">
+                                    <i class="fas fa-star text-warning mr-2"></i> <span id="d-level"
+                                        style="text-transform:uppercase;">CLASSIC</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
 </div>
 </section>
@@ -245,35 +367,38 @@ $activeJobs = $activeJobs ?? [];
     // === SETTINGS PERSISTENCE ===
     const STORAGE_KEY = 'kaishop_cc_settings';
 
-    function saveSettings() {
-        const cfg = getSettings();
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
-        Swal.fire({
-            icon: 'success',
-            title: 'Đã lưu cấu hình',
-            toast: true,
-            position: 'top-end',
-            timer: 2000,
-            showConfirmButton: false,
-            background: '#fff',
-            color: '#2d3436'
-        });
+    function saveSettings(gid) {
+        const cfg = getSettings(gid);
+        let globalCfg = {};
+        try {
+            globalCfg = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+        } catch (e) { }
+
+        globalCfg[gid] = cfg;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(globalCfg));
+        showToast('✅ Đã lưu cấu hình Gateway ' + gid);
     }
 
     function loadSettings() {
         try {
             const saved = localStorage.getItem(STORAGE_KEY);
             if (saved) {
-                const data = JSON.parse(saved);
-                if (data.bin) document.getElementById('g-bin').value = data.bin;
-                if (data.mm) document.getElementById('g-mm').value = data.mm === 'RN' ? '' : data.mm;
-                if (data.yy) document.getElementById('g-yy').value = data.yy === 'RN' ? '' : data.yy;
-                if (data.cvv) document.getElementById('g-cvv').value = data.cvv === 'RN' ? '' : data.cvv;
-                if (data.ip) document.getElementById('g-ip').value = data.ip;
-                if (data.threads) {
-                    document.getElementById('g-threads').value = data.threads;
-                    document.getElementById('g-tval').textContent = data.threads;
-                }
+                const globalCfg = JSON.parse(saved);
+                Object.keys(GATES).forEach(gid => {
+                    const data = globalCfg[gid] || globalCfg; // fallback to global if migrating from old format
+                    if (data && typeof data === 'object') {
+                        if (data.api_url) document.getElementById(`g-api-url-${gid}`).value = data.api_url;
+                        if (data.api_param) document.getElementById(`g-api-param-${gid}`).value = data.api_param;
+                        if (data.bin) document.getElementById(`g-bin-${gid}`).value = data.bin;
+                        if (data.mm) document.getElementById(`g-mm-${gid}`).value = data.mm === 'RN' ? '' : data.mm;
+                        if (data.yy) document.getElementById(`g-yy-${gid}`).value = data.yy === 'RN' ? '' : data.yy;
+                        if (data.cvv) document.getElementById(`g-cvv-${gid}`).value = data.cvv === 'RN' ? '' : data.cvv;
+                        if (data.threads) {
+                            document.getElementById(`g-threads-${gid}`).value = data.threads;
+                            document.getElementById(`g-tval-${gid}`).textContent = data.threads;
+                        }
+                    }
+                });
             }
         } catch (e) { console.error("Load settings fail:", e); }
     }
@@ -317,15 +442,16 @@ $activeJobs = $activeJobs ?? [];
         });
     }
 
-    function getSettings() {
+    function getSettings(gid) {
         return {
-            bin: document.getElementById('g-bin').value.trim() || '515462',
-            mm: document.getElementById('g-mm').value.trim().toUpperCase() || 'RN',
-            yy: document.getElementById('g-yy').value.trim().toUpperCase() || 'RN',
-            cvv: document.getElementById('g-cvv').value.trim().toUpperCase() || 'RN',
-            batch: 5000, // Default cày số lượng lớn
-            ip: document.getElementById('g-ip').value.trim() || '178.128.110.246',
-            threads: parseInt(document.getElementById('g-threads').value) || 20,
+            api_url: document.getElementById(`g-api-url-${gid}`).value.trim(),
+            api_param: document.getElementById(`g-api-param-${gid}`).value.trim() || 'card',
+            bin: document.getElementById(`g-bin-${gid}`).value.trim() || '515462',
+            mm: document.getElementById(`g-mm-${gid}`).value.trim().toUpperCase() || 'RN',
+            yy: document.getElementById(`g-yy-${gid}`).value.trim().toUpperCase() || 'RN',
+            cvv: document.getElementById(`g-cvv-${gid}`).value.trim().toUpperCase() || 'RN',
+            batch: 0,
+            threads: parseInt(document.getElementById(`g-threads-${gid}`).value) || 20,
         };
     }
 
@@ -344,7 +470,7 @@ $activeJobs = $activeJobs ?? [];
         const g = GATES[gid];
         if (g.running) return;
 
-        const cfg = getSettings();
+        const cfg = getSettings(gid);
         cfg.gate_id = gid;
 
         const startBtn = document.getElementById(`btn-start-${gid}`);
@@ -416,13 +542,7 @@ $activeJobs = $activeJobs ?? [];
             } catch (e) { }
         }
         document.getElementById(`lives-${gid}`).innerHTML = `<div style="color:var(--cc-muted);font-size:12px;text-align:center;padding:15px 0">Dữ liệu log đã được dọn sạch.</div>`;
-        document.getElementById(`s-live-${gid}`).textContent = 0;
-        document.getElementById(`s-dead-${gid}`).textContent = 0;
-        document.getElementById(`s-err-${gid}`).textContent = 0;
-        document.getElementById(`s-total-${gid}`).textContent = 0;
-        document.getElementById(`badge-live-${gid}`).textContent = '0 live';
-        document.getElementById(`live-count-label-${gid}`).textContent = '0 thẻ';
-
+        // Keep stats
         g.lastLive = 0;
         g.lives = [];
         g.jobId = 0;
@@ -440,7 +560,8 @@ $activeJobs = $activeJobs ?? [];
             }
         });
 
-        if (activeJobIds.length === 0) return;
+        // Force load stats even if no jobs are running
+        // if (activeJobIds.length === 0) return;
 
         try {
             const queryParams = [`job_ids=${activeJobIds.join(',')}`];
@@ -535,11 +656,13 @@ $activeJobs = $activeJobs ?? [];
                 }
             });
 
-            // Update Global Stats
-            document.getElementById('global-total').textContent = gTotal;
-            document.getElementById('global-live').textContent = gLive;
-            document.getElementById('global-dead').textContent = gDead;
-            document.getElementById('global-err').textContent = gErr;
+            // Update Global Stats from DB
+            if (data.global_totals) {
+                document.getElementById('global-total').textContent = data.global_totals.total;
+                document.getElementById('global-live').textContent = data.global_totals.live;
+                document.getElementById('global-dead').textContent = data.global_totals.dead;
+                document.getElementById('global-err').textContent = data.global_totals.err;
+            }
 
         } catch (e) { console.error("Poll fail:", e); }
     }
@@ -617,6 +740,71 @@ $activeJobs = $activeJobs ?? [];
         d.textContent = m; document.body.appendChild(d); setTimeout(() => d.remove(), 2500);
     }
     function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+    // === BIN LOOKUP LOGIC === //
+    document.getElementById('bin-input').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') performBinLookup();
+    });
+
+    async function performBinLookup() {
+        // Extract first continuous block of 6-8 digits from pasted text (handles cards like 374355126445010|...)
+        const rawText = document.getElementById('bin-input').value;
+        const matches = rawText.match(/\d{6,8}/);
+
+        if (!matches || matches.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'BIN không hợp lệ', text: 'Vui lòng dán thẻ hoặc nhập ít nhất 6 số đầu.' });
+            return;
+        }
+
+        let bin = matches[0].substring(0, 8); // fallback maximum 8 digits
+
+        showBinState('loading');
+        document.getElementById('btn-lookup').disabled = true;
+
+        try {
+            const response = await fetch(`<?= url('admin/api/bin-lookup') ?>?bin=${bin}`);
+            document.getElementById('btn-lookup').disabled = false;
+
+            if (response.status === 404) return showBinState('error', 'Không tìm thấy dữ liệu cho BIN (' + bin + ').');
+            if (response.status === 429) return showBinState('error', 'Trang tra cứu đang quá tải (Rate Limit). Thử lại sau.');
+            if (!response.ok) return showBinState('error', 'Máy chủ tra cứu lỗi: ' + response.status);
+
+            const data = await response.json();
+
+            document.getElementById('d-bin').textContent = bin;
+            const badge = document.getElementById('d-brand-badge');
+            badge.textContent = data.scheme || 'N/A';
+
+            const schemeLow = (data.scheme || '').toLowerCase();
+            badge.className = 'badge px-3 py-2 text-white';
+            if (schemeLow === 'visa') badge.style.backgroundColor = '#1a1f71';
+            else if (schemeLow === 'mastercard') badge.style.backgroundColor = '#eb001b';
+            else if (schemeLow === 'amex') badge.style.backgroundColor = '#002663';
+            else if (schemeLow === 'discover') badge.style.backgroundColor = '#f9a021';
+            else badge.classList.add('badge-secondary');
+
+            document.getElementById('d-bank').textContent = data.bank?.name || 'Unknown Bank';
+            document.getElementById('d-country').textContent = data.country?.name || 'Unknown';
+            document.getElementById('d-flag').textContent = data.country?.emoji || '🌍';
+            document.getElementById('d-type').textContent = data.type || 'N/A';
+            document.getElementById('d-level').textContent = data.brand || 'N/A';
+
+            showBinState('data');
+        } catch (err) {
+            document.getElementById('btn-lookup').disabled = false;
+            showBinState('error', 'Lỗi mạng: ' + err.message);
+        }
+    }
+
+    function showBinState(state, msg = '') {
+        ['res-empty', 'res-loading', 'res-error', 'res-data'].forEach(id => document.getElementById(id).style.display = 'none');
+        if (state === 'error') {
+            document.getElementById('res-error').style.display = 'block';
+            document.getElementById('error-msg').textContent = msg;
+        } else {
+            document.getElementById(`res-${state}`).style.display = 'block';
+        }
+    }
 </script>
 
 <?php require __DIR__ . '/../layout/foot.php'; ?>

@@ -22,6 +22,7 @@ class CheckCardJobService
         return [
             'gateways' => $this->gatewayService->getGateways(),
             'activeJobs' => $this->repository->getActiveJobs(),
+            'globalTotals' => $this->repository->getGlobalTotals(),
         ];
     }
 
@@ -85,6 +86,7 @@ class CheckCardJobService
         return [
             'jobs' => $jobs,
             'lives' => $lives,
+            'global_totals' => $this->repository->getGlobalTotals(),
         ];
     }
 
@@ -133,16 +135,19 @@ class CheckCardJobService
         $checked = (int) ($job['checked_count'] ?? 0);
         $target = (int) ($job['total_target'] ?? 0);
         $threads = max(1, (int) ($job['threads'] ?? 1));
-        $baseIp = trim((string) ($config['ip'] ?? self::DEFAULT_BASE_IP));
         $startedAt = time();
 
-        while ($checked < $target) {
+        while ($target <= 0 || $checked < $target) {
             if (!$this->repository->jobIsRunning($jobId)) {
                 return;
             }
 
-            $batchSize = min($threads, $target - $checked);
-            $result = $this->gatewayService->runBatch($batchSize, $config, $gateway, $baseIp);
+            $batchSize = $threads;
+            if ($target > 0) {
+                $batchSize = min($threads, $target - $checked);
+            }
+
+            $result = $this->gatewayService->runBatch($batchSize, $config, $gateway);
 
             $checked += $batchSize;
             $this->repository->updateJobProgress(
@@ -211,13 +216,14 @@ class CheckCardJobService
     private function normalizeConfig(array $data): array
     {
         return [
+            'api_url' => trim((string) ($data['api_url'] ?? '')),
+            'api_param' => trim((string) ($data['api_param'] ?? '')) ?: 'card',
             'bin' => trim((string) ($data['bin'] ?? '')) ?: '515462',
             'mm' => strtoupper(trim((string) ($data['mm'] ?? ''))) ?: 'RN',
             'yy' => strtoupper(trim((string) ($data['yy'] ?? ''))) ?: 'RN',
             'cvv' => strtoupper(trim((string) ($data['cvv'] ?? ''))) ?: 'RN',
-            'ip' => trim((string) ($data['ip'] ?? '')) ?: self::DEFAULT_BASE_IP,
-            'threads' => max(1, min(50, (int) ($data['threads'] ?? 20))),
-            'batch' => max(1, min(100000, (int) ($data['batch'] ?? 5000))),
+            'threads' => max(1, min(100, (int) ($data['threads'] ?? 20))),
+            'batch' => max(0, (int) ($data['batch'] ?? 0)),
         ];
     }
 

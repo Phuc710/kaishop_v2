@@ -134,16 +134,6 @@ class CheckCardRepository
             ");
             $stmt->execute([$jobId]);
 
-            $stmt = $this->db->prepare("
-                UPDATE checkcard_jobs
-                SET checked_count = 0,
-                    live_count = 0,
-                    dead_count = 0,
-                    err_count = 0
-                WHERE id = ?
-            ");
-            $stmt->execute([$jobId]);
-
             $this->db->commit();
         } catch (Throwable $e) {
             if ($this->db->inTransaction()) {
@@ -251,5 +241,24 @@ class CheckCardRepository
             $gateName,
             $row['msg'],
         ]);
+    }
+
+    public function getGlobalTotals(): array
+    {
+        return $this->db
+            ->query("
+                SELECT 
+                    SUM(checked_count) as total,
+                    SUM(live_count) as live,
+                    SUM(dead_count) as dead,
+                    SUM(err_count) as err
+                FROM checkcard_jobs
+            ")
+            ->fetch() ?: [
+                'total' => 0,
+                'live' => 0,
+                'dead' => 0,
+                'err' => 0
+            ];
     }
 }

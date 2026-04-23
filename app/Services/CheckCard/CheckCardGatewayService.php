@@ -4,28 +4,35 @@ class CheckCardGatewayService
 {
     private const GATEWAYS = [
         '1' => [
-            'name' => 'Braintree Global',
-            'icon' => 'fab fa-btc',
-            'path' => '/brch.php',
+            'name'  => 'Braintree Global',
+            'icon'  => 'fab fa-btc',
+            'path'  => '/brch.php',
             'param' => 'cc',
         ],
         '2' => [
-            'name' => 'Stripe Force',
-            'icon' => 'fab fa-stripe',
-            'path' => '/stch.php',
+            'name'  => 'Stripe Auth',
+            'icon'  => 'fab fa-stripe',
+            'path'  => '/stch.php',
             'param' => 'card',
         ],
         '3' => [
-            'name' => 'PayPal',
-            'icon' => 'fab fa-paypal',
-            'path' => '/paypal.php',
+            'name'  => 'PayPal',
+            'icon'  => 'fab fa-paypal',
+            'path'  => '/paypal.php',
             'param' => 'card',
         ],
         '4' => [
-            'name' => 'Stripe Classic',
-            'icon' => 'fab fa-cc-stripe',
-            'path' => '/stripe.php',
+            'name'  => 'Stripe Classic',
+            'icon'  => 'fab fa-cc-stripe',
+            'path'  => '/stripe.php',
             'param' => 'card',
+        ],
+        '5' => [
+            'name'       => 'Stripe Charge $1.1',
+            'icon'       => 'fas fa-bolt',
+            'api_url'    => 'https://stripe-charge.melmelmel.workers.dev/check',
+            'param'      => 'card',
+            'card_format'=> 'full',  // send as CARD|MM|YY|CVV
         ],
     ];
 
@@ -69,7 +76,7 @@ class CheckCardGatewayService
         return self::GATEWAYS[$gateId] ?? null;
     }
 
-    public function runBatch(int $count, array $config, array $gateway, string $baseIp): array
+    public function runBatch(int $count, array $config, array $gateway): array
     {
         $multiHandle = curl_multi_init();
         $pool = [];
@@ -82,7 +89,14 @@ class CheckCardGatewayService
                 (string) ($config['cvv'] ?? 'RN')
             );
 
-            $requestUrl = $this->buildRequestUrl($baseIp, $gateway, $card);
+            // Support full card format for gateways that need CARD|MM|YY|CVV
+            if (($gateway['card_format'] ?? '') === 'full') {
+                $cardForRequest = $card; // already in format: NUM|MM|YY|CVV from generator
+            } else {
+                $cardForRequest = $card;
+            }
+
+            $requestUrl = $this->buildRequestUrl($config, $gateway, $cardForRequest);
             $handle = curl_init($requestUrl);
 
             curl_setopt_array($handle, [
@@ -148,10 +162,19 @@ class CheckCardGatewayService
         return $result;
     }
 
-    private function buildRequestUrl(string $baseIp, array $gateway, string $card): string
+    private function buildRequestUrl(array $config, array $gateway, string $card): string
     {
-        return 'http://' . $baseIp . $gateway['path'] . '?'
-            . $gateway['param'] . '=' . urlencode($card);
+        // Priority: user-provided api_url in config → gateway default api_url → legacy IP+path
+        $apiUrl = $config['api_url'] ?? $gateway['api_url'] ?? '';
+        $apiParam = $config['api_param'] ?? $gateway['param'] ?? 'card';
+
+        if ($apiUrl === '') {
+             $apiUrl = 'http://178.128.110.246' . ($gateway['path'] ?? '/stch.php');
+        }
+
+        $separator = str_contains($apiUrl, '?') ? '&' : '?';
+
+        return $apiUrl . $separator . urlencode($apiParam) . '=' . urlencode($card);
     }
 
     private function buildResponseResult($handle, string $body): array

@@ -211,6 +211,7 @@ $routes = [
     ['GET',  '/admin/check-card/status',       'Admin\\CheckCardController@jobStatus'],
     ['POST', '/admin/check-card/clear-log',    'Admin\\CheckCardController@clearLog'],
     ['GET',  '/admin/api/check-card/daemon',   'Admin\\CheckCardController@daemon'],
+    ['GET',  '/admin/api/bin-lookup',          'Admin\\CheckCardController@binLookup'],
 
     // ========== CANONICAL PRODUCT SLUG ROUTE ==========
     // Keep this near the end to avoid catching admin/api routes like /admin/users

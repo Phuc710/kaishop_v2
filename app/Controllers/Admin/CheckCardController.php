@@ -51,7 +51,7 @@ class CheckCardController extends Controller
 
         try {
             $this->json($this->jobService->start($this->input()));
-        } catch (InvalidArgumentException|RuntimeException $e) {
+        } catch (InvalidArgumentException | RuntimeException $e) {
             $this->json(['error' => $e->getMessage()], 400);
         } catch (Throwable $e) {
             $this->json(['error' => 'Start job failed'], 500);
@@ -64,7 +64,7 @@ class CheckCardController extends Controller
 
         try {
             $this->json($this->jobService->stop((int) ($this->input()['job_id'] ?? 0)));
-        } catch (InvalidArgumentException|RuntimeException $e) {
+        } catch (InvalidArgumentException | RuntimeException $e) {
             $this->json(['error' => $e->getMessage()], 400);
         } catch (Throwable $e) {
             $this->json(['error' => 'Stop job failed'], 500);
@@ -93,7 +93,7 @@ class CheckCardController extends Controller
 
         try {
             $this->json($this->jobService->clearLog((int) ($this->input()['job_id'] ?? 0)));
-        } catch (InvalidArgumentException|RuntimeException $e) {
+        } catch (InvalidArgumentException | RuntimeException $e) {
             $this->json(['error' => $e->getMessage()], 400);
         } catch (Throwable $e) {
             $this->json(['error' => 'Clear log failed'], 500);
@@ -110,6 +110,37 @@ class CheckCardController extends Controller
         if ($response !== '') {
             exit($response);
         }
+    }
+
+    public function binLookup()
+    {
+        $this->requireAdmin();
+
+        $bin = preg_replace('/[^0-9]/', '', (string) $this->get('bin', ''));
+        $bin = substr($bin, 0, 8);
+
+        if (strlen($bin) < 6) {
+            $this->json(['error' => 'BIN phải có ít nhất 6 chữ số'], 400);
+            return;
+        }
+
+        $ch = curl_init("https://lookup.binlist.net/{$bin}");
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_HTTPHEADER => ['Accept-Version: 3'],
+            CURLOPT_USERAGENT => 'Mozilla/5.0',
+            CURLOPT_SSL_VERIFYPEER => false,
+        ]);
+
+        $body = curl_exec($ch);
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        http_response_code($status);
+        header('Content-Type: application/json');
+        echo $body ?: '{}';
+        exit;
     }
 
     private function requireAdmin(): void
