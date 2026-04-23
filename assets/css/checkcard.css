@@ -59,7 +59,7 @@
 }
 
 .cc-field label {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     color: var(--cc-muted);
     text-transform: uppercase;
@@ -71,12 +71,11 @@
     border: 1px solid #ced4da;
     border-radius: 6px;
     color: #495057;
-    padding: 8px 12px;
-    font-size: 14px;
-    height: 38px;
+    padding: 6px 10px;
+    font-size: 13px;
+    height: 34px;
     outline: none;
     transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
-    min-width: 120px;
 }
 
 .cc-field input:focus,
@@ -185,6 +184,25 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .cc-gate-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .cc-gate-controls {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+    .cc-gate-controls .cc-btn {
+        width: 100%;
+        margin: 0 !important;
+    }
 }
 
 .cc-gate-title {
@@ -231,10 +249,16 @@
 }
 
 .cc-btn-save {
-    background: linear-gradient(135deg, #0e9b6c, #059669);
+    background: linear-gradient(135deg, #10b981, #059669);
     color: #fff;
-    padding: 8px 16px;
-    font-size: 12px;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    border: none;
+}
+
+.cc-btn-save:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    box-shadow: 0 6px 15px rgba(16, 185, 129, 0.3);
+    transform: translateY(-1px);
 }
 
 .cc-btn-copy {
@@ -258,57 +282,85 @@
     border-color: #cbd5e1;
 }
 
-/* ──────── STATS (MATCHING GPTB-STAT-CARD) ──────── */
-.cc-stats-grid {
+/* ──────── STATS MODERN (PREMIUM STYLE) ──────── */
+.cc-stats-modern {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     background: #fff;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--cc-border);
 }
 
 @media (max-width: 1200px) {
-    .cc-stats-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-
-@media (max-width: 600px) {
-    .cc-stats-grid {
+    .cc-stats-modern {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
-.cc-stat {
-    padding: 15px;
-    text-align: center;
-    border-right: 1px solid #eee;
+@media (max-width: 480px) {
+    .cc-stats-modern {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .cc-stat-m {
+        padding: 10px 12px;
+        gap: 8px;
+    }
+    .cc-stat-m-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+    }
+    .cc-stat-m-value {
+        font-size: 16px;
+    }
 }
 
-.cc-stat-num {
-    font-size: 20px;
+.cc-stat-m {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    border-right: 1px solid #f1f5f9;
+}
+
+.cc-stat-m:last-child {
+    border-right: none;
+}
+
+.cc-stat-m-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.cc-stat-m-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.cc-stat-m-label {
+    font-size: 10px;
     font-weight: 700;
-    color: #212529;
-}
-
-.cc-stat-lbl {
-    font-size: 11px;
-    font-weight: 600;
-    color: #6c757d;
+    color: var(--cc-muted);
     text-transform: uppercase;
-    margin-top: 4px;
+    letter-spacing: 0.5px;
 }
 
-.cc-stat-num.green {
-    color: #28a745;
+.cc-stat-m-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--cc-text);
+    line-height: 1.2;
 }
 
-.cc-stat-num.red {
-    color: #dc3545;
-}
-
-.cc-stat-num.yellow {
-    color: #ffc107;
-}
+.cc-stat-m--primary .cc-stat-m-icon { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+.cc-stat-m--success .cc-stat-m-icon { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.cc-stat-m--danger .cc-stat-m-icon { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.cc-stat-m--warning .cc-stat-m-icon { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
 
 /* ──────── BODY 1-COL ──────── */
 .cc-body {
@@ -599,4 +651,28 @@
 
 .cc-stat-card--error .cc-stat-icon {
     background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+@media (max-width: 576px) {
+    .cc-stat-card {
+        padding: 12px 15px;
+        gap: 12px;
+    }
+    .cc-stat-icon {
+        width: 42px;
+        height: 42px;
+        font-size: 16px;
+    }
+    .cc-stat-value {
+        font-size: 20px;
+    }
+    .cc-body {
+        gap: 15px !important;
+    }
+    .cc-col {
+        min-width: 100% !important;
+    }
+    .cc-live-list {
+        max-height: 300px !important;
+    }
 }

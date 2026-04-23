@@ -120,24 +120,35 @@ $activeJobs = $activeJobs ?? [];
                     </div>
 
                     <!-- Stats Grid -->
-                    <div class="cc-stats-grid">
-                        <div class="cc-stat">
-                            <div class="cc-stat-num" id="s-total-<?= $gid ?>">0</div>
-                            <div class="cc-stat-lbl">Tổng xử lý</div>
+                    <div class="cc-stats-modern">
+                        <div class="cc-stat-m cc-stat-m--primary">
+                            <div class="cc-stat-m-icon"><i class="fas fa-layer-group"></i></div>
+                            <div class="cc-stat-m-body">
+                                <div class="cc-stat-m-label">Tổng xử lý</div>
+                                <div class="cc-stat-m-value" id="s-total-<?= $gid ?>">0</div>
+                            </div>
                         </div>
-                        <div class="cc-stat">
-                            <div class="cc-stat-num green" id="s-live-<?= $gid ?>">0</div>
-                            <div class="cc-stat-lbl">✅ Approved</div>
+                        <div class="cc-stat-m cc-stat-m--success">
+                            <div class="cc-stat-m-icon"><i class="fas fa-check-circle"></i></div>
+                            <div class="cc-stat-m-body">
+                                <div class="cc-stat-m-label">Approved</div>
+                                <div class="cc-stat-m-value" id="s-live-<?= $gid ?>">0</div>
+                            </div>
                         </div>
-                        <div class="cc-stat">
-                            <div class="cc-stat-num red" id="s-dead-<?= $gid ?>">0</div>
-                            <div class="cc-stat-lbl">❌ Declined</div>
+                        <div class="cc-stat-m cc-stat-m--danger">
+                            <div class="cc-stat-m-icon"><i class="fas fa-times-circle"></i></div>
+                            <div class="cc-stat-m-body">
+                                <div class="cc-stat-m-label">Declined</div>
+                                <div class="cc-stat-m-value" id="s-dead-<?= $gid ?>">0</div>
+                            </div>
                         </div>
-                        <div class="cc-stat">
-                            <div class="cc-stat-num yellow" id="s-err-<?= $gid ?>">0</div>
-                            <div class="cc-stat-lbl">⚠️ Error</div>
+                        <div class="cc-stat-m cc-stat-m--warning">
+                            <div class="cc-stat-m-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                            <div class="cc-stat-m-body">
+                                <div class="cc-stat-m-label">Error</div>
+                                <div class="cc-stat-m-value" id="s-err-<?= $gid ?>">0</div>
+                            </div>
                         </div>
-
                     </div>
 
                     <!-- Progress -->
@@ -155,11 +166,10 @@ $activeJobs = $activeJobs ?? [];
                     <div class="cc-body" style="display: flex; gap: 20px; align-items: stretch; flex-wrap: wrap;">
                         <!-- Column 1: Live Results (Left) -->
                         <div class="cc-col cc-live-col"
-                            style="flex: 2; min-width: 300px; display: flex; flex-direction: column;">
-                            <div class="cc-col-header cc-live-header">
-                                <span>LIVE CARD</span>
-                                <span id="live-count-label-<?= $gid ?>" class="badge badge-success cc-badge-norm approved">0
-                                    THẺ</span>
+                            style="flex: 1; min-width: 300px; display: flex; flex-direction: column;">
+                            <div class="cc-col-header cc-live-header" style="background:#f8f9fa; padding:12px 15px; border-bottom:1px solid #e9ecef;">
+                                <span style="display: flex; align-items: center; gap: 8px;"><i class="fas fa-list-ul text-muted"></i> LIVE CARD</span>
+                                <span id="live-count-label-<?= $gid ?>" class="badge badge-success cc-badge-norm approved" style="padding: 4px 10px; font-size: 11px;">0 THẺ</span>
                             </div>
                             <div class="cc-live-list" id="lives-<?= $gid ?>"
                                 style="flex: 1; max-height: 400px; overflow-y: auto;">
@@ -172,10 +182,10 @@ $activeJobs = $activeJobs ?? [];
                         <div class="cc-col cc-settings-col"
                             style="flex: 1; min-width: 300px; display: flex; flex-direction: column; background:#fff; border:1px solid var(--cc-border); border-radius:8px; overflow:hidden;">
                             <div class="cc-col-header"
-                                style="background:#f1f3f5; color:#495057; border-bottom:1px solid #e9ecef; font-weight:700; padding:10px 15px;">
-                                <i class="fas fa-cog"></i> CẤU HÌNH GATEWAY
+                                style="background:#f8f9fa; color:#495057; border-bottom:1px solid #e9ecef; font-weight:700; padding:12px 15px; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-cog text-muted"></i> CẤU HÌNH GATEWAY
                             </div>
-                            <div style="padding: 15px; flex: 1; display:flex; flex-direction:column; gap:10px;">
+                             <div style="padding: 15px; flex: 1; display:flex; flex-direction:column; gap:8px;">
                                 <div class="cc-field">
                                     <label>API URL (End Point)</label>
                                     <input type="text" id="g-api-url-<?= $gid ?>" value="<?= htmlspecialchars(
@@ -187,22 +197,22 @@ $activeJobs = $activeJobs ?? [];
                                     <input type="text" id="g-api-param-<?= $gid ?>"
                                         value="<?= htmlspecialchars($gate['param']) ?>">
                                 </div>
-                                <div style="display:flex; gap:10px;">
-                                    <div class="cc-field" style="flex:2">
-                                        <label>BIN / Prefix</label>
-                                        <input type="text" id="g-bin-<?= $gid ?>" value="515462" placeholder="6–8 số">
-                                    </div>
-                                    <div class="cc-field" style="flex:1">
+                                <div class="cc-field">
+                                    <label>BIN / Prefix</label>
+                                    <input type="text" id="g-bin-<?= $gid ?>" value="515462" placeholder="6–8 số">
+                                </div>
+                                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px;">
+                                    <div class="cc-field">
                                         <label>MM</label>
-                                        <input type="text" id="g-mm-<?= $gid ?>" placeholder="RN">
+                                        <input type="text" id="g-mm-<?= $gid ?>" placeholder="RN" style="text-align: center; padding: 8px 4px;">
                                     </div>
-                                    <div class="cc-field" style="flex:1">
+                                    <div class="cc-field">
                                         <label>YY</label>
-                                        <input type="text" id="g-yy-<?= $gid ?>" placeholder="RN">
+                                        <input type="text" id="g-yy-<?= $gid ?>" placeholder="RN" style="text-align: center; padding: 8px 4px;">
                                     </div>
-                                    <div class="cc-field" style="flex:1">
+                                    <div class="cc-field">
                                         <label>CVV</label>
-                                        <input type="text" id="g-cvv-<?= $gid ?>" placeholder="RN">
+                                        <input type="text" id="g-cvv-<?= $gid ?>" placeholder="RN" style="text-align: center; padding: 8px 4px;">
                                     </div>
                                 </div>
                                 <div style="display:flex; gap:10px;">
@@ -216,11 +226,11 @@ $activeJobs = $activeJobs ?? [];
                                             style="color:var(--cc-text);font-weight:700;font-size:15px">20</span>
                                     </div>
                                 </div>
-                                <div style="margin-top:auto; padding-top:10px;">
-                                    <button class="cc-btn btn-success w-100"
-                                        style="background: var(--cc-green); color:#fff; border:none; padding:10px; border-radius:5px; font-weight:bold; width: 100%; cursor: pointer;"
+                                <div style="margin-top:auto; padding-top:15px;">
+                                    <button class="cc-btn cc-btn-save w-100"
+                                        style="width: 100%; height: 42px; font-size: 14px;"
                                         onclick="saveSettings('<?= $gid ?>')">
-                                        <i class="fas fa-save"></i> LƯU CẤU HÌNH GATEWAY NÀY
+                                        <i class="fas fa-save mr-1"></i> LƯU CẤU HÌNH NÀY
                                     </button>
                                 </div>
                             </div>
@@ -376,7 +386,7 @@ $activeJobs = $activeJobs ?? [];
 
         globalCfg[gid] = cfg;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(globalCfg));
-        showToast('✅ Đã lưu cấu hình Gateway ' + gid);
+        showToast(gid ? 'Đã lưu cấu hình' : 'Đã lưu cấu hình');
     }
 
     function loadSettings() {
@@ -735,9 +745,20 @@ $activeJobs = $activeJobs ?? [];
         document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
     }
     function showToast(m) {
-        const d = document.createElement('div');
-        d.style.cssText = 'position:fixed;bottom:20px;right:20px;background:var(--cc-green);color:#fff;padding:12px 24px;border-radius:8px;font-weight:700;z-index:9999;box-shadow:var(--cc-shadow)';
-        d.textContent = m; document.body.appendChild(d); setTimeout(() => d.remove(), 2500);
+        Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.onmouseenter = Swal.stopTimer;
+                toast.onmouseleave = Swal.resumeTimer;
+            }
+        }).fire({
+            icon: 'success',
+            title: m
+        });
     }
     function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
