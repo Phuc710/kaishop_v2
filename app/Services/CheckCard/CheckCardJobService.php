@@ -204,16 +204,40 @@ class CheckCardJobService
         if (strlen($bin) < 6) {
             return $this->fallbackBinMeta();
         }
+        $bin6 = substr($bin, 0, 6);
 
-        if (isset($this->binMetaCache[$bin])) {
-            return $this->binMetaCache[$bin];
+        if (isset($this->binMetaCache[$bin6])) {
+            return $this->binMetaCache[$bin6];
         }
 
-        // Try binlist.net
+        $cacheFile = sys_get_temp_dir() . '/kaishop_bin_' . $bin6 . '.json';
+        if (file_exists($cacheFile) && filemtime($cacheFile) > time() - 86400 * 30) {
+            $cached = json_decode(file_get_contents($cacheFile), true);
+            if (is_array($cached)) {
+                $this->binMetaCache[$bin6] = $cached;
+                return $cached;
+            }
+        }
+
+        $meta = $this->fetchBinlist($bin6) ?? $this->fetchHandyAPI($bin6);
+        
+        if ($meta) {
+            $this->binMetaCache[$bin6] = $meta;
+            file_put_contents($cacheFile, json_encode($meta));
+            return $meta;
+        }
+
+        $fallback = $this->fallbackBinMeta();
+        $this->binMetaCache[$bin6] = $fallback;
+        return $fallback;
+    }
+
+    private function fetchBinlist(string $bin): ?array
+    {
         $ch = curl_init("https://lookup.binlist.net/{$bin}");
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 5,
+            CURLOPT_TIMEOUT => 3,
             CURLOPT_HTTPHEADER => ['Accept-Version: 3'],
             CURLOPT_USERAGENT => 'Mozilla/5.0',
             CURLOPT_SSL_VERIFYPEER => false,
@@ -226,7 +250,7 @@ class CheckCardJobService
         if ($status === 200 && $body) {
             $data = json_decode($body, true);
             if (is_array($data)) {
-                $meta = [
+                return [
                     'bank' => $data['bank']['name'] ?? 'Unknown',
                     'country' => $data['country']['name'] ?? 'Unknown',
                     'flag' => $data['country']['emoji'] ?? '🏳',
@@ -235,14 +259,42 @@ class CheckCardJobService
                     'brand' => strtoupper($data['brand'] ?? 'CLASSIC'),
                     'extra_info' => '-',
                 ];
-                $this->binMetaCache[$bin] = $meta;
-                return $meta;
             }
         }
+        return null;
+    }
 
-        $fallback = $this->fallbackBinMeta();
-        $this->binMetaCache[$bin] = $fallback;
-        return $fallback;
+    private function fetchHandyAPI(string $bin): ?array
+    {
+        $ch = curl_init("https://data.handyapi.com/bin/{$bin}");
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 3,
+            CURLOPT_SSL_VERIFYPEER => false,
+        ]);
+        $body = curl_exec($ch);
+        curl_close($ch);
+
+        if ($body) {
+            $data = json_decode($body, true);
+            if (($data['Status'] ?? '') === 'SUCCESS') {
+                $cc = $data['Country']['A2'] ?? '';
+                $flag = '🏳';
+                if (strlen($cc) === 2 && function_exists('mb_chr')) {
+                    $flag = mb_chr(127397 + ord(strtoupper($cc[0]))) . mb_chr(127397 + ord(strtoupper($cc[1])));
+                }
+                return [
+                    'bank' => $data['Issuer'] ?? 'Unknown',
+                    'country' => $data['Country']['Name'] ?? 'Unknown',
+                    'flag' => $flag,
+                    'scheme' => strtoupper($data['Scheme'] ?? '?'),
+                    'type' => ucfirst(strtolower($data['Type'] ?? '?')),
+                    'brand' => strtoupper($data['CardTier'] ?? 'CLASSIC'),
+                    'extra_info' => '-',
+                ];
+            }
+        }
+        return null;
     }
 
     private function fallbackBinMeta(): array

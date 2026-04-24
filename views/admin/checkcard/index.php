@@ -181,8 +181,11 @@ $historyLives = $historyLives ?? [];
                                                 <span class="cc-badge-norm approved">Approved ✅</span>
                                                 <span style="color:var(--cc-muted); font-size:11px">[<?= explode(' ', $row['created_at'])[1] ?? '' ?>]</span>
                                             </div>
-                                            <div class="cc-result-card-row" style="font-size:15px; margin: 8px 0">
-                                                <?= htmlspecialchars($row['card']) ?>
+                                            <div class="cc-result-card-row" style="font-size:15px; margin: 8px 0; display: flex; justify-content: space-between; align-items: center;">
+                                                <span style="font-family: monospace; font-weight: bold;"><?= htmlspecialchars($row['card']) ?></span>
+                                                <button type="button" class="btn btn-sm btn-light" style="padding: 2px 6px; font-size: 11px; border: 1px solid #ddd;" onclick="copyText('<?= htmlspecialchars($row['card']) ?>'); showToast('Đã copy thẻ!')">
+                                                    <i class="fas fa-copy text-secondary"></i> Copy
+                                                </button>
                                             </div>
                                             <div style="display:flex; flex-wrap:wrap; gap:4px">
                                                 <span class="cc-meta-chip country">🌍 <?= htmlspecialchars($row['country'] ?? 'Unknown') ?> <?= $row['flag'] ?? '🏳' ?></span>
@@ -670,8 +673,11 @@ $historyLives = $historyLives ?? [];
                             <span class="cc-badge-norm approved">Approved ✅</span>
                             <span style="color:var(--cc-muted); font-size:11px">[${(row.created_at || '').split(' ')[1] || ''}]</span>
                         </div>
-                        <div class="cc-result-card-row" style="font-size:15px; margin: 8px 0">
-                            ${esc(row.card)}
+                        <div class="cc-result-card-row" style="font-size:15px; margin: 8px 0; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-family: monospace; font-weight: bold;">${esc(row.card)}</span>
+                            <button type="button" class="btn btn-sm btn-light" style="padding: 2px 6px; font-size: 11px; border: 1px solid #ddd;" onclick="copyText('${esc(row.card)}'); showToast('Đã copy thẻ!')">
+                                <i class="fas fa-copy text-secondary"></i> Copy
+                            </button>
                         </div>
                         <div style="display:flex; flex-wrap:wrap; gap:4px">
                             <span class="cc-meta-chip country">🌍 ${esc(row.country || 'Unknown')} ${row.flag || '🏳'}</span>
