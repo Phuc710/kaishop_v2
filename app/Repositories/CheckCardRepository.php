@@ -44,13 +44,45 @@ class CheckCardRepository
         return (bool) $stmt->fetch();
     }
 
-    public function createJob(
+    public function getOrCreateJobForGate(
         string $gateId,
         string $gateName,
         array $config,
         int $threads,
         int $target
     ): int {
+        // Find existing job for this gate
+        $stmt = $this->db->prepare("
+            SELECT id FROM checkcard_jobs 
+            WHERE gate_id = ? 
+            ORDER BY id DESC LIMIT 1
+        ");
+        $stmt->execute([$gateId]);
+        $existingJobId = $stmt->fetchColumn();
+
+        if ($existingJobId) {
+            // Update existing job to 'running' and potentially update config
+            $stmt = $this->db->prepare("
+                UPDATE checkcard_jobs
+                SET gate_name = ?,
+                    config_json = ?,
+                    threads = ?,
+                    total_target = ?,
+                    status = 'running',
+                    updated_at = NOW()
+                WHERE id = ?
+            ");
+            $stmt->execute([
+                $gateName,
+                json_encode($config, JSON_UNESCAPED_UNICODE),
+                $threads,
+                $target,
+                $existingJobId
+            ]);
+            return (int) $existingJobId;
+        }
+
+        // Otherwise create new
         $stmt = $this->db->prepare("
             INSERT INTO checkcard_jobs
             (
@@ -134,6 +166,17 @@ class CheckCardRepository
             ");
             $stmt->execute([$jobId]);
 
+            // Reset counts for this job
+            $stmt = $this->db->prepare("
+                UPDATE checkcard_jobs
+                SET live_count = 0,
+                    dead_count = 0,
+                    err_count = 0,
+                    checked_count = 0
+                WHERE id = ?
+            ");
+            $stmt->execute([$jobId]);
+
             $this->db->commit();
         } catch (Throwable $e) {
             if ($this->db->inTransaction()) {
@@ -142,6 +185,23 @@ class CheckCardRepository
 
             throw $e;
         }
+    }
+
+    public function getLatestLivesByGate(string $gateId, int $limit = 50): array
+    {
+        $stmt = $this->db->prepare("
+            SELECT l.* 
+            FROM checkcard_lives l
+            JOIN checkcard_jobs j ON l.job_id = j.id
+            WHERE j.gate_id = ?
+            ORDER BY l.id DESC
+            LIMIT ?
+        ");
+        $stmt->bindValue(1, $gateId);
+        $stmt->bindValue(2, $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return array_reverse($stmt->fetchAll());
     }
 
     public function findJobById(int $jobId): ?array

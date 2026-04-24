@@ -19,10 +19,18 @@ class CheckCardJobService
     {
         $this->repository->stopStaleRunningJobs();
 
+        $gateways = $this->gatewayService->getGateways();
+        $historyLives = [];
+        
+        foreach ($gateways as $id => $gate) {
+            $historyLives[$id] = $this->repository->getLatestLivesByGate((string) $id, 100);
+        }
+
         return [
-            'gateways' => $this->gatewayService->getGateways(),
+            'gateways' => $gateways,
             'activeJobs' => $this->repository->getActiveJobs(),
             'globalTotals' => $this->repository->getGlobalTotals(),
+            'historyLives' => $historyLives,
         ];
     }
 
@@ -40,12 +48,12 @@ class CheckCardJobService
         }
 
         $config = $this->normalizeConfig($data);
-        $jobId = $this->repository->createJob(
+        $jobId = $this->repository->getOrCreateJobForGate(
             $gateId,
             (string) $gateway['name'],
             $config,
             (int) $config['threads'],
-            (int) $config['batch']
+            0 // Force total_target to 0 for infinite loop
         );
 
         $this->triggerDaemon($jobId);
@@ -133,19 +141,15 @@ class CheckCardJobService
         }
 
         $checked = (int) ($job['checked_count'] ?? 0);
-        $target = (int) ($job['total_target'] ?? 0);
         $threads = max(1, (int) ($job['threads'] ?? 1));
         $startedAt = time();
 
-        while ($target <= 0 || $checked < $target) {
+        while (true) {
             if (!$this->repository->jobIsRunning($jobId)) {
                 return;
             }
 
             $batchSize = $threads;
-            if ($target > 0) {
-                $batchSize = min($threads, $target - $checked);
-            }
 
             $result = $this->gatewayService->runBatch($batchSize, $config, $gateway);
 
@@ -196,7 +200,49 @@ class CheckCardJobService
 
     private function resolveBinMeta(string $bin): array
     {
-        return $this->fallbackBinMeta();
+        $bin = substr(preg_replace('/[^0-9]/', '', $bin), 0, 8);
+        if (strlen($bin) < 6) {
+            return $this->fallbackBinMeta();
+        }
+
+        if (isset($this->binMetaCache[$bin])) {
+            return $this->binMetaCache[$bin];
+        }
+
+        // Try binlist.net
+        $ch = curl_init("https://lookup.binlist.net/{$bin}");
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 5,
+            CURLOPT_HTTPHEADER => ['Accept-Version: 3'],
+            CURLOPT_USERAGENT => 'Mozilla/5.0',
+            CURLOPT_SSL_VERIFYPEER => false,
+        ]);
+        
+        $body = curl_exec($ch);
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($status === 200 && $body) {
+            $data = json_decode($body, true);
+            if (is_array($data)) {
+                $meta = [
+                    'bank' => $data['bank']['name'] ?? 'Unknown',
+                    'country' => $data['country']['name'] ?? 'Unknown',
+                    'flag' => $data['country']['emoji'] ?? '🏳',
+                    'scheme' => strtoupper($data['scheme'] ?? '?'),
+                    'type' => ucfirst($data['type'] ?? '?'),
+                    'brand' => strtoupper($data['brand'] ?? 'CLASSIC'),
+                    'extra_info' => '-',
+                ];
+                $this->binMetaCache[$bin] = $meta;
+                return $meta;
+            }
+        }
+
+        $fallback = $this->fallbackBinMeta();
+        $this->binMetaCache[$bin] = $fallback;
+        return $fallback;
     }
 
     private function fallbackBinMeta(): array

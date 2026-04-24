@@ -13,6 +13,7 @@ require __DIR__ . '/../layout/breadcrumb.php';
 
 $gateways = $gateways ?? [];
 $activeJobs = $activeJobs ?? [];
+$historyLives = $historyLives ?? [];
 ?>
 
 <link rel="stylesheet" href="<?= asset('assets/css/checkcard.css') ?>?v=<?= time() ?>">
@@ -173,8 +174,27 @@ $activeJobs = $activeJobs ?? [];
                             </div>
                             <div class="cc-live-list" id="lives-<?= $gid ?>"
                                 style="flex: 1; max-height: 400px; overflow-y: auto;">
-                                <div style="color:var(--cc-muted);font-size:12px;text-align:center;padding:15px 0">Chưa có
-                                    thẻ LIVE nào.</div>
+                                <?php if (!empty($historyLives[$gid])): ?>
+                                    <?php foreach ($historyLives[$gid] as $row): ?>
+                                        <div class="cc-live-entry">
+                                            <div class="cc-result-card-row">
+                                                <span class="cc-badge-norm approved">Approved ✅</span>
+                                                <span style="color:var(--cc-muted); font-size:11px">[<?= explode(' ', $row['created_at'])[1] ?? '' ?>]</span>
+                                            </div>
+                                            <div class="cc-result-card-row" style="font-size:15px; margin: 8px 0">
+                                                <?= htmlspecialchars($row['card']) ?>
+                                            </div>
+                                            <div style="display:flex; flex-wrap:wrap; gap:4px">
+                                                <span class="cc-meta-chip country">🌍 <?= htmlspecialchars($row['country'] ?? 'Unknown') ?> <?= $row['flag'] ?? '🏳' ?></span>
+                                                <span class="cc-meta-chip bank">🏛 <?= htmlspecialchars($row['bank'] ?? 'Unknown') ?></span>
+                                                <span class="cc-meta-chip scheme">💳 <?= htmlspecialchars($row['scheme'] ?? '?') ?></span>
+                                                <span class="cc-meta-chip type"><?= htmlspecialchars($row['type'] ?? '?') ?> / <?= htmlspecialchars($row['brand'] ?? 'CLASSIC') ?></span>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <div style="color:var(--cc-muted);font-size:12px;text-align:center;padding:15px 0">Chưa có thẻ LIVE nào.</div>
+                                <?php endif; ?>
                             </div>
                         </div>
 
@@ -293,8 +313,11 @@ $activeJobs = $activeJobs ?? [];
                             style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px dashed #eee; padding-bottom:15px; margin-bottom:25px;">
                             <div style="font-size:28px; font-weight:900; letter-spacing:2px; font-family:monospace; color:var(--cc-text);"
                                 id="d-bin">515462</div>
-                            <div id="d-brand-badge" class="badge badge-primary px-3 py-2"
-                                style="font-size:14px; text-transform:uppercase;">MASTERCARD</div>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <button class="btn btn-sm btn-outline-primary" style="padding: 6px 12px; font-size: 13px; font-weight: 600; border-radius: 6px;" onclick="copyBinInfo()"><i class="fas fa-copy mr-1"></i> COPY</button>
+                                <div id="d-brand-badge" class="badge badge-primary px-3 py-2"
+                                    style="font-size:14px; text-transform:uppercase;">MASTERCARD</div>
+                            </div>
                         </div>
 
                         <div class="row w-100 m-0">
@@ -357,18 +380,26 @@ $activeJobs = $activeJobs ?? [];
     const API_STOP = '<?= url('admin/check-card/stop-job') ?>';
     const API_STATUS = '<?= url('admin/check-card/status') ?>';
     const API_CLEAR = '<?= url('admin/check-card/clear-log') ?>';
-    const MAX_FEED_ITEMS = 5000;
-    const MAX_LIVE_ITEMS = 5000;
+    const MAX_FEED_ITEMS = 10000;
+    const MAX_LIVE_ITEMS = 10000;
 
     const GATES = {};
     <?php foreach ($gateways as $gid => $gate): ?>
+        <?php 
+           $lastId = 0;
+           $storedCards = [];
+           if (!empty($historyLives[$gid])) {
+               $lastId = end($historyLives[$gid])['id'];
+               foreach($historyLives[$gid] as $rl) $storedCards[] = $rl['card'];
+           }
+        ?>
         GATES['<?= $gid ?>'] = {
             gateId: '<?= $gid ?>',
             name: '<?= addslashes($gate['name']) ?>',
             jobId: 0,
             running: false,
-            lastLive: 0,
-            lives: [],
+            lastLive: <?= $lastId ?>,
+            lives: <?= json_encode($storedCards) ?>,
             prevChecked: 0,
             lastUpdate: 0,
         };
@@ -504,7 +535,7 @@ $activeJobs = $activeJobs ?? [];
 
             g.jobId = data.job_id;
             g.running = true;
-            g.lastLive = 0;
+            // Removed: g.lastLive = 0; (Stay with current history)
 
             startBtn.style.display = 'none';
             startBtn.disabled = false;
@@ -647,9 +678,6 @@ $activeJobs = $activeJobs ?? [];
                             <span class="cc-meta-chip bank">🏛 ${esc(row.bank || 'Unknown')}</span>
                             <span class="cc-meta-chip scheme">💳 ${esc(row.scheme || '?')}</span>
                             <span class="cc-meta-chip type">${esc(row.type || '?')} / ${esc(row.brand || 'CLASSIC')}</span>
-                        </div>
-                        <div style="margin-top:8px; font-size:12px; color:var(--cc-muted); font-style:italic">
-                            💬 ${esc(row.message || 'Approved')}
                         </div>
                     `;
                         const shouldStickToBottom = isNearBottom(liveEl);
@@ -815,6 +843,20 @@ $activeJobs = $activeJobs ?? [];
             document.getElementById('btn-lookup').disabled = false;
             showBinState('error', 'Lỗi mạng: ' + err.message);
         }
+    }
+
+    function copyBinInfo() {
+        const bin = document.getElementById('d-bin').textContent;
+        const brand = document.getElementById('d-brand-badge').textContent;
+        const bank = document.getElementById('d-bank').textContent;
+        const country = document.getElementById('d-country').textContent;
+        const flag = document.getElementById('d-flag').textContent;
+        const type = document.getElementById('d-type').textContent;
+        const level = document.getElementById('d-level').textContent;
+
+        const text = `Bin : ${bin}\nCountry : ${country} ${flag}\nBrand : ${brand}\nLevel : ${level}\nType : ${type}\nBank : ${bank}`;
+        copyText(text);
+        showToast('Đã copy thông tin BIN');
     }
 
     function showBinState(state, msg = '') {
