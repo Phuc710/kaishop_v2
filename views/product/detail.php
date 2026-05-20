@@ -670,6 +670,9 @@ if ($rawDescHtml !== '') {
         }
 
         @media (max-width: 767.98px) {
+            .pd-wrap {
+                padding-top: 110px !important;
+            }
 
             .pd-gallery-stage,
             .pd-gallery-main-btn {
@@ -697,13 +700,13 @@ if ($rawDescHtml !== '') {
             .pd-meta-line {
                 align-items: center;
                 justify-content: space-between;
-                flex-wrap: wrap;
+                flex-wrap: nowrap !important;
             }
 
             .pd-stock {
                 text-align: right;
                 width: auto;
-                margin-left: auto;
+                margin-left: 0;
                 white-space: nowrap;
             }
         }
@@ -939,7 +942,8 @@ if ($rawDescHtml !== '') {
             quoteUrl: <?= json_encode(url('product/' . $productId . '/quote'), JSON_UNESCAPED_UNICODE) ?>,
             purchaseUrl: <?= json_encode(url('product/' . $productId . '/purchase'), JSON_UNESCAPED_UNICODE) ?>,
             loginUrl: <?= json_encode(url('login'), JSON_UNESCAPED_UNICODE) ?>,
-            csrfToken: <?= json_encode(function_exists('csrf_token') ? csrf_token() : '', JSON_UNESCAPED_UNICODE) ?>
+            csrfToken: <?= json_encode(function_exists('csrf_token') ? csrf_token() : '', JSON_UNESCAPED_UNICODE) ?>,
+            isLoggedIn: <?= ($user !== null) ? 'true' : 'false' ?>
         };
         const PRODUCT_GALLERY_IMAGES = <?= json_encode(array_values($galleryImages), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
         const PRODUCT_GALLERY_FALLBACK = <?= json_encode(asset('assets/images/banner-bg-03.png'), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
@@ -1331,6 +1335,11 @@ if ($rawDescHtml !== '') {
                 : 'Thanh toán thành công.');
         }
         function buyProduct(id) {
+            if (!PRODUCT_DETAIL.isLoggedIn) {
+                window.location.href = PRODUCT_DETAIL.loginUrl;
+                return;
+            }
+
             if (!PRODUCT_DETAIL.canPurchase) {
                 return;
             }

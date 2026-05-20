@@ -4859,6 +4859,14 @@ Footer   End
     transform-origin: bottom right !important;
 }
 
+@media (max-width: 767.98px) {
+    .gtranslate_wrapper,
+    .gt_float_switcher {
+        bottom: 85px !important;
+        right: 15px !important;
+    }
+}
+
 /* Override GTranslate Default Styles */
 .gt_float_switcher {
     font-family: inherit !important;
