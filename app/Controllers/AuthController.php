@@ -171,7 +171,7 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'Đăng nhập thành công.',
             'access_expires_in' => 900,
-            'refresh_expires_in' => $rememberMe ? 1209600 : 86400
+            'refresh_expires_in' => $rememberMe ? 2592000 : 86400
         ]);
     }
 
@@ -503,7 +503,7 @@ class AuthController extends Controller
             'message' => 'Xác minh OTP thành công. Đăng nhập thành công.',
             'redirect' => url(''),
             'access_expires_in' => 900,
-            'refresh_expires_in' => $rememberMe ? 1209600 : 86400
+            'refresh_expires_in' => $rememberMe ? 2592000 : 86400
         ]);
     }
 
@@ -764,7 +764,7 @@ class AuthController extends Controller
             'message' => 'Đăng nhập Google thành công.',
             'redirect' => url(''),
             'access_expires_in' => 900,
-            'refresh_expires_in' => $rememberMe ? 1209600 : 86400
+            'refresh_expires_in' => $rememberMe ? 2592000 : 86400
         ]);
     }
 

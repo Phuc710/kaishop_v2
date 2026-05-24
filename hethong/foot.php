@@ -56,6 +56,10 @@
     $(document).ready(function () {
         // 1. Links Click - Navigation Loading
         $(document).on('click', 'a', function (e) {
+            if ($(this).hasClass('no-loader') || $(this).attr('data-bs-toggle')) {
+                return;
+            }
+
             const href = $(this).attr('href');
             const target = $(this).attr('target');
 
@@ -70,14 +74,23 @@
                 if (url.origin !== window.location.origin) return;
             } catch(err) { /* invalid URL, probably relative, continue */ }
 
-            KaiLoader.show();
+            setTimeout(function () {
+                if (!e.isDefaultPrevented()) {
+                    KaiLoader.show();
+                }
+            }, 0);
         });
 
         // 2. Forms Submit
-        $(document).on('submit', 'form', function () {
+        $(document).on('submit', 'form', function (e) {
             // Skip forms with 'no-loader' class if needed
             if ($(this).hasClass('no-loader')) return;
-            KaiLoader.show();
+
+            setTimeout(function () {
+                if (!e.isDefaultPrevented()) {
+                    KaiLoader.show();
+                }
+            }, 0);
         });
 
         // 3. Keep old filter logic but use new loader

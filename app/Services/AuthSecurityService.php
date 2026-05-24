@@ -21,7 +21,7 @@ class AuthSecurityService
     private const DEVICE_COOKIE = 'ks_dv';
 
     private const ACCESS_TTL = 900; // 15 minutes
-    private const REFRESH_TTL_REMEMBER = 1209600; // 14 days
+    private const REFRESH_TTL_REMEMBER = 2592000; // 30 days
     private const REFRESH_TTL_DEFAULT = 86400; // 1 day
     private const TRUSTED_DEVICE_DAYS = 30;
     private const IP_BURST_LIMIT = 10;
