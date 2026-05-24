@@ -372,7 +372,7 @@ class CheckCardJobService
             return $baseUrl;
         }
 
-        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        $scheme = (function_exists('app_is_https') ? app_is_https() : (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'))
             ? 'https'
             : 'http';
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';

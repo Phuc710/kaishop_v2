@@ -820,6 +820,8 @@ if ($rawDescHtml !== '') {
                                 <span class="pd-chip success"><i class="fas fa-user-shield"></i> Tài Khoản</span>
                             <?php elseif ($deliveryMode === 'source_link' || $productType === 'link'): ?>
                                 <span class="pd-chip info"><i class="fas fa-link"></i> Source</span>
+                            <?php elseif ($deliveryMode === 'business_invite_auto'): ?>
+                                <span class="pd-chip success" style="background:#10b981;color:#fff;"><i class="fas fa-robot"></i> GPT Business (Auto)</span>
                             <?php elseif ($deliveryMode === 'manual_info'): ?>
                                 <span class="pd-chip warn"><i class="fas fa-keyboard"></i> Yêu cầu thông tin</span>
                             <?php endif; ?>

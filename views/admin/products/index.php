@@ -188,12 +188,14 @@ require_once __DIR__ . '/../layout/breadcrumb.php';
                                             <?php endif; ?>
                                         </td>
                                         <td class="text-center align-middle">
-                                            <?php if ($isManualRequest): ?>
+                                            <?php if (($p['delivery_mode'] ?? '') === 'manual_info'): ?>
                                                 <span class="badge badge-warning"><i class="fas fa-keyboard mr-1"></i>Yêu cầu thông tin</span>
-                                            <?php elseif ($isAccount): ?>
-                                                <span class="badge badge-info"><i class="fas fa-user mr-1"></i>Tài khoản</span>
-                                            <?php else: ?>
+                                            <?php elseif (($p['delivery_mode'] ?? '') === 'source_link'): ?>
                                                 <span class="badge badge-purple" style="background:#8b5cf6;color:#fff;"><i class="fas fa-link mr-1"></i>Source</span>
+                                            <?php elseif (($p['delivery_mode'] ?? '') === 'business_invite_auto'): ?>
+                                                <span class="badge badge-success" style="background:#10b981;color:#fff;"><i class="fas fa-robot mr-1"></i>GPT Business (Auto)</span>
+                                            <?php else: ?>
+                                                <span class="badge badge-info"><i class="fas fa-user mr-1"></i>Tài khoản</span>
                                             <?php endif; ?>
                                         </td>
                                         <td class="text-center align-middle text-muted small">

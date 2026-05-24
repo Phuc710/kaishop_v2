@@ -808,7 +808,7 @@ class AuthSecurityService
 
     private function setCookie($name, $value, $expiresAt, $httpOnly)
     {
-        $isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+        $isHttps = function_exists('app_is_https') ? app_is_https() : (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
         $path = trim((string) EnvHelper::get('APP_DIR', ''));
         $cookiePath = $path === '' || $path === '/'
             ? '/'

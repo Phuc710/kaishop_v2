@@ -8,6 +8,16 @@
 require_once dirname(__DIR__) . '/app/Helpers/EnvHelper.php';
 EnvHelper::load(dirname(__DIR__) . '/.env');
 
+if (!function_exists('app_is_https')) {
+    function app_is_https(): bool
+    {
+        return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443)
+            || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https')
+            || (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower($_SERVER['HTTP_X_FORWARDED_SSL']) === 'on');
+    }
+}
+
 $appBasePath = dirname(__DIR__);
 
 if (!defined('APP_DIR')) {
@@ -34,8 +44,7 @@ if (!defined('APP_DIR')) {
 
 // Start session with safer cookie flags
 if (session_status() === PHP_SESSION_NONE) {
-    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-        || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443);
+    $isHttps = app_is_https();
 
     $configuredSessionPath = trim((string) ini_get('session.save_path'));
     $normalizedSessionPath = preg_replace('/^\d+;/', '', $configuredSessionPath) ?? $configuredSessionPath;
@@ -77,7 +86,7 @@ if (!defined('BASE_PATH')) {
 if (PHP_SAPI === 'cli') {
     $baseUrl = (string) EnvHelper::get('BASE_URL', 'http://localhost');
 } else {
-    $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http");
+    $protocol = app_is_https() ? "https" : "http";
     $host = $_SERVER["HTTP_HOST"] ?? 'localhost';
     $baseUrl = $protocol . "://" . $host . APP_DIR;
 }
@@ -212,8 +221,7 @@ if (!function_exists('app_normalize_origin')) {
 if (!function_exists('app_current_origin')) {
     function app_current_origin(): string
     {
-        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-            || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443);
+        $isHttps = app_is_https();
         $scheme = $isHttps ? 'https' : 'http';
         $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
 
@@ -271,8 +279,7 @@ if (!headers_sent()) {
 // CSRF token helpers (shared across legacy + MVC views)
 $csrfCookieName = 'ks_csrf';
 $csrfCookieToken = trim((string) ($_COOKIE[$csrfCookieName] ?? ''));
-$csrfCookieSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-    || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443);
+$csrfCookieSecure = app_is_https();
 if ($csrfCookieToken === '' || !preg_match('/^[a-f0-9]{64}$/', $csrfCookieToken)) {
     $csrfCookieToken = bin2hex(random_bytes(32));
     $_COOKIE[$csrfCookieName] = $csrfCookieToken;
@@ -314,8 +321,7 @@ if (!function_exists('csrf_regenerate')) {
         $token = bin2hex(random_bytes(32));
         $GLOBALS['__ks_csrf_token'] = $token;
         $_COOKIE['ks_csrf'] = $token;
-        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-            || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443);
+        $isHttps = app_is_https();
         setcookie('ks_csrf', $token, [
             'expires' => time() + 31536000,
             'path' => '/',

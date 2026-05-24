@@ -523,7 +523,7 @@ HTML;
             $siteUrl = rtrim((string) BASE_URL, '/');
         } elseif (class_exists('EnvHelper')) {
             $appDir = (string) EnvHelper::get('APP_DIR', '');
-            $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            $scheme = (function_exists('app_is_https') ? app_is_https() : (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')) ? 'https' : 'http';
             $hostHeader = (string) ($_SERVER['HTTP_HOST'] ?? 'localhost');
             $siteUrl = rtrim($scheme . '://' . $hostHeader . $appDir, '/');
         }
