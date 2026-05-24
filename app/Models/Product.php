@@ -454,6 +454,10 @@ class Product extends Model
             return 'business_invite_auto';
         }
 
+        if ($productType === 'link') {
+            return 'source_link';
+        }
+
         if ($requiresInfo) {
             return 'manual_info';
         }
