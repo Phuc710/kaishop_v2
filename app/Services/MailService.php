@@ -173,6 +173,47 @@ class MailService
         return $this->send($email, $recipientName, $subject, $body);
     }
 
+    /**
+     * Send warranty update notification email to the customer
+     *
+     * @param array $user
+     * @param array $order
+     * @param string $newContent
+     * @return bool
+     */
+    public function sendWarrantyUpdate($user, $order, $newContent)
+    {
+        $email = trim((string) ($user['email'] ?? ''));
+        if ($email === '') {
+            return false;
+        }
+
+        $recipientName = $this->resolveRecipientName($user);
+        $orderCode = trim((string) ($order['order_code_short'] ?? $order['order_code'] ?? ''));
+        if ($orderCode === '') {
+            $orderCode = strtoupper(substr(hash('sha256', (string) ($order['order_code'] ?? '')), 0, 8));
+        }
+        $productName = trim((string) ($order['product_name'] ?? 'Sản phẩm'));
+
+        $subject = "[🔧 Bảo hành] Cập nhật thông tin đơn hàng #{$orderCode}";
+        $headline = "Cập nhật thông tin bảo hành 🔄";
+
+        $content = <<<HTML
+<p>👋 Xin chào <strong>{$recipientName}</strong>,</p>
+<p>Đơn hàng <strong style="color:#2563eb;">#{$orderCode}</strong> (Sản phẩm: <strong>{$productName}</strong>) của bạn vừa được cập nhật thông tin bảo hành/hỗ trợ mới.</p>
+
+<div style="margin:24px 0;padding:20px;border-radius:12px;background-color:#ffffff;border:1px solid #e2e8f0;border-left:4px solid #eab308;">
+    <div style="font-size:13px;color:#1e293b;font-weight:700;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.3px;">🔑 Thông tin tài khoản/nội dung mới:</div>
+    <div style="font-size:13px;color:#475569;line-height:1.8;word-break:break-all;font-family:'Courier New',Courier,monospace;background:#f8fafc;padding:12px 14px;border-radius:8px;border:1px solid #e2e8f0;white-space:pre-wrap;">{$newContent}</div>
+</div>
+
+<p style="font-size:14px;color:#64748b;">Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ với bộ phận hỗ trợ khách hàng của chúng tôi.</p>
+HTML;
+
+        $body = $this->buildLayout($subject, $headline, $content);
+        return $this->send($email, $recipientName, $subject, $body);
+    }
+
     public function buildLayout($subject, $headline, $content)
     {
         $safeSubject = $this->e($subject);

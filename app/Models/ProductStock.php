@@ -347,43 +347,72 @@ class ProductStock extends Model
             // Keep stock update non-blocking if order sync fails.
         }
 
-        // Notify buyer via Telegram if they have a linked account
-        $this->notifyTelegramUserOfContentUpdate($orderId, $content);
+        // Notify buyer via Telegram or Email
+        $this->sendWarrantyNotifications($orderId, $content);
     }
 
-    private function notifyTelegramUserOfContentUpdate(int $orderId, string $newContent): void
+    private function sendWarrantyNotifications(int $orderId, string $newContent): void
     {
         try {
+            // Get order, buyer's username and email from users table
             $stmt = $this->db->prepare("
-                SELECT o.order_code, o.product_name, l.telegram_id
+                SELECT o.order_code, o.product_name, u.id as user_id, u.username, u.email
                 FROM `orders` o
-                LEFT JOIN `user_telegram_links` l ON l.user_id = o.user_id
+                INNER JOIN `users` u ON o.user_id = u.id
                 WHERE o.id = ?
                 LIMIT 1
             ");
             $stmt->execute([$orderId]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
 
-            if (!$row || empty($row['telegram_id'])) {
+            if (!$row) {
                 return;
             }
 
-            $orderCode = strtoupper(substr(hash('sha256', (string) ($row['order_code'] ?? '')), 0, 8));
-            $productName = htmlspecialchars((string) ($row['product_name'] ?? 'Sản phẩm'), ENT_QUOTES, 'UTF-8');
-            $contentEsc = htmlspecialchars($newContent, ENT_QUOTES, 'UTF-8');
+            $username = trim((string) ($row['username'] ?? ''));
+            $email = trim((string) ($row['email'] ?? ''));
 
-            if (!class_exists('TelegramService')) {
-                return;
+            // 1. Check if it's a Telegram account (starts with tg_ and followed by digits)
+            $isTeleAccount = false;
+            $telegramId = '';
+            if (strpos($username, 'tg_') === 0) {
+                $possibleId = substr($username, 3);
+                if (is_numeric($possibleId)) {
+                    $isTeleAccount = true;
+                    $telegramId = $possibleId;
+                }
             }
 
-            $msg = "🔄 <b>CẬP NHẬT NỘI DUNG ĐƠN HÀNG</b>\n\n"
-                 . "📦 Sản phẩm: <b>{$productName}</b>\n"
-                 . "🔖 Mã đơn: <code>{$orderCode}</code>\n\n"
-                 . "🔑 Nội dung mới:\n<code>{$contentEsc}</code>";
+            if ($isTeleAccount && $telegramId !== '') {
+                // Send directly via Telegram Bot
+                if (class_exists('TelegramService')) {
+                    $orderCode = strtoupper(substr(hash('sha256', (string) ($row['order_code'] ?? '')), 0, 8));
+                    $productName = htmlspecialchars((string) ($row['product_name'] ?? 'Sản phẩm'), ENT_QUOTES, 'UTF-8');
+                    $contentEsc = htmlspecialchars($newContent, ENT_QUOTES, 'UTF-8');
 
-            (new TelegramService())->sendTo((string) $row['telegram_id'], $msg);
+                    $currentTime = date('d/m/Y H:i');
+                    $msg = "🌟 <b>THÔNG BÁO BH ({$productName})</b> 🌟\n"
+                         . "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                         . "🔖 Mã đơn: <code>#{$orderCode}</code>\n"
+                         . "📅 Thời gian: <code>{$currentTime}</code>\n"
+                         . "🔑 Nội dung:\n<code>{$contentEsc}</code>\n"
+                         . "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                         . "💡 Nếu có bất kỳ thắc mắc nào, hãy liên hệ ngay với CSKH để được hỗ trợ.\n"
+                         . "❤️ Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ! ❤️";
+
+                    (new TelegramService())->sendTo($telegramId, $msg);
+                }
+            } else {
+                // 2. Web account: send via Email (if email is not empty, is valid, and is not a placeholder tg_ email)
+                if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) && strpos($email, '@telegram.bot') === false) {
+                    if (class_exists('MailService')) {
+                        $mailService = new MailService();
+                        $mailService->sendWarrantyUpdate($row, $row, $newContent);
+                    }
+                }
+            }
         } catch (Throwable $e) {
-            // Non-blocking — Telegram notification failure must not affect stock update.
+            // Non-blocking — notification failure must not affect stock update.
         }
     }
 }
