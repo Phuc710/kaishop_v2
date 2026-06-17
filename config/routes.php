@@ -45,6 +45,7 @@ $routes = [
     // ========== PROFILE ROUTES ==========
     ['GET', '/profile', 'ProfileController@index'],
     ['POST', '/profile/update', 'ProfileController@update'],
+    ['POST', '/profile/upload-avatar', 'ProfileController@uploadAvatar'],
     ['GET', '/password', 'PasswordController@index'],
     ['POST', '/password/update', 'PasswordController@update'],
     ['POST', '/password/security', 'PasswordController@updateSecurity'],

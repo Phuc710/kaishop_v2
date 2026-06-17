@@ -59,6 +59,67 @@ require __DIR__ . '/layout/header.php';
             background: #eff6ff;
             border-color: 2px solid #000 !important;
         }
+
+        .avatar-upload-wrapper {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .avatar-preview-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 3px solid #ff6900;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: all 0.25s ease;
+            margin: 0 auto;
+        }
+
+        .avatar-preview-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .avatar-upload-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .avatar-upload-overlay i {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        .avatar-preview-container.editable {
+            cursor: pointer;
+        }
+
+        .avatar-preview-container.editable:hover .avatar-upload-overlay {
+            opacity: 1;
+        }
+
+        .avatar-preview-container.editable:hover {
+            transform: scale(1.03);
+            border-color: #0d28fd;
+        }
     </style>
     <?php
     $currentBalance = (int) ($user['money'] ?? 0);
@@ -127,6 +188,28 @@ require __DIR__ . '/layout/header.php';
             <form id="profile-form" class="row g-4" novalidate>
                 <input type="hidden" name="twofa_enabled" value="<?= $twofaEnabled ? '1' : '0' ?>">
 
+                <!-- Avatar Upload Section -->
+                <div class="col-md-12 text-center mb-2">
+                    <div class="avatar-upload-wrapper">
+                        <?php
+                        $userAvatar = trim((string) ($user['avatar_url'] ?? ''));
+                        if ($userAvatar === '') {
+                            $userAvatar = asset('assets/images/avt.png');
+                        }
+                        ?>
+                        <div class="avatar-preview-container" id="avatar-preview-container">
+                            <img id="avatar-preview" src="<?= htmlspecialchars($userAvatar, ENT_QUOTES, 'UTF-8') ?>" alt="Avatar">
+                            <div class="avatar-upload-overlay">
+                                <i class="fas fa-camera"></i>
+                                <span>Thay ảnh</span>
+                            </div>
+                        </div>
+                        <input type="file" id="avatar-file-input" accept="image/*" style="display: none;">
+                        <input type="hidden" name="avatar_url" id="avatar_url_hidden" value="<?= htmlspecialchars(($user['avatar_url'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                        <small class="text-muted d-block mt-2" style="font-size: 11px;">Đăng ảnh vuông (1:1), tự động nén & chuyển sang WebP.</small>
+                    </div>
+                </div>
+
                 <div class="col-md-12">
                     <label class="form-label user-label">Họ và tên</label>
                     <div class="custom-input-wrap">
@@ -182,6 +265,10 @@ require __DIR__ . '/layout/header.php';
             const emailInput = document.getElementById('email_input');
             const fullNameInput = document.getElementById('full_name_input');
             const editBtn = document.getElementById('btn-edit');
+            const avatarContainer = document.getElementById('avatar-preview-container');
+            const avatarFileInput = document.getElementById('avatar-file-input');
+            const avatarPreview = document.getElementById('avatar-preview');
+            const avatarUrlHidden = document.getElementById('avatar_url_hidden');
 
             function setEditMode(enabled) {
                 editMode = !!enabled;
@@ -196,6 +283,9 @@ require __DIR__ . '/layout/header.php';
                         fullNameInput.removeAttribute('readonly');
                         fullNameInput.classList.remove('custom-readonly');
                     }
+                    if (avatarContainer) {
+                        avatarContainer.classList.add('editable');
+                    }
                     editBtn.innerHTML = 'Lưu thay đổi';
                     editBtn.classList.remove('btn-edit-profile');
                     editBtn.classList.add('btn-save-green');
@@ -209,6 +299,9 @@ require __DIR__ . '/layout/header.php';
                 if (fullNameInput) {
                     fullNameInput.setAttribute('readonly', 'readonly');
                     fullNameInput.classList.add('custom-readonly');
+                }
+                if (avatarContainer) {
+                    avatarContainer.classList.remove('editable');
                 }
                 editBtn.innerHTML = 'Chỉnh sửa thông tin';
                 editBtn.classList.remove('btn-save-green');
@@ -238,6 +331,62 @@ require __DIR__ . '/layout/header.php';
 
             if (!form || !emailInput || !editBtn) {
                 return;
+            }
+
+            if (avatarContainer && avatarFileInput) {
+                avatarContainer.addEventListener('click', function () {
+                    if (editMode) {
+                        avatarFileInput.click();
+                    }
+                });
+
+                avatarFileInput.addEventListener('change', async function () {
+                    const file = avatarFileInput.files[0];
+                    if (!file) return;
+
+                    const formData = new FormData();
+                    formData.append('avatar_file', file);
+
+                    if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.loading === 'function') {
+                        SwalHelper.loading('Đang tải ảnh đại diện...');
+                    }
+                    editBtn.disabled = true;
+
+                    try {
+                        const response = await fetch('<?= url('profile/upload-avatar') ?>', {
+                            method: 'POST',
+                            body: formData,
+                            credentials: 'same-origin',
+                            cache: 'no-store'
+                        });
+                        const raw = await response.text();
+                        const data = JSON.parse(String(raw || '').replace(/^\uFEFF/, '').trim() || '{}');
+
+                        if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.closeLoading === 'function') {
+                            SwalHelper.closeLoading();
+                        }
+                        editBtn.disabled = false;
+
+                        if (data && data.success) {
+                            avatarPreview.src = data.avatar_url;
+                            avatarUrlHidden.value = data.avatar_url;
+                            // Update sidebar / navbar avatars dynamically if they exist on the page
+                            const navAvatars = document.querySelectorAll('img[alt="User Avatar"]');
+                            navAvatars.forEach(img => {
+                                img.src = data.avatar_url;
+                            });
+                            SwalHelper.toast('Đã tải lên ảnh đại diện thành công. Vui lòng nhấn Lưu thay đổi để lưu cấu hình.', 'success');
+                        } else {
+                            SwalHelper.error(data.message || 'Lỗi tải ảnh đại diện');
+                        }
+                    } catch (err) {
+                        if (typeof SwalHelper !== 'undefined' && typeof SwalHelper.closeLoading === 'function') {
+                            SwalHelper.closeLoading();
+                        }
+                        editBtn.disabled = false;
+                        SwalHelper.error('Không thể kết nối đến máy chủ.');
+                    }
+                });
             }
 
             editBtn.addEventListener('click', async function () {

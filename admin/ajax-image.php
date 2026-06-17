@@ -71,7 +71,7 @@ if (!is_dir($imageDir) && !@mkdir($imageDir, 0777, true) && !is_dir($imageDir)) 
 
 $action = trim((string) ($_POST['action'] ?? ''));
 
-function convertToWebP($source, $destination, $quality = 82, $targetW = 800, $targetH = 450)
+function convertToWebP($source, $destination, $quality = 82, $maxW = 1000, $maxH = 1000)
 {
     $info = @getimagesize($source);
     if (!$info || empty($info['mime'])) {
@@ -87,11 +87,6 @@ function convertToWebP($source, $destination, $quality = 82, $targetW = 800, $ta
             break;
         case 'image/png':
             $srcImage = @imagecreatefrompng($source);
-            if ($srcImage) {
-                imagepalettetotruecolor($srcImage);
-                imagealphablending($srcImage, true);
-                imagesavealpha($srcImage, true);
-            }
             break;
         case 'image/gif':
             $srcImage = @imagecreatefromgif($source);
@@ -107,27 +102,31 @@ function convertToWebP($source, $destination, $quality = 82, $targetW = 800, $ta
         return false;
     }
 
-    // Create white canvas at target size
-    $canvas = imagecreatetruecolor($targetW, $targetH);
+    // Calculate new dimensions keeping the aspect ratio
+    $scale = min($maxW / $srcW, $maxH / $srcH);
+    if ($scale < 1) {
+        $newW = (int) round($srcW * $scale);
+        $newH = (int) round($srcH * $scale);
+    } else {
+        $newW = $srcW;
+        $newH = $srcH;
+    }
+
+    // Create canvas at new size
+    $canvas = imagecreatetruecolor($newW, $newH);
     if (!$canvas) {
         imagedestroy($srcImage);
         return false;
     }
 
-    // Fill with white background (handles transparent PNGs nicely)
-    $white = imagecolorallocate($canvas, 255, 255, 255);
-    imagefill($canvas, 0, 0, $white);
+    // Preserve transparency for PNG, WebP and GIF
+    imagealphablending($canvas, false);
+    imagesavealpha($canvas, true);
+    $transparent = imagecolorallocatealpha($canvas, 0, 0, 0, 127);
+    imagefill($canvas, 0, 0, $transparent);
+    imagealphablending($canvas, true);
 
-    // Calculate scaling to fit source inside target while preserving aspect ratio
-    $scale = min($targetW / $srcW, $targetH / $srcH);
-    $newW = (int) round($srcW * $scale);
-    $newH = (int) round($srcH * $scale);
-
-    // Center the resized image on the canvas
-    $offsetX = (int) round(($targetW - $newW) / 2);
-    $offsetY = (int) round(($targetH - $newH) / 2);
-
-    imagecopyresampled($canvas, $srcImage, $offsetX, $offsetY, 0, 0, $newW, $newH, $srcW, $srcH);
+    imagecopyresampled($canvas, $srcImage, 0, 0, 0, 0, $newW, $newH, $srcW, $srcH);
     imagedestroy($srcImage);
 
     $result = @imagewebp($canvas, $destination, $quality);
