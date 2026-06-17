@@ -5591,15 +5591,3 @@ Footer   End
         font-size: 14px;
     }
 }
-
-/* Custom container max-width overrides to make layout wider and modern */
-@media (min-width: 1200px) {
-    .container {
-        max-width: 1400px !important;
-    }
-}
-@media (min-width: 1400px) {
-    .container {
-        max-width: 1480px !important;
-    }
-}
