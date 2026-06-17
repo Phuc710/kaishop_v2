@@ -633,9 +633,9 @@
                                         ?>
                                         <a href="<?= url($product['public_path'] ?? ('product/' . $product['id'])) ?>"
                                             class="ds-card <?= $is_offline ? 'offline' : '' ?>">
-                                            <div class="ds-card-img-wrap" style="aspect-ratio: 16 / 9 !important;">
+                                            <div class="ds-card-img-wrap">
                                                 <img src="<?= $product['image'] ?>" width="400" height="400" class="ds-card-img" alt="<?= $product['name'] ?>"
-                                                    loading="lazy" decoding="async" fetchpriority="low" style="object-fit: cover !important; width: 100% !important; height: 100% !important;">
+                                                    loading="lazy" decoding="async" fetchpriority="low">
 
                                             </div>
                                             <div class="ds-card-body">
