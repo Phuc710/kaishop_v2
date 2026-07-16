@@ -1,0 +1,197 @@
+# 🔐 Báo Cáo Bảo Mật KaiShop - kaishop.id.vn
+> **Thời gian scan**: 2026-07-14 11:35–11:40 GMT+7  
+> **Trạng thái**: ✅ Scan hoàn thành | 🔄 Đang loop monitor
+
+---
+
+## 🚨 VẤN ĐỀ NGHIÊM TRỌNG (CRITICAL)
+
+### ⚠️ 1. phpMyAdmin Lộ Công Khai - NGUY HIỂM NHẤT
+- **URL**: `https://kaishop.id.vn/phpmyadmin/`
+- **HTTP Status**: `200 OK` — Ai cũng vào được login form
+- **Xác nhận**: Login form tồn tại (`pma_username`, `pma_password` fields)
+- **Rủi ro**:
+  - Brute-force DB password → full database dump
+  - SQLi trực tiếp qua phpMyAdmin interface
+  - Xem/xóa toàn bộ data khách hàng, orders, balances
+- **Fix NGAY**:
+  ```
+  Cloudflare → Security → WAF Rules:
+  (http.request.uri.path contains "/phpmyadmin") → Block
+  ```
+  HOẶC thêm Basic Auth + IP whitelist cho phpMyAdmin
+
+---
+
+### ⚠️ 2. CSRF Token Bị Expose Trong JavaScript Source
+- **Tìm thấy**: `window.KS_CSRF_TOKEN = "1429586de17916f5b8a959ece049ebeaa28060beef6d89b7a304cb742fae5829"`
+- **Location**: Inline script trong mọi trang HTML
+- **Rủi ro**: CSRF token trong `window.*` = bất kỳ script nào cũng đọc được → bypass CSRF protection
+- **Fix**:
+  - Không expose CSRF token vào `window.*` global
+  - Đặt CSRF token vào `<meta name="csrf-token">` là đủ
+  - Xóa `window.KS_CSRF_TOKEN = ...` khỏi source
+
+---
+
+### ⚠️ 3. Internal API Lộ Server Information
+- **URL**: `https://kaishop.id.vn/api/system/maintenance-status`
+- **HTTP Status**: `200 OK` (không cần auth!)
+- **Data bị lộ**:
+  ```json
+  {
+    "server_time": "2026-07-14 11:38:37",
+    "server_time_ts": 1784003917,
+    "server_timezone": "Asia/Ho_Chi_Minh",
+    "display_timezone": "Asia/Ho_Chi_Minh",
+    "phase": "off"
+  }
+  ```
+- **Rủi ro**: Lộ timezone, server time → hỗ trợ timing attacks
+- **Fix**: Thêm auth middleware cho endpoint này, hoặc return minimal data
+
+---
+
+## ⚠️ VẤN ĐỀ TRUNG BÌNH (MEDIUM)
+
+### 4. Thiếu Header Content-Security-Policy (CSP)
+- **Trạng thái**: ❌ MISSING
+- **Rủi ro**: Không có CSP → dễ bị XSS, script injection từ bên ngoài
+- **Fix** (thêm vào `.htaccess` hoặc server config):
+  ```
+  Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' cdn.gtranslate.net; img-src 'self' data:;"
+  ```
+
+### 5. Thiếu Header Strict-Transport-Security (HSTS)
+- **Trạng thái**: ❌ MISSING  
+- **Rủi ro**: SSL stripping attack có thể xảy ra
+- **Fix**:
+  ```
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+  ```
+
+### 6. Cookie ks_csrf Max-Age Quá Dài
+- **Cookie**: `ks_csrf=...; Max-Age=31536000` (1 năm)
+- **Rủi ro**: CSRF token cố định 1 năm → nếu bị steal, attacker có 1 năm để dùng
+- **Fix**: CSRF token nên expire mỗi session, không lưu 1 năm
+
+### 7. Email Admin Bị Lộ
+- **URL**: `https://kaishop.id.vn/.well-known/security.txt`
+- **Email**: `phucngx0710it@gmail.com`
+- **Rủi ro**: Phishing, spam, social engineering attack
+- **Fix**: Dùng dedicated email (vd: `security@kaishop.id.vn`) hoặc form
+
+---
+
+## ✅ ĐIỂM TỐT - ĐÃ BẢO VỆ TỐT
+
+| Kiểm tra | Trạng thái | Chi tiết |
+|---------|-----------|---------|
+| `.env` file | ✅ BLOCKED 403 | Không lộ |
+| `.git/HEAD` | ✅ BLOCKED 403 | Git không expose |
+| `/admin/` | ✅ BLOCKED 403 | Blocked |
+| `/storage/logs/laravel.log` | ✅ BLOCKED 403 | Logs ẩn |
+| `/login` page | ✅ AUTH REQUIRED | 403 khi không login |
+| `/balance/bank` | ✅ AUTH REQUIRED | 403 khi không login |
+| `/history-balance` | ✅ AUTH REQUIRED | 403 khi không login |
+| `/profile/` | ✅ AUTH REQUIRED | 403 khi không login |
+| PHPSESSID | ✅ SECURE | `Secure; HttpOnly; SameSite=Lax` |
+| X-Frame-Options | ✅ CÓ | `SAMEORIGIN` |
+| X-Content-Type-Options | ✅ CÓ | `nosniff` |
+| X-XSS-Protection | ✅ CÓ | `1; mode=block` |
+| phpinfo.php | ✅ NOT FOUND | Không expose |
+| WordPress | ✅ NOT FOUND | Không dùng WP |
+| phpMyAdmin path mặc định | 🚨 EXPOSED | `/phpmyadmin/` accessible! |
+
+---
+
+## 📊 FULL ENDPOINT SCAN RESULTS
+
+| Endpoint | Status | Ghi chú |
+|---------|--------|---------|
+| `/` | ✅ 200 | Trang chủ |
+| `/phpmyadmin/` | 🚨 200 | **LOGIN FORM LỘ!** |
+| `/api/system/maintenance-status` | ⚠️ 200 | API lộ server info |
+| `/.well-known/security.txt` | ⚠️ 200 | Email admin lộ |
+| `/chatgpt/plus-1-month` | ✅ 200 | Trang sản phẩm OK |
+| `/admin/` | ✅ 403 | Blocked |
+| `/.env` | ✅ 403 | Blocked |
+| `/.git/HEAD` | ✅ 403 | Blocked |
+| `/storage/logs/laravel.log` | ✅ 403 | Blocked |
+| `/login` | ✅ 403 | Blocked |
+| `/balance/bank` | ✅ 403 | Blocked |
+| `/history-balance` | ✅ 403 | Blocked |
+| `/profile/` | ✅ 403 | Blocked |
+| `/api/products` | ✅ 404 | Không tồn tại |
+| `/api/users` | ✅ 404 | Không tồn tại |
+| `/api/orders` | ✅ 404 | Không tồn tại |
+| `/api/balance` | ✅ 404 | Không tồn tại |
+| `/api/v1` | ✅ 404 | Không tồn tại |
+| `/wp-json` | ✅ 404 | Không phải WordPress |
+| `/phpinfo.php` | ✅ 404 | Không expose |
+| `/telescope` | ✅ 404 | Không expose |
+| `/_debugbar/open` | ✅ 404 | Debug bar ẩn |
+| `/ajax/` | ✅ 404 | Không expose |
+
+---
+
+## 🏗️ STACK PHÁT HIỆN
+
+```
+Language:   PHP (PHPSESSID, LiteSpeed)
+Server:     LiteSpeed Web Server
+CDN/WAF:   Cloudflare (CF-RAY: a1add2c46ac41f2b-HKG)
+Framework:  Custom PHP (prefix "ks_" = KaiShop)
+Timezone:   Asia/Ho_Chi_Minh
+DB:         MySQL/MariaDB (phpMyAdmin present)
+```
+
+---
+
+## 🎯 ƯU TIÊN FIX
+
+| Mức độ | Vấn đề | Thời gian fix |
+|-------|--------|--------------|
+| 🔴 CRITICAL | Block `/phpmyadmin` | **Hôm nay, làm ngay** |
+| 🔴 HIGH | Xóa `window.KS_CSRF_TOKEN` khỏi JS | Sớm nhất có thể |
+| 🟡 MEDIUM | Thêm CSP header | Trong tuần |
+| 🟡 MEDIUM | Thêm HSTS header | Trong tuần |
+| 🟡 MEDIUM | Add auth cho `/api/system/maintenance-status` | Trong tuần |
+| 🟡 MEDIUM | Fix cookie ks_csrf Max-Age | Trong tuần |
+| 🟢 LOW | Đổi email trong security.txt | Khi rảnh |
+
+---
+🔐 Báo Cáo Bảo Mật KaiShop - kaishop.id.vn
+Đã scan xong! Đây là tóm tắt những gì tìm thấy:
+
+🚨 CRITICAL — Cần fix NGAY hôm nay
+1. phpMyAdmin bị lộ công khai
+
+https://kaishop.id.vn/phpmyadmin/ → HTTP 200, login form ai cũng vào được
+Rủi ro: brute-force DB password → toàn bộ database bị dump
+Fix ngay: Vào Cloudflare → WAF Rules → Block URI path chứa /phpmyadmin
+2. CSRF Token bị expose vào window object
+
+Code tìm thấy trong HTML source: window.KS_CSRF_TOKEN = "1429586de17916f5b8a959ece049..."
+CSRF token nằm trong window.* = bất kỳ XSS nào cũng đọc được
+Fix: Xóa dòng window.KS_CSRF_TOKEN = ... trong code, giữ <meta name="csrf-token"> là đủ
+3. API /api/system/maintenance-status không cần auth
+
+Trả về server_time, timezone, internal status — không cần login
+Fix: Thêm auth middleware hoặc return ít thông tin hơn
+⚠️ MEDIUM
+Vấn đề	Fix
+Thiếu Content-Security-Policy header	Thêm vào server config
+Thiếu Strict-Transport-Security (HSTS)	Thêm vào server config
+Cookie ks_csrf expire 1 năm	Giảm xuống session-based
+Email admin lộ trong security.txt	Đổi sang email riêng cho security
+## 🔄 MONITOR LOOP STATUS
+**Scan #1**: ✅ 2026-07-14 11:35 GMT+7 — Hoàn thành  
+**Next**: Sẽ scan lại khi có yêu cầu
+
+
+tao đang làm hỏng code rồi cần fix api check  hacking 
+https://kaishop.id.vn/
+
+mày xem check api đi có lỗi có lộ gi không . 
+cho tao rồi báo cáo cho tao alwway loop
