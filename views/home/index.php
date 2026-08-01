@@ -523,16 +523,13 @@
                                     $supportTele = 'https://t.me/' . $supportTele;
                                 }
                                 ?>
-                                <p class="mb-1 ml-3 fw-bold" style="font-weight: 700;">• Telegram:
+                                <p class="mb-0 ml-3 fw-bold" style="font-weight: 700;">• Telegram:
                                     <a href="<?= htmlspecialchars($supportTele) ?>" target="_blank" rel="noopener"
                                         style="color: #0dcaf0; text-decoration: none; font-weight: 800;">
                                         <?= htmlspecialchars($supportTeleUser) ?>
                                     </a>
                                 </p>
-                                <p class="mb-0 ml-3 fw-bold" style="font-weight: 700;">• Discord:
-                                    <span
-                                        style="color: #0e9dff; font-weight: 800;">@<?= htmlspecialchars(ltrim($chungapi['discord_admin'] ?? 'thphuc37', '@')) ?></span>
-                                </p>
+
                             </div>
                         </div>
                     </div>
