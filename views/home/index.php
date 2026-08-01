@@ -806,39 +806,6 @@
                 });
             }
 
-            // Light click animation for product cards.
-            const clampPercent = (value) => Math.max(0, Math.min(100, value));
-
-            cards.forEach(card => {
-                const animateCardClick = (clientX, clientY) => {
-                    const rect = card.getBoundingClientRect();
-                    const x = rect.width > 0 ? ((clientX - rect.left) / rect.width) * 100 : 50;
-                    const y = rect.height > 0 ? ((clientY - rect.top) / rect.height) * 100 : 50;
-
-                    card.style.setProperty('--ripple-x', clampPercent(x) + '%');
-                    card.style.setProperty('--ripple-y', clampPercent(y) + '%');
-
-                    card.classList.remove('is-clicked');
-                    requestAnimationFrame(() => card.classList.add('is-clicked'));
-
-                    clearTimeout(card.__clickAnimTimer);
-                    card.__clickAnimTimer = setTimeout(() => {
-                        card.classList.remove('is-clicked');
-                    }, 220);
-                };
-
-                card.addEventListener('pointerdown', function (e) {
-                    if (e.pointerType === 'mouse' && e.button !== 0) return;
-                    animateCardClick(e.clientX, e.clientY);
-                }, { passive: true });
-
-                card.addEventListener('keydown', function (e) {
-                    if (e.key !== 'Enter') return;
-                    const rect = card.getBoundingClientRect();
-                    animateCardClick(rect.left + rect.width / 2, rect.top + rect.height / 2);
-                });
-            });
-
         });
     </script>
 </body>

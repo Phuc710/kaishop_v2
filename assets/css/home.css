@@ -31,7 +31,7 @@
     background: #fff;
     border-radius: 12px !important;
     overflow: hidden;
-    transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.22s ease, border-color 0.22s ease;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
     border: 1px solid #ebebeb !important;
     margin-bottom: 0 !important;
     /* reset styles.css .card margin */
@@ -46,53 +46,61 @@
     -webkit-tap-highlight-color: transparent;
 }
 
-.ds-card::after {
+.ds-card:hover,
+.ds-card:focus {
+    transform: translateY(-5px);
+    box-shadow: 0 14px 30px -6px rgba(0, 0, 0, 0.09), 0 6px 16px -4px rgba(255, 105, 0, 0.12);
+    border-color: rgba(255, 105, 0, 0.4) !important;
+    text-decoration: none;
+    color: inherit;
+}
+
+/* ── Hover: Image zoom + overlay ─────────────────── */
+.ds-card:hover .ds-card-img {
+    transform: scale(1.06);
+}
+
+.ds-card-img-wrap::after {
     content: "";
     position: absolute;
     inset: 0;
-    pointer-events: none;
-    background:
-        radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%),
-            rgba(255, 105, 0, 0.18) 0%,
-            rgba(255, 105, 0, 0.1) 20%,
-            rgba(255, 105, 0, 0) 58%);
+    background: linear-gradient(135deg, rgba(255, 105, 0, 0.18) 0%, rgba(255, 255, 255, 0) 60%);
     opacity: 0;
-    transform: scale(0.96);
-    transition: opacity 0.24s ease, transform 0.24s ease;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+    z-index: 1;
 }
 
-.ds-card:hover,
-.ds-card:focus {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.09);
-    text-decoration: none;
-    color: inherit;
-    /* prevent styles.css a:hover color */
+.ds-card:hover .ds-card-img-wrap::after {
+    opacity: 1;
+}
+
+/* ── Hover: Title color → cam ─────────────────────── */
+.ds-card:hover .ds-card-title {
+    color: #ff6900 !important;
+    transition: color 0.3s ease;
+}
+
+/* ── Hover: Giá đổi sang cam đậm ─────────────────── */
+.ds-card:hover .ds-price {
+    color: #e85d00 !important;
+    transition: color 0.3s ease;
 }
 
 .ds-card:active {
-    transform: translateY(-1px) scale(0.988);
-    box-shadow: 0 7px 18px rgba(0, 0, 0, 0.11);
-}
-
-.ds-card.is-clicked {
     transform: translateY(-1px) scale(0.99);
-}
-
-.ds-card.is-clicked::after {
-    opacity: 1;
-    transform: scale(1);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
 }
 
 /* ── Card Filtering Animation ─────────────────────── */
 .ds-card.animate-in {
-    animation: cardFadeUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    animation: cardFadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes cardFadeUp {
     from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(16px);
     }
 
     to {
@@ -119,6 +127,7 @@
     display: block !important;
     width: 100% !important;
     height: 100% !important;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     /* object-fit: cover !important; */
 }
 
