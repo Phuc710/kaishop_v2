@@ -50,7 +50,7 @@
 .ds-card:focus {
     transform: translateY(-5px);
     box-shadow: 0 14px 30px -6px rgba(0, 0, 0, 0.09), 0 6px 16px -4px rgba(255, 105, 0, 0.12);
-    border-color: rgba(255, 105, 0, 0.4) !important;
+    border-color: rgba(55, 55, 55, 0.201) !important;
     text-decoration: none;
     color: inherit;
 }
@@ -60,19 +60,6 @@
     transform: scale(1.06);
 }
 
-
-
-/* ── Hover: Title color → cam ─────────────────────── */
-.ds-card:hover .ds-card-title {
-    color: #ff6900 !important;
-    transition: color 0.3s ease;
-}
-
-/* ── Hover: Giá đổi sang cam đậm ─────────────────── */
-.ds-card:hover .ds-price {
-    color: #e85d00 !important;
-    transition: color 0.3s ease;
-}
 
 .ds-card:active {
     transform: translateY(-1px) scale(0.99);
