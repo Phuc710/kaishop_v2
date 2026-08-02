@@ -60,20 +60,7 @@
     transform: scale(1.06);
 }
 
-.ds-card-img-wrap::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255, 105, 0, 0.18) 0%, rgba(255, 255, 255, 0) 60%);
-    opacity: 0;
-    transition: opacity 0.35s ease;
-    pointer-events: none;
-    z-index: 1;
-}
 
-.ds-card:hover .ds-card-img-wrap::after {
-    opacity: 1;
-}
 
 /* ── Hover: Title color → cam ─────────────────────── */
 .ds-card:hover .ds-card-title {
