@@ -359,14 +359,41 @@ class AntiFloodService
     // ═══════════════════════════════════════════════════════
 
     /**
-     * Redirect to the banned page (no reason shown, no JSON).
+     * Check if current request is AJAX, Fetch, or API expecting JSON.
+     */
+    private function isJsonOrAjaxRequest(): bool
+    {
+        $requestedWith = strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? ''));
+        $accept        = strtolower((string) ($_SERVER['HTTP_ACCEPT'] ?? ''));
+        $contentType   = strtolower((string) ($_SERVER['CONTENT_TYPE'] ?? ''));
+        $method        = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+
+        return $requestedWith === 'xmlhttprequest'
+            || strpos($accept, 'application/json') !== false
+            || strpos($contentType, 'application/json') !== false
+            || $method === 'POST';
+    }
+
+    /**
+     * Redirect to the banned page or return JSON for API/AJAX requests.
      * This is used for permanent/semi-permanent bans (403).
      */
-    private function redirectToBannedPage(): void
+    private function redirectToBannedPage(string $reason = 'Truy cập bị từ chối do bảo mật'): void
     {
+        if ($this->isJsonOrAjaxRequest()) {
+            if (!headers_sent()) {
+                http_response_code(403);
+                header('Content-Type: application/json; charset=UTF-8');
+            }
+            echo json_encode([
+                'success' => false,
+                'message' => 'Truy cập bị từ chối (403 Forbidden). Thiết bị hoặc địa chỉ IP của bạn đang bị giới hạn truy cập.',
+                'error_code' => 'ACCESS_FORBIDDEN_403',
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
         if (!headers_sent()) {
-            $bannedUrl = (defined('BASE_URL') ? rtrim(BASE_URL, '/') : '') . '/banned.php';
-            // Use direct include instead of redirect to avoid redirect loops
             http_response_code(403);
         }
 

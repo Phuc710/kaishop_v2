@@ -336,31 +336,48 @@ if (!function_exists('csrf_regenerate')) {
     }
 }
 
+if (!function_exists('app_raw_input')) {
+    function app_raw_input(): string
+    {
+        if (!isset($GLOBALS['__ks_raw_input'])) {
+            $GLOBALS['__ks_raw_input'] = @file_get_contents('php://input') ?: '';
+        }
+        return (string) $GLOBALS['__ks_raw_input'];
+    }
+}
+
 if (!function_exists('csrf_validate_request')) {
     function csrf_validate_request(): bool
     {
-        $sessionToken = (string) ($_SESSION['csrf_token'] ?? '');
-        $cookieToken = (string) ($GLOBALS['__ks_csrf_token'] ?? $_COOKIE['ks_csrf'] ?? '');
+        $sessionToken = trim((string) ($_SESSION['csrf_token'] ?? ''));
+        $cookieToken  = trim((string) ($GLOBALS['__ks_csrf_token'] ?? $_COOKIE['ks_csrf'] ?? ''));
         if ($sessionToken === '' && $cookieToken === '') {
             return false;
         }
 
-        $provided = '';
-        if (isset($_SERVER['HTTP_X_CSRF_TOKEN'])) {
-            $provided = (string) $_SERVER['HTTP_X_CSRF_TOKEN'];
-        } elseif (isset($_POST['csrf_token'])) {
-            $provided = (string) $_POST['csrf_token'];
+        $provided = trim((string) (
+            $_SERVER['HTTP_X_CSRF_TOKEN']
+            ?? $_SERVER['HTTP_X_XSRF_TOKEN']
+            ?? $_POST['csrf_token']
+            ?? ''
+        ));
+
+        if ($provided === '') {
+            $raw = app_raw_input();
+            if ($raw !== '') {
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded) && !empty($decoded['csrf_token'])) {
+                    $provided = trim((string) $decoded['csrf_token']);
+                }
+            }
         }
 
         if ($provided === '') {
             return false;
         }
 
-        if ($cookieToken !== '' && hash_equals($cookieToken, $provided)) {
-            return true;
-        }
-
-        return $sessionToken !== '' && hash_equals($sessionToken, $provided);
+        return ($cookieToken !== '' && hash_equals($cookieToken, $provided))
+            || ($sessionToken !== '' && hash_equals($sessionToken, $provided));
     }
 }
 

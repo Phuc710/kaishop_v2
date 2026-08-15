@@ -75,6 +75,33 @@ class Controller
     }
 
     /**
+     * Get request input (merges $_POST, JSON body, and $_GET seamlessly)
+     * @param string|null $key Key to get
+     * @param mixed $default Default value
+     * @return mixed
+     */
+    protected function input($key = null, $default = null)
+    {
+        static $cachedPayload = null;
+        if ($cachedPayload === null) {
+            $cachedPayload = !empty($_POST) ? $_POST : [];
+            if (empty($cachedPayload)) {
+                $raw = function_exists('app_raw_input') ? app_raw_input() : @file_get_contents('php://input');
+                $decoded = is_string($raw) && $raw !== '' ? json_decode($raw, true) : null;
+                if (is_array($decoded)) {
+                    $cachedPayload = $decoded;
+                }
+            }
+        }
+
+        if ($key === null) {
+            return $cachedPayload;
+        }
+
+        return $cachedPayload[$key] ?? $_GET[$key] ?? $default;
+    }
+
+    /**
      * Get POST data
      * @param string $key Key to get
      * @param mixed $default Default value

@@ -70,18 +70,9 @@ class ProductController extends Controller
      */
     public function quote($id)
     {
-        $payload = $_POST;
-        if (empty($payload)) {
-            $raw = file_get_contents('php://input');
-            $decoded = is_string($raw) ? json_decode($raw, true) : null;
-            if (is_array($decoded)) {
-                $payload = $decoded;
-            }
-        }
-
         $result = $this->purchaseService->quoteForDisplay((int) $id, [
-            'quantity' => (int) ($payload['quantity'] ?? 1),
-            'giftcode' => (string) ($payload['giftcode'] ?? ''),
+            'quantity'       => max(1, (int) $this->input('quantity', 1)),
+            'giftcode'       => strtoupper(trim((string) $this->input('giftcode', ''))),
             'source_channel' => Product::CHANNEL_WEB,
         ]);
 
@@ -93,31 +84,30 @@ class ProductController extends Controller
      */
     public function purchase($id)
     {
-        if (!$this->authService->isLoggedIn()) {
-            return $this->json(['success' => false, 'message' => 'Ban chua dang nhap.'], 401);
+        if (!$this->authService->isLoggedIn() || !($user = $this->authService->getCurrentUser())) {
+            return $this->json(['success' => false, 'message' => 'Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn.', 'error_code' => 'UNAUTHORIZED'], 401);
         }
 
-        $user = $this->authService->getCurrentUser();
-        if (!$user) {
-            return $this->json(['success' => false, 'message' => 'Khong the xac thuc tai khoan.'], 401);
+        if (!$this->validateCsrf()) {
+            return $this->json(['success' => false, 'message' => 'Phiên làm việc đã hết hạn. Vui lòng tải lại trang.', 'error_code' => 'CSRF_INVALID'], 419);
         }
 
-        $payload = $_POST;
-        if (empty($payload)) {
-            $raw = file_get_contents('php://input');
-            $decoded = is_string($raw) ? json_decode($raw, true) : null;
-            if (is_array($decoded)) {
-                $payload = $decoded;
-            }
-        }
+        try {
+            $result = $this->purchaseService->purchaseWithWallet((int) $id, $user, [
+                'quantity'       => max(1, (int) $this->input('quantity', 1)),
+                'customer_input' => trim((string) $this->input('customer_input', '')),
+                'giftcode'       => strtoupper(trim((string) $this->input('giftcode', ''))),
+                'source_channel' => Product::CHANNEL_WEB,
+            ]);
 
-        $result = $this->purchaseService->purchaseWithWallet((int) $id, $user, [
-            'quantity' => (int) ($payload['quantity'] ?? 1),
-            'customer_input' => (string) ($payload['customer_input'] ?? ''),
-            'giftcode' => (string) ($payload['giftcode'] ?? ''),
-            'source_channel' => Product::CHANNEL_WEB,
-        ]);
-        return $this->json($result, !empty($result['success']) ? 200 : 400);
+            return $this->json($result, !empty($result['success']) ? 200 : 400);
+        } catch (Throwable $e) {
+            return $this->json([
+                'success'    => false,
+                'message'    => $e->getMessage() ?: 'Có lỗi xảy ra khi xử lý mua hàng. Vui lòng thử lại.',
+                'error_code' => 'PURCHASE_ERROR'
+            ], 400);
+        }
     }
 
     private function renderDetail(array $product): void

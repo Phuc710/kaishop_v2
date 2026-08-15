@@ -1438,13 +1438,50 @@ if ($rawDescHtml !== '') {
                 body: requestBody.toString()
             })
                 .then(async (res) => {
-                    let data = {};
-                    try {
-                        data = await res.json();
-                    } catch (e) { }
-                    if (!res.ok || !data.success) {
-                        throw new Error((data && data.message) ? data.message : 'Không thể mua sản phẩm lúc này.');
+                    let data = null;
+                    const contentType = res.headers.get('content-type') || '';
+                    if (contentType.includes('application/json')) {
+                        try {
+                            data = await res.json();
+                        } catch (e) { }
                     }
+
+                    if (!data && res.status !== 200) {
+                        try {
+                            const rawText = await res.text();
+                            const jsonMatch = rawText.match(/\{[\s\S]*"message"[\s\S]*\}/);
+                            if (jsonMatch) {
+                                data = JSON.parse(jsonMatch[0]);
+                            }
+                        } catch (e) { }
+                    }
+
+                    if (!res.ok || !data || !data.success) {
+                        const status = res.status;
+                        let customMsg = (data && data.message) ? data.message : '';
+
+                        if (!customMsg) {
+                            if (status === 401) {
+                                customMsg = 'Phiên đăng nhập đã hết hạn hoặc bạn chưa đăng nhập.';
+                            } else if (status === 403) {
+                                customMsg = 'Yêu cầu bị từ chối (403 Forbidden). Vui lòng tắt tiện ích chặn quảng cáo/Brave Shields hoặc kiểm tra lại kết nối mạng.';
+                            } else if (status === 419) {
+                                customMsg = 'Phiên làm việc đã hết hạn (CSRF mismatch). Vui lòng tải lại trang.';
+                            } else if (status === 429) {
+                                customMsg = 'Bạn đang thao tác quá nhanh. Vui lòng chờ vài giây rồi thử lại.';
+                            } else if (status >= 500) {
+                                customMsg = 'Máy chủ đang bận xử lý hoặc gặp sự cố tạm thời (HTTP ' + status + '). Vui lòng thử lại sau.';
+                            } else {
+                                customMsg = 'Không thể hoàn tất mua hàng lúc này (Mã phản hồi: ' + status + ').';
+                            }
+                        }
+
+                        const err = new Error(customMsg);
+                        err.status = status;
+                        err.data = data;
+                        throw err;
+                    }
+
                     return data;
                 })
                 .then(async (data) => {
@@ -1466,11 +1503,42 @@ if ($rawDescHtml !== '') {
                 .catch(async (err) => {
                     await ensureMinPurchaseLoading(loadingStartedAt);
                     closePurchaseProcessingLoading();
+                    const status = err.status || 0;
                     const msg = (err && err.message) ? err.message : 'Không thể mua sản phẩm lúc này.';
-                    if (/dang nhap|đăng nhập/i.test(msg)) {
-                        window.location.href = PRODUCT_DETAIL.loginUrl;
+
+                    if (status === 401 || /dang nhap|đăng nhập/i.test(msg)) {
+                        if (window.Swal && Swal.fire) {
+                            Swal.fire({
+                                icon: 'info',
+                                title: 'Cần đăng nhập',
+                                text: 'Vui lòng đăng nhập tài khoản để tiếp tục mua hàng.',
+                                confirmButtonText: 'Đăng nhập ngay'
+                            }).then(() => {
+                                window.location.href = PRODUCT_DETAIL.loginUrl;
+                            });
+                        } else {
+                            window.location.href = PRODUCT_DETAIL.loginUrl;
+                        }
                         return;
                     }
+
+                    if (status === 419) {
+                        if (window.Swal && Swal.fire) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Phiên làm việc hết hạn',
+                                text: 'Trang sẽ tự động làm mới để cập nhật bảo mật.',
+                                confirmButtonText: 'Làm mới trang'
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            alert('Phiên làm việc đã hết hạn. Đang làm mới trang...');
+                            window.location.reload();
+                        }
+                        return;
+                    }
+
                     if (msg.includes('Số dư không đủ') || msg.includes('Bạn còn thiếu')) {
                         if (window.Swal && Swal.fire) {
                             Swal.fire({
@@ -1483,19 +1551,23 @@ if ($rawDescHtml !== '') {
                                 confirmButtonColor: '#198754',
                             }).then((result) => {
                                 if (result.isConfirmed) {
-                                    window.location.href = BASE_URL + '/deposit';
+                                    window.location.href = (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + '/deposit';
                                 }
                             });
                         } else {
                             if (confirm(msg + '\nBạn có muốn đến trang nạp tiền không?')) {
-                                window.location.href = BASE_URL + '/deposit';
+                                window.location.href = (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + '/deposit';
                             }
                         }
                         return;
                     }
 
                     if (window.Swal && Swal.fire) {
-                        Swal.fire({ icon: 'error', title: 'Mua hàng thất bại', text: msg });
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Mua hàng thất bại',
+                            html: msg.replace(/\n/g, '<br>')
+                        });
                     } else {
                         alert(msg);
                     }
