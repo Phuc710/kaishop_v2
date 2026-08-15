@@ -305,10 +305,10 @@ class JournalController extends Controller
             'tableId' => 'systemLogTable',
             'showSeverityFilter' => true,
             'columns' => [
+                ['key' => 'time', 'label' => 'Thời gian', 'align' => 'center'],
                 ['key' => 'username', 'label' => 'TÊN USER', 'align' => 'center'],
                 ['key' => 'source', 'label' => 'Nguồn', 'align' => 'center'],
                 ['key' => 'severity', 'label' => 'Mức độ', 'align' => 'center'],
-                ['key' => 'time', 'label' => 'Thời gian', 'align' => 'center'],
                 ['key' => 'module', 'label' => 'Module', 'align' => 'center'],
                 ['key' => 'action', 'label' => 'Hành động', 'align' => 'center'],
                 ['key' => 'description', 'label' => 'Mô tả chi tiết', 'align' => 'left'],
@@ -376,8 +376,12 @@ class JournalController extends Controller
                 $ip = '<span class="badge bg-light text-dark border">' . htmlspecialchars($ip) . '</span>';
             }
 
+            $timeMeta = null;
+            $timeCell = $this->formatTimeCell($row['event_time'] ?? null, $row['raw_time'] ?? null, $timeMeta);
+
             $output[] = [
-                'time' => $this->formatTimeCell($row['event_time'] ?? null, $row['raw_time'] ?? null),
+                'time' => $timeCell,
+                '_time_ts' => (int) ($timeMeta['ts'] ?? 0),
                 'username' => '<a href="' . url('admin/users/edit/' . urlencode($username)) . '" class="font-weight-bold text-dark">' . htmlspecialchars($username) . '</a>',
                 'action' => '<span class="font-weight-500 text-dark">' . htmlspecialchars(trim((string) ($row['action_name'] ?? '--'))) . '</span>',
                 'price' => FormatHelper::price($row['gia'] ?? null),
@@ -417,8 +421,12 @@ class JournalController extends Controller
 
             $actionButtons = '<button type="button" class="btn btn-info btn-xs px-2 js-order-view" data-order-id="' . $orderId . '" title="Xem chi tiết"><i class="fas fa-eye mr-1"></i>Xem</button>';
 
+            $timeMeta = null;
+            $timeCell = $this->formatTimeCell($row['event_time'] ?? null, $row['raw_time'] ?? null, $timeMeta);
+
             $output[] = [
-                'time' => $this->formatTimeCell($row['event_time'] ?? null, $row['raw_time'] ?? null),
+                'time' => $timeCell,
+                '_time_ts' => (int) ($timeMeta['ts'] ?? 0),
                 'order_code' => '<span class="badge bg-light text-dark border font-weight-bold" style="font-family:monospace;">' . htmlspecialchars($shortOrderCode !== '' ? $shortOrderCode : $rawOrderCode) . '</span>',
                 'username' => '<a href="' . url('admin/users/edit/' . urlencode($username)) . '" class="font-weight-bold text-dark">' . htmlspecialchars($username) . '</a>',
                 'source' => $this->formatSourceCell($row['source_channel'] ?? null),
@@ -443,8 +451,12 @@ class JournalController extends Controller
         foreach ($rows as $row) {
             $username = $this->formatUsername($row['username'] ?? '');
 
+            $timeMeta = null;
+            $timeCell = $this->formatTimeCell($row['event_time'] ?? null, $row['raw_time'] ?? null, $timeMeta);
+
             $output[] = [
-                'time' => $this->formatTimeCell($row['event_time'] ?? null, $row['raw_time'] ?? null),
+                'time' => $timeCell,
+                '_time_ts' => (int) ($timeMeta['ts'] ?? 0),
                 'username' => '<a href="' . url('admin/users/edit/' . urlencode($username)) . '" class="font-weight-bold text-dark">' . htmlspecialchars($username) . '</a>',
                 'source' => $this->formatSourceCell($row['source_channel'] ?? null),
                 'reason' => trim((string) ($row['reason_text'] ?? ($row['reason'] ?? '--'))) ?: '--',
@@ -476,8 +488,12 @@ class JournalController extends Controller
                 $amountVal = '+' . $amountVal;
             }
 
+            $timeMeta = null;
+            $timeCell = $this->formatTimeCell($row['event_time'] ?? null, $row['raw_time'] ?? null, $timeMeta);
+
             $output[] = [
-                'time' => $this->formatTimeCell($row['event_time'] ?? null, $row['raw_time'] ?? null),
+                'time' => $timeCell,
+                '_time_ts' => (int) ($timeMeta['ts'] ?? 0),
                 'username' => '<a href="' . url('admin/users/edit/' . urlencode($username)) . '" class="font-weight-bold text-dark">' . htmlspecialchars($username) . '</a>',
                 'source' => $this->formatSourceCell($row['source_channel'] ?? null),
                 'trans_id' => '<span class="font-weight-500 text-monospace">' . htmlspecialchars($row['trans_id'] ?? '--') . '</span>',
@@ -540,8 +556,12 @@ class JournalController extends Controller
                 $payloadData = '<span class="text-muted">-</span>';
             }
 
+            $timeMeta = null;
+            $timeCell = $this->formatTimeCell($log['created_at'], $log['created_at'], $timeMeta);
+
             $output[] = [
-                'time' => $this->formatTimeCell($log['created_at'], $log['created_at']),
+                'time' => $timeCell,
+                '_time_ts' => (int) ($timeMeta['ts'] ?? 0),
                 'source' => $this->formatSourceCell($sourceChannel),
                 'severity' => $severityLabel,
                 'module' => $moduleLabel,
@@ -726,10 +746,13 @@ class JournalController extends Controller
         ];
     }
 
-    private function formatTimeCell($eventTime, $rawTime): string
+    private function formatTimeCell($eventTime, $rawTime, ?array &$metaOut = null): string
     {
-        $html = FormatHelper::eventTime($eventTime, $rawTime);
         $meta = $this->normalizeTimeMeta($eventTime, $rawTime);
+        if ($metaOut !== null || func_num_args() >= 3) {
+            $metaOut = $meta;
+        }
+        $html = FormatHelper::eventTime($eventTime, $rawTime);
         $attrs = '';
         if (!empty($meta['ts'])) {
             $attrs .= ' data-time-ts="' . (int) $meta['ts'] . '"';

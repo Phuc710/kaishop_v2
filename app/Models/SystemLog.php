@@ -141,7 +141,7 @@ class SystemLog extends Model
         }
 
         $where = implode(' AND ', $conditions);
-        $sql = "SELECT *, {$sourceExpr} AS source_channel_resolved FROM `{$this->table}` WHERE {$where} ORDER BY id DESC";
+        $sql = "SELECT *, {$sourceExpr} AS source_channel_resolved FROM `{$this->table}` WHERE {$where} ORDER BY created_at DESC, id DESC LIMIT 1000";
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);

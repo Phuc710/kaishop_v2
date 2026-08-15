@@ -98,6 +98,7 @@ class AdminJournal extends Model
             {$userJoin}
             WHERE " . implode(' AND ', $conditions) . "
             ORDER BY event_time DESC, l.id DESC
+            LIMIT 1000
         ";
 
         $stmt = $this->db->prepare($sql);
@@ -165,6 +166,7 @@ class AdminJournal extends Model
             FROM `orders` o
             WHERE " . implode(' AND ', $conditions) . "
             ORDER BY o.created_at DESC, o.id DESC
+            LIMIT 1000
         ";
 
         $stmt = $this->db->prepare($sql);
@@ -286,6 +288,7 @@ class AdminJournal extends Model
             {$joinUsers}
             WHERE " . implode(' AND ', $conditions) . "
             ORDER BY event_time DESC, h.id DESC
+            LIMIT 1000
         ";
 
         $stmt = $this->db->prepare($sql);
@@ -373,6 +376,7 @@ class AdminJournal extends Model
             FROM `lich_su_bien_dong_so_du` b
             WHERE " . implode(' AND ', $conditions) . "
             ORDER BY event_time DESC, b.id DESC
+            LIMIT 1000
         ";
 
         $stmt = $this->db->prepare($sql);
@@ -443,6 +447,7 @@ class AdminJournal extends Model
             {$joinUsers}
             WHERE " . implode(' AND ', $conditions) . "
             ORDER BY event_time DESC, h.id DESC
+            LIMIT 1000
         ";
 
         $stmt = $this->db->prepare($sql);

@@ -234,11 +234,11 @@ if (!in_array($prefilterSource, ['all', '0', '1'], true)) {
             <div class="dt-filters">
                 <!-- Search Line -->
                 <div class="row g-2 mb-3">
-                    <div class="col-md-5 mb-2">
-                        <input id="f-search" class="form-control form-control-sm" placeholder="Tìm kiếm tất cả..."
-                            value="<?= htmlspecialchars($prefilterUser) ?>">
-                    </div>
                     <?php if ($isPurchaseJournal): ?>
+                        <div class="col-md-4 mb-2">
+                            <input id="f-search" class="form-control form-control-sm" placeholder="Tìm kiếm tất cả..."
+                                value="<?= htmlspecialchars($prefilterUser) ?>">
+                        </div>
                         <div class="col-md-2 mb-2">
                             <select id="f-order-status" class="form-control form-control-sm">
                                 <option value="all" <?= $prefilterOrderStatus === 'all' ? 'selected' : '' ?>>Tất cả trạng thái
@@ -251,34 +251,70 @@ if (!in_array($prefilterSource, ['all', '0', '1'], true)) {
                                 </option>
                             </select>
                         </div>
-                    <?php endif; ?>
-                    <div class="col-md-2 mb-2">
-                        <select id="f-source" class="form-control form-control-sm">
-                            <option value="all" <?= $prefilterSource === 'all' ? 'selected' : '' ?>>Tất cả nguồn</option>
-                            <option value="0" <?= $prefilterSource === '0' ? 'selected' : '' ?>>Web</option>
-                            <option value="1" <?= $prefilterSource === '1' ? 'selected' : '' ?>>BotTele</option>
-                        </select>
-                    </div>
-
-                    <?php if (!empty($showSeverityFilter)): ?>
-                        <div class="filter-show ms-3" style="min-width: 150px;">
-                            <span class="filter-label">MỨC ĐỘ:</span>
-                            <select id="f-severity" class="filter-select flex-grow-1">
-                                <option value="all">Tất cả</option>
+                        <div class="col-md-2 mb-2">
+                            <select id="f-source" class="form-control form-control-sm">
+                                <option value="all" <?= $prefilterSource === 'all' ? 'selected' : '' ?>>Tất cả nguồn</option>
+                                <option value="0" <?= $prefilterSource === '0' ? 'selected' : '' ?>>Web</option>
+                                <option value="1" <?= $prefilterSource === '1' ? 'selected' : '' ?>>BotTele</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <input id="f-date" class="form-control form-control-sm" placeholder="Thời gian...">
+                        </div>
+                        <div class="col-md-2 mb-2 text-center">
+                            <button type="button" id="btn-clear" class="btn btn-danger btn-sm shadow-sm w-100">
+                                <i class="fas fa-trash"></i> Xóa lọc
+                            </button>
+                        </div>
+                    <?php elseif (!empty($showSeverityFilter)): ?>
+                        <div class="col-md-4 mb-2">
+                            <input id="f-search" class="form-control form-control-sm" placeholder="Tìm kiếm tất cả..."
+                                value="<?= htmlspecialchars($prefilterUser) ?>">
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <select id="f-source" class="form-control form-control-sm">
+                                <option value="all" <?= $prefilterSource === 'all' ? 'selected' : '' ?>>Tất cả nguồn</option>
+                                <option value="0" <?= $prefilterSource === '0' ? 'selected' : '' ?>>Web</option>
+                                <option value="1" <?= $prefilterSource === '1' ? 'selected' : '' ?>>BotTele</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <select id="f-severity" class="form-control form-control-sm">
+                                <option value="all">Tất cả mức độ</option>
                                 <option value="INFO">INFO</option>
                                 <option value="WARNING">WARNING</option>
                                 <option value="DANGER">DANGER</option>
                             </select>
                         </div>
+                        <div class="col-md-2 mb-2">
+                            <input id="f-date" class="form-control form-control-sm" placeholder="Thời gian...">
+                        </div>
+                        <div class="col-md-2 mb-2 text-center">
+                            <button type="button" id="btn-clear" class="btn btn-danger btn-sm shadow-sm w-100">
+                                <i class="fas fa-trash"></i> Xóa lọc
+                            </button>
+                        </div>
+                    <?php else: ?>
+                        <div class="col-md-6 mb-2">
+                            <input id="f-search" class="form-control form-control-sm" placeholder="Tìm kiếm tất cả..."
+                                value="<?= htmlspecialchars($prefilterUser) ?>">
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <select id="f-source" class="form-control form-control-sm">
+                                <option value="all" <?= $prefilterSource === 'all' ? 'selected' : '' ?>>Tất cả nguồn</option>
+                                <option value="0" <?= $prefilterSource === '0' ? 'selected' : '' ?>>Web</option>
+                                <option value="1" <?= $prefilterSource === '1' ? 'selected' : '' ?>>BotTele</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <input id="f-date" class="form-control form-control-sm" placeholder="Thời gian...">
+                        </div>
+                        <div class="col-md-2 mb-2 text-center">
+                            <button type="button" id="btn-clear" class="btn btn-danger btn-sm shadow-sm w-100">
+                                <i class="fas fa-trash"></i> Xóa lọc
+                            </button>
+                        </div>
                     <?php endif; ?>
-                    <div class="col-md-2 mb-2">
-                        <input id="f-date" class="form-control form-control-sm" placeholder="Thời gian...">
-                    </div>
-                    <div class="col-md-2 mb-2 text-center">
-                        <button type="button" id="btn-clear" class="btn btn-danger btn-sm shadow-sm w-100">
-                            <i class="fas fa-trash"></i> Xóa lọc
-                        </button>
-                    </div>
                 </div>
 
                 <!-- Dropdown Line -->
@@ -304,38 +340,44 @@ if (!in_array($prefilterSource, ['all', '0', '1'], true)) {
                 </div>
             </div>
 
-            <div class="card-body pt-3">
-                <div class="table-responsive table-wrapper mb-3">
-                    <table id="<?= htmlspecialchars($tableId ?? 'journalTable') ?>"
-                        class="table table-hover table-bordered w-100">
-                        <thead>
-                            <tr>
-                                <?php foreach (($columns ?? []) as $column): ?>
-                                    <th
-                                        class="<?= ($column['align'] ?? '') === 'center' ? 'text-center' : 'text-left'; ?> font-weight-bold align-middle">
-                                        <?= htmlspecialchars(mb_strtoupper((string) ($column['label'] ?? ''), 'UTF-8')); ?>
-                                    </th>
-                                <?php endforeach; ?>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (!empty($rows)): ?>
-                                <?php foreach ($rows as $row): ?>
-                                    <tr>
-                                        <?php foreach (($columns ?? []) as $column): ?>
-                                            <?php
-                                            $key = (string) ($column['key'] ?? '');
-                                            $cell = $row[$key] ?? '--';
-                                            $alignClass = ($column['align'] ?? '') === 'center' ? 'text-center' : 'text-left';
-                                            ?>
-                                            <td class="<?= $alignClass; ?> align-middle" <?= ($key === 'severity') ? 'data-severity="' . strip_tags($cell) . '"' : '' ?>><?= (string) $cell; ?></td>
-                                        <?php endforeach; ?>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
+            <div class="card-body pt-3 pb-3">
+                <table id="<?= htmlspecialchars($tableId ?? 'journalTable') ?>"
+                    class="table table-hover table-bordered w-100">
+                    <thead>
+                        <tr>
+                            <?php foreach (($columns ?? []) as $column): ?>
+                                <th
+                                    class="<?= ($column['align'] ?? '') === 'center' ? 'text-center' : 'text-left'; ?> font-weight-bold align-middle">
+                                    <?= htmlspecialchars(mb_strtoupper((string) ($column['label'] ?? ''), 'UTF-8')); ?>
+                                </th>
+                            <?php endforeach; ?>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (!empty($rows)): ?>
+                            <?php foreach ($rows as $row): ?>
+                                <tr>
+                                    <?php foreach (($columns ?? []) as $column): ?>
+                                        <?php
+                                        $key = (string) ($column['key'] ?? '');
+                                        $cell = $row[$key] ?? '--';
+                                        $alignClass = ($column['align'] ?? '') === 'center' ? 'text-center' : 'text-left';
+                                        $tdAttrs = '';
+                                        if ($key === 'severity') {
+                                            $tdAttrs .= ' data-severity="' . htmlspecialchars(strip_tags((string) $cell), ENT_QUOTES, 'UTF-8') . '"';
+                                        }
+                                        if ($key === 'time') {
+                                            $timeTs = (int) ($row['_time_ts'] ?? 0);
+                                            $tdAttrs .= ' data-order="' . $timeTs . '" data-time-ts="' . $timeTs . '"';
+                                        }
+                                        ?>
+                                        <td class="<?= $alignClass; ?> align-middle"<?= $tdAttrs ?>><?= (string) $cell; ?></td>
+                                    <?php endforeach; ?>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -519,7 +561,7 @@ if (!in_array($prefilterSource, ['all', '0', '1'], true)) {
 
     function initJournalTable() {
         dt = $('#' + TABLE_ID).DataTable({
-            dom: 't<"row align-items-center mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7 d-flex justify-content-md-end justify-content-center"p>>',
+            dom: '<"table-responsive table-wrapper"t><"row align-items-center mt-3 px-2"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7 d-flex justify-content-md-end justify-content-center"p>>',
             responsive: true,
             autoWidth: false,
             order: [[TIME_COL_INDEX, "desc"]],
@@ -539,7 +581,7 @@ if (!in_array($prefilterSource, ['all', '0', '1'], true)) {
         if (prefilter) {
             dt.search(prefilter).draw();
         }
-        registerSourceFilter();
+        registerJournalFilters();
         if (IS_PURCHASE_JOURNAL && STATUS_COL_INDEX >= 0) {
             applyPurchaseStatusFilter();
         }
@@ -594,7 +636,8 @@ if (!in_array($prefilterSource, ['all', '0', '1'], true)) {
             $('#f-sort').val('all');
             $('#f-order-status').val('all');
             $('#f-source').val('all');
-            dt.search('').columns().search('').page.len(20).draw();
+            sourceFilterValue = 'all';
+            dt.search('').columns().search('').page.len(20).order([[TIME_COL_INDEX, 'desc']]).draw();
         });
 
         if (IS_PURCHASE_JOURNAL) {
@@ -618,31 +661,73 @@ if (!in_array($prefilterSource, ['all', '0', '1'], true)) {
         dt.draw();
     }
 
-    function registerSourceFilter() {
-        if (sourceFilterRegistered || SOURCE_COL_INDEX < 0 || !$.fn || !$.fn.dataTable || !$.fn.dataTable.ext) {
+    function registerJournalFilters() {
+        if (sourceFilterRegistered || !$.fn || !$.fn.dataTable || !$.fn.dataTable.ext) {
             return;
         }
         sourceFilterRegistered = true;
-        $.fn.dataTable.ext.search.push(function (settings, data) {
+        $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
             if (!settings || !settings.nTable || settings.nTable.id !== TABLE_ID) {
                 return true;
             }
-            if (sourceFilterValue === 'all') {
-                return true;
+
+            // 1. Source Filter
+            if (SOURCE_COL_INDEX >= 0 && sourceFilterValue !== 'all') {
+                var rawCell = String(data[SOURCE_COL_INDEX] || '');
+                var plain = rawCell
+                    .replace(/<[^>]*>/g, ' ')
+                    .toLowerCase()
+                    .replace(/\s+/g, '');
+
+                if (sourceFilterValue === '0') {
+                    if (!(plain.indexOf('web') !== -1 || plain.indexOf('0') === 0)) return false;
+                } else if (sourceFilterValue === '1') {
+                    if (!(plain.indexOf('bottele') !== -1 || plain.indexOf('telegram') !== -1 || plain.indexOf('1') === 0)) return false;
+                }
             }
 
-            var rawCell = String(data[SOURCE_COL_INDEX] || '');
-            var plain = rawCell
-                .replace(/<[^>]*>/g, ' ')
-                .toLowerCase()
-                .replace(/\s+/g, '');
+            // 2. Extract Timestamp for Date Filters
+            var rowTs = 0;
+            if (TIME_COL_INDEX >= 0) {
+                var rowMeta = settings.aoData ? settings.aoData[dataIndex] : null;
+                var rowNode = rowMeta ? rowMeta.nTr : null;
+                var timeCell = rowNode && rowNode.cells ? rowNode.cells[TIME_COL_INDEX] : null;
+                if (timeCell) {
+                    var tsAttr = Number(timeCell.getAttribute('data-order') || timeCell.getAttribute('data-time-ts') || '');
+                    if (!isNaN(tsAttr) && tsAttr > 0) {
+                        rowTs = tsAttr * 1000;
+                    }
+                }
+            }
 
-            if (sourceFilterValue === '0') {
-                return plain.indexOf('web') !== -1 || plain.indexOf('0') === 0;
+            // 3. Dropdown Filter by Days (7, 15, 30 days)
+            var sortVal = String($('#f-sort').val() || 'all');
+            if (sortVal !== 'all') {
+                var days = parseInt(sortVal, 10);
+                if (!isNaN(days) && days > 0 && rowTs > 0) {
+                    var pastTime = new Date().getTime() - (days * 24 * 60 * 60 * 1000);
+                    if (rowTs < pastTime) {
+                        return false;
+                    }
+                }
             }
-            if (sourceFilterValue === '1') {
-                return plain.indexOf('bottele') !== -1 || plain.indexOf('telegram') !== -1 || plain.indexOf('1') === 0;
+
+            // 4. Flatpickr Date Range Filter
+            var dr = String($('#f-date').val() || '').trim();
+            if (dr) {
+                var separator = dr.indexOf(' to ') !== -1 ? ' to ' : ' - ';
+                var range = dr.split(separator);
+                if (range.length === 2) {
+                    var min = new Date(range[0].trim() + ' 00:00:00').getTime();
+                    var max = new Date(range[1].trim() + ' 23:59:59').getTime();
+                    if (!isNaN(min) && !isNaN(max) && rowTs > 0) {
+                        if (rowTs < min || rowTs > max) {
+                            return false;
+                        }
+                    }
+                }
             }
+
             return true;
         });
     }
