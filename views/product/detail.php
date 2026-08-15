@@ -719,6 +719,22 @@ if ($rawDescHtml !== '') {
                 transform: translateY(-50%) scale(1);
             }
         }
+
+        .fa-spin {
+            display: inline-block;
+            -webkit-animation: fa-spin 1s infinite linear !important;
+            animation: fa-spin 1s infinite linear !important;
+        }
+
+        @-webkit-keyframes fa-spin {
+            0% { -webkit-transform: rotate(0deg); transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(359deg); transform: rotate(359deg); }
+        }
+
+        @keyframes fa-spin {
+            0% { -webkit-transform: rotate(0deg); transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(359deg); transform: rotate(359deg); }
+        }
     </style>
 </head>
 
@@ -818,8 +834,6 @@ if ($rawDescHtml !== '') {
                         <div class="pd-chips">
                             <?php if ($deliveryMode === 'account_stock'): ?>
                                 <span class="pd-chip success"><i class="fas fa-user-shield"></i> Tài Khoản</span>
-                            <?php elseif ($deliveryMode === 'source_link' || $productType === 'link'): ?>
-                                <span class="pd-chip info"><i class="fas fa-link"></i> Source</span>
                             <?php elseif ($deliveryMode === 'business_invite_auto'): ?>
                                 <span class="pd-chip success" style="background:#10b981;color:#fff;"><i class="fas fa-robot"></i> GPT Business (Auto)</span>
                             <?php elseif ($deliveryMode === 'manual_info'): ?>
@@ -1304,18 +1318,6 @@ if ($rawDescHtml !== '') {
             }
         }
 
-        function ensureMinPurchaseLoading(startedAt, minDuration = 1600) {
-            const elapsed = Date.now() - Number(startedAt || 0);
-            const remaining = Math.max(0, minDuration - elapsed);
-            if (remaining <= 0) {
-                return Promise.resolve();
-            }
-
-            return new Promise((resolve) => {
-                setTimeout(resolve, remaining);
-            });
-        }
-
         function showPurchaseSuccess(data) {
             const payload = data || {};
             const order = payload.order || {};
@@ -1420,7 +1422,6 @@ if ($rawDescHtml !== '') {
             requestBody.append('customer_input', customerInput);
             requestBody.append('giftcode', giftcode);
             requestBody.append('csrf_token', PRODUCT_DETAIL.csrfToken);
-            const loadingStartedAt = Date.now();
 
             setBuyButtonLoading(true);
             showPurchaseProcessingLoading();
@@ -1464,7 +1465,7 @@ if ($rawDescHtml !== '') {
                             if (status === 401) {
                                 customMsg = 'Phiên đăng nhập đã hết hạn hoặc bạn chưa đăng nhập.';
                             } else if (status === 403) {
-                                customMsg = 'Yêu cầu bị từ chối (403 Forbidden). Vui lòng tắt tiện ích chặn quảng cáo/Brave Shields hoặc kiểm tra lại kết nối mạng.';
+                                customMsg = 'Yêu cầu bị từ chối (403 Forbidden). Vui lòng thử lại sau.';
                             } else if (status === 419) {
                                 customMsg = 'Phiên làm việc đã hết hạn (CSRF mismatch). Vui lòng tải lại trang.';
                             } else if (status === 429) {
@@ -1484,8 +1485,7 @@ if ($rawDescHtml !== '') {
 
                     return data;
                 })
-                .then(async (data) => {
-                    await ensureMinPurchaseLoading(loadingStartedAt);
+                .then((data) => {
                     closePurchaseProcessingLoading();
 
                     const order = data.order || {};
@@ -1500,8 +1500,7 @@ if ($rawDescHtml !== '') {
                     applyPurchaseSuccessRealtimeState(data, qty);
                     showPurchaseSuccess(data);
                 })
-                .catch(async (err) => {
-                    await ensureMinPurchaseLoading(loadingStartedAt);
+                .catch((err) => {
                     closePurchaseProcessingLoading();
                     const status = err.status || 0;
                     const msg = (err && err.message) ? err.message : 'Không thể mua sản phẩm lúc này.';

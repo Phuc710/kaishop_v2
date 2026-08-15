@@ -316,11 +316,7 @@ $emitIdentitySchema = $requestPathNoLocale === '/';
 <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
 <link href="https://fonts.googleapis.com/css2?family=Signika:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" media="print"
-    onload="this.media='all'">
-<noscript>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
-</noscript>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
 <link rel="stylesheet" href="<?= asset('assets/css/nice_select.css') ?>" media="print" onload="this.media='all'">
 <link href="<?= asset('assets/css/bootstrap.css') ?>" rel="stylesheet">
