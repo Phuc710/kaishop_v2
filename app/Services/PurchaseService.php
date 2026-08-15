@@ -371,6 +371,7 @@ class PurchaseService
                 return [
                     'success' => true,
                     'pending' => true,
+                    'user_balance' => $afterBalance,
                     'message' => 'Đơn hàng đã tạo ở trạng thái chờ. Vui lòng chờ admin xử lý và giao nội dung.',
                     'order' => array_merge($orderData, [
                         'subtotal_price' => $subtotalPrice,
@@ -389,6 +390,7 @@ class PurchaseService
 
             return [
                 'success' => true,
+                'user_balance' => $afterBalance,
                 'message' => 'Thanh toán thành công!',
                 'order' => array_merge($orderData, [
                     'subtotal_price' => $subtotalPrice,

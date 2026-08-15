@@ -1069,6 +1069,25 @@ if ($rawDescHtml !== '') {
         }
 
         function applyPurchaseSuccessRealtimeState(data, requestedQty) {
+            // Update navbar header balance in realtime
+            const headerBalEls = document.querySelectorAll('[data-header-balance]');
+            if (headerBalEls.length > 0) {
+                let nextBal = null;
+                if (data && typeof data.user_balance === 'number') {
+                    nextBal = data.user_balance;
+                } else if (data && data.order) {
+                    const totalPaid = Number(data.order.total_price || data.order.price || 0);
+                    const currentBal = Number(headerBalEls[0].getAttribute('data-price-vnd') || 0);
+                    nextBal = Math.max(0, currentBal - totalPaid);
+                }
+                if (nextBal !== null) {
+                    headerBalEls.forEach(el => {
+                        el.setAttribute('data-price-vnd', nextBal);
+                        el.textContent = fmtMoney(nextBal);
+                    });
+                }
+            }
+
             if (!PRODUCT_DETAIL.stockManaged) return;
 
             const order = (data && data.order) ? data.order : {};
