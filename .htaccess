@@ -75,6 +75,9 @@ RewriteCond %{HTTP_REFERER} !^https?://(www\.)?127\.0\.0\.1(?::[0-9]+)?/ [NC]
 RewriteCond %{HTTP_REFERER} !^https?://(www\.)?kaishop\.id\.vn/ [NC]
 RewriteRule \.(?:jpe?g|png|gif|webp|svg)$ - [F,NC,L]
 
+# ─── SECURITY: Block database administration / honeypot paths ───
+RewriteRule ^(phpmyadmin|phpMyAdmin|pma|adminer|mysql|dbadmin|pma2026|webmin|cpanel)(/|$) - [F,L,NC]
+
 # ─── SECURITY: HTTP Security Headers ───
 <IfModule mod_headers.c>
     # Prevent MIME type sniffing
@@ -85,6 +88,15 @@ RewriteRule \.(?:jpe?g|png|gif|webp|svg)$ - [F,NC,L]
 
     # Enable XSS filter in legacy browsers
     Header always set X-XSS-Protection "1; mode=block"
+
+    # Strict Transport Security (HSTS - 1 year with subdomains and preload)
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+    # Permissions Policy (restrict dangerous browser APIs)
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+
+    # Cross Domain Policies
+    Header always set X-Permitted-Cross-Domain-Policies "none"
 
     # Control referrer info sent to other sites
     Header always set Referrer-Policy "strict-origin-when-cross-origin"

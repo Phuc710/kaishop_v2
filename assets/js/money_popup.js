@@ -128,18 +128,12 @@ class MoneyPopup {
         reasonInputHidden.name = this.opts.reasonName || 'reason';
         reasonInputHidden.value = reason;
 
-        const metaCsrf = document.querySelector('meta[name="csrf-token"]');
-        if (metaCsrf && metaCsrf.content) {
+        const csrfToken = (document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || (typeof window.getCsrfToken === 'function' ? window.getCsrfToken() : ''));
+        if (csrfToken) {
             const csrfInput = document.createElement('input');
             csrfInput.type = 'hidden';
             csrfInput.name = 'csrf_token';
-            csrfInput.value = metaCsrf.content;
-            form.appendChild(csrfInput);
-        } else if (window.KS_CSRF_TOKEN) {
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = 'csrf_token';
-            csrfInput.value = window.KS_CSRF_TOKEN;
+            csrfInput.value = csrfToken;
             form.appendChild(csrfInput);
         }
 

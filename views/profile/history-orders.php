@@ -966,7 +966,7 @@ require __DIR__ . '/layout/header.php';
         function initOrderHistoryPage() {
             const manager = new OrderHistoryManager({
                 baseUrl: (typeof BASE_URL !== 'undefined' ? BASE_URL : ''),
-                csrfToken: (typeof window.KS_CSRF_TOKEN !== 'undefined' ? window.KS_CSRF_TOKEN : '')
+                csrfToken: (typeof window.getCsrfToken === 'function' ? window.getCsrfToken() : (document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''))
             });
             manager.init();
         }

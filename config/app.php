@@ -284,7 +284,7 @@ if ($csrfCookieToken === '' || !preg_match('/^[a-f0-9]{64}$/', $csrfCookieToken)
     $csrfCookieToken = bin2hex(random_bytes(32));
     $_COOKIE[$csrfCookieName] = $csrfCookieToken;
     setcookie($csrfCookieName, $csrfCookieToken, [
-        'expires' => time() + 31536000,
+        'expires' => 0,
         'path' => '/',
         'domain' => '',
         'secure' => $csrfCookieSecure,
@@ -323,7 +323,7 @@ if (!function_exists('csrf_regenerate')) {
         $_COOKIE['ks_csrf'] = $token;
         $isHttps = app_is_https();
         setcookie('ks_csrf', $token, [
-            'expires' => time() + 31536000,
+            'expires' => 0,
             'path' => '/',
             'domain' => '',
             'secure' => $isHttps,

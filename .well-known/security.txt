@@ -1,0 +1,7 @@
+Contact: https://kaishop.id.vn/lien-he
+Contact: mailto:security@kaishop.id.vn
+Expires: 2027-12-31T23:59:59.000Z
+Preferred-Languages: vi, en
+Canonical: https://kaishop.id.vn/.well-known/security.txt
+Policy: https://kaishop.id.vn/chinh-sach
+Acknowledgments: https://kaishop.id.vn/

@@ -369,7 +369,10 @@ $emitIdentitySchema = $requestPathNoLocale === '/';
     const BASE_URL = '<?= rtrim(url(''), '/') ?>';
     const ASSET_URL = '<?= rtrim(asset(''), '/') ?>';
     const AJAX_URL = '<?= rtrim(ajax_url(''), '/') ?>';
-    window.KS_CSRF_TOKEN = <?= json_encode(function_exists('csrf_token') ? csrf_token() : '', JSON_UNESCAPED_UNICODE) ?>;
+    window.getCsrfToken = function() {
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        return meta ? (meta.getAttribute('content') || '') : '';
+    };
     window.KAI_ASSET_URL = ASSET_URL;
     window.KAI_EXCHANGE_RATE = <?= (int) max(1, (int) get_setting('binance_rate_vnd', 25000)) ?>;
     window.KS_TIME_CONFIG = Object.assign({}, window.KS_TIME_CONFIG || {}, {
@@ -403,15 +406,16 @@ $emitIdentitySchema = $requestPathNoLocale === '/';
                         return;
                     }
 
+                    const csrf = typeof window.getCsrfToken === 'function' ? window.getCsrfToken() : '';
                     const fd = new FormData();
                     fd.append('fingerprint', fp.hash);
-                    if (window.KS_CSRF_TOKEN) {
-                        fd.append('csrf_token', window.KS_CSRF_TOKEN);
+                    if (csrf) {
+                        fd.append('csrf_token', csrf);
                     }
                     fetch(BASE_URL + '/api/update-fingerprint', {
                         method: 'POST',
                         body: fd,
-                        headers: window.KS_CSRF_TOKEN ? { 'X-CSRF-Token': window.KS_CSRF_TOKEN } : {}
+                        headers: csrf ? { 'X-CSRF-Token': csrf } : {}
                     }).then(() => {
                         try {
                             localStorage.setItem(syncKey, JSON.stringify({

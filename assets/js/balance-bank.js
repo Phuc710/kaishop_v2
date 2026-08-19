@@ -12,7 +12,9 @@
     function readCsrfToken(fallback) {
         var token = '';
         try {
-            token = String(window.KS_CSRF_TOKEN || '').trim();
+            if (typeof window.getCsrfToken === 'function') {
+                token = window.getCsrfToken();
+            }
         } catch (e) {
             token = '';
         }
