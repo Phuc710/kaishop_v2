@@ -61,6 +61,7 @@
             params.set('username', username);
             params.set('email', email);
             params.set('password', password);
+            params.set('remember', '1');
             if (turnstileToken) params.set('turnstile_token', turnstileToken);
             if (fpHash) params.set('fingerprint', fpHash);
             if (fpComponents) params.set('fp_components', fpComponents);

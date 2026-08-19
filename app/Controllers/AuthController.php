@@ -91,7 +91,7 @@ class AuthController extends Controller
     {
         $username = trim($this->post('username', ''));
         $password = trim($this->post('password', ''));
-        $rememberMe = in_array((string) $this->post('remember', '0'), ['1', 'true', 'on'], true);
+        $rememberMe = in_array((string) $this->post('remember', '1'), ['1', 'true', 'on'], true);
         $fingerprintHash = trim($this->post('fingerprint', ''));
         $fpComponents = (string) $this->post('fp_components', '');
 
@@ -252,6 +252,7 @@ class AuthController extends Controller
         $username = trim($this->post('username', ''));
         $password = trim($this->post('password', ''));
         $email = trim($this->post('email', ''));
+        $rememberMe = in_array((string) $this->post('remember', '1'), ['1', 'true', 'on'], true);
 
         if (($turnstileError = $this->requireTurnstileToken()) !== null) {
             return $this->json(['success' => false, 'message' => $turnstileError], 400);
@@ -302,7 +303,7 @@ class AuthController extends Controller
                 return $this->json(['success' => false, 'message' => 'Không thể khởi tạo tài khoản vừa đăng ký.'], 500);
             }
 
-            if (!$this->tryCompleteAuthenticatedSession($newUser, $fingerprintHash, (string) $this->post('fp_components', ''), false, 'register')) {
+            if (!$this->tryCompleteAuthenticatedSession($newUser, $fingerprintHash, (string) $this->post('fp_components', ''), $rememberMe, 'register')) {
                 return $this->json(['success' => false, 'message' => 'Không thể đăng nhập ngay sau khi đăng ký. Vui lòng thử lại.'], 500);
             }
 
@@ -317,6 +318,8 @@ class AuthController extends Controller
                 'success' => true,
                 'message' => 'Đăng ký thành công.',
                 'redirect' => url(''),
+                'access_expires_in' => 900,
+                'refresh_expires_in' => $rememberMe ? 2592000 : 86400
             ]);
         }
 
@@ -616,7 +619,7 @@ class AuthController extends Controller
      */
     public function googleLogin()
     {
-        $rememberMe = in_array((string) $this->post('remember', '0'), ['1', 'true', 'on'], true);
+        $rememberMe = in_array((string) $this->post('remember', '1'), ['1', 'true', 'on'], true);
 
 
         error_log('[GoogleAuth] googleLogin() called. IP=' . ($_SERVER['REMOTE_ADDR'] ?? '?') . ' HOST=' . ($_SERVER['HTTP_HOST'] ?? '?'));

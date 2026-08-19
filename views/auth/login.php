@@ -92,7 +92,7 @@ $GLOBALS['pageAssets'] = [
                                     <div class="d-flex align-items-center justify-content-between">
                                         <div class="form-wrap">
                                             <label class="custom_check mb-0">Ghi nhớ đăng nhập
-                                                <input type="checkbox" id="remember" name="remember">
+                                                <input type="checkbox" id="remember" name="remember" checked>
                                                 <span class="checkmark"></span>
                                             </label>
                                         </div>
@@ -235,7 +235,7 @@ $GLOBALS['pageAssets'] = [
                 if (googleName) params.set('google_name', googleName);
                 if (googleFamilyName) params.set('google_family_name', googleFamilyName);
 
-                params.set('remember', typeof getRememberMeValue === 'function' ? getRememberMeValue() : '0');
+                params.set('remember', typeof getRememberMeValue === 'function' ? getRememberMeValue() : '1');
                 if (fpHash) params.set('fingerprint', fpHash);
                 if (fpComponents) params.set('fp_components', fpComponents);
                 if (deviceId) params.set('device_id', deviceId);

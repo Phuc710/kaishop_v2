@@ -203,6 +203,7 @@ $GLOBALS['pageAssets'] = [
                 if (photoURL) params.set('photo_url', photoURL);
                 if (googleName) params.set('google_name', googleName);
                 if (googleFamilyName) params.set('google_family_name', googleFamilyName);
+                params.set('remember', '1');
 
                 if (fpHash) params.set('fingerprint', fpHash);
                 if (fpComponents) params.set('fp_components', fpComponents);
