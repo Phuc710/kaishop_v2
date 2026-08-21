@@ -62,8 +62,11 @@ class CheckCardGatewayService
         'approval failed',
     ];
 
-    public function __construct(private CheckCardCardGeneratorService $cardGenerator)
+    private CheckCardCardGeneratorService $cardGenerator;
+
+    public function __construct(CheckCardCardGeneratorService $cardGenerator)
     {
+        $this->cardGenerator = $cardGenerator;
     }
 
     public function getGateways(): array

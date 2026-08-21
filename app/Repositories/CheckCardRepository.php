@@ -2,31 +2,87 @@
 
 class CheckCardRepository
 {
-    public function __construct(private PDO $db)
+    private PDO $db;
+
+    public function __construct(PDO $db)
     {
+        $this->db = $db;
+        $this->ensureTablesExist();
+    }
+
+    private function ensureTablesExist(): void
+    {
+        try {
+            $this->db->exec("
+                CREATE TABLE IF NOT EXISTS `checkcard_jobs` (
+                    `id` INT AUTO_INCREMENT PRIMARY KEY,
+                    `gate_id` VARCHAR(50) NOT NULL,
+                    `gate_name` VARCHAR(100) NOT NULL,
+                    `config_json` LONGTEXT NULL,
+                    `threads` INT DEFAULT 5,
+                    `total_target` INT DEFAULT 0,
+                    `checked_count` INT DEFAULT 0,
+                    `live_count` INT DEFAULT 0,
+                    `dead_count` INT DEFAULT 0,
+                    `err_count` INT DEFAULT 0,
+                    `status` ENUM('running', 'stopped', 'paused', 'finished') DEFAULT 'stopped',
+                    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ");
+
+            $this->db->exec("
+                CREATE TABLE IF NOT EXISTS `checkcard_lives` (
+                    `id` INT AUTO_INCREMENT PRIMARY KEY,
+                    `job_id` INT NOT NULL,
+                    `card` VARCHAR(255) NOT NULL,
+                    `bank` VARCHAR(150) NULL,
+                    `country` VARCHAR(100) NULL,
+                    `flag` VARCHAR(20) NULL,
+                    `scheme` VARCHAR(50) NULL,
+                    `type` VARCHAR(50) NULL,
+                    `brand` VARCHAR(50) NULL,
+                    `extra_info` VARCHAR(100) NULL,
+                    `gate_name` VARCHAR(100) NOT NULL,
+                    `message` TEXT NULL,
+                    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    KEY `idx_job_id` (`job_id`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ");
+        } catch (Throwable $e) {
+            // Ignore error if already created or insufficient privileges
+        }
     }
 
     public function stopStaleRunningJobs(int $minutes = 5): void
     {
-        $stmt = $this->db->prepare("
-            UPDATE checkcard_jobs
-            SET status = 'stopped'
-            WHERE status = 'running'
-              AND updated_at < NOW() - INTERVAL ? MINUTE
-        ");
+        try {
+            $stmt = $this->db->prepare("
+                UPDATE checkcard_jobs
+                SET status = 'stopped'
+                WHERE status = 'running'
+                  AND updated_at < NOW() - INTERVAL ? MINUTE
+            ");
 
-        $stmt->execute([$minutes]);
+            $stmt->execute([$minutes]);
+        } catch (Throwable $e) {
+            // Ignore if table not created yet or database error
+        }
     }
 
     public function getActiveJobs(): array
     {
-        return $this->db
-            ->query("
-                SELECT id, gate_id, status
-                FROM checkcard_jobs
-                WHERE status IN ('running', 'paused')
-            ")
-            ->fetchAll();
+        try {
+            return $this->db
+                ->query("
+                    SELECT id, gate_id, status
+                    FROM checkcard_jobs
+                    WHERE status IN ('running', 'paused')
+                ")
+                ->fetchAll() ?: [];
+        } catch (Throwable $e) {
+            return [];
+        }
     }
 
     public function isGateRunning(string $gateId): bool
@@ -189,19 +245,23 @@ class CheckCardRepository
 
     public function getLatestLivesByGate(string $gateId, int $limit = 50): array
     {
-        $stmt = $this->db->prepare("
-            SELECT l.* 
-            FROM checkcard_lives l
-            JOIN checkcard_jobs j ON l.job_id = j.id
-            WHERE j.gate_id = ?
-            ORDER BY l.id DESC
-            LIMIT ?
-        ");
-        $stmt->bindValue(1, $gateId);
-        $stmt->bindValue(2, $limit, PDO::PARAM_INT);
-        $stmt->execute();
+        try {
+            $stmt = $this->db->prepare("
+                SELECT l.* 
+                FROM checkcard_lives l
+                JOIN checkcard_jobs j ON l.job_id = j.id
+                WHERE j.gate_id = ?
+                ORDER BY l.id DESC
+                LIMIT ?
+            ");
+            $stmt->bindValue(1, $gateId);
+            $stmt->bindValue(2, $limit, PDO::PARAM_INT);
+            $stmt->execute();
 
-        return array_reverse($stmt->fetchAll());
+            return array_reverse($stmt->fetchAll() ?: []);
+        } catch (Throwable $e) {
+            return [];
+        }
     }
 
     public function findJobById(int $jobId): ?array
@@ -305,20 +365,29 @@ class CheckCardRepository
 
     public function getGlobalTotals(): array
     {
-        return $this->db
-            ->query("
-                SELECT 
-                    SUM(checked_count) as total,
-                    SUM(live_count) as live,
-                    SUM(dead_count) as dead,
-                    SUM(err_count) as err
-                FROM checkcard_jobs
-            ")
-            ->fetch() ?: [
+        try {
+            return $this->db
+                ->query("
+                    SELECT 
+                        SUM(checked_count) as total,
+                        SUM(live_count) as live,
+                        SUM(dead_count) as dead,
+                        SUM(err_count) as err
+                    FROM checkcard_jobs
+                ")
+                ->fetch() ?: [
+                    'total' => 0,
+                    'live' => 0,
+                    'dead' => 0,
+                    'err' => 0
+                ];
+        } catch (Throwable $e) {
+            return [
                 'total' => 0,
                 'live' => 0,
                 'dead' => 0,
                 'err' => 0
             ];
+        }
     }
 }

@@ -1,18 +1,5 @@
 <?php
 
-namespace Admin;
-
-use AuthService;
-use CheckCardCardGeneratorService;
-use CheckCardGatewayService;
-use CheckCardJobService;
-use CheckCardRepository;
-use Controller;
-use Database;
-use InvalidArgumentException;
-use RuntimeException;
-use Throwable;
-
 class CheckCardController extends Controller
 {
     private const ADMIN_LEVEL = 9;
@@ -39,10 +26,11 @@ class CheckCardController extends Controller
     {
         $this->requireAdmin();
 
-        $this->view('admin/checkcard/index', [
+        $pageData = $this->jobService->getPageData();
+
+        $this->view('admin/checkcard/index', array_merge([
             'title' => 'Check Card',
-            ...$this->jobService->getPageData(),
-        ]);
+        ], $pageData));
     }
 
     public function startJob()
@@ -154,9 +142,5 @@ class CheckCardController extends Controller
             exit('Access denied');
         }
     }
-
-    private function input(): array
-    {
-        return json_decode((string) file_get_contents('php://input'), true) ?: $_POST;
-    }
 }
+

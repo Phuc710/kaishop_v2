@@ -14,6 +14,7 @@ require __DIR__ . '/../layout/breadcrumb.php';
 $gateways = $gateways ?? [];
 $activeJobs = $activeJobs ?? [];
 $historyLives = $historyLives ?? [];
+$globalTotals = $globalTotals ?? ['total' => 0, 'live' => 0, 'dead' => 0, 'err' => 0];
 ?>
 
 <link rel="stylesheet" href="<?= asset('assets/css/checkcard.css') ?>?v=<?= time() ?>">
@@ -391,9 +392,14 @@ $historyLives = $historyLives ?? [];
         <?php 
            $lastId = 0;
            $storedCards = [];
-           if (!empty($historyLives[$gid])) {
-               $lastId = end($historyLives[$gid])['id'];
-               foreach($historyLives[$gid] as $rl) $storedCards[] = $rl['card'];
+           if (!empty($historyLives[$gid]) && is_array($historyLives[$gid])) {
+               $lastItem = end($historyLives[$gid]);
+               $lastId = is_array($lastItem) ? ($lastItem['id'] ?? 0) : 0;
+               foreach($historyLives[$gid] as $rl) {
+                   if (isset($rl['card'])) {
+                       $storedCards[] = $rl['card'];
+                   }
+               }
            }
         ?>
         GATES['<?= $gid ?>'] = {

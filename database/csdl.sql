@@ -801,5 +801,85 @@ CREATE TABLE IF NOT EXISTS `telegram_logs` (
   KEY `idx_tl_type_created` (`type`, `created_at`),
   KEY `idx_tl_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- ============================================================
+-- Check Card Module Tables
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS `checkcard_jobs` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `gate_id` VARCHAR(50) NOT NULL,
+    `gate_name` VARCHAR(100) NOT NULL,
+    `config_json` LONGTEXT NULL,
+    `threads` INT DEFAULT 5,
+    `total_target` INT DEFAULT 0,
+    `checked_count` INT DEFAULT 0,
+    `live_count` INT DEFAULT 0,
+    `dead_count` INT DEFAULT 0,
+    `err_count` INT DEFAULT 0,
+    `status` ENUM('running', 'stopped', 'paused', 'finished') DEFAULT 'stopped',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `checkcard_lives` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `job_id` INT NOT NULL,
+    `card` VARCHAR(255) NOT NULL,
+    `bank` VARCHAR(150) NULL,
+    `country` VARCHAR(100) NULL,
+    `flag` VARCHAR(20) NULL,
+    `scheme` VARCHAR(50) NULL,
+    `type` VARCHAR(50) NULL,
+    `brand` VARCHAR(50) NULL,
+    `extra_info` VARCHAR(100) NULL,
+    `gate_name` VARCHAR(100) NOT NULL,
+    `message` TEXT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY `idx_job_id` (`job_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================
+-- Financial Goals Module Tables
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS `goals` (
+  `id`             INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name`           VARCHAR(255) NOT NULL,
+  `target_amount`  BIGINT NOT NULL DEFAULT 0,
+  `current_amount` BIGINT NOT NULL DEFAULT 0,
+  `deadline`       DATE NULL,
+  `status`         ENUM('active','completed','archived') NOT NULL DEFAULT 'active',
+  `note`           LONGTEXT NULL,
+  `emoji`          VARCHAR(10) NOT NULL DEFAULT '🎯',
+  `color`          VARCHAR(20) NOT NULL DEFAULT '#845adf',
+  `created_at`     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_goals_status` (`status`),
+  KEY `idx_goals_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `goal_transactions` (
+  `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `goal_id`    INT UNSIGNED NOT NULL,
+  `type`       ENUM('add','subtract') NOT NULL DEFAULT 'add',
+  `amount`     BIGINT NOT NULL,
+  `note`       VARCHAR(255) DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_gt_goal` (`goal_id`),
+  KEY `idx_gt_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `goal_tags` (
+  `id`       INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `goal_id`  INT UNSIGNED NOT NULL,
+  `tag_name` VARCHAR(50) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_tags_goal` (`goal_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
 COMMIT;
+

@@ -8,11 +8,18 @@ class CheckCardJobService
 
     private array $binMetaCache = [];
 
+    private CheckCardRepository $repository;
+    private CheckCardGatewayService $gatewayService;
+    private CheckCardCardGeneratorService $cardGenerator;
+
     public function __construct(
-        private CheckCardRepository $repository,
-        private CheckCardGatewayService $gatewayService,
-        private CheckCardCardGeneratorService $cardGenerator
+        CheckCardRepository $repository,
+        CheckCardGatewayService $gatewayService,
+        CheckCardCardGeneratorService $cardGenerator
     ) {
+        $this->repository = $repository;
+        $this->gatewayService = $gatewayService;
+        $this->cardGenerator = $cardGenerator;
     }
 
     public function getPageData(): array
