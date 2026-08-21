@@ -115,9 +115,9 @@ class CheckCardController extends Controller
         $ch = curl_init("https://lookup.binlist.net/{$bin}");
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 10,
+            CURLOPT_TIMEOUT => 6,
             CURLOPT_HTTPHEADER => ['Accept-Version: 3'],
-            CURLOPT_USERAGENT => 'Mozilla/5.0',
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
             CURLOPT_SSL_VERIFYPEER => false,
         ]);
 
@@ -125,9 +125,54 @@ class CheckCardController extends Controller
         $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
-        http_response_code($status);
+        if ($status === 200 && $body) {
+            http_response_code(200);
+            header('Content-Type: application/json');
+            echo $body;
+            exit;
+        }
+
+        // Secondary Fallback: HandyAPI
+        $ch2 = curl_init("https://data.handyapi.com/bin/{$bin}");
+        curl_setopt_array($ch2, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 6,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+            CURLOPT_SSL_VERIFYPEER => false,
+        ]);
+        $body2 = curl_exec($ch2);
+        $status2 = curl_getinfo($ch2, CURLINFO_HTTP_CODE);
+        curl_close($ch2);
+
+        if ($status2 === 200 && $body2) {
+            $data2 = json_decode($body2, true);
+            if (($data2['Status'] ?? '') === 'SUCCESS') {
+                $cc = $data2['Country']['A2'] ?? '';
+                $flag = '🌍';
+                if (strlen($cc) === 2 && function_exists('mb_chr')) {
+                    $flag = mb_chr(127397 + ord(strtoupper($cc[0]))) . mb_chr(127397 + ord(strtoupper($cc[1])));
+                }
+                $normalized = [
+                    'scheme' => strtolower($data2['Scheme'] ?? ''),
+                    'type' => strtolower($data2['Type'] ?? ''),
+                    'brand' => $data2['CardTier'] ?? '',
+                    'country' => [
+                        'name' => $data2['Country']['Name'] ?? '',
+                        'emoji' => $flag,
+                        'alpha2' => $cc,
+                    ],
+                    'bank' => [
+                        'name' => $data2['Issuer'] ?? '',
+                    ],
+                ];
+                $this->json($normalized);
+                return;
+            }
+        }
+
+        http_response_code($status ?: 404);
         header('Content-Type: application/json');
-        echo $body ?: '{}';
+        echo $body ?: json_encode(['error' => 'BIN not found']);
         exit;
     }
 

@@ -808,16 +808,17 @@ $globalTotals = $globalTotals ?? ['total' => 0, 'live' => 0, 'dead' => 0, 'err' 
     });
 
     async function performBinLookup() {
-        // Extract first continuous block of 6-8 digits from pasted text (handles cards like 374355126445010|...)
+        // Strip spaces, dashes, pipes, dots to extract all digits (supports full card number or 6-8 digits BIN)
         const rawText = document.getElementById('bin-input').value;
-        const matches = rawText.match(/\d{6,8}/);
+        const cleaned = rawText.replace(/\D/g, '');
 
-        if (!matches || matches.length === 0) {
+        if (cleaned.length < 6) {
             Swal.fire({ icon: 'warning', title: 'BIN không hợp lệ', text: 'Vui lòng dán thẻ hoặc nhập ít nhất 6 số đầu.' });
             return;
         }
 
-        let bin = matches[0].substring(0, 8); // fallback maximum 8 digits
+        // Use up to 8 digits for detailed lookup (e.g. 45492406)
+        let bin = cleaned.substring(0, 8);
 
         showBinState('loading');
         document.getElementById('btn-lookup').disabled = true;
@@ -834,7 +835,7 @@ $globalTotals = $globalTotals ?? ['total' => 0, 'live' => 0, 'dead' => 0, 'err' 
 
             document.getElementById('d-bin').textContent = bin;
             const badge = document.getElementById('d-brand-badge');
-            badge.textContent = data.scheme || 'N/A';
+            badge.textContent = (data.scheme || 'N/A').toUpperCase();
 
             const schemeLow = (data.scheme || '').toLowerCase();
             badge.className = 'badge px-3 py-2 text-white';
